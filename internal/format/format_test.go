@@ -80,8 +80,8 @@ func TestFormatPercentage(t *testing.T) {
 		{0.5, format.Options{}, "50%"},
 		{0.1234, format.Options{}, "12.3%"},
 		{1, format.Options{}, "100%"},
-		{1.2, format.Options{}, "100%"},     // clamped
-		{-0.1, format.Options{}, "0%"},      // clamped
+		{1.2, format.Options{}, "100%"}, // clamped
+		{-0.1, format.Options{}, "0%"},  // clamped
 		{0.25, format.Options{Sign: true}, "+25%"},
 		{0.42, format.Options{Suffix: " hit"}, "42% hit"},
 	}
@@ -163,7 +163,7 @@ func TestEllipsis(t *testing.T) {
 		{"abc", 5, "abc"},
 		{"abcdef", 3, "abc…"},
 		{"αβγδε", 3, "αβγ…"}, // multi-byte respected
-		{"abc", 0, "abc"},     // non-positive returns input
+		{"abc", 0, "abc"},    // non-positive returns input
 		{"abc", -1, "abc"},
 	}
 	for _, tc := range tests {

@@ -43,8 +43,8 @@ func Format(n int64, opts Options) string {
 	// at the lower tier is promoted to the next tier. e.g. 999999 rounds to
 	// 1000k under naive bucketing, so we promote it to 1m.
 	const (
-		thrK = 999.5            // promote to "k" once one decimal would carry
-		thrM = 999_500.0        // 999_999 rounds to 1.0m
+		thrK = 999.5     // promote to "k" once one decimal would carry
+		thrM = 999_500.0 // 999_999 rounds to 1.0m
 		thrB = 999_500_000.0
 		thrT = 999_500_000_000.0
 	)
@@ -54,16 +54,16 @@ func Format(n int64, opts Options) string {
 	)
 	switch {
 	case val >= thrT:
-		out = trimDecimal(val/1_000_000_000_000, 1)
+		out = trimDecimal(val / 1_000_000_000_000)
 		unit = "t"
 	case val >= thrB:
-		out = trimDecimal(val/1_000_000_000, 1)
+		out = trimDecimal(val / 1_000_000_000)
 		unit = "b"
 	case val >= thrM:
-		out = trimDecimal(val/1_000_000, 1)
+		out = trimDecimal(val / 1_000_000)
 		unit = "m"
 	case val >= thrK:
-		out = trimDecimal(val/1_000, 1)
+		out = trimDecimal(val / 1_000)
 		unit = "k"
 	default:
 		out = fmt.Sprintf("%d", int64(val))
@@ -71,22 +71,18 @@ func Format(n int64, opts Options) string {
 	return sign + out + unit + opts.Suffix
 }
 
-// trimDecimal renders f with at most digits fractional digits and strips
-// trailing zeros and a dangling decimal point.
-func trimDecimal(f float64, digits int) string {
-	s := strconvFloat(f, digits)
+// trimDecimal renders f with at most one fractional digit and strips
+// trailing zeros and a dangling decimal point. The single-digit cap matches
+// what Format and FormatBytes need; widen if a future caller demands it.
+func trimDecimal(f float64) string {
+	// Round half away from zero to match human expectations: 1.55 → 1.6.
+	rounded := math.Floor(f*10+0.5) / 10
+	s := fmt.Sprintf("%.1f", rounded)
 	if strings.Contains(s, ".") {
 		s = strings.TrimRight(s, "0")
 		s = strings.TrimRight(s, ".")
 	}
 	return s
-}
-
-func strconvFloat(f float64, digits int) string {
-	// Round half away from zero to match human expectations: 1.55 → 1.6.
-	pow := math.Pow(10, float64(digits))
-	rounded := math.Floor(f*pow+0.5) / pow
-	return fmt.Sprintf("%.*f", digits, rounded)
 }
 
 // FormatBytes formats a byte count using binary (1024-based) magnitudes:
@@ -116,7 +112,7 @@ func FormatBytes(n int64) string {
 	if idx < 0 {
 		return fmt.Sprintf("%s%d B", sign, abs)
 	}
-	return sign + trimDecimal(val, 1) + " " + suffixes[idx]
+	return sign + trimDecimal(val) + " " + suffixes[idx]
 }
 
 // FormatPercentage renders 0..1 as a percentage with no fractional digits,
@@ -139,7 +135,7 @@ func FormatPercentage(n float64, opts Options) string {
 	if opts.Sign && n > 0 {
 		sign = "+"
 	}
-	return sign + trimDecimal(pct, 1) + "%" + opts.Suffix
+	return sign + trimDecimal(pct) + "%" + opts.Suffix
 }
 
 // DateOptions controls FormatDate output.

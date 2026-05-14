@@ -32,7 +32,39 @@ linters-settings:
   gofumpt:
     extra-rules: true
   govet:
-    enable-all: true
+    # enable-all=true turns on fieldalignment which is a micro-optimization
+    # that mostly hits test struct literals where memory layout is irrelevant.
+    # Explicitly enable the analyzers we want instead.
+    enable:
+      - shadow
+      - composites
+      - copylocks
+      - errorsas
+      - httpresponse
+      - nilness
+      - printf
+      - unreachable
+      - unusedwrite
+      - lostcancel
+      - structtag
+      - assign
+      - atomic
+      - bools
+      - buildtag
+      - cgocall
+      - directive
+      - findcall
+      - framepointer
+      - ifaceassert
+      - loopclosure
+      - sigchanyzer
+      - slog
+      - stringintconv
+      - stdmethods
+      - testinggoroutine
+      - timeformat
+      - unmarshal
+      - unsafeptr
   gosec:
     excludes:
       # G104: errcheck already covers unchecked errors with better targeting.
@@ -41,6 +73,10 @@ linters-settings:
     rules:
       - name: var-naming
       - name: exported
+        # Disable the stutters check so package-prefixed names spelled out in
+        # the spec (e.g. format.FormatBytes per FR-007) remain compliant.
+        arguments:
+          - disableStutteringCheck
       - name: package-comments
       - name: error-return
       - name: error-naming
