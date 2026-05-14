@@ -20,17 +20,24 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	// Use an indirection so that defer-based cleanup runs before we exit.
+	// gocritic flags `defer os.RemoveAll(tmp)` followed by `os.Exit` because
+	// the defer would never fire on the error paths.
+	os.Exit(runTests(m))
+}
+
+func runTests(m *testing.M) int {
 	tmp, err := os.MkdirTemp("", "metrics-bin-")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "TestMain: create tempdir: %v\n", err)
-		os.Exit(2)
+		return 2
 	}
 	defer os.RemoveAll(tmp)
 
 	repoRoot, err := findRepoRoot()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "TestMain: locate repo root: %v\n", err)
-		os.Exit(2)
+		return 2
 	}
 
 	actionBin = filepath.Join(tmp, "metrics-action"+exeSuffix())
@@ -48,11 +55,11 @@ func TestMain(m *testing.M) {
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
 			fmt.Fprintf(os.Stderr, "TestMain: build %s: %v\n", b.pkg, err)
-			os.Exit(2)
+			return 2
 		}
 	}
 
-	os.Exit(m.Run())
+	return m.Run()
 }
 
 // findRepoRoot walks upward from the test working directory until it finds
