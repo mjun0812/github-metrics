@@ -30,14 +30,14 @@ description: "Task list for project-foundation (M1 19 baseline tasks)"
 
 **Purpose**: リポジトリ骨格 + ビルド / CI 配管の確立。後続フェーズの全タスクが依存する。
 
-- [ ] T001 Initialize `go.mod` at repo root with `module github.com/mjun0812/github-metrics` and `go 1.23` directive (覆われる FR: FR-001)
-- [ ] T002 [P] Create directory skeleton: `cmd/metrics-action/`, `cmd/metrics-cli/`, `internal/`, `assets/`, `scripts/`, `tests/fixtures/`, `tests/golden/`, `tests/integration/`, `.github/workflows/` (空ディレクトリは `.gitkeep` で git 追跡)
-- [ ] T003 [P] Add `LICENSE` file at repo root with MIT license text (upstream `lowlighter/metrics` の MIT 表記を踏襲、Copyright 行は本リポジトリの所有者で更新) — constitution Development Workflow ライセンス遵守項目
-- [ ] T004 Write `Makefile` at repo root with targets: `build` (両バイナリ to `bin/`), `test`, `test-race` (`-race`), `lint` (`golangci-lint` + `govulncheck`), `bench`, `gen` (`go generate ./...`), `docker` (placeholder), `e2e` (placeholder), `tools` (golangci-lint + govulncheck install), `check-compat` (placeholder, T048 で本実装) — FR-002
-- [ ] T005 [P] Write `.golangci.yml` per research R-008 enabling: `errcheck`, `gosimple`, `govet`, `ineffassign`, `staticcheck`, `unused`, `gocritic`, `revive`, `gofumpt`, `gosec`, `nilerr`, `prealloc`, `unparam`; disable `exhaustive`, `exhaustruct`, `wrapcheck`; set `run.timeout: 10m`
-- [ ] T006 [P] Write `.github/workflows/go-ci.yml` with PR-triggered jobs: `test` (`go test ./...`), `vet` (`go vet ./...`), `lint` (`golangci-lint run --timeout=10m`), `vuln` (`govulncheck ./...`), `test-race` (`go test -race ./...`), `smoke-macos` (build + `go test ./internal/config/...` on `macos-latest`); use `ubuntu-latest` primary — FR-003
-- [ ] T007 [P] Add `scripts/sync-assets.sh` skeleton (実体は T024 [US2] で実装) which prints "Not yet implemented" and exits 1 — placeholder to wire into `Makefile`'s `make sync-assets` invocation
-- [ ] T008 Add minimal `cmd/metrics-action/main.go` and `cmd/metrics-cli/main.go` each with `--help` flag that prints usage and exits 0; both must compile with no warnings — FR-001, US1 AS1
+- [x] T001 Initialize `go.mod` at repo root with `module github.com/mjun0812/github-metrics` and `go 1.23` directive (覆われる FR: FR-001)
+- [x] T002 [P] Create directory skeleton: `cmd/metrics-action/`, `cmd/metrics-cli/`, `internal/`, `assets/`, `scripts/`, `tests/fixtures/`, `tests/golden/`, `tests/integration/`, `.github/workflows/` (空ディレクトリは `.gitkeep` で git 追跡)
+- [x] T003 [P] Add `LICENSE` file at repo root with MIT license text (upstream `lowlighter/metrics` の MIT 表記を踏襲、Copyright 行は本リポジトリの所有者で更新) — constitution Development Workflow ライセンス遵守項目
+- [x] T004 Write `Makefile` at repo root with targets: `build` (両バイナリ to `bin/`), `test`, `test-race` (`-race`), `lint` (`golangci-lint` + `govulncheck`), `bench`, `gen` (`go generate ./...`), `docker` (placeholder), `e2e` (placeholder), `tools` (golangci-lint + govulncheck install), `check-compat` (placeholder, T048 で本実装) — FR-002
+- [x] T005 [P] Write `.golangci.yml` per research R-008 enabling: `errcheck`, `gosimple`, `govet`, `ineffassign`, `staticcheck`, `unused`, `gocritic`, `revive`, `gofumpt`, `gosec`, `nilerr`, `prealloc`, `unparam`; disable `exhaustive`, `exhaustruct`, `wrapcheck`; set `run.timeout: 10m`
+- [x] T006 [P] Write `.github/workflows/go-ci.yml` with PR-triggered jobs: `test` (`go test ./...`), `vet` (`go vet ./...`), `lint` (`golangci-lint run --timeout=10m`), `vuln` (`govulncheck ./...`), `test-race` (`go test -race ./...`), `smoke-macos` (build + `go test ./internal/config/...` on `macos-latest`); use `ubuntu-latest` primary — FR-003
+- [x] T007 [P] Add `scripts/sync-assets.sh` skeleton (実体は T024 [US2] で実装) which prints "Not yet implemented" and exits 1 — placeholder to wire into `Makefile`'s `make sync-assets` invocation
+- [x] T008 Add minimal `cmd/metrics-action/main.go` and `cmd/metrics-cli/main.go` each with `--help` flag that prints usage and exits 0; both must compile with no warnings — FR-001, US1 AS1
 
 **Checkpoint (Phase 1)**: `make build` produces `bin/metrics-action` and `bin/metrics-cli`; `--help` returns exit 0; CI workflow file exists.
 
@@ -49,11 +49,11 @@ description: "Task list for project-foundation (M1 19 baseline tasks)"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T009 [P] Implement `internal/logger/logger.go` with `slog` JSON default handler, `--log-format text` switch, `--debug` level toggle; add `internal/logger/logger_test.go` with table tests for level switching and handler swap (research R-006) — FR-004
-- [ ] T010 [P] Implement `internal/errors/errors.go` defining 5 struct error types (`InputError`, `NotFoundError`, `ForbiddenError`, `UnsupportedFormatError`, `RetryableError`) with `Error()` and `Unwrap()` methods; add `internal/errors/errors_test.go` with table tests covering `errors.Is` and `errors.As` (research R-011) — FR-005
-- [ ] T011 [P] Implement `internal/ctxutil/ctxutil.go` with `WithLogin(ctx, login)` and `LoginFromContext(ctx) (string, bool)`; add `internal/ctxutil/ctxutil_test.go` verifying round-trip + slog handler picks up the attribute — FR-006
-- [ ] T012 [P] Implement `internal/format/format.go` with `Format(n, opts)`, `FormatBytes(n)`, `FormatPercentage(n, opts)`, `FormatDate(t, opts)`, `Ellipsis(s, n)`, `S(n, suffix)`, `FormatError(err, opts)`; add `internal/format/format_test.go` with table tests covering boundary values (0, 999, 1000, 999999, 1000000) and timezone switching — FR-007
-- [ ] T013 Run `go test ./internal/logger/... ./internal/errors/... ./internal/ctxutil/... ./internal/format/...` and confirm 100% green; verify package coverage ≥ 80% per SC-005 using `go test -cover` and update report in PR description
+- [x] T009 [P] Implement `internal/logger/logger.go` with `slog` JSON default handler, `--log-format text` switch, `--debug` level toggle; add `internal/logger/logger_test.go` with table tests for level switching and handler swap (research R-006) — FR-004
+- [x] T010 [P] Implement `internal/errors/errors.go` defining 5 struct error types (`InputError`, `NotFoundError`, `ForbiddenError`, `UnsupportedFormatError`, `RetryableError`) with `Error()` and `Unwrap()` methods; add `internal/errors/errors_test.go` with table tests covering `errors.Is` and `errors.As` (research R-011) — FR-005
+- [x] T011 [P] Implement `internal/ctxutil/ctxutil.go` with `WithLogin(ctx, login)` and `LoginFromContext(ctx) (string, bool)`; add `internal/ctxutil/ctxutil_test.go` verifying round-trip + slog handler picks up the attribute — FR-006
+- [x] T012 [P] Implement `internal/format/format.go` with `Format(n, opts)`, `FormatBytes(n)`, `FormatPercentage(n, opts)`, `FormatDate(t, opts)`, `Ellipsis(s, n)`, `S(n, suffix)`, `FormatError(err, opts)`; add `internal/format/format_test.go` with table tests covering boundary values (0, 999, 1000, 999999, 1000000) and timezone switching — FR-007
+- [x] T013 Run `go test ./internal/logger/... ./internal/errors/... ./internal/ctxutil/... ./internal/format/...` and confirm 100% green; verify package coverage ≥ 80% per SC-005 using `go test -cover` and update report in PR description
 
 **Checkpoint (Phase 2)**: Foundational packages compile, all tests pass, coverage ≥ 80% on 4 packages.
 
