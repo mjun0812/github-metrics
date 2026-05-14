@@ -67,12 +67,12 @@ description: "Task list for project-foundation (M1 19 baseline tasks)"
 
 ### Tests for User Story 1
 
-- [ ] T014 [P] [US1] Add `internal/logger/logger_context_test.go` proving `slog.Default()` emits `login` attribute when context is enriched via `ctxutil.WithLogin` — US1 AS4
-- [ ] T015 [P] [US1] Add `tests/integration/binaries_test.go` invoking compiled `bin/metrics-action --help` and `bin/metrics-cli --help` via `os/exec` and asserting exit code 0 and presence of "Usage:" in stdout — US1 AS1 / AS2
+- [x] T014 [P] [US1] Add `internal/logger/logger_context_test.go` proving `slog.Default()` emits `login` attribute when context is enriched via `ctxutil.WithLogin` — US1 AS4
+- [x] T015 [P] [US1] Add `tests/integration/binaries_test.go` invoking compiled `bin/metrics-action --help` and `bin/metrics-cli --help` via `os/exec` and asserting exit code 0 and presence of "Usage:" in stdout — US1 AS1 / AS2
 
 ### Implementation for User Story 1
 
-- [ ] T016 [US1] Wire foundational packages into `cmd/metrics-action/main.go` and `cmd/metrics-cli/main.go`: initialize logger, set up signal-aware context with `signal.NotifyContext`, ensure `--help` flag goes through `flag.NewFlagSet` (Cobra deferred to T-117); keep both mains stubbed to print version banner and exit 0 if no other flags given — US1 AS1
+- [x] T016 [US1] Wire foundational packages into `cmd/metrics-action/main.go` and `cmd/metrics-cli/main.go`: initialize logger, set up signal-aware context with `signal.NotifyContext`, ensure `--help` flag goes through `flag.NewFlagSet` (Cobra deferred to T-117); keep both mains stubbed to print version banner and exit 0 if no other flags given — US1 AS1
 - [ ] T017 [US1] Open PR against `main` to validate `.github/workflows/go-ci.yml` runs all jobs green within 7 minutes (SC-001); attach CI run URL in PR body — US1 AS3
 
 **Checkpoint (US1)**: バイナリビルド + CI 緑が確認できる「Buildable shell」段階。MVP として deploy 可能 (機能はまだなし、ただし配管は整備済)。
