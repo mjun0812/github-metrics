@@ -1,0 +1,105 @@
+# golangci-lint configuration for github-metrics.
+# Ruleset rationale: specs/001-project-foundation/research.md R-008.
+
+run:
+  timeout: 10m
+  go: "1.23"
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  disable-all: true
+  enable:
+    # Correctness
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - nilerr
+    # Suggestions
+    - gosimple
+    - gocritic
+    - revive
+    - prealloc
+    - unparam
+    # Style
+    - gofumpt
+    # Security
+    - gosec
+
+linters-settings:
+  gofumpt:
+    extra-rules: true
+  govet:
+    # enable-all=true turns on fieldalignment which is a micro-optimization
+    # that mostly hits test struct literals where memory layout is irrelevant.
+    # Explicitly enable the analyzers we want instead.
+    enable:
+      - shadow
+      - composites
+      - copylocks
+      - errorsas
+      - httpresponse
+      - nilness
+      - printf
+      - unreachable
+      - unusedwrite
+      - lostcancel
+      - structtag
+      - assign
+      - atomic
+      - bools
+      - buildtag
+      - cgocall
+      - directive
+      - findcall
+      - framepointer
+      - ifaceassert
+      - loopclosure
+      - sigchanyzer
+      - slog
+      - stringintconv
+      - stdmethods
+      - testinggoroutine
+      - unmarshal
+      - unsafeptr
+  gosec:
+    excludes:
+      # G104: errcheck already covers unchecked errors with better targeting.
+      - G104
+  revive:
+    rules:
+      - name: var-naming
+      - name: exported
+        # Disable the stutters check so package-prefixed names spelled out in
+        # the spec (e.g. format.FormatBytes per FR-007) remain compliant.
+        arguments:
+          - disableStutteringCheck
+      - name: package-comments
+      - name: error-return
+      - name: error-naming
+      - name: error-strings
+      - name: receiver-naming
+      - name: unused-parameter
+        disabled: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-rules:
+    # Test files: relax some rules that are common in fixtures.
+    - path: _test\.go$
+      linters:
+        - gosec
+        - unparam
+    # Generated code: skip strict rules for files under code-gen output paths.
+    - path: graphql_gen\.go$
+      linters:
+        - revive
+        - gocritic
+        - gosec
+        - unparam
+
+# Disabled linters that we may revisit later (see research R-008):
+#   exhaustive, exhaustruct, wrapcheck — high false-positive rate at M1.

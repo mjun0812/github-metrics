@@ -1,0 +1,12 @@
+# Upstream reference (per constitution: must not enter git history)
+org_repo/
+
+# Go build artifacts
+/bin/
+*.test
+*.out
+coverage.out
+
+# Editor / OS
+.DS_Store
+*.swp
