@@ -1,0 +1,11 @@
+{
+  "//": "sandbox=true forces optimize/cached/plugins.default/extras.default/mocked",
+  "token": "ghp_sandbox",
+  "optimize": false,
+  "cached": 12345,
+  "plugins.default": false,
+  "extras": { "default": false },
+  "mocked": false,
+  "sandbox": true,
+  "//2": "expectation: Loader strips comment keys and forces the sandbox overrides"
+}
