@@ -285,7 +285,7 @@ func toBoolean(raw any) bool {
 // callers can pass multiple separators (most commonly the upstream
 // "newline-separated, comma-separated" pair).
 func toArray(raw any, formats StringList) []string {
-	if formats == nil || len(formats) == 0 {
+	if len(formats) == 0 {
 		formats = StringList{"comma-separated"}
 	}
 	var s string

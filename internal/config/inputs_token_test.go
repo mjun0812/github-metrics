@@ -41,9 +41,13 @@ func TestToken_RawNeverLeaksThroughFormatters(t *testing.T) {
 	raw := "ghp_super_secret_value_42"
 	tk := config.NewToken(raw)
 
+	// Run the formatters that gosimple flags ("%s") through a separate
+	// variable so the lint rule does not strip the test out from under
+	// us — we explicitly *want* to exercise the formatter path.
+	stringerVerb := "%s" //nolint:gosimple // intentionally exercising Stringer via fmt
 	formatted := []string{
 		fmt.Sprintf("%v", tk),
-		fmt.Sprintf("%s", tk),
+		fmt.Sprintf(stringerVerb, tk),
 		fmt.Sprintf("%+v", tk),
 		fmt.Sprintf("%#v", tk),
 	}

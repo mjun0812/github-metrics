@@ -143,8 +143,8 @@ func LoadMetadata(fsys fs.FS, opts LoadOptions) (*MetadataLoader, error) {
 	}
 	for name, raw := range plugins {
 		var pm PluginMetadata
-		if err := yaml.Unmarshal(raw, &pm); err != nil {
-			return nil, fmt.Errorf("metadata: plugin %s: %w", name, err)
+		if uerr := yaml.Unmarshal(raw, &pm); uerr != nil {
+			return nil, fmt.Errorf("metadata: plugin %s: %w", name, uerr)
 		}
 		sanitizeInputs(pm.Inputs, "plugin "+name, logger)
 		out.Plugins[name] = &pm
@@ -156,8 +156,8 @@ func LoadMetadata(fsys fs.FS, opts LoadOptions) (*MetadataLoader, error) {
 	}
 	for name, raw := range tmpls {
 		var tm TemplateMetadata
-		if err := yaml.Unmarshal(raw, &tm); err != nil {
-			return nil, fmt.Errorf("metadata: template %s: %w", name, err)
+		if uerr := yaml.Unmarshal(raw, &tm); uerr != nil {
+			return nil, fmt.Errorf("metadata: template %s: %w", name, uerr)
 		}
 		sanitizeInputs(tm.Inputs, "template "+name, logger)
 		out.Templates[name] = &tm
