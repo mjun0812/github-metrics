@@ -62,7 +62,6 @@ linters-settings:
       - stringintconv
       - stdmethods
       - testinggoroutine
-      - timeformat
       - unmarshal
       - unsafeptr
   gosec:
