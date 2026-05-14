@@ -8,12 +8,18 @@
 
 **Input**: User description: "M1 19 タスク (T-001..005, 007..010, 012..018, 020..022) を 1 つの『土台機能』として spec 化。go.mod / cmd-internal レイアウト / settings.json+action.yml ローダ / metadata.yml / engine スケルトン / mock 基盤など、後続全機能の前提となる骨格。"
 
+## Clarifications
+
+### Session 2026-05-15
+
+- Q: Go module path (`go.mod` の `module` directive) として確定する値は何か? → A: `github.com/mjun0812/github-metrics` (作者 user id: `mjun0812`)
+
 ## User Scenarios & Testing *(mandatory)*
 
 本機能の「ユーザー」は 2 種類存在する。
 
 - **コードベース貢献者 (一次ユーザー)**: 本リポジトリで実装・レビュー・CI 運用を行う開発者。土台の上に M2 以降の機能を積む。
-- **将来の GitHub Action 利用者 (二次ユーザー)**: M6 完了後に `uses: <org>/github-metrics@v1` として参照する README オーナー。土台単体では機能を消費できないが、入力互換性の保証点として最初に検証される。
+- **将来の GitHub Action 利用者 (二次ユーザー)**: M6 完了後に `uses: mjun0812/github-metrics@v1` として参照する README オーナー。土台単体では機能を消費できないが、入力互換性の保証点として最初に検証される。
 
 各 user story はそれぞれ独立にテスト可能であり、上位ストーリーから順に実装することで段階的に土台が稼働状態へ近づく。
 
@@ -122,7 +128,7 @@
 
 #### スケルトンとビルド
 
-- **FR-001**: System MUST `go.mod` を `module github.com/<org>/github-metrics`、Go 1.23 以上で初期化し、`cmd/metrics-action/main.go` および `cmd/metrics-cli/main.go` を空 main としてビルド可能にする。
+- **FR-001**: System MUST `go.mod` を `module github.com/mjun0812/github-metrics`、Go 1.23 以上で初期化し、`cmd/metrics-action/main.go` および `cmd/metrics-cli/main.go` を空 main としてビルド可能にする。
 - **FR-002**: System MUST `Makefile` に `build` / `test` / `lint` / `bench` / `gen` / `docker` / `e2e` ターゲットを定義し、`make build` で両バイナリの artifacts を `bin/` に出力する。
 - **FR-003**: System MUST `.github/workflows/go-ci.yml` で PR トリガにより `go test ./...` / `go vet ./...` / `golangci-lint run --timeout=10m` / `govulncheck ./...` を独立 step で実行し、全 step 緑を merge ゲートとする。
 - **FR-004**: System MUST `internal/logger` を `log/slog` ベースで提供し、`debug` フラグでレベル切替・JSON/text 切替を可能にする。
@@ -140,7 +146,7 @@
 
 #### GitHub API レイヤ
 
-- **FR-013**: System MUST `internal/httpx.Client` に `Get` / `PostJSON` / `PostForm` / `Binary` を実装し、5xx / 429 / network エラーで指数バックオフリトライ、4xx は再試行なし、User-Agent は `metrics/<version> (+https://github.com/<org>/github-metrics)` とする。
+- **FR-013**: System MUST `internal/httpx.Client` に `Get` / `PostJSON` / `PostForm` / `Binary` を実装し、5xx / 429 / network エラーで指数バックオフリトライ、4xx は再試行なし、User-Agent は `metrics/<version> (+https://github.com/mjun0812/github-metrics)` とする。
 - **FR-014**: System MUST `internal/githubapi/rest.go` に `NewREST(token, customBaseURL)` を実装し、mock 用 `*http.Client` 差し替えを許可する。`internal/githubapi/auth.go` で token 種別 (`gh[pousr]_` / `github_pat_` / `NOT_NEEDED` / `MOCKED_TOKEN`) を判定し、`github_pat_` は早期拒否する。
 - **FR-015**: System MUST `internal/githubapi/graphql.go` に `NewGraphQL(token, customBaseURL)` を実装し、`Khan/genqlient` で `assets/plugins/base/queries/*.graphql` から型付き Go 関数を生成する。
 - **FR-016**: System MUST `internal/githubapi/rate.go` に `Resources{REST, GraphQL, Search}` 構造体 (`Limit/Used/Remaining/Reset`) を実装し、`Refresh(ctx)` で `GET /rate_limit` から更新可能にする。並行アクセスは race detector で clean。
@@ -197,7 +203,7 @@
 ## Assumptions
 
 - Go バージョンは 1.23 系を採用する。constitution 「Go (latest stable)」運用に基づき、`go.mod` の `go` directive で固定する。1.22 以下サポートは MUST NOT。
-- リポジトリ名 (module path) は `github.com/<org>/github-metrics` を仮定する。`<org>` は将来確定する組織または個人アカウント名で、`go.mod` 確定時に置換する。
+- リポジトリ名 (module path) は `github.com/mjun0812/github-metrics` で確定 (Clarifications 2026-05-15 参照)。作者 user id は `mjun0812`。
 - `assets/plugins/*` および `assets/templates/{classic,repository}/*` の **ソース** は `./org_repo/source/plugins/*` および `./org_repo/source/app/web/statics/.../templates/*` から **手動コピーではなく** ライセンス踏襲のうえで `make sync-assets` 相当のスクリプトで取得する (constitution Development Workflow)。スクリプトの実装は `T-012` に内包する。
 - `metadata.yml` の互換性は **キー名と型** の単位で判定する。上流が将来追加するキーは前方互換 (warn してスキップ) で扱う。
 - `engine.Compute` の M1 段階での `template.Run` は no-op (空 SVG / 空 string) で構わない。実描画は M2 (T-023 classic) で satisfaction する。

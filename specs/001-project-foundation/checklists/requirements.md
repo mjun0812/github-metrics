@@ -42,5 +42,5 @@
 
 ### 次フェーズの依存
 
-- `/speckit-clarify` は本 spec の `[NEEDS CLARIFICATION]` 0 件のため **省略可**。組織名 (`<org>`) 確定は `/speckit-plan` の Technical Context で扱う。
+- `/speckit-clarify` は本 spec の `[NEEDS CLARIFICATION]` 0 件のため **省略可** だったが、Clarifications セッション (2026-05-15) で作者 user id `mjun0812` が確定したため、module path を `github.com/mjun0812/github-metrics` に固定済み。
 - `/speckit-plan` 前に `make sync-assets` (T-012) で `./org_repo` から `assets/**` を取得する手順案を確定する必要がある。Plan で扱う。
