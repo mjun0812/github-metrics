@@ -114,9 +114,11 @@ func TestComputeSVG_Classic(t *testing.T) {
 	}
 }
 
-// TestComputePNG_M2WarnsAndReturnsSVG validates the interim PNG branch:
-// M2 stages SVG bytes plus a warn log; chromedp conversion lands in M3.
-func TestComputePNG_M2WarnsAndReturnsSVG(t *testing.T) {
+// TestComputePNG_M3ReturnsImageBytes validates the M3 PNG branch: the
+// FakeRenderer (injected by newEngineDeps) emits valid PNG bytes plus
+// the matching image/png MIME, and the M2-era "chromedp conversion
+// lands in M3" warn log is no longer produced (FR-009).
+func TestComputePNG_M3ReturnsImageBytes(t *testing.T) {
 	t.Parallel()
 	engine.SetVersionForTest(t, "test-version")
 
@@ -139,15 +141,12 @@ func TestComputePNG_M2WarnsAndReturnsSVG(t *testing.T) {
 	if res.MIME != "image/png" {
 		t.Fatalf("MIME = %q, want image/png", res.MIME)
 	}
-	if !strings.HasPrefix(string(res.Output), "<svg") {
-		t.Fatalf("Output should still begin with <svg in M2; got %.80s", string(res.Output))
+	pngMagic := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+	if len(res.Output) < len(pngMagic) || !bytes.HasPrefix(res.Output, pngMagic) {
+		t.Fatalf("Output should start with PNG magic; got %x", res.Output[:min(8, len(res.Output))])
 	}
-	logs := sink.String()
-	if !strings.Contains(logs, `"format":"png"`) {
-		t.Errorf("expected a warn log mentioning format=png, got: %s", logs)
-	}
-	if !strings.Contains(logs, `"level":"WARN"`) {
-		t.Errorf("expected level=WARN, got: %s", logs)
+	if strings.Contains(sink.String(), "chromedp conversion lands in M3") {
+		t.Errorf("M2 warn log leaked into M3 output: %s", sink.String())
 	}
 }
 

@@ -6,25 +6,24 @@ Go port of [lowlighter/metrics](https://github.com/lowlighter/metrics) for the
 adopted feature subset documented in
 [`docs/design/15-selection-answer.md`](docs/design/15-selection-answer.md).
 
-**Status: M2 (classic template + JSON output) complete.** Building on the
-M1 foundation, `engine.Compute` now emits an upstream-compatible JSON
-envelope (`account / user / config / computed / plugins / errors`) and
-renders the classic SVG template with four MVP partials. The format
-dispatcher routes `json` / `svg` / `png` / `jpeg` according to
-[`specs/002-output-classic-json/contracts/result-dispatch.md`](specs/002-output-classic-json/contracts/result-dispatch.md);
-`png` and `jpeg` stage SVG bytes with a warn log until the M3 chromedp
-rendering pipeline lands. See
-[`specs/002-output-classic-json/tasks.md`](specs/002-output-classic-json/tasks.md)
-for the per-task breakdown. M3 (rendering pipeline) and M4 (plugins) are
-next.
+**Status: M3 (chromedp rendering pipeline) complete.** Building on M1
+(foundation) and M2 (classic template + JSON output), `engine.Compute`
+now drives the upstream-compatible decoration pipeline (octicon
+substitution + optional CSS purge + optional XML format) and the
+chromedp-backed `svg.Resize` to produce real PNG / JPEG bytes — the
+M2-era "chromedp conversion lands in M3" warn log is gone. The new
+`render.Hash` is in place ahead of M6 `output_condition=data-changed`.
+See
+[`specs/003-chromedp-rendering-pipeline/tasks.md`](specs/003-chromedp-rendering-pipeline/tasks.md)
+for the per-task breakdown. M4 (plugins) is next.
 
 ### Output paths at a glance
 
 | Format | Wired in | Output | MIME |
 | --- | --- | --- | --- |
 | `json` | M2 | `engine.Marshal(data)` | `application/json` |
-| `svg` | M2 | `templates.classic.Run` | `image/svg+xml` |
-| `png` / `jpeg` | M2 interim | SVG bytes + warn log | `image/png` / `image/jpeg` |
+| `svg` | M2 + M3 deco/resize | classic template → octicon → optional css/xml → chromedp Resize | `image/svg+xml` |
+| `png` / `jpeg` | M3 | same as `svg` + chromedp `page.CaptureScreenshot` | `image/png` / `image/jpeg` |
 
 ## Quickstart for contributors
 
@@ -46,6 +45,42 @@ make build
 make test
 make lint
 ```
+
+### chromedp tests (M3+)
+
+The default `make test` deliberately skips the chromedp-backed render
+tests so contributors without a chromium binary stay green. To
+exercise the resize / PNG / JPEG path on a machine with chromium:
+
+```sh
+# macOS — point at the system Chrome (or `brew install chromium`).
+METRICS_CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+    make test-chromedp
+
+# Linux — system chromium or chromedp/headless-shell container.
+METRICS_CHROME_PATH=/usr/bin/chromium make test-chromedp
+```
+
+CI runs the chromedp suite in a dedicated job using the
+`chromedp/headless-shell:latest` container image, so a fresh
+checkout that opts out of chromedp locally still gates against
+regressions.
+
+### Octicon asset regeneration
+
+`assets/octicons/data.json` is generated from the npm-published
+`@primer/octicons` build. To refresh it (when bumping the upstream
+version):
+
+```sh
+npm install --no-save @primer/octicons
+make gen-octicons
+```
+
+`make verify-octicons` re-runs the generator and diffs the result —
+useful as a CI gate when the upstream version pin advances. (The
+embedded `_meta.generated_at` is non-deterministic; a Polish-phase
+follow-up will flag this with a `--frozen-source` switch.)
 
 To run the full pre-commit pipeline manually (e.g. before pushing a
 branch that has stacked commits):

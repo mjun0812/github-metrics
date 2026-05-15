@@ -17,6 +17,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/base"
 	"github.com/mjun0812/github-metrics/internal/plugins/core"
+	"github.com/mjun0812/github-metrics/internal/render"
 	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
@@ -59,15 +60,27 @@ type Result struct {
 	// values for the corresponding MIME (see [Result.MIME]):
 	//
 	//   application/json   when Request.Format == "json"
-	//   image/svg+xml      when Request.Format == "svg"
-	//   image/png          when Request.Format == "png" (M2: contains
-	//                                                    SVG bytes plus
-	//                                                    a warn log;
-	//                                                    chromedp
-	//                                                    conversion
-	//                                                    lands in M3)
+	//   image/svg+xml      when Request.Format == "svg"  (Template.Run
+	//                                                     output after
+	//                                                     the M3
+	//                                                     decoration
+	//                                                     pipeline +
+	//                                                     chromedp
+	//                                                     svg.Resize)
+	//   image/png          when Request.Format == "png"  (real PNG
+	//                                                     bytes from
+	//                                                     chromedp
+	//                                                     page.CaptureScreenshot,
+	//                                                     M3+)
 	//   image/jpeg         when Request.Format == "jpeg" (same as PNG
-	//                                                    for M2)
+	//                                                     with JPEG
+	//                                                     format)
+	//
+	// On Renderer failure for png / jpeg paths the dispatch returns
+	// (nil, "") and appends the chromedp error to Result.Errors so
+	// callers can detect the failure via the empty Output (FR-018).
+	// For svg the dispatch falls back to the un-resized decorated
+	// SVG bytes.
 	Output []byte
 	// MIME is the IANA type that matches Output. Never empty when
 	// Output is set; never set when Output is empty.
@@ -83,6 +96,14 @@ type Deps struct {
 	HTTPClient *httpx.Client
 	REST       *githubapi.REST
 	GraphQL    *githubapi.GraphQL
+	// Render performs the chromedp-backed SVG resize / convert and is
+	// consumed only when Request.Format ∈ {"svg","png","jpeg"}. Nil
+	// is permitted: when needed, Compute lazily allocates a default
+	// *render.Browser on first use and tears it down at the end of
+	// the call. Tests should inject a *render.FakeRenderer so they
+	// never start chromium. JSON-format requests never read this
+	// field.
+	Render render.Renderer
 }
 
 // Compute drives a single end-to-end run.
@@ -165,7 +186,7 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 		Data:     data,
 		Metadata: deps.Metadata,
 	}
-	output, mime, err := dispatchOutput(ctx, req, deps, tmpl, data, pcPartial)
+	output, mime, err := dispatchOutput(ctx, req, deps, tmpl, data, pcPartial, res)
 	if err != nil {
 		return nil, err
 	}
