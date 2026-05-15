@@ -224,7 +224,12 @@ func checkRetry(ctx context.Context, resp *http.Response, err error) (bool, erro
 		return false, ctx.Err()
 	}
 	if err != nil {
-		return true, nil
+		// retryablehttp's CheckRetry contract: returning (true, nil) means
+		// "retry; do not surface this error". Returning the underlying err
+		// here would short-circuit retries on every transient network
+		// blip, defeating the purpose of the wrapper. nilerr flags this
+		// pattern as a generic false positive.
+		return true, nil //nolint:nilerr // intentional per retryablehttp.CheckRetry contract
 	}
 	if resp == nil {
 		return true, nil

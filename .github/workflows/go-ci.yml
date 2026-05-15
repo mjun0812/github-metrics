@@ -10,7 +10,10 @@ permissions:
   contents: read
 
 env:
-  GO_VERSION: "1.23"
+  # Use the "stable" tag so each run pulls a Go release with the latest
+  # security patches. go.mod's `go 1.23` directive still pins the
+  # minimum-language version we promise to support.
+  GO_VERSION: "stable"
 
 jobs:
   test:
