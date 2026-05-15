@@ -10,7 +10,15 @@ permissions:
   contents: read
 
 env:
-  GO_VERSION: "1.23"
+  # Pin to a specific Go release that has both (a) the security patches
+  # govulncheck demands and (b) an AST that the latest golangci-lint
+  # build can fully type-check. Bumping past this pin requires updating
+  # the golangci-lint pin below in lockstep.
+  # Go 1.25 carries the patched net/tls/x509/url stdlib (govulncheck
+  # green) while still pre-dating the 1.26 stdlib files
+  # (chacha20poly1305/fips140only_go1.26.go) that older golangci-lint
+  # builds cannot parse.
+  GO_VERSION: "1.25.10"
 
 jobs:
   test:
@@ -48,7 +56,9 @@ jobs:
           cache: true
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.61.0
+          # v1.64.x is built against Go 1.24 and matches the runner pin
+          # above. Update both together when bumping toolchains.
+          version: v1.64.8
           args: --timeout=10m
 
   vuln:
