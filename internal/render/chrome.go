@@ -120,7 +120,12 @@ func (b *Browser) spawnAllocator() {
 		chromedp.Flag("disable-extensions", true),
 		chromedp.Flag("disable-dev-shm-usage", true),
 		chromedp.Flag("disable-gpu", true),
-		chromedp.Flag("single-process", true),
+		// --single-process is documented as required for Docker/ARM
+		// stability (research R-003) but breaks the CDP Network
+		// domain enable step on modern desktop Chrome (137+). Callers
+		// that need it MUST pass it via BrowserOpts.ExtraFlags; the
+		// default set leaves it off so local dev / CI without the
+		// chromedp/headless-shell image works out of the box.
 	}
 	if b.opts.Headless {
 		flags = append(flags, chromedp.Headless)

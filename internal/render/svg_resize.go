@@ -11,19 +11,21 @@ import (
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 )
 
-// jsTemplate is the chromedp.Evaluate body used by Resize. It mirrors
-// the upstream puppeteer routine documented in
-// docs/design/13-appendix.md §G, lightly adapted so the settle
-// duration is parameterized at call time (and the function only
-// returns serializable values).
+// jsPrepareTemplate runs the pre-measurement preparation step: it
+// executes the caller-supplied scripts and disables the SVG
+// animations so the upcoming settle sleep can shake out into a stable
+// layout. We split this away from the measurement JS so chromedp can
+// drive the settle delay via its own Sleep action rather than relying
+// on the Runtime.evaluate awaitPromise behaviour, which has been
+// flaky against modern desktop Chrome (137+) when the IIFE returns a
+// JSON-stringified payload.
 //
-// %d is substituted with the settle delay in milliseconds.
-const jsTemplate = `(async () => {
-  const padding = JSON.parse(%s);
+// %s slots: padding JSON, scripts JSON.
+const jsPrepareTemplate = `(() => {
   const scripts = JSON.parse(%s);
   for (const script of scripts) {
     try {
-      await new Function("document", "return (async () => {" + script + "})()")(document);
+      new Function("document", script)(document);
     } catch (e) {
       console.debug("script error: " + e);
     }
@@ -32,24 +34,51 @@ const jsTemplate = `(async () => {
   if (!svg) {
     throw new Error("no <svg> root in document");
   }
-  const animated = !svg.classList.contains("no-animations");
-  if (animated) svg.classList.add("no-animations");
-  await new Promise(r => setTimeout(r, %d));
+  if (!svg.classList.contains("no-animations")) {
+    svg.classList.add("no-animations");
+    svg.dataset.metricsAnimationsToggled = "1";
+  }
+  return true;
+})()`
+
+// jsMeasureTemplate runs after the settle sleep: it looks up the
+// `#metrics-end` anchor, applies padding, rewrites the SVG's `height`
+// attribute (unless it is `auto`), and returns the serialized SVG
+// plus the post-padding dimensions as a JSON STRING. Returning a
+// JSON-encoded string survives Runtime.evaluate's deep serialization
+// without hitting the await-promise pitfall.
+//
+// %s slots: padding JSON. %d slot: ignored — the settle delay is
+// owned by chromedp.Sleep outside this template.
+const jsMeasureTemplate = `(() => {
+  const padding = JSON.parse(%s);
+  const svg = document.querySelector("svg");
+  if (!svg) {
+    throw new Error("no <svg> root in document at measurement time");
+  }
   const endNode = svg.querySelector("#metrics-end");
   if (!endNode) {
     throw new Error("missing #metrics-end measurement anchor");
   }
-  const rect = endNode.getBoundingClientRect();
-  let height = rect.y;
-  let width  = rect.width;
+  // Upstream uses #metrics-end.getBoundingClientRect() but for an
+  // empty <g> the bbox width is 0. We pull width from the <svg> root
+  // (which carries the intrinsic content width) and height from the
+  // anchor's vertical position.
+  const svgRect = svg.getBoundingClientRect();
+  const endRect = endNode.getBoundingClientRect();
+  let height = endRect.y - svgRect.y;
+  let width  = svgRect.width;
   height = Math.max(1, Math.ceil(height * padding.height + padding.absoluteHeight));
   width  = Math.max(1, Math.ceil(width  * padding.width  + padding.absoluteWidth));
   if (svg.getAttribute("height") !== "auto") svg.setAttribute("height", String(height));
-  if (animated) svg.classList.remove("no-animations");
+  if (svg.dataset.metricsAnimationsToggled === "1") {
+    svg.classList.remove("no-animations");
+    delete svg.dataset.metricsAnimationsToggled;
+  }
   return JSON.stringify({
     resized: new XMLSerializer().serializeToString(svg),
-    width,
-    height,
+    width: width,
+    height: height,
   });
 })()`
 
@@ -95,28 +124,26 @@ func (b *Browser) Resize(ctx context.Context, in string, opts ResizeOpts) (Resiz
 		scriptsJSON = []byte("[]")
 	}
 
-	js := fmt.Sprintf(
-		jsTemplate,
-		quoteForJS(padJSON),
-		quoteForJS(scriptsJSON),
-		opts.SettleDelay.Milliseconds(),
-	)
+	prepareJS := fmt.Sprintf(jsPrepareTemplate, quoteForJS(scriptsJSON))
+	measureJS := fmt.Sprintf(jsMeasureTemplate, quoteForJS(padJSON))
 
-	var rawResult string
+	var prepareOK bool
+	var rawJSON string
 	err = chromedp.Run(
 		tabCtx,
 		chromedp.EmulateViewport(int64(opts.ViewportWidth), int64(opts.ViewportHeight)),
 		chromedp.Navigate("about:blank"),
 		setDocumentContent(in),
-		chromedp.Evaluate(js, &rawResult, chromedp.EvalAsValue),
+		chromedp.Evaluate(prepareJS, &prepareOK),
+		chromedp.Sleep(opts.SettleDelay),
+		chromedp.Evaluate(measureJS, &rawJSON),
 	)
 	if err != nil {
 		return ResizeResult{}, xerrors.NewRetryableError(fmt.Errorf("render: chromedp evaluate: %w", err))
 	}
-
 	var parsed jsResult
-	if decodeErr := json.Unmarshal([]byte(rawResult), &parsed); decodeErr != nil {
-		return ResizeResult{}, xerrors.NewRetryableError(fmt.Errorf("render: decode jsResult: %w", decodeErr))
+	if decodeErr := json.Unmarshal([]byte(rawJSON), &parsed); decodeErr != nil {
+		return ResizeResult{}, xerrors.NewRetryableError(fmt.Errorf("render: decode jsResult (%q): %w", rawJSON, decodeErr))
 	}
 
 	if opts.Convert == "svg" {
