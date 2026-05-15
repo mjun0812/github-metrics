@@ -82,6 +82,18 @@ jobs:
       - name: go test -race
         run: go test -race ./...
 
+  compliance:
+    name: compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: compliance (no unadopted plugin refs, no removed sentinels, org_repo ignored)
+        run: go test ./tests/compliance/...
+
   smoke-macos:
     name: smoke-macos
     runs-on: macos-latest
