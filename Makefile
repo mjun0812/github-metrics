@@ -20,7 +20,8 @@ GOVULNCHECK_VERSION   := latest
 GOFUMPT_VERSION       := latest
 LEFTHOOK_VERSION      := latest
 
-.PHONY: all build test test-race lint vet bench gen docker e2e \
+.PHONY: all build test test-chromedp test-race lint vet bench gen \
+        gen-octicons verify-octicons docker e2e \
         tools hooks-install hooks-run hooks-uninstall \
         check-compat sync-assets clean help
 
@@ -30,11 +31,14 @@ help:
 	@echo "Targets:"
 	@echo "  build               Build cmd/metrics-action and cmd/metrics-cli into bin/"
 	@echo "  test                Run unit tests (go test ./...)"
+	@echo "  test-chromedp       Run chromedp-tagged tests (requires chromium; set METRICS_CHROME_PATH)"
 	@echo "  test-race           Run tests with the race detector"
 	@echo "  vet                 Run go vet ./..."
 	@echo "  lint                Run golangci-lint and govulncheck"
 	@echo "  bench               Run benchmarks (go test -bench=. -run=^$$)"
 	@echo "  gen                 Run code generation (go generate ./...)"
+	@echo "  gen-octicons        Regenerate assets/octicons/data.json from @primer/octicons"
+	@echo "  verify-octicons     Ensure committed assets/octicons/data.json matches gen-octicons output"
 	@echo "  docker              Build the production Docker image (placeholder; T-126 owns the impl)"
 	@echo "  e2e                 Run end-to-end integration tests (placeholder; T122 owns the impl)"
 	@echo "  tools               Install developer tooling (golangci-lint, govulncheck, gofumpt, lefthook)"
@@ -54,6 +58,13 @@ $(BIN_DIR)/%: cmd/%/main.go
 test:
 	$(GO) test ./...
 
+# Runs the chromedp-tagged tests (svg.Resize, Browser lifecycle, etc).
+# Requires a chromium binary; set METRICS_CHROME_PATH or rely on PATH
+# auto-detection. Default `make test` deliberately skips these so
+# contributors without chromium installed stay green.
+test-chromedp:
+	$(GO) test -tags=chromedp ./...
+
 test-race:
 	$(GO) test -race ./...
 
@@ -70,6 +81,20 @@ bench:
 gen:
 	$(GO) generate ./...
 	$(GO) run ./internal/tools/gen-graphql
+
+# Regenerate assets/octicons/data.json from the npm-installed
+# @primer/octicons build/data.json. Requires `npm install --no-save
+# @primer/octicons` to have populated node_modules/ beforehand.
+gen-octicons:
+	$(GO) run ./internal/tools/gen-octicons \
+	  -in node_modules/@primer/octicons/build/data.json \
+	  -out assets/octicons/data.json
+
+# Verify the committed octicons asset is byte-identical to what
+# gen-octicons produces from the current upstream. Used in CI to catch
+# stale artifacts when @primer/octicons gets bumped.
+verify-octicons: gen-octicons
+	git diff --exit-code assets/octicons/data.json
 
 docker:
 	@echo "docker target placeholder - implemented in T-126 (M10)"

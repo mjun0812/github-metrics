@@ -82,6 +82,22 @@ jobs:
       - name: go test -race
         run: go test -race ./...
 
+  test-chromedp:
+    name: test-chromedp
+    runs-on: ubuntu-latest
+    container:
+      image: chromedp/headless-shell:latest
+    env:
+      METRICS_CHROME_PATH: /headless-shell/headless-shell
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: go test -tags=chromedp
+        run: make test-chromedp
+
   compliance:
     name: compliance
     runs-on: ubuntu-latest
