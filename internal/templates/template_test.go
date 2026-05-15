@@ -18,10 +18,14 @@ type fakeTemplate struct {
 	run  func(ctx context.Context, pc *templates.PartialContext) (string, error)
 }
 
-func (t *fakeTemplate) Name() string                       { return t.name }
+func (t *fakeTemplate) Name() string { return t.name }
+
 func (t *fakeTemplate) Metadata() *config.TemplateMetadata { return t.meta }
-func (t *fakeTemplate) FS() fs.FS                          { return t.fsys }
+
+func (t *fakeTemplate) FS() fs.FS { return t.fsys }
+
 func (t *fakeTemplate) Check(_ map[string]any, _, _ string) error { return nil }
+
 func (t *fakeTemplate) Run(ctx context.Context, pc *templates.PartialContext) (string, error) {
 	if t.run == nil {
 		return "", nil
