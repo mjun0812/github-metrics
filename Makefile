@@ -101,7 +101,7 @@ hooks-uninstall:
 	fi
 
 check-compat:
-	@echo "check-compat placeholder - implemented in T058 (Phase 8)"
+	$(GO) run ./internal/tools/check-compat
 
 sync-assets:
 	./scripts/sync-assets.sh
