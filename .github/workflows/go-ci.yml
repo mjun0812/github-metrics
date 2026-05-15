@@ -56,9 +56,10 @@ jobs:
           cache: true
       - uses: golangci/golangci-lint-action@v6
         with:
-          # v1.64.x is built against Go 1.24 and matches the runner pin
-          # above. Update both together when bumping toolchains.
-          version: v1.64.8
+          # v2.x line is built with newer Go toolchains and is needed
+          # because errgroup (x/sync) bumps the module's `go` directive
+          # past 1.24. Update in lockstep with the runner Go pin above.
+          version: v2.1.0
           args: --timeout=10m
 
   vuln:
