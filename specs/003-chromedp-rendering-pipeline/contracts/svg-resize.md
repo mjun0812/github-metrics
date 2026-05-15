@@ -26,48 +26,68 @@ func (b *Browser) Resize(ctx context.Context, in string, opts ResizeOpts) (Resiz
 
 ### 2.1 本体 (JS 文字列)
 
-`docs/design/13-appendix.md §G` のスクリプトを **そのまま** chromedp の `chromedp.Evaluate` に渡す。`padding` と `scripts` は Go 側で `json.Marshal` して引数バインドする。
+`docs/design/13-appendix.md §G` の upstream puppeteer スクリプトを基にしつつ、**実装では prepare → Sleep → measure の 3 ステップに分割**する。理由: Runtime.evaluate の `awaitPromise` が `JSON.stringify` 返却で modern Chrome (137+) 上で不安定に振る舞ったため、settle delay を chromedp 側 (`chromedp.Sleep`) で駆動し JS はすべて同期にした (T026 impl note 参照)。padding と scripts は Go 側で `json.Marshal` → `quoteForJS` でテンプレートに直埋めする (`chromedp.Evaluate` の args bind は使わない)。
+
+#### Prepare JS (`jsPrepareTemplate`)
 
 ```javascript
-async (padding, scripts) => {
-  // 1. ユーザー任意 JS の実行
+(() => {
+  const scripts = JSON.parse(<scriptsJSON>);
   for (const script of scripts) {
     try {
-      await new Function("document", `return (async () => {${script}})()`)(document);
+      new Function("document", script)(document);  // sync evaluation
     } catch (e) {
-      console.debug(`script error: ${e}`);
+      console.debug("script error: " + e);
     }
   }
-
-  // 2. アニメーション一時停止
   const svg = document.querySelector("svg");
-  const animated = !svg.classList.contains("no-animations");
-  if (animated) svg.classList.add("no-animations");
-
-  // 3. レイアウト安定待機
-  await new Promise(r => setTimeout(r, SETTLE_MS));
-
-  // 4. 計測
-  let { y: height, width } = document.querySelector("svg #metrics-end").getBoundingClientRect();
-
-  // 5. padding 適用
-  height = Math.max(1, Math.ceil(height * padding.height + padding.absolute.height));
-  width  = Math.max(1, Math.ceil(width  * padding.width  + padding.absolute.width));
-
-  // 6. height 書き換え (auto は維持)
-  if (svg.getAttribute("height") !== "auto") svg.setAttribute("height", height);
-
-  // 7. 復帰
-  if (animated) svg.classList.remove("no-animations");
-
-  return {
-    resized: new XMLSerializer().serializeToString(svg),
-    width, height
-  };
-}
+  if (!svg) throw new Error("no <svg> root in document");
+  if (!svg.classList.contains("no-animations")) {
+    svg.classList.add("no-animations");
+    svg.dataset.metricsAnimationsToggled = "1";
+  }
+  return true;
+})()
 ```
 
-`SETTLE_MS` は `opts.SettleDelay.Milliseconds()` (既定 2400) で Go 側 string format して埋め込む。
+#### Settle (Go 側 `chromedp.Sleep(opts.SettleDelay)`)
+
+JS 内では待機しない。`chromedp.Sleep(SettleDelay)` で外側から駆動。
+
+#### Measure JS (`jsMeasureTemplate`)
+
+```javascript
+(() => {
+  const padding = JSON.parse(<paddingJSON>);
+  const svg = document.querySelector("svg");
+  if (!svg) throw new Error("no <svg> root in document at measurement time");
+  const endNode = svg.querySelector("#metrics-end");
+  if (!endNode) throw new Error("missing #metrics-end measurement anchor");
+
+  // height は #metrics-end の y を SVG ルートの y で減算して算出。
+  // width は SVG ルートの bbox から取る (#metrics-end は空 <g> で
+  // bbox 幅が 0 になる Blink 動作への対応)。
+  const svgRect = svg.getBoundingClientRect();
+  const endRect = endNode.getBoundingClientRect();
+  let height = endRect.y - svgRect.y;
+  let width  = svgRect.width;
+
+  height = Math.max(1, Math.ceil(height * padding.height + padding.absoluteHeight));
+  width  = Math.max(1, Math.ceil(width  * padding.width  + padding.absoluteWidth));
+  if (svg.getAttribute("height") !== "auto") svg.setAttribute("height", String(height));
+  if (svg.dataset.metricsAnimationsToggled === "1") {
+    svg.classList.remove("no-animations");
+    delete svg.dataset.metricsAnimationsToggled;
+  }
+  return JSON.stringify({
+    resized: new XMLSerializer().serializeToString(svg),
+    width: width,
+    height: height,
+  });
+})()
+```
+
+返却値は **JSON 文字列**として受け取り、Go 側で `json.Unmarshal` する。これは Runtime.evaluate が object を返したとき Go 側に object のまま渡る (string の想定が崩れる) 挙動を避けるための workaround。
 
 ### 2.2 chromedp Tasks 構成
 
@@ -77,22 +97,26 @@ tabCtx, cancel, err := b.NewTab(ctx)
 if err != nil { return ResizeResult{}, err }
 defer cancel()
 
-var result jsResult
+var prepareOK bool
+var rawJSON string
 err = chromedp.Run(tabCtx,
-    chromedp.EmulateViewport(int64(width), int64(height)),
+    chromedp.EmulateViewport(int64(opts.ViewportWidth), int64(opts.ViewportHeight)),
     chromedp.Navigate("about:blank"),
-    chromedp.ActionFunc(func(ctx context.Context) error {
-        return page.SetDocumentContent(rootFrameID(ctx), in).Do(ctx)
-    }),
-    chromedp.Evaluate(jsBody, &result,
-        chromedp.EvalAsValue,
-        withArgs(paddingArg, scriptsArg)),
+    setDocumentContent(in),               // CDP page.SetDocumentContent
+    chromedp.Evaluate(prepareJS, &prepareOK),
+    chromedp.Sleep(opts.SettleDelay),      // settle delay は Go 側で駆動
+    chromedp.Evaluate(measureJS, &rawJSON),
 )
-if err != nil { return ResizeResult{}, &xerrors.RetryableError{Err: err} }
+if err != nil { return ResizeResult{}, xerrors.NewRetryableError(err) }
 
-if opts.Convert == "" || opts.Convert == "svg" {
+var parsed jsResult
+if err := json.Unmarshal([]byte(rawJSON), &parsed); err != nil {
+    return ResizeResult{}, xerrors.NewRetryableError(err)
+}
+
+if opts.Convert == "svg" {  // normalize は "" を "svg" に置換済み
     return ResizeResult{
-        Body: []byte(result.Resized), Width: result.Width, Height: result.Height,
+        Body: []byte(parsed.Resized), Width: parsed.Width, Height: parsed.Height,
         MIME: "image/svg+xml",
     }, nil
 }

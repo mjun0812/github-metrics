@@ -6,7 +6,7 @@
 
 ## E-001: `render.Browser` (chromedp ラッパ)
 
-**役割**: chromedp の `ExecAllocator` + 親 context を保持し、`NewTab` で子 context を発行する。N 回利用後に `Recycle()` で再生成する。M3 で初登場、M4 plugin scrape (`topics` / `starlists`) も同じ Browser を使い回す前提。
+**役割**: chromedp の `ExecAllocator` + 親 context を保持し、`NewTab(ctx) (tabCtx, cancel, err)` で子 tab context を発行する。N 回利用後に内部 recycle (mutex 内 `recycleLocked()`) で allocCtx を再生成する。M3 で初登場、M4 plugin scrape (`topics` / `starlists`) も同じ Browser を使い回す前提。
 
 **定義**:
 

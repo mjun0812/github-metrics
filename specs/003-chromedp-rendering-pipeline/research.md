@@ -24,20 +24,22 @@
 
 ## R-003: chromedp 起動 flag セット
 
-- **Decision**: `--no-sandbox`, `--disable-extensions`, `--disable-dev-shm-usage`, `--disable-gpu`, `--single-process` を既定で渡す。`METRICS_CHROME_PATH` 環境変数が設定されていれば `ExecPath` として尊重する。
-- **Rationale**: Docker (Action runner) 環境では `/dev/shm` が小さく `--disable-dev-shm-usage` 必須、root 実行で `--no-sandbox` 必須、ARM 環境では `--single-process` で安定。上流 (`docs/design/04-rendering.md §3.1`) と同じセット。
+- **Decision** (M3 final, T026 で改訂): デフォルトセットを `--no-sandbox`, `--disable-extensions`, `--disable-dev-shm-usage`, `--disable-gpu`, `--no-first-run`, `--no-default-browser-check` に確定する。`--single-process` は **デフォルト除外** とし、Docker/ARM 安定性が必要な caller が `BrowserOpts.ExtraFlags` で opt-in する形にする。`METRICS_CHROME_PATH` 環境変数が設定されていれば `ExecPath` として尊重する。
+- **Rationale**: 当初は上流に揃えて `--single-process` も既定 ON にする予定だったが、T026 (実 chromedp 起動テスト) で Chrome 137+ desktop が `--single-process` 下で `Network.enable` に失敗することを確認 (`context canceled` で chromedp.Run が落ちる)。Docker headless-shell では引き続き安全に使えるため、ExtraFlags 経由の opt-in に格下げした。`/dev/shm` 対策と root 実行対応 (no-sandbox) は変わらず必須。
 - **Alternatives considered**:
   - `--headless=new` を追加: chromedp が既定で headless mode を立てるため不要。明示すると古い chromium (M120 未満) で起動失敗。
   - `--remote-debugging-port=0` を固定: chromedp が自動割り当てするので不要。
   - WebSocket 経由で外部 chrome 接続: ローカル開発と Docker で構成が分岐する複雑度に見合うメリットなし。
+  - `--single-process` を既定維持: T026 で Chrome 137+ で破綻するため却下。
 
 ## R-004: SVG リサイズの計測戦略
 
-- **Decision**: 上流の puppeteer 評価スクリプト (`docs/design/13-appendix.md §G`) を **JS 文字列のまま** chromedp の `chromedp.Evaluate` に渡し、`<svg> #metrics-end` の `getBoundingClientRect()` から `(y, width)` を取得する。`y` を高さ、`width` をそのまま幅とする (`#metrics-end` を SVG 末尾に置く前提)。
-- **Rationale**: 計測ロジックを Go 側で書き直すと「実ブラウザの layout 結果」を再現できず DOM 同等性が崩れる。`evaluate` で JS を投げ込む方式は puppeteer/chromedp 間で意味論が同じため、上流互換性 (constitution 原則 II) を担保する最短ルート。
+- **Decision** (M3 final, T026 で改訂): 計測 JS を **prepare → Sleep → measure の 3 ステップに分割**する。prepare で user scripts を同期実行 (`new Function("document", script)(document)`) し no-animations を一時付与、`chromedp.Sleep(opts.SettleDelay)` で外側から待機、measure で `#metrics-end` 要素の `getBoundingClientRect().y` を SVG ルート bbox の `y` で減算して height を、`width` は SVG ルートの `getBoundingClientRect().width` から取得する。measure JS は結果を `JSON.stringify(...)` で返し、Go 側で `json.Unmarshal` する。
+- **Rationale**: 当初は upstream puppeteer の async IIFE (`(async () => { await sleep; await ... })()`) を Runtime.evaluate の `awaitPromise` で受ける設計だったが、T026 実検証で Chrome 137+ が `JSON.stringify` の戻り値を string ではなく object として deepSerialize し、Go 側の `*string` バインドが失敗することを確認した。settle delay を chromedp.Sleep に移し、measure JS を同期化することで安定して string を受け取れるようにした。また `#metrics-end` (空 `<g>`) の bbox `width` が Blink で 0 になることを確認したため、`width` は SVG ルートから取る。`height` は anchor 位置のみから算出し、auto-height SVG への対応 (FR-007) は維持。
 - **Alternatives considered**:
   - chromedp の `dom.GetBoxModel` で BoundingClientRect 取得: SVG element に対する CDP の box model はブラウザによって挙動が異なるため安定しない。
   - Go 側で SVG をパースして CSS 計算: SVG 内の CSS は `@font-face` / `width: 100%` 等を含み、純粋な Go 実装で再現するのは現実的でない。
+  - awaitPromise + IIFE 維持: T026 で不安定が確認されたため却下。
 
 ## R-005: padding パース規則
 

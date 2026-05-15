@@ -1,8 +1,11 @@
 package render
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"image/jpeg"
+	"image/png"
 	"testing"
 
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
@@ -144,6 +147,45 @@ func TestFakeRenderer_NewFakeRenderer_ZeroValueIsUsable(t *testing.T) {
 	}
 	if res.Width != 1 || res.Height != 1 {
 		t.Errorf("default Width/Height = (%d,%d), want (1,1)", res.Width, res.Height)
+	}
+}
+
+// TestFakeRenderer_PNG_DecodableByStdlib closes the loop on
+// renderer.go's fakePNG: the bytes MUST actually round trip through
+// image/png.Decode so callers (and the integration test that builds
+// on FakeRenderer) can decode them downstream. Without this anchor
+// the magic-header-only checks elsewhere would mask a broken stream.
+func TestFakeRenderer_PNG_DecodableByStdlib(t *testing.T) {
+	t.Parallel()
+	f := &FakeRenderer{}
+	res, err := f.Resize(context.Background(), "", ResizeOpts{Convert: "png"})
+	if err != nil {
+		t.Fatalf("Resize: %v", err)
+	}
+	img, err := png.Decode(bytes.NewReader(res.Body))
+	if err != nil {
+		t.Fatalf("png.Decode rejected FakeRenderer output: %v", err)
+	}
+	if b := img.Bounds(); b.Dx() < 1 || b.Dy() < 1 {
+		t.Errorf("decoded PNG bounds = %v, want non-empty", b)
+	}
+}
+
+// TestFakeRenderer_JPEG_DecodableByStdlib mirrors the PNG decode
+// anchor for the JPEG branch.
+func TestFakeRenderer_JPEG_DecodableByStdlib(t *testing.T) {
+	t.Parallel()
+	f := &FakeRenderer{}
+	res, err := f.Resize(context.Background(), "", ResizeOpts{Convert: "jpeg"})
+	if err != nil {
+		t.Fatalf("Resize: %v", err)
+	}
+	img, err := jpeg.Decode(bytes.NewReader(res.Body))
+	if err != nil {
+		t.Fatalf("jpeg.Decode rejected FakeRenderer output: %v", err)
+	}
+	if b := img.Bounds(); b.Dx() < 1 || b.Dy() < 1 {
+		t.Errorf("decoded JPEG bounds = %v, want non-empty", b)
 	}
 }
 

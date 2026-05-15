@@ -109,6 +109,38 @@ func TestFormatXML_Idempotent(t *testing.T) {
 	}
 }
 
+// TestFormatXML_XmlnsRoundtrip is the regression anchor for the
+// "FormatXML drops xmlns" bug: the SVG root carries xmlns via the
+// default namespace, and the formatter MUST keep it so the result is
+// still a valid SVG document. Without the fix, the root opens as
+// `<svg ...>` (no xmlns) and downstream consumers refuse the file.
+func TestFormatXML_XmlnsRoundtrip(t *testing.T) {
+	t.Parallel()
+	in := `<svg xmlns="http://www.w3.org/2000/svg"><g/></svg>`
+	out, err := FormatXML(in)
+	if err != nil {
+		t.Fatalf("FormatXML: %v", err)
+	}
+	if !strings.Contains(out, `xmlns="http://www.w3.org/2000/svg"`) {
+		t.Errorf("xmlns attribute should survive FormatXML; got %q", out)
+	}
+	// Inner elements MUST NOT re-emit the inherited default namespace.
+	innerGCount := strings.Count(out, `<g xmlns=`)
+	if innerGCount != 0 {
+		t.Errorf("inner element should inherit default namespace silently; got %d redundant xmlns", innerGCount)
+	}
+	// Round-trip: feed the output back into FormatXML and check
+	// xmlns survives the second pass too (idempotency on this
+	// dimension).
+	out2, err := FormatXML(out)
+	if err != nil {
+		t.Fatalf("FormatXML round 2: %v", err)
+	}
+	if !strings.Contains(out2, `xmlns="http://www.w3.org/2000/svg"`) {
+		t.Errorf("xmlns must survive the second FormatXML pass; got %q", out2)
+	}
+}
+
 // TestFormatXML_Empty preserves the empty/whitespace passthrough
 // contract (FR-018 fallback expects unmodified input).
 func TestFormatXML_Empty(t *testing.T) {

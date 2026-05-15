@@ -60,15 +60,27 @@ type Result struct {
 	// values for the corresponding MIME (see [Result.MIME]):
 	//
 	//   application/json   when Request.Format == "json"
-	//   image/svg+xml      when Request.Format == "svg"
-	//   image/png          when Request.Format == "png" (M2: contains
-	//                                                    SVG bytes plus
-	//                                                    a warn log;
-	//                                                    chromedp
-	//                                                    conversion
-	//                                                    lands in M3)
+	//   image/svg+xml      when Request.Format == "svg"  (Template.Run
+	//                                                     output after
+	//                                                     the M3
+	//                                                     decoration
+	//                                                     pipeline +
+	//                                                     chromedp
+	//                                                     svg.Resize)
+	//   image/png          when Request.Format == "png"  (real PNG
+	//                                                     bytes from
+	//                                                     chromedp
+	//                                                     page.CaptureScreenshot,
+	//                                                     M3+)
 	//   image/jpeg         when Request.Format == "jpeg" (same as PNG
-	//                                                    for M2)
+	//                                                     with JPEG
+	//                                                     format)
+	//
+	// On Renderer failure for png / jpeg paths the dispatch returns
+	// (nil, "") and appends the chromedp error to Result.Errors so
+	// callers can detect the failure via the empty Output (FR-018).
+	// For svg the dispatch falls back to the un-resized decorated
+	// SVG bytes.
 	Output []byte
 	// MIME is the IANA type that matches Output. Never empty when
 	// Output is set; never set when Output is empty.

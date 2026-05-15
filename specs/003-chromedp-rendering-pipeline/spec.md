@@ -93,16 +93,16 @@ GitHub Action 利用者が classic テンプレート出力 SVG に対し以下�
 
 #### chromedp ラッパ / svg.Resize / PNG·JPEG (US1, T-031 + T-032 + T-039)
 
-- **FR-001**: System MUST `internal/render/chrome.go` に `Browser` 構造体を実装する: `New(opts) (*Browser, error)`, `NewTab(ctx) (*Tab, error)`, `Close() error`、内部で `chromedp.NewExecAllocator` を保持。
-- **FR-002**: System MUST 起動 flag に `--no-sandbox`, `--disable-extensions`, `--disable-dev-shm-usage`, `--disable-gpu`, `--single-process` を渡し、`METRICS_CHROME_PATH` 環境変数が空でなければ ExecPath として使用する。
+- **FR-001**: System MUST `internal/render/chrome.go` に `Browser` 構造体を実装する: `New(opts BrowserOpts) (*Browser, error)`、`NewTab(ctx context.Context) (context.Context, context.CancelFunc, error)`、`Close() error`、内部で `chromedp.NewExecAllocator` を保持。`NewTab` は呼び出し側に tab context と cancel func を返し、cancel は defer 想定。
+- **FR-002**: System MUST 起動 flag のデフォルトセットに `--no-sandbox`, `--disable-extensions`, `--disable-dev-shm-usage`, `--disable-gpu`, `--no-first-run`, `--no-default-browser-check` を含め、`METRICS_CHROME_PATH` 環境変数が空でなければ ExecPath として使用する。`--single-process` は **デフォルト除外** とし、Docker / ARM 安定性が必要な caller が `BrowserOpts.ExtraFlags` で opt-in できるようにする (Chrome 137+ desktop で `Network.enable` を破壊するため。経緯は実装の chrome.go inline doc 参照)。
 - **FR-003**: System MUST `Browser.NewTab` を N 回呼び出すごとに (N は既定 200、上流 `svg.resize.browser` 互換) allocCtx を再生成する recycle 機構を持つ。再生成中の `NewTab` 呼び出しはブロックしてよい。
 - **FR-004**: System MUST `internal/render/svg_resize.go` に `Resize(ctx context.Context, rendered string, opts ResizeOpts) (ResizeResult, error)` を実装する。`ResizeResult` は `{Body []byte, Width int, Height int, MIME string}`。
-- **FR-005**: System MUST chromedp に `EmulateViewport(980, 980)` 相当を渡し、`page.SetContent(rendered)` 後、ユーザー任意 scripts (extras flag で有効化された配列) を順次 `(async () => { ... })()` 形式で実行する。
-- **FR-006**: System MUST 計測時に `svg` クラスに `no-animations` を一時付与、2.4 秒待機、`#metrics-end` 要素の `getBoundingClientRect()` から `(y, width)` を取得する (`docs/design/13-appendix.md §G` の JS 評価スクリプトと同等の意味論)。
+- **FR-005**: System MUST chromedp に `EmulateViewport(980, 980)` 相当を渡し、`page.SetDocumentContent` 相当で SVG を注入したのち、ユーザー任意 scripts (extras flag で有効化された配列) を `new Function("document", script)(document)` 形式で順次同期実行する。SettleDelay は `chromedp.Sleep` で JS の外側から駆動する (Runtime.evaluate の awaitPromise が JSON.stringify 返却で modern Chrome 上で不安定なため、prepare → Sleep → measure の 3 ステップに分割した)。
+- **FR-006**: System MUST 計測前に `svg` クラスへ `no-animations` を一時付与、`SettleDelay` (既定 2.4 秒) 待機、`#metrics-end` 要素の `getBoundingClientRect().y` を SVG ルート bbox の `y` で減算して `height` を、`width` は **SVG ルートの `getBoundingClientRect().width`** から取得する (`#metrics-end` が空 `<g>` の場合 bbox `width` が 0 になる Blink 現実挙動への対応)。JS 評価スクリプトの実体は実装 (`internal/render/svg_resize.go`) の `jsPrepareTemplate` / `jsMeasureTemplate` 参照。
 - **FR-007**: System MUST padding を `docs/design/13-appendix.md §G.1` のアルゴリズムで `(width, height) → ceil(measured_dim * (1 + relative/100) + absolute)` に変換し、`<svg height="...">` を書き換える。`<svg height="auto">` ノードは書き換えない。
-- **FR-008**: System MUST `opts.Convert ∈ {"", "svg", "png", "jpeg"}` を扱う。空文字または `"svg"` のときは XMLSerializer 相当の `outerHTML` を bytes として返し `MIME = "image/svg+xml"`。`"png"` / `"jpeg"` のときは `page.Screenshot(clip={0,0,width,height}, omitBackground=true)` で画像 byte slice を返し `MIME = "image/png" | "image/jpeg"`。
+- **FR-008**: System MUST `opts.Convert ∈ {"", "svg", "png", "jpeg"}` を扱う。空文字または `"svg"` のときは XMLSerializer 相当の `outerHTML` を bytes として返し `MIME = "image/svg+xml"`。`"png"` / `"jpeg"` のときは `page.CaptureScreenshot(clip={0,0,width,height}, format=convert, omitBackground=true)` で画像 byte slice を返し `MIME = "image/png" | "image/jpeg"`。
 - **FR-009**: System MUST `engine.dispatchOutput` を改修し、`Format ∈ {svg, png, jpeg}` のとき (a) `Template.Run` の結果文字列を取得、(b) `render.Resize` を呼んで `(Body, MIME)` を取得、(c) M2 の `image/svg+xml` 直返しを置き換える。M2 で発火していた `chromedp conversion lands in M3` warn ログは除去する。
-- **FR-010**: System MUST `engine.Deps` (依存注入) に `Browser` を追加するか、Compute 内で初回利用時に `Browser.New` を遅延起動する。テスト時は `RenderFunc func(ctx, in string, opts ResizeOpts) (ResizeResult, error)` の関数差し替えで chromedp を回避できる。
+- **FR-010**: System MUST `engine.Deps` (依存注入) に `Render render.Renderer` フィールドを追加する。`Render == nil` の場合 Compute は初回利用時に `render.Browser.New` を遅延起動して `defer Close()` する (テスト / SDK 利用者の便宜)。テスト時は `*render.FakeRenderer` を `Deps.Render` に注入することで chromedp 実起動を回避できる (Renderer は 1 メソッド interface)。
 
 #### svg.Hash (US2, T-033)
 
