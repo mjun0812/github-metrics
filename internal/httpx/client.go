@@ -199,7 +199,7 @@ func (c *Client) do(req *retryablehttp.Request) ([]byte, *http.Response, error) 
 	if err != nil {
 		return nil, nil, fmt.Errorf("httpx: %s %s: %w", req.Method, req.URL.String(), err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, resp, fmt.Errorf("httpx: read body: %w", err)

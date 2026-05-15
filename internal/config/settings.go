@@ -44,8 +44,11 @@ type Settings struct {
 
 // Ratelimiter mirrors the upstream express-rate-limit fields the project consumes.
 type Ratelimiter struct {
-	Max      int           `json:"max"`
-	WindowMs time.Duration `json:"windowMs"`
+	Max int `json:"max"`
+	// Window keeps the upstream "windowMs" JSON tag (constitution
+	// principle I) but uses an idiomatic Go field name without the
+	// unit-specific suffix that staticcheck ST1011 flags.
+	Window time.Duration `json:"windowMs"`
 }
 
 // OptimizeFlag accepts either a bool or a list of optimization passes
@@ -123,30 +126,40 @@ func (m MockFlag) MarshalJSON() ([]byte, error) {
 // upstream-compatible keys. They are intentionally simple structs so
 // adding a new key is a one-line change.
 
+// Hosted records the optional "hosted by" attribution displayed in the
+// upstream web instance footer.
 type Hosted struct {
 	By   string `json:"by"`
 	Link string `json:"link"`
 }
 
+// OAuth carries upstream OAuth client credentials. Unused by M1 (Web
+// is not adopted) but the keys are retained per constitution principle I.
 type OAuth struct {
 	ID     string `json:"id"`
 	Secret string `json:"secret"`
 	URL    string `json:"url"`
 }
 
+// APISettings overrides the default GitHub REST and GraphQL endpoints.
 type APISettings struct {
 	REST    string `json:"rest"`
 	GraphQL string `json:"graphql"`
 }
 
+// Control holds the upstream control-plane token (Web feature).
 type Control struct {
 	Token string `json:"token"`
 }
 
+// CommunitySettings enumerates the community-template names a Web
+// instance is willing to download. Unused by M1.
 type CommunitySettings struct {
 	Templates []string `json:"templates"`
 }
 
+// TemplatesSettings configures which named templates are enabled and
+// which one is the engine's default.
 type TemplatesSettings struct {
 	Default string   `json:"default"`
 	Enabled []string `json:"enabled"`

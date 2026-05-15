@@ -11,6 +11,8 @@ import "sync"
 // rendering metrics for. The base plugin branches on this value.
 type AccountKind string
 
+// AccountKind values the engine branches on when deciding which plugin
+// dispatch path to take (user / organization / repository).
 const (
 	AccountUser         AccountKind = "user"
 	AccountOrganization AccountKind = "organization"
