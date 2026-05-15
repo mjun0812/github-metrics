@@ -82,6 +82,32 @@ jobs:
       - name: go test -race
         run: go test -race ./...
 
+  test-chromedp:
+    name: test-chromedp
+    runs-on: ubuntu-latest
+    container:
+      image: chromedp/headless-shell:latest
+    env:
+      METRICS_CHROME_PATH: /headless-shell/headless-shell
+    steps:
+      # The chromedp/headless-shell image is minimal and ships
+      # without `make` or `ca-certificates`. apt-get is available
+      # because the base is debian-slim; install the cert bundle so
+      # `go mod download` can verify the GoSumDB / proxy TLS chain.
+      - name: Install CA certificates
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      # `-tags=chromedp` is what the Makefile target sets too; the
+      # Makefile is unused here because the image lacks `make`.
+      - name: go test -tags=chromedp
+        run: go test -tags=chromedp ./...
+
   compliance:
     name: compliance
     runs-on: ubuntu-latest

@@ -10,10 +10,17 @@ package assets
 
 import "embed"
 
-//go:embed all:plugins all:templates version.txt
+//go:embed all:plugins all:templates octicons/data.json version.txt
 var fsys embed.FS
 
 // FS returns the embedded filesystem rooted at the assets/ directory.
 // Callers (typically [config.LoadMetadata]) walk plugins/ and
 // templates/ from this root.
 func FS() embed.FS { return fsys }
+
+// OcticonData returns the embedded primer/octicons data.json that
+// gen-octicons produces. internal/render.ReplaceOcticons reads it
+// once at first use.
+func OcticonData() ([]byte, error) {
+	return fsys.ReadFile("octicons/data.json")
+}
