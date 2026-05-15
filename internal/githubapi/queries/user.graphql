@@ -1,0 +1,16 @@
+query User($login: String!) {
+  user(login: $login) {
+    databaseId
+    id
+    login
+    name
+    location
+    createdAt
+    avatarUrl
+    websiteUrl
+    twitterUsername
+    email
+    bio
+    company
+  }
+}

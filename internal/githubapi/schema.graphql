@@ -1,0 +1,58 @@
+# Minimal GitHub GraphQL v4 schema slice consumed by genqlient.
+#
+# We deliberately do NOT vendor the full upstream introspection dump (~3MB
+# and constantly drifting). Instead this file declares only the types
+# reachable from the queries under internal/githubapi/queries/. Adding a
+# new query is a two-step process:
+#   1. extend this schema with the new type / field definitions
+#   2. write the .graphql operation under internal/githubapi/queries/
+#   3. run `make gen` to regenerate graphql_gen.go
+#
+# Refreshing against a live GitHub schema is left as a follow-up (T035+;
+# `gh api graphql -F query=@introspection.graphql`).
+
+scalar DateTime
+scalar URI
+
+type Query {
+  user(login: String!): User
+  organization(login: String!): Organization
+  rateLimit: RateLimit
+}
+
+type User {
+  databaseId: Int
+  id: ID!
+  login: String!
+  name: String
+  location: String
+  createdAt: DateTime!
+  avatarUrl(size: Int): URI!
+  websiteUrl: URI
+  twitterUsername: String
+  email: String
+  bio: String
+  company: String
+}
+
+type Organization {
+  databaseId: Int
+  id: ID!
+  login: String!
+  name: String
+  location: String
+  createdAt: DateTime!
+  avatarUrl(size: Int): URI!
+  websiteUrl: URI
+  email: String
+  description: String
+}
+
+type RateLimit {
+  limit: Int!
+  remaining: Int!
+  resetAt: DateTime!
+  cost: Int!
+  used: Int!
+  nodeCount: Int!
+}
