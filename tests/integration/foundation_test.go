@@ -135,7 +135,7 @@ const (
 	}`
 )
 
-func newEngineDeps(t *testing.T, gqlBody map[string]string) (engine.Deps, *graphQLFixture) {
+func newEngineDeps(t testing.TB, gqlBody map[string]string) (engine.Deps, *graphQLFixture) {
 	t.Helper()
 	fixture := newGraphQLFixture()
 	for op, body := range gqlBody {

@@ -20,37 +20,46 @@ git switch 002-output-classic-json
 
 ```sh
 go test ./internal/engine/... -run TestMarshal -v
+go test ./tests/integration/... -run TestComputeJSON_OctocatGolden -v
 ```
 
 期待:
 
-- `TestMarshal_OctocatGolden` が `tests/golden/json/octocat.json` と一致
-- `TestMarshal_CircularPayload` が `"[Circular]"` を含む出力を返す
-- `TestMarshal_Errors` がトップレベル `errors` 配列を含む
+- `TestMarshal_TopLevelShape` が `account / user / config / computed / plugins / errors` の 6 トップレベルキーを返す
+- `TestMarshal_TokenNeverLeaks` で `config.Token` が `"(provided)"` にマスクされる
+- `TestMarshal_SelfReference` / `TestMarshal_MutualReference` / `TestMarshal_SliceCycle` で `"[Circular]"` を含む出力 (panic しない)
+- `TestComputeJSON_OctocatGolden` が `tests/golden/json/octocat.json` と一致
 
 ## 3. classic SVG 出力の確認 (US2)
 
 ```sh
 go test ./internal/templates/classic/... -v
+go test ./tests/integration/... -run TestComputeSVG_ClassicOctocatGolden -v
 ```
 
 期待:
 
-- `TestClassic_Run_OctocatGolden` が `tests/golden/classic/octocat.svg` と XML 正規化後 MD5 一致
-- `TestBaseHeader_Render` `TestIntroduction_StubsEmpty` `TestBaseActivityCommunity_Render` `TestBaseRepositories_Render` がそれぞれ partial の golden fragment と一致
-- `TestClassic_Check_AccountUnsupported` で `repository` account が `*InputError`
+- `TestClassic_Check_RepositoryRejected` が `repository` account に対し `*InputError`
+- `TestClassic_Check_PDFUnsupported` が `pdf` 形式に対し `*UnsupportedFormatError`
+- `TestBaseHeader_PopulatedEscapesName` が `<Octo & cat>` を `&lt;Octo &amp; cat&gt;` にエスケープ
+- `TestBaseRepositories_RendersCounts` が `250 repositories / 1.5k stargazers / 13 forks` を含む
+- `TestComputeSVG_ClassicOctocatGolden` が `tests/golden/classic/octocat.svg` と XML 正規化後 MD5 一致
 
 ## 4. engine 全体経路 (US3)
 
 ```sh
-go test ./tests/integration/... -run TestCompute -v
+go test ./tests/integration/... -run "TestComputeJSON_Default|TestComputeSVG_Classic$|TestComputePNG|TestComputeUnknownFormat|TestComputeSVG_NoTemplate" -v
 ```
 
-期待:
+期待 (`contracts/result-dispatch.md` §4 のトラスステーブルと完全対応):
 
-- `TestComputeJSON_DefaultFromTemplate` が `application/json` MIME を返す
-- `TestComputeSVG_Classic` が `image/svg+xml` MIME と `<svg` で始まる Output を返す
-- `TestComputePNG_M2WarnsAndReturnsSVG` が PNG MIME + SVG bytes + warn ログを返す
+- `TestComputeJSON_DefaultFromTemplate` (T026): `Format=""` + Template 未登録 → `application/json`
+- `TestComputeJSON_DefaultWhenNoopTemplate` (T026): `Template="noop"` → `application/json` (noop は metadata を持たないため fallback)
+- `TestComputeJSON_DefaultFromClassicMetadata` (T026): `Template="classic"` + `Format=""` → `image/svg+xml` (classic metadata.formats[0]="svg")
+- `TestComputeSVG_Classic` (T027): 明示的な `svg` 指定で `<svg` で始まる Output + `image/svg+xml`
+- `TestComputePNG_M2WarnsAndReturnsSVG` (T028): `format="png"` で `image/png` + SVG bytes + level=WARN ログ
+- `TestComputeUnknownFormat_Error` (T029): `format="bogus"` → `*UnsupportedFormatError`
+- `TestComputeSVG_NoTemplate_Errors` (T030): `format="svg"` + Template 未登録 → `*InputError{Field:"template"}`
 
 ## 5. 上流互換性の確認 (SC-001)
 
