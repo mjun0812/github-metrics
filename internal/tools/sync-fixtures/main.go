@@ -36,6 +36,7 @@ var safeLogin = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9-]{0,38}$`)
 
 func main() {
 	user := flag.String("user", "octocat", "test case login (matches ./org_repo/tests/cases/<user>.yml)")
+	full := flag.Bool("full", false, "enable all 21 adopted plugins (M4) via METRICS_FIXTURE_FULL=1 env to upstream npm test")
 	flag.Parse()
 
 	if !safeLogin.MatchString(*user) {
@@ -71,8 +72,7 @@ func main() {
 	// ./org_repo/tests/artifacts/<user>/metrics.json. The exact path
 	// depends on upstream conventions — refer to the README in
 	// ./org_repo/tests/ when adjusting.
-	cmd := exec.Command("npm", "test", "--silent", "--", "--grep", *user) //nolint:gosec // user passed safeLogin check
-	cmd.Dir = orgRepo
+	cmd := buildNpmCommand(orgRepo, *user, *full)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if runErr := cmd.Run(); runErr != nil {
@@ -99,6 +99,21 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("sync-fixtures: wrote %s (%d bytes)\n", dest, len(body))
+}
+
+// buildNpmCommand assembles the `npm test --grep <user>` invocation
+// for the upstream test runner. When full is true the
+// METRICS_FIXTURE_FULL=1 env var is appended so the upstream YAML
+// loader knows to enable every adopted M4 plugin. Extracted to allow
+// unit tests to assert the env / argv shape without spawning npm.
+func buildNpmCommand(orgRepo, user string, full bool) *exec.Cmd {
+	cmd := exec.Command("npm", "test", "--silent", "--", "--grep", user) //nolint:gosec // user passed safeLogin check upstream
+	cmd.Dir = orgRepo
+	cmd.Env = os.Environ()
+	if full {
+		cmd.Env = append(cmd.Env, "METRICS_FIXTURE_FULL=1")
+	}
+	return cmd
 }
 
 func findRepoRoot() (string, error) {

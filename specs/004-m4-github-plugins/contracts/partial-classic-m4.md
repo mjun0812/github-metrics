@@ -1,78 +1,94 @@
 # Contract: classic テンプレート partial の M4 拡張
 
-**Date**: 2026-05-16 | **Plan**: [../plan.md](../plan.md)
+**Date**: 2026-05-16 (revised during T005/T006 implementation) | **Plan**: [../plan.md](../plan.md)
 
 本書は classic テンプレートに採用 21 plugin の partial を組み込むための DOM 階層と命名規約を確定する。
+
+> **Implementation note (2026-05-16)**: M2 で classic テンプレートは **Go 関数ベースの partial** (`internal/templates/classic/partials/partials.go` 内に `BaseHeader` 等の `templates.PartialFunc` を定義し `partials.Lookup(name)` で取得) を採用済。本 spec の初版は `.svg.tmpl` text/template を想定していたが、M2 既存パターンに合わせて **Go 関数 + `_.json` 順序定義** で再構成する (constitution 原則 V「コードは Go」と整合)。
 
 ## 1. ファイル配置
 
 ```text
 internal/templates/classic/
-├── classic.go                   # 既存。21 plugin 分の partial 呼び出しを追加。
-├── classic.svg.tmpl             # 既存。トップレベル <svg> + <foreignObject> 構造。
-└── partials/                    # 新規ディレクトリ
-    ├── languages.svg.tmpl       # plugin 1 個 = partial 1 個 (21 partial)
-    ├── activity.svg.tmpl
-    ├── achievements.svg.tmpl
-    ├── repositories.svg.tmpl
-    ├── isocalendar.svg.tmpl
-    ├── calendar.svg.tmpl
-    ├── habits.svg.tmpl
-    ├── stars.svg.tmpl
-    ├── topics.svg.tmpl
-    ├── starlists.svg.tmpl
-    ├── people.svg.tmpl
-    ├── notable.svg.tmpl
-    ├── contributors.svg.tmpl
-    ├── reactions.svg.tmpl
-    ├── projects.svg.tmpl
-    ├── sponsors.svg.tmpl
-    ├── sponsorships.svg.tmpl
-    ├── stargazers.svg.tmpl
-    └── traffic.svg.tmpl
+├── classic.go                              # 既存。M4 で plugin partial dispatcher を追加。
+├── classic_test.go                         # 既存。M4 dispatcher 用 case を追加。
+└── partials/                               # 既存パッケージ。M2 で base.* partial を提供済。
+    ├── partials.go                         # 既存。BaseHeader / Introduction / BaseActivityCommunity / BaseRepositories。
+    ├── plugins.go                          # 新規 (T005)。pluginPartialOrder スライス + 21 個の PluginXxx 関数の skeleton を定義。
+    ├── text.go                             # 既存。EscapeXML / FormatCount 等の helper。
+    └── *_test.go                           # 既存 + M4 plugin 単位の追加テスト。
+
+assets/templates/classic/partials/
+└── _.json                                  # 既存。M2 の base.* slug を持つ。M4 で `plugin.<slug>` 21 個を追記。
 ```
 
 ## 2. partial の DOM 規約
 
-各 partial の output は 1 つの最上位 `<g>` 要素にラップされる:
+classic テンプレートは `<foreignObject>` 配下に HTML フローで partial を並べる (M2 既存)。M4 plugin partial も同方針で、各 partial の出力は **1 つの `<div>` ブロック** にラップされる:
 
-```svg
-<g class="plugin-{{name}}" data-plugin="{{name}}" transform="translate(0, {{offset}})">
-  <!-- plugin 固有の DOM -->
-</g>
+```html
+<div class="plugin-{{slug}}" data-plugin="{{slug}}">
+  <!-- plugin 固有の HTML / SVG 子要素 -->
+</div>
 ```
 
-- `class` は `plugin-<slug>` で全 plugin 共通の命名。CSS purge の対象クラス。
-- `data-plugin` 属性は SVG 出力後に DOM 解析 (data-changed mode、M6) で plugin 単位の diff を取るためのアンカー。
-- `transform` の `offset` は classic.go 側で `accum_height` から動的注入する (各 partial の Y 位置 = 前 partial の終端)。partial 内では相対座標で記述。
+- `class="plugin-<slug>"` は全 plugin 共通命名。CSS purge (M3) の対象クラス。
+- `data-plugin="<slug>"` 属性は data-changed mode (M6) で plugin 単位の DOM diff を取るためのアンカー。
+- レイアウト座標は不要。HTML block flow が縦方向に積み上げる。`transform="translate(0, ...)"` は classic では使わない MUST (foreignObject 配下なので SVG 座標系は要らない)。
 
 ## 3. classic.go の組み立て規約
 
+`classic.Run` の処理順:
+
 ```text
-1. base のトップレベル要素 (avatar / login / name / bio) を出力
-2. pc.Inputs を順に評価:
-   - plugin_languages    → partial languages を呼ぶ
-   - plugin_activity     → partial activity を呼ぶ
-   - ...
-3. 各 partial の戻り値 (string) を <g class="plugin-X" transform="translate(0, accum_y)"> で wrap
-4. accum_y += partial の bounding box height
-5. 全 partial 結合後、トップレベル <svg height="..."> を chromedp 計測 (M3 既存) で確定
+1. <svg> + <foreignObject> + <div class="items-wrapper"> を開く
+2. _.json の base.* partial を順に Lookup + 呼び出し (M2 既存)
+3. **M4 追加**: pluginPartialOrder 配列を順に走査:
+   for each slug in pluginPartialOrder:
+     a. pc.Inputs["plugin_<slug>"] が truthy でなければ skip
+     b. pc.Data.Plugins[slug] が nil / 取得不能なら skip
+     c. type assertion で result.Skipped が true なら skip
+     d. partials.Lookup("plugin." + slug) で関数取得
+        - 未実装の slug (US1〜US3 で順次 land) は skip (warn ログ なし)
+     e. 関数を呼び出して fragment string を取得
+     f. fragment が空文字なら skip (二重ガード)
+     g. <div class="plugin-<slug>" data-plugin="<slug>"> で wrap して書き込み
+4. <div id="metrics-end"></div> + footer (M2 既存)
+5. </div></foreignObject></svg> で閉じる
 ```
 
-## 4. partial の入力 (template data)
-
-各 partial は `text/template` の data として以下を受け取る:
+`pluginPartialOrder` は M4 で導入する `internal/templates/classic/partials/plugins.go` に定数として配置:
 
 ```go
-type partialData struct {
-    Result    any              // plugin 固有 Result (e.g. *languages.Result)
-    Inputs    map[string]any   // pc.Inputs 全体 (色設定など UI 入力を参照するため)
-    Settings  *config.Settings // settings.json 全体
-    Metadata  *config.PluginMetadata // metadata.yml 由来の入力スキーマ
+// pluginPartialOrder defines the M4 plugin partial render order.
+// Mirrors the upstream lowlighter/metrics classic template order.
+var pluginPartialOrder = []string{
+    "languages", "activity", "achievements", "repositories", "isocalendar",
+    "calendar", "habits", "stars", "topics", "starlists", "people",
+    "notable", "contributors", "reactions", "projects", "sponsors",
+    "sponsorships", "stargazers", "traffic",
 }
 ```
 
-partial 内では `{{.Result.Favorites}}` のように構造体フィールドを直接参照する。template-side で複雑な計算をしない MUST — 計算は plugin の `Run` で完了させ、partial は表示のみ。
+順序は upstream に合わせる (P1 5 個 → P2 + P3 16 個)。
+
+## 4. partial の入力 / Lookup 規約
+
+各 plugin partial は `templates.PartialFunc` を満たす:
+
+```go
+type PartialFunc func(ctx context.Context, pc *templates.PartialContext) (string, error)
+```
+
+- `pc.Data.Plugins[<slug>]` から自身の Result を type assertion で取り出す (例: `result := pc.Data.Plugins["languages"].(*languages.Result)`)
+- `result.Skipped` または truthy gate に該当しないとき空文字を返す (nil-safe / empty-safe)
+- `pc.Inputs` から自分の `plugin_<slug>_<opt>` を読み込んで表示に反映する
+- 文字列は `partials.EscapeXML` を必ず通す (M2 規約継承)
+- 数値は `partials.FormatCount` を必ず通す (M2 規約継承)
+
+partial 関数の命名: パスカルケースの slug + `Plugin` プレフィックスなし (M2 と一貫). 例: `Languages`, `Activity`, `Achievements`. Lookup キーは `"plugin." + slug` (例 `"plugin.languages"`)。
+
+assets 側の `_.json` には M4 plugin slug は **入れない**。理由: M2 base partial は常に呼ばれるので `_.json` で順序定義する価値があるが、M4 plugin partial は inputs ゲート + 条件付き呼び出しなので、Go 側の `pluginPartialOrder` 定数で順序を持つ方が型安全で一致性も保ちやすい。
 
 ## 5. 各 partial の DOM 期待値 (テスト assertion 対象)
 
