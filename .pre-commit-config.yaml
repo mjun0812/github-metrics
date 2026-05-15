@@ -1,0 +1,68 @@
+# pre-commit configuration for github-metrics.
+#
+# Install once per checkout with:
+#   pip install pre-commit            # or pipx install pre-commit
+#   make pre-commit-install           # wires the git hook
+#
+# After install the hook fires automatically on `git commit` and runs
+# the same format + lint pipeline CI runs, so a contributor never has
+# to chase a failing GHA run that local feedback could have caught.
+#
+# Bypass (do NOT make a habit): `git commit --no-verify`.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        exclude: ^assets/
+      - id: check-added-large-files
+        args: ["--maxkb=512"]
+        exclude: ^assets/
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  - repo: local
+    hooks:
+      # gofumpt is stricter than gofmt; the formatters block of
+      # .golangci.yml requires it, so run it up front to keep diffs
+      # minimal.
+      - id: gofumpt
+        name: gofumpt
+        entry: gofumpt -l -w
+        language: system
+        types: [go]
+        # Don't run on generated graphql code.
+        exclude: ^.*graphql_gen\.go$
+
+      - id: go-vet
+        name: go vet
+        entry: go vet ./...
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      # `go mod tidy -diff` prints what tidy *would* change without
+      # modifying anything, and exits non-zero when the diff is
+      # non-empty. This catches forgotten tidies while ignoring
+      # uncommitted-but-already-tidy bumps that a commit is about to
+      # land.
+      - id: go-mod-tidy
+        name: go mod tidy (verify)
+        entry: go mod tidy -diff
+        language: system
+        files: ^go\.(mod|sum)$
+        pass_filenames: false
+
+      # golangci-lint runs the same configured ruleset as CI. The hook
+      # uses `--fix` so revive / gofumpt / gci style issues that have
+      # auto-fixers are applied; remaining findings fail the commit.
+      - id: golangci-lint
+        name: golangci-lint
+        entry: golangci-lint run --fix --timeout=5m
+        language: system
+        types: [go]
+        pass_filenames: false

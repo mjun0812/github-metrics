@@ -1,91 +1,100 @@
-# golangci-lint configuration for github-metrics (v1 schema).
-# See specs/001-project-foundation/research.md §R-008 for the rationale
-# behind individual rule choices.
+# golangci-lint configuration for github-metrics (v2 schema).
+#
+# Rationale for individual entries is in
+# specs/001-project-foundation/research.md §R-008.
+#
+# Run locally with `make lint` or via the pre-commit hook
+# (.pre-commit-config.yaml). Keep this file in sync with the
+# .github/workflows/go-ci.yml pin so local and CI verdicts match.
+
+version: "2"
 
 run:
   timeout: 10m
-  go: "1.23"
+  go: "1.26"
   tests: true
   modules-download-mode: readonly
 
 linters:
-  disable-all: true
+  default: none
   enable:
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
     - unused
+    - nilerr
     - gocritic
     - revive
-    - gofumpt
-    - gosec
-    - nilerr
     - prealloc
     - unparam
+    - gosec
 
-linters-settings:
-  gofumpt:
-    extra-rules: true
-  govet:
-    enable:
-      - shadow
-      - composites
-      - copylocks
-      - errorsas
-      - httpresponse
-      - nilness
-      - printf
-      - unreachable
-      - unusedwrite
-      - lostcancel
-      - structtag
-      - assign
-      - atomic
-      - bools
-      - buildtag
-      - cgocall
-      - directive
-      - findcall
-      - framepointer
-      - ifaceassert
-      - loopclosure
-      - sigchanyzer
-      - slog
-      - stringintconv
-      - stdmethods
-      - testinggoroutine
-      - unmarshal
-      - unsafeptr
-  gosec:
-    excludes:
-      - G104
-  revive:
+  settings:
+    govet:
+      enable:
+        - shadow
+        - composites
+        - copylocks
+        - errorsas
+        - httpresponse
+        - nilness
+        - printf
+        - unreachable
+        - unusedwrite
+        - lostcancel
+        - structtag
+        - assign
+        - atomic
+        - bools
+        - buildtag
+        - cgocall
+        - directive
+        - findcall
+        - framepointer
+        - ifaceassert
+        - loopclosure
+        - sigchanyzer
+        - slog
+        - stringintconv
+        - stdmethods
+        - testinggoroutine
+        - unmarshal
+        - unsafeptr
+    gosec:
+      excludes:
+        # G104: errcheck already covers unchecked errors with better targeting.
+        - G104
+    revive:
+      rules:
+        - name: var-naming
+        - name: exported
+          arguments:
+            - disableStutteringCheck
+        - name: package-comments
+        - name: error-return
+        - name: error-naming
+        - name: error-strings
+        - name: receiver-naming
+        - name: unused-parameter
+          disabled: true
+
+  exclusions:
     rules:
-      - name: var-naming
-      - name: exported
-        arguments:
-          - disableStutteringCheck
-      - name: package-comments
-      - name: error-return
-      - name: error-naming
-      - name: error-strings
-      - name: receiver-naming
-      - name: unused-parameter
-        disabled: true
+      - path: _test\.go$
+        linters:
+          - gosec
+          - unparam
+      - path: graphql_gen\.go$
+        linters:
+          - revive
+          - gocritic
+          - gosec
+          - unparam
 
-issues:
-  max-issues-per-linter: 0
-  max-same-issues: 0
-  exclude-rules:
-    - path: _test\.go$
-      linters:
-        - gosec
-        - unparam
-    - path: graphql_gen\.go$
-      linters:
-        - revive
-        - gocritic
-        - gosec
-        - unparam
+formatters:
+  enable:
+    - gofumpt
+  settings:
+    gofumpt:
+      extra-rules: true

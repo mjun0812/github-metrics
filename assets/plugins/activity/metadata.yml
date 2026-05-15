@@ -65,7 +65,7 @@ inputs:
     description: |
       Skipped repositories
     type: array
-    format: 
+    format:
       - newline-separated
       - comma-separated
     default: ""
