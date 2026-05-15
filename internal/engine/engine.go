@@ -54,6 +54,24 @@ type Result struct {
 	Data *plugins.Data
 	// Errors aggregates non-fatal plugin errors when Die == false.
 	Errors []error
+	// Output is the serialized payload in the requested format.
+	// Populated by Compute after the dispatch stage runs. Valid IANA
+	// values for the corresponding MIME (see [Result.MIME]):
+	//
+	//   application/json   when Request.Format == "json"
+	//   image/svg+xml      when Request.Format == "svg"
+	//   image/png          when Request.Format == "png" (M2: contains
+	//                                                    SVG bytes plus
+	//                                                    a warn log;
+	//                                                    chromedp
+	//                                                    conversion
+	//                                                    lands in M3)
+	//   image/jpeg         when Request.Format == "jpeg" (same as PNG
+	//                                                    for M2)
+	Output []byte
+	// MIME is the IANA type that matches Output. Never empty when
+	// Output is set; never set when Output is empty.
+	MIME string
 }
 
 // Deps groups the long-lived collaborators the engine reuses across
@@ -137,20 +155,22 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 		return nil, res.Errors[0]
 	}
 
-	// Stage 4: template.Run. M1 templates are no-op stubs; the engine
-	// still calls them so the wiring is exercised end-to-end.
-	if tmpl != nil {
-		pcPartial := &templates.PartialContext{
-			Settings: deps.Settings,
-			Inputs:   pc.Inputs,
-			Logger:   deps.Logger,
-			Data:     data,
-			Metadata: deps.Metadata,
-		}
-		if _, err := tmpl.Run(ctx, pcPartial); err != nil {
-			return nil, fmt.Errorf("engine: template %q run: %w", req.Template, err)
-		}
+	// Stage 4: dispatch the requested output format. M1 was a noop
+	// here; M2 implements [dispatchOutput] which routes "json" to the
+	// engine.Marshal path and "svg"/"png"/"jpeg" to Template.Run.
+	pcPartial := &templates.PartialContext{
+		Settings: deps.Settings,
+		Inputs:   pc.Inputs,
+		Logger:   deps.Logger,
+		Data:     data,
+		Metadata: deps.Metadata,
 	}
+	output, mime, err := dispatchOutput(ctx, req, deps, tmpl, data, pcPartial)
+	if err != nil {
+		return nil, err
+	}
+	res.Output = output
+	res.MIME = mime
 
 	return res, nil
 }
