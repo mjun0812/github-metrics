@@ -51,7 +51,10 @@ jobs:
           cache: true
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.61.0
+          # Bumped past v1.61 so the linter understands AST shapes from
+          # newer Go releases (the runner pulls "stable", which can be
+          # several minors ahead of an older golangci-lint).
+          version: latest
           args: --timeout=10m
 
   vuln:
