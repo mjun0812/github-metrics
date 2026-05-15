@@ -1,0 +1,14 @@
+query Organization($login: String!) {
+  organization(login: $login) {
+    databaseId
+    id
+    login
+    name
+    location
+    createdAt
+    avatarUrl
+    websiteUrl
+    email
+    description
+  }
+}
