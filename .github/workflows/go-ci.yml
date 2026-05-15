@@ -10,10 +10,11 @@ permissions:
   contents: read
 
 env:
-  # Use the "stable" tag so each run pulls a Go release with the latest
-  # security patches. go.mod's `go 1.23` directive still pins the
-  # minimum-language version we promise to support.
-  GO_VERSION: "stable"
+  # Pin to a specific Go release that has both (a) the security patches
+  # govulncheck demands and (b) an AST that the latest golangci-lint
+  # build can fully type-check. Bumping past this pin requires updating
+  # the golangci-lint pin below in lockstep.
+  GO_VERSION: "1.24"
 
 jobs:
   test:
@@ -51,10 +52,9 @@ jobs:
           cache: true
       - uses: golangci/golangci-lint-action@v6
         with:
-          # Bumped past v1.61 so the linter understands AST shapes from
-          # newer Go releases (the runner pulls "stable", which can be
-          # several minors ahead of an older golangci-lint).
-          version: latest
+          # v1.64.x is built against Go 1.24 and matches the runner pin
+          # above. Update both together when bumping toolchains.
+          version: v1.64.8
           args: --timeout=10m
 
   vuln:
