@@ -18,7 +18,7 @@ env:
   # green) while still pre-dating the 1.26 stdlib files
   # (chacha20poly1305/fips140only_go1.26.go) that older golangci-lint
   # builds cannot parse.
-  GO_VERSION: "1.25"
+  GO_VERSION: "1.25.10"
 
 jobs:
   test:
