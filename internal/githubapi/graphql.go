@@ -81,6 +81,20 @@ func (g *GraphQL) Organization(ctx context.Context, login string) (*Organization
 	return Organization(ctx, g.client, login)
 }
 
+// UserRepositories returns the first `first` owner-affiliated
+// repositories for the given login. M1 fetches a single page (the full
+// upstream paging loop with cursor-driven traversal lands with the
+// M4 plugin work that actually consumes more than the totalCount).
+func (g *GraphQL) UserRepositories(ctx context.Context, login string, first int) (*UserRepositoriesResponse, error) {
+	return UserRepositories(ctx, g.client, login, first)
+}
+
+// OrganizationRepositories is the organization-side equivalent of
+// [UserRepositories].
+func (g *GraphQL) OrganizationRepositories(ctx context.Context, login string, first int) (*OrganizationRepositoriesResponse, error) {
+	return OrganizationRepositories(ctx, g.client, login, first)
+}
+
 // graphqlAuthTransport adds the Authorization and Accept headers that
 // every GitHub GraphQL request needs. inner may be nil, in which case
 // http.DefaultTransport is used.

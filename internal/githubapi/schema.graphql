@@ -33,6 +33,39 @@ type User {
   email: String
   bio: String
   company: String
+  repositories(first: Int, ownerAffiliations: [RepositoryAffiliation!]): RepositoryConnection
+}
+
+enum RepositoryAffiliation {
+  OWNER
+  COLLABORATOR
+  ORGANIZATION_MEMBER
+}
+
+type RepositoryConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  nodes: [Repository!]
+}
+
+type Repository {
+  databaseId: Int
+  id: ID!
+  name: String!
+  nameWithOwner: String!
+  isFork: Boolean!
+  stargazerCount: Int!
+  forkCount: Int!
+  watchers: WatcherConnection
+}
+
+type WatcherConnection {
+  totalCount: Int!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  endCursor: String
 }
 
 type Organization {
@@ -46,6 +79,7 @@ type Organization {
   websiteUrl: URI
   email: String
   description: String
+  repositories(first: Int): RepositoryConnection
 }
 
 type RateLimit {

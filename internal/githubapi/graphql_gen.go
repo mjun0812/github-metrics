@@ -53,6 +53,126 @@ func (v *OrganizationOrganization) GetEmail() *string { return v.Email }
 // GetDescription returns OrganizationOrganization.Description, and is useful for accessing the field via an interface.
 func (v *OrganizationOrganization) GetDescription() *string { return v.Description }
 
+// OrganizationRepositoriesOrganization includes the requested fields of the GraphQL type Organization.
+type OrganizationRepositoriesOrganization struct {
+	Repositories *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnection `json:"repositories"`
+}
+
+// GetRepositories returns OrganizationRepositoriesOrganization.Repositories, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganization) GetRepositories() *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnection {
+	return v.Repositories
+}
+
+// OrganizationRepositoriesOrganizationRepositoriesRepositoryConnection includes the requested fields of the GraphQL type RepositoryConnection.
+type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnection struct {
+	TotalCount int                                                                                    `json:"totalCount"`
+	PageInfo   *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionPageInfo          `json:"pageInfo"`
+	Nodes      []*OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository `json:"nodes"`
+}
+
+// GetTotalCount returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetPageInfo returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnection) GetPageInfo() *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetNodes returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnection) GetNodes() []*OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository {
+	return v.Nodes
+}
+
+// OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository includes the requested fields of the GraphQL type Repository.
+type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository struct {
+	DatabaseId     *int                                                                                                          `json:"databaseId"`
+	Id             string                                                                                                        `json:"id"`
+	Name           string                                                                                                        `json:"name"`
+	NameWithOwner  string                                                                                                        `json:"nameWithOwner"`
+	IsFork         bool                                                                                                          `json:"isFork"`
+	StargazerCount int                                                                                                           `json:"stargazerCount"`
+	ForkCount      int                                                                                                           `json:"forkCount"`
+	Watchers       *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection `json:"watchers"`
+}
+
+// GetDatabaseId returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.DatabaseId, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetDatabaseId() *int {
+	return v.DatabaseId
+}
+
+// GetId returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.Id, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetId() string {
+	return v.Id
+}
+
+// GetName returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.Name, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetName() string {
+	return v.Name
+}
+
+// GetNameWithOwner returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.NameWithOwner, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetNameWithOwner() string {
+	return v.NameWithOwner
+}
+
+// GetIsFork returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.IsFork, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetIsFork() bool {
+	return v.IsFork
+}
+
+// GetStargazerCount returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.StargazerCount, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetStargazerCount() int {
+	return v.StargazerCount
+}
+
+// GetForkCount returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.ForkCount, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetForkCount() int {
+	return v.ForkCount
+}
+
+// GetWatchers returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.Watchers, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetWatchers() *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection {
+	return v.Watchers
+}
+
+// OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection includes the requested fields of the GraphQL type WatcherConnection.
+type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionPageInfo struct {
+	HasNextPage bool    `json:"hasNextPage"`
+	EndCursor   *string `json:"endCursor"`
+}
+
+// GetHasNextPage returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// GetEndCursor returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionPageInfo) GetEndCursor() *string {
+	return v.EndCursor
+}
+
+// OrganizationRepositoriesResponse is returned by OrganizationRepositories on success.
+type OrganizationRepositoriesResponse struct {
+	Organization *OrganizationRepositoriesOrganization `json:"organization"`
+}
+
+// GetOrganization returns OrganizationRepositoriesResponse.Organization, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesResponse) GetOrganization() *OrganizationRepositoriesOrganization {
+	return v.Organization
+}
+
 // OrganizationResponse is returned by Organization on success.
 type OrganizationResponse struct {
 	Organization *OrganizationOrganization `json:"organization"`
@@ -60,6 +180,124 @@ type OrganizationResponse struct {
 
 // GetOrganization returns OrganizationResponse.Organization, and is useful for accessing the field via an interface.
 func (v *OrganizationResponse) GetOrganization() *OrganizationOrganization { return v.Organization }
+
+// UserRepositoriesResponse is returned by UserRepositories on success.
+type UserRepositoriesResponse struct {
+	User *UserRepositoriesUser `json:"user"`
+}
+
+// GetUser returns UserRepositoriesResponse.User, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesResponse) GetUser() *UserRepositoriesUser { return v.User }
+
+// UserRepositoriesUser includes the requested fields of the GraphQL type User.
+type UserRepositoriesUser struct {
+	Repositories *UserRepositoriesUserRepositoriesRepositoryConnection `json:"repositories"`
+}
+
+// GetRepositories returns UserRepositoriesUser.Repositories, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUser) GetRepositories() *UserRepositoriesUserRepositoriesRepositoryConnection {
+	return v.Repositories
+}
+
+// UserRepositoriesUserRepositoriesRepositoryConnection includes the requested fields of the GraphQL type RepositoryConnection.
+type UserRepositoriesUserRepositoriesRepositoryConnection struct {
+	TotalCount int                                                                    `json:"totalCount"`
+	PageInfo   *UserRepositoriesUserRepositoriesRepositoryConnectionPageInfo          `json:"pageInfo"`
+	Nodes      []*UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository `json:"nodes"`
+}
+
+// GetTotalCount returns UserRepositoriesUserRepositoriesRepositoryConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetPageInfo returns UserRepositoriesUserRepositoriesRepositoryConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnection) GetPageInfo() *UserRepositoriesUserRepositoriesRepositoryConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetNodes returns UserRepositoriesUserRepositoriesRepositoryConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnection) GetNodes() []*UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository {
+	return v.Nodes
+}
+
+// UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository includes the requested fields of the GraphQL type Repository.
+type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository struct {
+	DatabaseId     *int                                                                                          `json:"databaseId"`
+	Id             string                                                                                        `json:"id"`
+	Name           string                                                                                        `json:"name"`
+	NameWithOwner  string                                                                                        `json:"nameWithOwner"`
+	IsFork         bool                                                                                          `json:"isFork"`
+	StargazerCount int                                                                                           `json:"stargazerCount"`
+	ForkCount      int                                                                                           `json:"forkCount"`
+	Watchers       *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection `json:"watchers"`
+}
+
+// GetDatabaseId returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.DatabaseId, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetDatabaseId() *int {
+	return v.DatabaseId
+}
+
+// GetId returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.Id, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetId() string {
+	return v.Id
+}
+
+// GetName returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.Name, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetName() string {
+	return v.Name
+}
+
+// GetNameWithOwner returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.NameWithOwner, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetNameWithOwner() string {
+	return v.NameWithOwner
+}
+
+// GetIsFork returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.IsFork, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetIsFork() bool {
+	return v.IsFork
+}
+
+// GetStargazerCount returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.StargazerCount, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetStargazerCount() int {
+	return v.StargazerCount
+}
+
+// GetForkCount returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.ForkCount, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetForkCount() int {
+	return v.ForkCount
+}
+
+// GetWatchers returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.Watchers, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetWatchers() *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection {
+	return v.Watchers
+}
+
+// UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection includes the requested fields of the GraphQL type WatcherConnection.
+type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// UserRepositoriesUserRepositoriesRepositoryConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+type UserRepositoriesUserRepositoriesRepositoryConnectionPageInfo struct {
+	HasNextPage bool    `json:"hasNextPage"`
+	EndCursor   *string `json:"endCursor"`
+}
+
+// GetHasNextPage returns UserRepositoriesUserRepositoriesRepositoryConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// GetEndCursor returns UserRepositoriesUserRepositoriesRepositoryConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionPageInfo) GetEndCursor() *string {
+	return v.EndCursor
+}
 
 // UserResponse is returned by User on success.
 type UserResponse struct {
@@ -129,6 +367,18 @@ type __OrganizationInput struct {
 // GetLogin returns __OrganizationInput.Login, and is useful for accessing the field via an interface.
 func (v *__OrganizationInput) GetLogin() string { return v.Login }
 
+// __OrganizationRepositoriesInput is used internally by genqlient
+type __OrganizationRepositoriesInput struct {
+	Login string `json:"login"`
+	First int    `json:"first"`
+}
+
+// GetLogin returns __OrganizationRepositoriesInput.Login, and is useful for accessing the field via an interface.
+func (v *__OrganizationRepositoriesInput) GetLogin() string { return v.Login }
+
+// GetFirst returns __OrganizationRepositoriesInput.First, and is useful for accessing the field via an interface.
+func (v *__OrganizationRepositoriesInput) GetFirst() int { return v.First }
+
 // __UserInput is used internally by genqlient
 type __UserInput struct {
 	Login string `json:"login"`
@@ -136,6 +386,18 @@ type __UserInput struct {
 
 // GetLogin returns __UserInput.Login, and is useful for accessing the field via an interface.
 func (v *__UserInput) GetLogin() string { return v.Login }
+
+// __UserRepositoriesInput is used internally by genqlient
+type __UserRepositoriesInput struct {
+	Login string `json:"login"`
+	First int    `json:"first"`
+}
+
+// GetLogin returns __UserRepositoriesInput.Login, and is useful for accessing the field via an interface.
+func (v *__UserRepositoriesInput) GetLogin() string { return v.Login }
+
+// GetFirst returns __UserRepositoriesInput.First, and is useful for accessing the field via an interface.
+func (v *__UserRepositoriesInput) GetFirst() int { return v.First }
 
 // The query executed by Organization.
 const Organization_Operation = `
@@ -169,6 +431,60 @@ func Organization(
 	}
 
 	data_ = &OrganizationResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by OrganizationRepositories.
+const OrganizationRepositories_Operation = `
+query OrganizationRepositories ($login: String!, $first: Int!) {
+	organization(login: $login) {
+		repositories(first: $first) {
+			totalCount
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
+			nodes {
+				databaseId
+				id
+				name
+				nameWithOwner
+				isFork
+				stargazerCount
+				forkCount
+				watchers {
+					totalCount
+				}
+			}
+		}
+	}
+}
+`
+
+func OrganizationRepositories(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	login string,
+	first int,
+) (data_ *OrganizationRepositoriesResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "OrganizationRepositories",
+		Query:  OrganizationRepositories_Operation,
+		Variables: &__OrganizationRepositoriesInput{
+			Login: login,
+			First: first,
+		},
+	}
+
+	data_ = &OrganizationRepositoriesResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -214,6 +530,60 @@ func User(
 	}
 
 	data_ = &UserResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by UserRepositories.
+const UserRepositories_Operation = `
+query UserRepositories ($login: String!, $first: Int!) {
+	user(login: $login) {
+		repositories(first: $first, ownerAffiliations: [OWNER]) {
+			totalCount
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
+			nodes {
+				databaseId
+				id
+				name
+				nameWithOwner
+				isFork
+				stargazerCount
+				forkCount
+				watchers {
+					totalCount
+				}
+			}
+		}
+	}
+}
+`
+
+func UserRepositories(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	login string,
+	first int,
+) (data_ *UserRepositoriesResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UserRepositories",
+		Query:  UserRepositories_Operation,
+		Variables: &__UserRepositoriesInput{
+			Login: login,
+			First: first,
+		},
+	}
+
+	data_ = &UserRepositoriesResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
