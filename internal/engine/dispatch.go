@@ -130,11 +130,48 @@ func obtainRenderer(deps Deps) (render.Renderer, func(), error) {
 }
 
 // buildPipelineStages assembles the decoration stages applied between
-// Template.Run and Renderer.Resize. US3 fills this with actual stages
-// (octicon → optional css → optional xml); for now it returns nil so
-// the dispatch path is exercised end-to-end while US3 is in flight.
-func buildPipelineStages(_ map[string]any) []render.PipelineStage {
-	return nil
+// Template.Run and Renderer.Resize. The chain is fixed-order per
+// contracts/render-pipeline.md §1:
+//
+//  1. octicon — always enabled. Replaces `:octicon-<name>(-<size>)?:`
+//     placeholders with the embedded SVG fragment.
+//  2. css     — only when inputs["svg.optimize.css"] == true. Purges
+//     unused selectors and minifies the surviving rules.
+//  3. xml     — only when inputs["svg.optimize.xml"] == true.
+//     Re-indents the document with two-space indentation.
+//
+// Each stage is best-effort: errors land in res.Errors (via Apply)
+// and the input is forwarded unchanged to the next stage so a
+// localized failure does not break the SVG (FR-018).
+func buildPipelineStages(inputs map[string]any) []render.PipelineStage {
+	stages := []render.PipelineStage{
+		{Name: "octicon", Run: render.ReplaceOcticons},
+	}
+	if asBool(inputs, "svg.optimize.css") {
+		stages = append(stages, render.PipelineStage{Name: "css", Run: render.OptimizeCSS})
+	}
+	if asBool(inputs, "svg.optimize.xml") {
+		stages = append(stages, render.PipelineStage{Name: "xml", Run: render.FormatXML})
+	}
+	return stages
+}
+
+// asBool inspects the normalized Inputs map for a boolean-shaped
+// value at `key`. The upstream-compatible input loader produces real
+// bool values, but we also tolerate the truthy strings "true" and
+// "1" so the dispatch survives test fixtures that bypass the loader.
+func asBool(inputs map[string]any, key string) bool {
+	if inputs == nil {
+		return false
+	}
+	switch v := inputs[key].(type) {
+	case bool:
+		return v
+	case string:
+		return v == "true" || v == "1"
+	default:
+		return false
+	}
 }
 
 // stringSliceInput extracts a slice-of-strings input from the
