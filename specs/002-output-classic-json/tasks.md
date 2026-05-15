@@ -111,16 +111,16 @@ description: "Task list for output-classic-json (M2: T-023..T-029)"
 
 ### Tests for User Story 3
 
-- [ ] T026 [P] [US3] Add `tests/integration/output_test.go::TestComputeJSON_DefaultFromTemplate`: when classic is registered and `Format == ""`, `Result.MIME == "application/json"` (because classic's `metadata.yml.formats[0]` is `"svg"`, but for this case we omit Template to test the noop fallback → "json"). Actually, re-check contracts/result-dispatch.md §4 for the truth table and write tests for all four rows.
-- [ ] T027 [P] [US3] Add `TestComputeSVG_Classic` asserting `Result.Output` begins with `<svg` and `Result.MIME == "image/svg+xml"`.
-- [ ] T028 [P] [US3] Add `TestComputePNG_M2WarnsAndReturnsSVG`: capture log output via a `bytes.Buffer`-backed slog handler, call `engine.Compute(Request{Format:"png", Template:"classic"})`, assert `Result.MIME == "image/png"`, `Result.Output` begins with `<svg`, and the captured log contains `format=png` at `warn` level (research R-008).
-- [ ] T029 [P] [US3] Add `TestComputeUnknownFormat_Error` asserting `Format == "bogus"` returns a non-nil error that satisfies `errors.As(&xerrors.UnsupportedFormatError{})`.
-- [ ] T030 [P] [US3] Add `TestComputeSVG_NoTemplate_Errors` asserting `Format == "svg"` with no Template registered returns a non-nil `*errors.InputError{Field:"template"}`.
+- [X] T026 [P] [US3] Add `tests/integration/output_test.go::TestComputeJSON_DefaultFromTemplate`: when classic is registered and `Format == ""`, `Result.MIME == "application/json"` (because classic's `metadata.yml.formats[0]` is `"svg"`, but for this case we omit Template to test the noop fallback → "json"). Actually, re-check contracts/result-dispatch.md §4 for the truth table and write tests for all four rows.
+- [X] T027 [P] [US3] Add `TestComputeSVG_Classic` asserting `Result.Output` begins with `<svg` and `Result.MIME == "image/svg+xml"`.
+- [X] T028 [P] [US3] Add `TestComputePNG_M2WarnsAndReturnsSVG`: capture log output via a `bytes.Buffer`-backed slog handler, call `engine.Compute(Request{Format:"png", Template:"classic"})`, assert `Result.MIME == "image/png"`, `Result.Output` begins with `<svg`, and the captured log contains `format=png` at `warn` level (research R-008).
+- [X] T029 [P] [US3] Add `TestComputeUnknownFormat_Error` asserting `Format == "bogus"` returns a non-nil error that satisfies `errors.As(&xerrors.UnsupportedFormatError{})`.
+- [X] T030 [P] [US3] Add `TestComputeSVG_NoTemplate_Errors` asserting `Format == "svg"` with no Template registered returns a non-nil `*errors.InputError{Field:"template"}`.
 
 ### Implementation for User Story 3
 
-- [ ] T031 [US3] Tighten the `dispatchOutput` implementation from T006 to match every row of the contracts/result-dispatch.md §4 truth table; ensure the warn log shape matches T028's expectation. Make T026–T030 pass.
-- [ ] T032 [US3] Update [`specs/002-output-classic-json/quickstart.md`](./quickstart.md) §4 step block to reflect the final test names (T026–T030) and adjust any inaccurate language. Verify each `go test ./...` command listed there returns green on a clean checkout.
+- [X] T031 [US3] Tighten the `dispatchOutput` implementation from T006 to match every row of the contracts/result-dispatch.md §4 truth table; ensure the warn log shape matches T028's expectation. Make T026–T030 pass.
+- [X] T032 [US3] Update [`specs/002-output-classic-json/quickstart.md`](./quickstart.md) §4 step block to reflect the final test names (T026–T030) and adjust any inaccurate language. Verify each `go test ./...` command listed there returns green on a clean checkout.
 
 **Checkpoint (US3)**: format dispatch verified for every documented row; engine surface stable enough for cmd-side wiring in M6.
 
@@ -130,11 +130,11 @@ description: "Task list for output-classic-json (M2: T-023..T-029)"
 
 **Purpose**: Bench, README, constitution compliance evidence.
 
-- [ ] T033 [P] Add `BenchmarkCompute_JSON_Octocat` and `BenchmarkCompute_SVG_Classic` in `tests/integration/bench_test.go`, each running `engine.Compute` once per iteration against the mocked deps. Confirm `< 2s/op` on the contributor laptop (SC-003).
-- [ ] T034 [P] Update `README.md` "Status" line and Toolchain matrix entry for the new test directories. Add a one-paragraph note about `make sync-fixtures` to the contributor quickstart.
-- [ ] T035 [P] Update `tests/compliance/compliance_test.go` (M1) to also scan `internal/engine/` and `internal/templates/classic/` for the unadopted-plugin grep (constitution principle III evidence). Run the suite and confirm zero hits.
-- [ ] T036 [P] Verify `make check-compat` still reports `0 diff across 21 plugins and 2 templates` after the new `classic/_.json` overwrite. The `_.json` swap only changes the partial list (not metadata.yml keys) so the report should stay zero; capture the output in the PR body.
-- [ ] T037 Run [quickstart.md](./quickstart.md) end-to-end on a clean checkout, walking each numbered step. Capture pass status in the PR description; flag any step that requires `./org_repo` and document the skip behavior.
+- [X] T033 [P] Add `BenchmarkCompute_JSON_Octocat` and `BenchmarkCompute_SVG_Classic` in `tests/integration/bench_test.go`, each running `engine.Compute` once per iteration against the mocked deps. Confirm `< 2s/op` on the contributor laptop (SC-003).
+- [X] T034 [P] Update `README.md` "Status" line and Toolchain matrix entry for the new test directories. Add a one-paragraph note about `make sync-fixtures` to the contributor quickstart.
+- [X] T035 [P] Update `tests/compliance/compliance_test.go` (M1) to also scan `internal/engine/` and `internal/templates/classic/` for the unadopted-plugin grep (constitution principle III evidence). Run the suite and confirm zero hits.
+- [X] T036 [P] Verify `make check-compat` still reports `0 diff across 21 plugins and 2 templates` after the new `classic/_.json` overwrite. The `_.json` swap only changes the partial list (not metadata.yml keys) so the report should stay zero; capture the output in the PR body.
+- [X] T037 Run [quickstart.md](./quickstart.md) end-to-end on a clean checkout, walking each numbered step. Capture pass status in the PR description; flag any step that requires `./org_repo` and document the skip behavior.
 
 ---
 
