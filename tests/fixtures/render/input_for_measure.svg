@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="auto" viewBox="0 0 480 640">
+  <style>
+    text { font: 14px sans-serif; fill: #24292e; }
+  </style>
+  <text x="16" y="32">M3 svg.Resize fixture</text>
+  <text x="16" y="56">Used by internal/render/svg_resize_chromedp_test.go.</text>
+  <g id="metrics-end" transform="translate(0,640)"/>
+</svg>

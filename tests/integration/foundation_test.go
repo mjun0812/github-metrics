@@ -19,6 +19,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/render"
 )
 
 // graphQLFixture is a tiny RoundTripper that inspects the GraphQL
@@ -153,6 +154,10 @@ func newEngineDeps(t testing.TB, gqlBody map[string]string) (engine.Deps, *graph
 	return engine.Deps{
 		Settings: &config.Settings{Repositories: 100},
 		GraphQL:  gql,
+		// Inject a FakeRenderer so the M3 dispatch path can be
+		// exercised without starting chromium. Tests that need real
+		// chromedp behavior live under the chromedp build tag.
+		Render: &render.FakeRenderer{},
 	}, fixture
 }
 

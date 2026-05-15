@@ -7,22 +7,28 @@ import (
 
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/render"
 	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
-// dispatchOutput routes Request.Format through the right marshaller and
-// returns the (Output, MIME) pair Compute records in Result.
+// dispatchOutput routes Request.Format through the right marshaller
+// and returns the (Output, MIME) pair Compute records in Result.
 //
-// Behavior (see specs/002-output-classic-json/contracts/result-dispatch.md):
+// Behavior (see specs/003-chromedp-rendering-pipeline/contracts/render-pipeline.md):
 //
 //   - empty Format: defaults to Template.Metadata().Formats[0] when a
 //     template is registered; "json" otherwise.
 //   - "json": [Marshal](data) → application/json.
-//   - "svg":  tmpl.Run(...) → image/svg+xml. Requires a template.
-//   - "png" / "jpeg": M2 interim — emit SVG bytes plus a warn log so
-//     callers can already plumb the value through; the real chromedp
-//     conversion lands with the M3 rendering pipeline.
+//   - "svg" / "png" / "jpeg": tmpl.Run + decoration stages + chromedp
+//     resize. Renderer comes from deps.Render; nil triggers a lazy
+//     *render.Browser construction that is owned + closed by Compute.
 //   - anything else: *UnsupportedFormatError.
+//
+// Stage-level errors (decoration, chromedp) are appended to
+// res.Errors and the call falls through to a best-effort response per
+// FR-018: SVG path returns the un-resized SVG, PNG/JPEG path returns
+// (nil, "") so the caller can detect the failure via the empty
+// Output.
 func dispatchOutput(
 	ctx context.Context,
 	req Request,
@@ -30,6 +36,7 @@ func dispatchOutput(
 	tmpl templates.Template,
 	data *plugins.Data,
 	pcPartial *templates.PartialContext,
+	res *Result,
 ) ([]byte, string, error) {
 	format := req.Format
 	if format == "" {
@@ -54,24 +61,114 @@ func dispatchOutput(
 			return nil, "", xerrors.NewInputError("template",
 				fmt.Errorf("format %q requires a registered template", format))
 		}
-		out, err := tmpl.Run(ctx, pcPartial)
+		rendered, err := tmpl.Run(ctx, pcPartial)
 		if err != nil {
 			return nil, "", fmt.Errorf("engine: template %q run: %w", req.Template, err)
 		}
-		mime := "image/svg+xml"
-		switch format {
-		case "png":
-			mime = "image/png"
-			deps.Logger.Warn("engine: png output stages SVG bytes (chromedp conversion lands in M3)",
-				"format", format)
-		case "jpeg":
-			mime = "image/jpeg"
-			deps.Logger.Warn("engine: jpeg output stages SVG bytes (chromedp conversion lands in M3)",
-				"format", format)
+
+		// Stage 2-4: decoration pipeline. US3 wires the actual
+		// stages; here we keep an empty slice so the chain is
+		// observable but a no-op.
+		decorated, stageErrs := render.Apply(buildPipelineStages(req.Inputs), rendered)
+		for _, e := range stageErrs {
+			deps.Logger.Warn("engine: pipeline stage error", "err", e)
+			if res != nil {
+				res.Errors = append(res.Errors, e)
+			}
 		}
-		return []byte(out), mime, nil
+
+		// Stage 5: resize / convert via the Renderer interface.
+		renderer, closeBrowser, err := obtainRenderer(deps)
+		if err != nil {
+			if res != nil {
+				res.Errors = append(res.Errors, xerrors.NewRetryableError(
+					fmt.Errorf("engine: renderer init: %w", err),
+				))
+			}
+			if format == "svg" {
+				return []byte(decorated), "image/svg+xml", nil
+			}
+			return nil, "", nil
+		}
+		if closeBrowser != nil {
+			defer closeBrowser()
+		}
+
+		out, err := renderer.Resize(ctx, decorated, render.ResizeOpts{
+			Convert: format,
+			Padding: stringSliceInput(req.Inputs, "config.padding"),
+			Scripts: stringSliceInput(req.Inputs, "extras.js"),
+		})
+		if err != nil {
+			if res != nil {
+				res.Errors = append(res.Errors, fmt.Errorf("engine: resize: %w", err))
+			}
+			if format == "svg" {
+				return []byte(decorated), "image/svg+xml", nil
+			}
+			return nil, "", nil
+		}
+		return out.Body, out.MIME, nil
 
 	default:
 		return nil, "", xerrors.NewUnsupportedFormatError(format, errors.New("engine: dispatch"))
+	}
+}
+
+// obtainRenderer returns the configured Renderer when deps.Render is
+// non-nil. When nil, a fresh *render.Browser is constructed and the
+// returned cleanup func cancels it at the end of the request.
+func obtainRenderer(deps Deps) (render.Renderer, func(), error) {
+	if deps.Render != nil {
+		return deps.Render, nil, nil
+	}
+	b, err := render.New(render.BrowserOpts{Logger: deps.Logger})
+	if err != nil {
+		return nil, nil, err
+	}
+	return b, func() { _ = b.Close() }, nil
+}
+
+// buildPipelineStages assembles the decoration stages applied between
+// Template.Run and Renderer.Resize. US3 fills this with actual stages
+// (octicon → optional css → optional xml); for now it returns nil so
+// the dispatch path is exercised end-to-end while US3 is in flight.
+func buildPipelineStages(_ map[string]any) []render.PipelineStage {
+	return nil
+}
+
+// stringSliceInput extracts a slice-of-strings input from the
+// normalized Inputs map. The upstream input shapes can be either a
+// single string or a list; we hand both forms unchanged to the
+// downstream Resize call which knows how to interpret them
+// (parsePadding handles both).
+func stringSliceInput(inputs map[string]any, key string) []string {
+	if inputs == nil {
+		return nil
+	}
+	v, ok := inputs[key]
+	if !ok {
+		return nil
+	}
+	switch tv := v.(type) {
+	case []string:
+		out := make([]string, len(tv))
+		copy(out, tv)
+		return out
+	case string:
+		if tv == "" {
+			return nil
+		}
+		return []string{tv}
+	case []any:
+		out := make([]string, 0, len(tv))
+		for _, x := range tv {
+			if s, ok := x.(string); ok {
+				out = append(out, s)
+			}
+		}
+		return out
+	default:
+		return nil
 	}
 }

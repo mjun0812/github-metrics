@@ -174,7 +174,7 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 		Data:     data,
 		Metadata: deps.Metadata,
 	}
-	output, mime, err := dispatchOutput(ctx, req, deps, tmpl, data, pcPartial)
+	output, mime, err := dispatchOutput(ctx, req, deps, tmpl, data, pcPartial, res)
 	if err != nil {
 		return nil, err
 	}
