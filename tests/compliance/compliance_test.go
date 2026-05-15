@@ -44,6 +44,7 @@ var unadoptedPluginNames = []string{
 // full backlog).
 var scanRoots = []string{
 	"cmd",
+	"internal/engine",
 	"internal/plugins",
 	"internal/templates",
 }
