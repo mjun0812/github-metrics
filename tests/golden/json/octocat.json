@@ -1,0 +1,33 @@
+{
+  "account": "user",
+  "computed": {
+    "commits": 0,
+    "repositories": {
+      "count": 250,
+      "forks": 13,
+      "issues": 0,
+      "languages": {},
+      "pullRequests": 0,
+      "releases": 0,
+      "stargazers": 150,
+      "watchers": 7
+    }
+  },
+  "config": {
+    "animations": true,
+    "base64": true,
+    "debugFlags": null,
+    "display": "",
+    "timezone": {
+      "error": null,
+      "name": "UTC"
+    }
+  },
+  "errors": [],
+  "plugins": {},
+  "user": {
+    "avatarUrl": "https://avatars.githubusercontent.com/u/12345?v=4",
+    "login": "octocat",
+    "name": "The Octocat"
+  }
+}
