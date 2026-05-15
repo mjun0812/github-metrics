@@ -54,13 +54,13 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
-      - uses: golangci/golangci-lint-action@v7
+      - uses: golangci/golangci-lint-action@v6
         with:
-          # v2.x golangci-lint requires action@v7 (v6 rejects v2 with
-          # "golangci-lint v2 is not supported"). The lint binary is
-          # built with Go 1.25 so it parses the same module shape as
-          # the runner Go pin above.
-          version: v2.1.0
+          # Pinned to the v1.x line because v2 golangci-lint binaries are
+          # still built with Go 1.24 (which cannot parse modules with
+          # `go 1.25` directive). go.mod stays at `go 1.23` so this
+          # remains compatible.
+          version: v1.64.8
           args: --timeout=10m
 
   vuln:
