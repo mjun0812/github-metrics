@@ -1,0 +1,7 @@
+{
+  "_comment": "Expected dimension ranges for engine.Compute(template=classic, format=png) against the mocked octocat GraphQL fixture. The values are an envelope, not a target — the lower bound guards SC-001 (>=480x480), the upper bound catches accidental layout explosions.",
+  "width_min": 470,
+  "width_max": 1000,
+  "height_min": 470,
+  "height_max": 9000
+}

@@ -1,0 +1,28 @@
+# M3 .dockerignore — keep the Docker context small so each build is
+# fast and reproducible. Update alongside .gitignore when new
+# artifact paths land.
+
+# Upstream reference (per constitution: must not enter container)
+org_repo/
+
+# Go build artifacts
+bin/
+*.test
+*.out
+coverage.out
+
+# Asset generation toolchain (node_modules is huge and the image
+# embeds the pre-generated assets/octicons/data.json instead).
+node_modules/
+
+# Local spec/plan working tree — not needed at runtime.
+specs/
+
+# Editor / OS
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# Git metadata
+.git/

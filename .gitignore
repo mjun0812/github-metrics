@@ -7,6 +7,11 @@ org_repo/
 *.out
 coverage.out
 
+# Asset generation toolchain (M3: @primer/octicons drives gen-octicons,
+# but the resolved tree must not enter git history — only the generated
+# assets/octicons/data.json is committed).
+node_modules/
+
 # Editor / OS
 .DS_Store
 *.swp
