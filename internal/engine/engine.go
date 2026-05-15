@@ -17,6 +17,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/base"
 	"github.com/mjun0812/github-metrics/internal/plugins/core"
+	"github.com/mjun0812/github-metrics/internal/render"
 	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
@@ -83,6 +84,14 @@ type Deps struct {
 	HTTPClient *httpx.Client
 	REST       *githubapi.REST
 	GraphQL    *githubapi.GraphQL
+	// Render performs the chromedp-backed SVG resize / convert and is
+	// consumed only when Request.Format ∈ {"svg","png","jpeg"}. Nil
+	// is permitted: when needed, Compute lazily allocates a default
+	// *render.Browser on first use and tears it down at the end of
+	// the call. Tests should inject a *render.FakeRenderer so they
+	// never start chromium. JSON-format requests never read this
+	// field.
+	Render render.Renderer
 }
 
 // Compute drives a single end-to-end run.
