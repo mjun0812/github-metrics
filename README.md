@@ -6,12 +6,25 @@ Go port of [lowlighter/metrics](https://github.com/lowlighter/metrics) for the
 adopted feature subset documented in
 [`docs/design/15-selection-answer.md`](docs/design/15-selection-answer.md).
 
-**Status: M1 (project foundation) complete.** The runnable skeleton —
-configuration loaders, GitHub REST + GraphQL clients with the
-MOCKED_TOKEN safety guard, plugin/template registries, parallel core
-runner, and a wired `engine.Compute` — is on `main`. See
-[`specs/001-project-foundation/tasks.md`](specs/001-project-foundation/tasks.md)
-for the per-task breakdown. M2 (output rendering) is next.
+**Status: M2 (classic template + JSON output) complete.** Building on the
+M1 foundation, `engine.Compute` now emits an upstream-compatible JSON
+envelope (`account / user / config / computed / plugins / errors`) and
+renders the classic SVG template with four MVP partials. The format
+dispatcher routes `json` / `svg` / `png` / `jpeg` according to
+[`specs/002-output-classic-json/contracts/result-dispatch.md`](specs/002-output-classic-json/contracts/result-dispatch.md);
+`png` and `jpeg` stage SVG bytes with a warn log until the M3 chromedp
+rendering pipeline lands. See
+[`specs/002-output-classic-json/tasks.md`](specs/002-output-classic-json/tasks.md)
+for the per-task breakdown. M3 (rendering pipeline) and M4 (plugins) are
+next.
+
+### Output paths at a glance
+
+| Format | Wired in | Output | MIME |
+| --- | --- | --- | --- |
+| `json` | M2 | `engine.Marshal(data)` | `application/json` |
+| `svg` | M2 | `templates.classic.Run` | `image/svg+xml` |
+| `png` / `jpeg` | M2 interim | SVG bytes + warn log | `image/png` / `image/jpeg` |
 
 ## Quickstart for contributors
 
@@ -46,6 +59,23 @@ To bypass the hooks for a single commit (do not make a habit):
 ```sh
 git commit --no-verify
 ```
+
+### Upstream fixtures (optional)
+
+The SC-001 compatibility check compares the engine's JSON output to a
+captured upstream baseline at `tests/fixtures/upstream/octocat.json`.
+That fixture is regenerated from a local `./org_repo` checkout via:
+
+```sh
+make sync-fixtures
+```
+
+`./org_repo` is intentionally gitignored — the constitution forbids
+mixing upstream history into this repository. Contributors who need to
+refresh the fixture clone `lowlighter/metrics` to `./org_repo` first
+(`cd org_repo && npm install`) and then run the target. Tests skip
+gracefully when the fixture is absent, so a fresh checkout without
+`./org_repo` still passes CI.
 
 ## Toolchain
 
