@@ -16,13 +16,13 @@ git clone https://github.com/mjun0812/github-metrics.git
 cd github-metrics
 
 # Install developer tooling pinned to the same versions CI uses.
+# This brings in gofumpt, golangci-lint, govulncheck, and lefthook.
 make tools
 
-# Wire the local pre-commit hook so format + lint + go mod tidy run
-# automatically on every `git commit`. This catches the same issues CI
-# does, before the PR opens.
-pip install pre-commit          # or `pipx install pre-commit` / `brew install pre-commit`
-make pre-commit-install
+# Wire the lefthook git hooks so format + lint + `go mod tidy` run
+# automatically on every `git commit`. They run the same binaries CI
+# runs, so a failing commit is the same failure CI would report.
+make hooks-install
 
 # Build, test, and lint.
 make build
@@ -30,10 +30,17 @@ make test
 make lint
 ```
 
-To run the full pre-commit pipeline manually:
+To run the full pre-commit pipeline manually (e.g. before pushing a
+branch that has stacked commits):
 
 ```sh
-make pre-commit-run
+make hooks-run
+```
+
+To bypass the hooks for a single commit (do not make a habit):
+
+```sh
+git commit --no-verify
 ```
 
 ## Toolchain
@@ -41,13 +48,14 @@ make pre-commit-run
 | Tool | Pinned version | Where it lives |
 | --- | --- | --- |
 | Go | 1.26.3 | `.github/workflows/go-ci.yml`, `go.mod` (minimum 1.26) |
-| golangci-lint | v2.12.2 | `Makefile`, `.github/workflows/go-ci.yml`, `.pre-commit-config.yaml` |
-| gofumpt | latest | `Makefile`, `.pre-commit-config.yaml` |
+| golangci-lint | v2.12.2 | `Makefile`, `.github/workflows/go-ci.yml`, `lefthook.yml` |
+| gofumpt | latest | `Makefile`, `lefthook.yml` |
 | govulncheck | latest | `Makefile`, `.github/workflows/go-ci.yml` |
-| pre-commit | any recent | developer-installed; hooks declared in `.pre-commit-config.yaml` |
+| lefthook | latest | `Makefile`, `lefthook.yml` (the git-hook manager) |
 
-Bump these together when upgrading — drift between local and CI is the
-single biggest source of red builds.
+`lefthook` is a single Go binary — no Python, Node, or Ruby toolchain
+required. Bump these together when upgrading; drift between local and
+CI is the single biggest source of red builds.
 
 ## Project layout
 
