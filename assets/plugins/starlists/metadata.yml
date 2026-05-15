@@ -48,7 +48,7 @@ inputs:
     default: 8
     min: 0
     zero: disable
-  
+
   plugin_starlists_languages_ignored:
     description: |
       Ignored languages in star lists
@@ -56,7 +56,7 @@ inputs:
     format: comma-separated
     default: ""
     example: html, css, ...
-  
+
   plugin_starlists_languages_aliases:
     description: |
       Custom languages names in star lists

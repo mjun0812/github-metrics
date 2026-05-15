@@ -165,7 +165,7 @@ func readBody(r io.ReadCloser) []byte {
 	if r == nil {
 		return nil
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 	buf, _ := io.ReadAll(r)
 	return buf
 }

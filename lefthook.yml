@@ -1,0 +1,55 @@
+# lefthook configuration for github-metrics.
+#
+# Install once per checkout with:
+#   make tools         # installs lefthook + gofumpt + golangci-lint + govulncheck
+#   make hooks-install # wires the git hook
+#
+# After install the hook fires automatically on `git commit` and runs
+# the same format + lint pipeline CI runs, so a contributor never has
+# to chase a failing GHA run that local feedback could have caught.
+#
+# Bypass (do NOT make a habit): `git commit --no-verify`.
+#
+# Run every hook manually over the whole tree:
+#   make hooks-run
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: gofumpt
+      glob: "*.go"
+      exclude: ['^.*graphql_gen\.go$']
+      # gofumpt rewrites files in place; lefthook re-stages the result
+      # so the commit gets the formatted version.
+      run: gofumpt -w {staged_files}
+      stage_fixed: true
+
+    - name: go-vet
+      glob: "*.go"
+      # go vet operates on packages, not files, so any .go change fans
+      # out to the whole tree. Cheap enough on this project.
+      run: go vet ./...
+
+    - name: go-mod-tidy
+      glob:
+        - "go.mod"
+        - "go.sum"
+      # `go mod tidy -diff` exits non-zero when it *would* modify
+      # anything but never touches the working tree. Forces the
+      # contributor to run `go mod tidy` and stage the result.
+      run: go mod tidy -diff
+
+    - name: golangci-lint
+      glob: "*.go"
+      # --fix applies the auto-fixable findings; stage_fixed re-stages
+      # the result so the commit picks them up.
+      run: golangci-lint run --fix --timeout=5m
+      stage_fixed: true
+
+pre-push:
+  jobs:
+    - name: tests
+      run: go test ./...
+
+    - name: tests-race
+      run: go test -race ./...

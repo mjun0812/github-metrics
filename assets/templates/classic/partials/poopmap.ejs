@@ -16,7 +16,7 @@
             <% let displayedValues = []; %>
             <% let poops = plugins.poopmap.poops %>
             <% for (let h = 0; h < 24; h++) { displayedValues.push([h, (poops[h] || 0)/(poops.max || 1), poops[h]]) } %>
-  
+
             <% for(const [h, percentage, value] of displayedValues) { %>
               <div class="entry">
                 <span class="value"><%= value %></span>

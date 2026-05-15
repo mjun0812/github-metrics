@@ -13,29 +13,37 @@ LDFLAGS   := -s -w -X main.version=$(shell git describe --tags --dirty --always 
 
 BINARIES := metrics-action metrics-cli
 
-GOLANGCI_LINT_VERSION := v1.61.0
+# Pin developer tooling so `make tools` produces a reproducible local
+# environment matching CI. Bump these together with the CI workflow.
+GOLANGCI_LINT_VERSION := v2.12.2
 GOVULNCHECK_VERSION   := latest
 GOFUMPT_VERSION       := latest
+LEFTHOOK_VERSION      := latest
 
-.PHONY: all build test test-race lint vet bench gen docker e2e tools check-compat sync-assets clean help
+.PHONY: all build test test-race lint vet bench gen docker e2e \
+        tools hooks-install hooks-run hooks-uninstall \
+        check-compat sync-assets clean help
 
 all: build
 
 help:
 	@echo "Targets:"
-	@echo "  build         Build cmd/metrics-action and cmd/metrics-cli into bin/"
-	@echo "  test          Run unit tests (go test ./...)"
-	@echo "  test-race     Run tests with the race detector"
-	@echo "  vet           Run go vet ./..."
-	@echo "  lint          Run golangci-lint and govulncheck"
-	@echo "  bench         Run benchmarks (go test -bench=. -run=^$$)"
-	@echo "  gen           Run code generation (go generate ./...)"
-	@echo "  docker        Build the production Docker image (placeholder; T-126 owns the impl)"
-	@echo "  e2e           Run end-to-end integration tests (placeholder; T122 owns the impl)"
-	@echo "  tools         Install developer tooling (golangci-lint, govulncheck, gofumpt)"
-	@echo "  check-compat  Diff metadata keys against ./org_repo upstream (placeholder; T058 owns the impl)"
-	@echo "  sync-assets   Sync assets/ from ./org_repo (placeholder until T024 lands)"
-	@echo "  clean         Remove bin/ and other build artifacts"
+	@echo "  build               Build cmd/metrics-action and cmd/metrics-cli into bin/"
+	@echo "  test                Run unit tests (go test ./...)"
+	@echo "  test-race           Run tests with the race detector"
+	@echo "  vet                 Run go vet ./..."
+	@echo "  lint                Run golangci-lint and govulncheck"
+	@echo "  bench               Run benchmarks (go test -bench=. -run=^$$)"
+	@echo "  gen                 Run code generation (go generate ./...)"
+	@echo "  docker              Build the production Docker image (placeholder; T-126 owns the impl)"
+	@echo "  e2e                 Run end-to-end integration tests (placeholder; T122 owns the impl)"
+	@echo "  tools               Install developer tooling (golangci-lint, govulncheck, gofumpt, lefthook)"
+	@echo "  hooks-install       Wire the lefthook git hooks (run once per checkout after \`make tools\`)"
+	@echo "  hooks-run           Run every pre-commit hook over the whole tree"
+	@echo "  hooks-uninstall     Remove the lefthook git hooks"
+	@echo "  check-compat        Diff metadata keys against ./org_repo upstream (placeholder; T058 owns the impl)"
+	@echo "  sync-assets         Sync assets/ from ./org_repo (placeholder until T024 lands)"
+	@echo "  clean               Remove bin/ and other build artifacts"
 
 build: $(addprefix $(BIN_DIR)/, $(BINARIES))
 
@@ -69,9 +77,27 @@ e2e:
 	@echo "e2e target placeholder - implemented in T122 (M9)"
 
 tools:
-	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	$(GO) install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 	$(GO) install mvdan.cc/gofumpt@$(GOFUMPT_VERSION)
+	$(GO) install github.com/evilmartians/lefthook@$(LEFTHOOK_VERSION)
+
+hooks-install:
+	@if ! command -v lefthook >/dev/null 2>&1; then \
+		echo "lefthook not found on PATH. Run 'make tools' first."; \
+		exit 1; \
+	fi
+	lefthook install
+
+hooks-run:
+	lefthook run pre-commit --all-files
+
+hooks-uninstall:
+	@if command -v lefthook >/dev/null 2>&1; then \
+		lefthook uninstall; \
+	else \
+		echo "lefthook not on PATH; nothing to uninstall."; \
+	fi
 
 check-compat:
 	@echo "check-compat placeholder - implemented in T058 (Phase 8)"

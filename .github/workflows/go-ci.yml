@@ -10,23 +10,20 @@ permissions:
   contents: read
 
 env:
-  # Pin to a specific Go release that has both (a) the security patches
-  # govulncheck demands and (b) an AST that the latest golangci-lint
-  # build can fully type-check. Bumping past this pin requires updating
-  # the golangci-lint pin below in lockstep.
-  # Go 1.25 carries the patched net/tls/x509/url stdlib (govulncheck
-  # green) while still pre-dating the 1.26 stdlib files
-  # (chacha20poly1305/fips140only_go1.26.go) that older golangci-lint
-  # builds cannot parse.
-  GO_VERSION: "1.25.10"
+  # Track the latest stable Go release. Keep in lockstep with the
+  # GOLANGCI_LINT_VERSION pin so the lint binary can fully type-check
+  # the modules we ship.
+  GO_VERSION: "1.26.3"
+  # Built against Go 1.26; matches the runner pin above.
+  GOLANGCI_LINT_VERSION: "v2.12.2"
 
 jobs:
   test:
     name: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
@@ -37,8 +34,8 @@ jobs:
     name: vet
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
@@ -49,26 +46,22 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v8
         with:
-          # Pinned to the v1.x line because v2 golangci-lint binaries are
-          # still built with Go 1.24 (which cannot parse modules with
-          # `go 1.25` directive). go.mod stays at `go 1.23` so this
-          # remains compatible.
-          version: v1.64.8
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
           args: --timeout=10m
 
   vuln:
     name: vuln
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
@@ -81,8 +74,8 @@ jobs:
     name: test-race
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
@@ -93,8 +86,8 @@ jobs:
     name: smoke-macos
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true

@@ -106,22 +106,32 @@ func (e *RetryableError) Unwrap() error { return e.Cause }
 // Convenience constructors keep call sites compact while preserving the
 // underlying type information for errors.As.
 
+// NewInputError returns an *InputError describing a malformed or
+// unexpected input value.
 func NewInputError(field string, cause error) error {
 	return &InputError{Field: field, Cause: cause}
 }
 
+// NewNotFoundError returns a *NotFoundError keyed by the missing
+// resource identifier.
 func NewNotFoundError(resource string, cause error) error {
 	return &NotFoundError{Resource: resource, Cause: cause}
 }
 
+// NewForbiddenError returns a *ForbiddenError tagged with a short
+// machine-readable reason code.
 func NewForbiddenError(reason string, cause error) error {
 	return &ForbiddenError{Reason: reason, Cause: cause}
 }
 
+// NewUnsupportedFormatError returns an *UnsupportedFormatError tagged
+// with the unsupported format string.
 func NewUnsupportedFormatError(format string, cause error) error {
 	return &UnsupportedFormatError{Format: format, Cause: cause}
 }
 
+// NewRetryableError wraps a transient failure that callers should
+// retry. Also used by the plugin runner when a panic is recovered.
 func NewRetryableError(cause error) error {
 	return &RetryableError{Cause: cause}
 }

@@ -59,7 +59,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 	fs.BoolVar(&showVersion, "version", false, "print version and exit")
 	fs.BoolVar(&debug, "debug", false, "enable debug-level logging")
 	fs.StringVar(&logFormat, "log-format", "json", `log format: "json" or "text"`)
-	fs.Usage = func() { fmt.Fprintln(stdout, usageText) }
+	fs.Usage = func() { _, _ = fmt.Fprintln(stdout, usageText) }
 
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -68,7 +68,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 	if showVersion {
-		fmt.Fprintln(stdout, version)
+		_, _ = fmt.Fprintln(stdout, version)
 		return nil
 	}
 
@@ -89,11 +89,11 @@ func run(args []string, stdout, stderr io.Writer) error {
 	_ = ctx // not yet consumed in M1; reserved for T-105.
 
 	banner(stdout)
-	fmt.Fprintln(stdout, usageText)
+	_, _ = fmt.Fprintln(stdout, usageText)
 	return nil
 }
 
 func banner(w io.Writer) {
-	fmt.Fprintf(w, "%s %s (go %s, %s/%s)\n",
+	_, _ = fmt.Fprintf(w, "%s %s (go %s, %s/%s)\n",
 		binaryName, version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 }

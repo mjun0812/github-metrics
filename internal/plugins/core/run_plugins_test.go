@@ -45,7 +45,8 @@ func registerStubs(t *testing.T, stubs ...*stubPlugin) {
 
 func TestRunPlugins_AggregatesSuccessErrorPanic(t *testing.T) {
 	successCalls := atomic.Int32{}
-	registerStubs(t,
+	registerStubs(
+		t,
 		&stubPlugin{
 			name: "stub-success",
 			run: func(ctx context.Context, pc *plugins.PluginContext) (any, error) {
@@ -115,7 +116,8 @@ func TestRunPlugins_ParallelOneSerializes(t *testing.T) {
 		time.Sleep(2 * time.Millisecond)
 		return "ok", nil
 	}
-	registerStubs(t,
+	registerStubs(
+		t,
 		&stubPlugin{name: "stub-a", run: noteRun},
 		&stubPlugin{name: "stub-b", run: noteRun},
 		&stubPlugin{name: "stub-c", run: noteRun},
