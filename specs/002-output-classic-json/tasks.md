@@ -30,10 +30,10 @@ description: "Task list for output-classic-json (M2: T-023..T-029)"
 
 **Purpose**: 上流 fixture 取得ツールと、テストヘルパの足場を整える。後続フェーズの全タスクが依存する。
 
-- [ ] T001 Implement `internal/tools/sync-fixtures/main.go` — reads `./org_repo/tests/cases/octocat.yml`, runs the upstream Node implementation under `./org_repo` to materialize the output, and copies the resulting JSON to `tests/fixtures/upstream/<login>.json` (research R-004). Idempotent and network-free against the local upstream checkout.
-- [ ] T002 [P] Wire `make sync-fixtures` target in `Makefile` invoking `go run ./internal/tools/sync-fixtures --user octocat` and a `make check-output-compat` target that runs the new `tests/compatibility/...` suite.
-- [ ] T003 [P] Add `tests/integration/svg_normalize.go` providing `NormalizeSVG(raw []byte) ([]byte, error)`: parse via `encoding/xml`, lex-sort attributes, collapse text-node whitespace, drop comments, regex-mask the footer's `Last updated …` / `lowlighter|mjun0812/github-metrics@…` segments to `__MASKED__` (research R-009). The helper is shared by every classic golden test.
-- [ ] T004 [P] Add `internal/engine/version.go` exposing `Version() string` (default returns the value of `version` linker variable, falls back to `"dev"`) and `SetVersionForTest(t TB, v string)` that swaps it through `t.Cleanup` (research R-010). Update `cmd/metrics-action/main.go` and `cmd/metrics-cli/main.go` to read this single source.
+- [X] T001 Implement `internal/tools/sync-fixtures/main.go` — reads `./org_repo/tests/cases/octocat.yml`, runs the upstream Node implementation under `./org_repo` to materialize the output, and copies the resulting JSON to `tests/fixtures/upstream/<login>.json` (research R-004). Idempotent and network-free against the local upstream checkout.
+- [X] T002 [P] Wire `make sync-fixtures` target in `Makefile` invoking `go run ./internal/tools/sync-fixtures --user octocat` and a `make check-output-compat` target that runs the new `tests/compatibility/...` suite.
+- [X] T003 [P] Add `tests/integration/svg_normalize.go` providing `NormalizeSVG(raw []byte) ([]byte, error)`: parse via `encoding/xml`, lex-sort attributes, collapse text-node whitespace, drop comments, regex-mask the footer's `Last updated …` / `lowlighter|mjun0812/github-metrics@…` segments to `__MASKED__` (research R-009). The helper is shared by every classic golden test.
+- [X] T004 [P] Add `internal/engine/version.go` exposing `Version() string` (default returns the value of `version` linker variable, falls back to `"dev"`) and `SetVersionForTest(t TB, v string)` that swaps it through `t.Cleanup` (research R-010). Update `cmd/metrics-action/main.go` and `cmd/metrics-cli/main.go` to read this single source.
 
 **Checkpoint (Phase 1)**: `make sync-fixtures` produces `tests/fixtures/upstream/octocat.json`; `NormalizeSVG` is callable from tests; `engine.Version()` is the single source of truth for the version string.
 
@@ -45,8 +45,8 @@ description: "Task list for output-classic-json (M2: T-023..T-029)"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T005 Extend `engine.Result` in `internal/engine/engine.go` with `Output []byte` and `MIME string` fields (data-model E-001). Update doc comments to describe the IANA values defined in contracts/result-dispatch.md §2.
-- [ ] T006 Add `dispatchOutput(ctx, req, deps, tmpl, data, pcPartial)` helper in `internal/engine/engine.go` that follows the pseudocode in contracts/result-dispatch.md §3. Wire it as the new Stage 4 of `engine.Compute`, populating `Result.Output` / `Result.MIME`. PNG/JPEG branches log a warn via `deps.Logger` (research R-008). Add table tests in `internal/engine/engine_test.go` covering format default resolution (FR-014), `Format=""` + Template=nil falling back to `"json"`, and `Format="bogus"` returning `*errors.UnsupportedFormatError`.
+- [X] T005 Extend `engine.Result` in `internal/engine/engine.go` with `Output []byte` and `MIME string` fields (data-model E-001). Update doc comments to describe the IANA values defined in contracts/result-dispatch.md §2.
+- [X] T006 Add `dispatchOutput(ctx, req, deps, tmpl, data, pcPartial)` helper in `internal/engine/engine.go` that follows the pseudocode in contracts/result-dispatch.md §3. Wire it as the new Stage 4 of `engine.Compute`, populating `Result.Output` / `Result.MIME`. PNG/JPEG branches log a warn via `deps.Logger` (research R-008). Add table tests in `internal/engine/engine_test.go` covering format default resolution (FR-014), `Format=""` + Template=nil falling back to `"json"`, and `Format="bogus"` returning `*errors.UnsupportedFormatError`.
 
 **Checkpoint (Phase 2)**: `engine.Compute` returns a `Result` with `Output` and `MIME` set per `Request.Format`; existing M1 tests still green; new dispatch tests green.
 
@@ -60,16 +60,16 @@ description: "Task list for output-classic-json (M2: T-023..T-029)"
 
 ### Tests for User Story 1
 
-- [ ] T007 [P] [US1] Add `internal/engine/json_test.go` with table tests covering: simple Data marshalling, `time.Time` → RFC 3339 string, `map[int]string` → `[{key,value}]` sorted by key, `map[T]struct{}` set → sorted `[T]`, `config.Token` masked to `"(provided)"` (data-model E-002 normalization table).
-- [ ] T008 [P] [US1] Add `internal/engine/json_cycle_test.go`: build a `Data` with `Plugins["self-ref"]` pointing back into itself, plus `Plugins["a-b"]` / `Plugins["b-a"]` where two values reference each other. Assert `Marshal` returns a `[]byte` containing `"[Circular]"` and **does not panic** (FR-002, contracts/json-output.md §5).
-- [ ] T009 [P] [US1] Add `tests/golden/json/octocat.json` placeholder (empty `{}` for now) and `tests/integration/output_json_test.go::TestComputeJSON_OctocatGolden` that calls `engine.Compute` against the mocked GraphQL fixture and `assert.JSONEq` against the golden. The golden gets populated by T013 below via `-update`.
+- [X] T007 [P] [US1] Add `internal/engine/json_test.go` with table tests covering: simple Data marshalling, `time.Time` → RFC 3339 string, `map[int]string` → `[{key,value}]` sorted by key, `map[T]struct{}` set → sorted `[T]`, `config.Token` masked to `"(provided)"` (data-model E-002 normalization table).
+- [X] T008 [P] [US1] Add `internal/engine/json_cycle_test.go`: build a `Data` with `Plugins["self-ref"]` pointing back into itself, plus `Plugins["a-b"]` / `Plugins["b-a"]` where two values reference each other. Assert `Marshal` returns a `[]byte` containing `"[Circular]"` and **does not panic** (FR-002, contracts/json-output.md §5).
+- [X] T009 [P] [US1] Add `tests/golden/json/octocat.json` placeholder (empty `{}` for now) and `tests/integration/output_json_test.go::TestComputeJSON_OctocatGolden` that calls `engine.Compute` against the mocked GraphQL fixture and `assert.JSONEq` against the golden. The golden gets populated by T013 below via `-update`.
 - [ ] T010 [P] [US1] Add `tests/compatibility/json_test.go::TestUpstreamKeysetCompatibility` reading `tests/fixtures/upstream/octocat.json` and the same test's locally-produced JSON; assert the upstream key set is a subset of the local key set (FR-018, SC-001). Use a recursive walker that collects every JSON-pointer-style path so nested keys (`computed.repositories.count`) are compared too. If `tests/fixtures/upstream/octocat.json` does not exist, the test calls `t.Skip` so contributors without `./org_repo` can still pass CI.
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Implement `internal/engine/json.go` (data-model E-002): `Marshal(*plugins.Data) ([]byte, error)`, `cycleDetector` with `seen map[uintptr]struct{}`, `normalize(any) any` that handles the value-table from contracts/json-output.md §3. Treat `reflect.Value.Pointer()` as the cycle key for `reflect.Ptr` / `reflect.Map` / `reflect.Slice`; unaddressable values short-circuit to `"[Circular]"`. Time, Token, error special cases routed through dedicated branches. Make T007 + T008 pass.
-- [ ] T012 [US1] Wire `dispatchOutput` (T006) to call `Marshal` when `format == "json"`, set `MIME = "application/json"`. Verify `engine.Compute(Request{Format: "json"})` returns `len(Result.Output) > 0`, `json.Valid(Result.Output)` is true, `Result.MIME == "application/json"`.
-- [ ] T013 [US1] Regenerate `tests/golden/json/octocat.json` via `go test ./tests/integration/... -run TestComputeJSON_OctocatGolden -update`. Inspect the diff and commit. Run the full `go test ./...` once more to confirm stability.
+- [X] T011 [US1] Implement `internal/engine/json.go` (data-model E-002): `Marshal(*plugins.Data) ([]byte, error)`, `cycleDetector` with `seen map[uintptr]struct{}`, `normalize(any) any` that handles the value-table from contracts/json-output.md §3. Treat `reflect.Value.Pointer()` as the cycle key for `reflect.Ptr` / `reflect.Map` / `reflect.Slice`; unaddressable values short-circuit to `"[Circular]"`. Time, Token, error special cases routed through dedicated branches. Make T007 + T008 pass.
+- [X] T012 [US1] Wire `dispatchOutput` (T006) to call `Marshal` when `format == "json"`, set `MIME = "application/json"`. Verify `engine.Compute(Request{Format: "json"})` returns `len(Result.Output) > 0`, `json.Valid(Result.Output)` is true, `Result.MIME == "application/json"`.
+- [X] T013 [US1] Regenerate `tests/golden/json/octocat.json` via `go test ./tests/integration/... -run TestComputeJSON_OctocatGolden -update`. Inspect the diff and commit. Run the full `go test ./...` once more to confirm stability.
 
 **Checkpoint (US1)**: JSON output complete with cycle protection and upstream compatibility verified. This is the MVP — could ship to a downstream-tool consumer today.
 
