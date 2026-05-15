@@ -56,8 +56,10 @@ jobs:
           cache: true
       - uses: golangci/golangci-lint-action@v6
         with:
-          # v1.64.x is built against Go 1.24 and matches the runner pin
-          # above. Update both together when bumping toolchains.
+          # Pinned to the v1.x line because v2 golangci-lint binaries are
+          # still built with Go 1.24 (which cannot parse modules with
+          # `go 1.25` directive). go.mod stays at `go 1.23` so this
+          # remains compatible.
           version: v1.64.8
           args: --timeout=10m
 
