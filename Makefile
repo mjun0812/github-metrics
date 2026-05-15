@@ -69,6 +69,7 @@ bench:
 
 gen:
 	$(GO) generate ./...
+	$(GO) run ./internal/tools/gen-graphql
 
 docker:
 	@echo "docker target placeholder - implemented in T-126 (M10)"

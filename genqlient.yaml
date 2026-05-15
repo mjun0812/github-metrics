@@ -1,0 +1,23 @@
+# genqlient configuration for github-metrics.
+# Schema and operations live under internal/githubapi/ so the generator
+# can resolve paths relative to it; generated output lands inside the
+# same package.
+
+schema: internal/githubapi/schema.graphql
+operations:
+  - internal/githubapi/queries/*.graphql
+generated: internal/githubapi/graphql_gen.go
+package: githubapi
+
+# Map the custom scalars in our schema slice to convenient Go types.
+# DateTime is RFC 3339 in the wire format; we expose it as time.Time so
+# downstream code does not have to parse strings. URI stays as a string
+# alias because GitHub also occasionally returns relative paths.
+bindings:
+  DateTime:
+    type: time.Time
+  URI:
+    type: string
+
+use_struct_references: true
+optional: pointer
