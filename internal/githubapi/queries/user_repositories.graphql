@@ -1,0 +1,23 @@
+query UserRepositories($login: String!, $first: Int!) {
+  user(login: $login) {
+    repositories(first: $first, ownerAffiliations: [OWNER]) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        databaseId
+        id
+        name
+        nameWithOwner
+        isFork
+        stargazerCount
+        forkCount
+        watchers {
+          totalCount
+        }
+      }
+    }
+  }
+}

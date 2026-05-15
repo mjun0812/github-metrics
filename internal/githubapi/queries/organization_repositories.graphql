@@ -1,0 +1,23 @@
+query OrganizationRepositories($login: String!, $first: Int!) {
+  organization(login: $login) {
+    repositories(first: $first) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        databaseId
+        id
+        name
+        nameWithOwner
+        isFork
+        stargazerCount
+        forkCount
+        watchers {
+          totalCount
+        }
+      }
+    }
+  }
+}
