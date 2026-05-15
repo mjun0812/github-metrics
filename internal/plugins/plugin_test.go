@@ -93,14 +93,12 @@ func TestEach_IteratesInSortedOrder(t *testing.T) {
 }
 
 type fakeTB struct {
-	helperCalls   int
-	cleanupFn     func()
-	fatalfMessage string
+	cleanupFn func()
 }
 
 func (f *fakeTB) Helper()                           {}
 func (f *fakeTB) Cleanup(fn func())                 { f.cleanupFn = fn }
-func (f *fakeTB) Fatalf(format string, args ...any) { f.fatalfMessage = format }
+func (f *fakeTB) Fatalf(format string, args ...any) {}
 
 func TestRegisterForTest_RestoresPriorValue(t *testing.T) {
 	resetRegistry(t)

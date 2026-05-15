@@ -24,7 +24,7 @@ type Template interface {
 	Name() string
 	Metadata() *config.TemplateMetadata
 	FS() fs.FS
-	Check(q map[string]any, account string, format string) error
+	Check(q map[string]any, account, format string) error
 	Run(ctx context.Context, pc *PartialContext) (string, error)
 }
 
