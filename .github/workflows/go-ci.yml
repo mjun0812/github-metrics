@@ -14,7 +14,11 @@ env:
   # govulncheck demands and (b) an AST that the latest golangci-lint
   # build can fully type-check. Bumping past this pin requires updating
   # the golangci-lint pin below in lockstep.
-  GO_VERSION: "1.24"
+  # Go 1.25 carries the patched net/tls/x509/url stdlib (govulncheck
+  # green) while still pre-dating the 1.26 stdlib files
+  # (chacha20poly1305/fips140only_go1.26.go) that older golangci-lint
+  # builds cannot parse.
+  GO_VERSION: "1.25"
 
 jobs:
   test:
