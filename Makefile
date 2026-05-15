@@ -103,8 +103,14 @@ hooks-uninstall:
 check-compat:
 	$(GO) run ./internal/tools/check-compat
 
+check-output-compat:
+	$(GO) test ./tests/compatibility/...
+
 sync-assets:
 	./scripts/sync-assets.sh
+
+sync-fixtures:
+	$(GO) run ./internal/tools/sync-fixtures --user octocat
 
 clean:
 	rm -rf $(BIN_DIR)

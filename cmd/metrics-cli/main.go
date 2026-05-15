@@ -19,11 +19,17 @@ import (
 	"runtime"
 	"syscall"
 
+	"github.com/mjun0812/github-metrics/internal/engine"
 	"github.com/mjun0812/github-metrics/internal/logger"
 )
 
 // version is populated at build time via -ldflags "-X main.version=...".
+// Mirrored into engine.SetVersion (see metrics-action for rationale).
 var version = "dev"
+
+func init() {
+	engine.SetVersion(version)
+}
 
 const binaryName = "metrics-cli"
 

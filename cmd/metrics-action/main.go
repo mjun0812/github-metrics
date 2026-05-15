@@ -19,11 +19,19 @@ import (
 	"runtime"
 	"syscall"
 
+	"github.com/mjun0812/github-metrics/internal/engine"
 	"github.com/mjun0812/github-metrics/internal/logger"
 )
 
 // version is populated at build time via -ldflags "-X main.version=...".
+// It is mirrored into engine.SetVersion so every place that emits a
+// version string (metadata footer, User-Agent, banner) reads from the
+// same source of truth.
 var version = "dev"
+
+func init() {
+	engine.SetVersion(version)
+}
 
 const binaryName = "metrics-action"
 
