@@ -37,7 +37,7 @@ func TestClient_GetRetries5xxThenSucceeds(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "ok")
+		_, _ = fmt.Fprint(w, "ok")
 	}))
 	defer srv.Close()
 
@@ -91,7 +91,7 @@ func TestClient_Retries429(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "ok")
+		_, _ = fmt.Fprint(w, "ok")
 	}))
 	defer srv.Close()
 
@@ -185,7 +185,7 @@ func TestClient_PostJSON(t *testing.T) {
 		}
 		body, _ := io.ReadAll(r.Body)
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"echoed":%s}`, body)
+		_, _ = fmt.Fprintf(w, `{"echoed":%s}`, body)
 	}))
 	defer srv.Close()
 
@@ -208,7 +208,7 @@ func TestClient_PostForm(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = r.ParseForm()
-		fmt.Fprint(w, r.Form.Get("hello"))
+		_, _ = fmt.Fprint(w, r.Form.Get("hello"))
 	}))
 	defer srv.Close()
 

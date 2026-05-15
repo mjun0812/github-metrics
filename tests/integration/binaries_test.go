@@ -32,7 +32,7 @@ func runTests(m *testing.M) int {
 		fmt.Fprintf(os.Stderr, "TestMain: create tempdir: %v\n", err)
 		return 2
 	}
-	defer os.RemoveAll(tmp)
+	defer func() { _ = os.RemoveAll(tmp) }()
 
 	repoRoot, err := findRepoRoot()
 	if err != nil {

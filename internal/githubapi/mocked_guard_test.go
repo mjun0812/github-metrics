@@ -60,7 +60,7 @@ func TestMockedGuard_AllowsLocalhostThroughInner(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RoundTrip on localhost should not error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d", resp.StatusCode)
 	}
