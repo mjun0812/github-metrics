@@ -5,9 +5,13 @@
 Go port of [lowlighter/metrics](https://github.com/lowlighter/metrics) for the
 adopted feature subset documented in
 [`docs/design/15-selection-answer.md`](docs/design/15-selection-answer.md).
-**Status: M1 in progress** — see
+
+**Status: M1 (project foundation) complete.** The runnable skeleton —
+configuration loaders, GitHub REST + GraphQL clients with the
+MOCKED_TOKEN safety guard, plugin/template registries, parallel core
+runner, and a wired `engine.Compute` — is on `main`. See
 [`specs/001-project-foundation/tasks.md`](specs/001-project-foundation/tasks.md)
-for the current task list and progress.
+for the per-task breakdown. M2 (output rendering) is next.
 
 ## Quickstart for contributors
 
