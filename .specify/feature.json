@@ -1,3 +1,1 @@
-{
-  "feature_directory": "specs/002-output-classic-json"
-}
+{"feature_directory":"specs/003-chromedp-rendering-pipeline"}
