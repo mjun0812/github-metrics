@@ -1,6 +1,11 @@
-query UserRepositories($login: String!, $first: Int!) {
+query UserRepositories($login: String!, $first: Int!, $after: String) {
   user(login: $login) {
-    repositories(first: $first, ownerAffiliations: [OWNER]) {
+    repositories(
+      first: $first
+      after: $after
+      ownerAffiliations: [OWNER]
+      orderBy: { field: UPDATED_AT, direction: DESC }
+    ) {
       totalCount
       pageInfo {
         hasNextPage
@@ -11,11 +16,31 @@ query UserRepositories($login: String!, $first: Int!) {
         id
         name
         nameWithOwner
+        description
+        url
+        isPrivate
         isFork
+        pushedAt
+        updatedAt
         stargazerCount
         forkCount
         watchers {
           totalCount
+        }
+        primaryLanguage {
+          name
+          color
+        }
+        languages(first: 8) {
+          totalCount
+          totalSize
+          edges {
+            size
+            node {
+              name
+              color
+            }
+          }
         }
       }
     }

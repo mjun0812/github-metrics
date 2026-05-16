@@ -1,0 +1,17 @@
+{
+  "events": [
+    {
+      "type": "PushEvent",
+      "repo": "octocat/alpha",
+      "date": "2026-05-15T12:00:00Z",
+      "visibility": "public"
+    },
+    {
+      "type": "PullRequestEvent",
+      "repo": "octocat/beta",
+      "date": "2026-05-15T11:00:00Z",
+      "visibility": "public"
+    }
+  ],
+  "days": 14
+}

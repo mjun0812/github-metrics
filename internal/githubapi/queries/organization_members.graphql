@@ -1,0 +1,16 @@
+query OrganizationMembers($login: String!, $first: Int!, $after: String) {
+  organization(login: $login) {
+    membersWithRole(first: $first, after: $after) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        login
+        name
+        avatarUrl
+      }
+    }
+  }
+}

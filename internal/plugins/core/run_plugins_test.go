@@ -25,22 +25,32 @@ func (s *stubPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, e
 	return s.run(ctx, pc)
 }
 
-type fakeTB struct{ cleanupFn func() }
+// fakeTB collects every cleanup callback `plugins.RegisterForTest`
+// schedules. Earlier versions retained only the last fn, which caused
+// all-but-the-last stub to leak into the global registry once
+// registerStubs returned — masking parallel-runner regressions in any
+// test that registered more than one stub.
+type fakeTB struct{ cleanupFns []func() }
 
 func (f *fakeTB) Helper()                           {}
-func (f *fakeTB) Cleanup(fn func())                 { f.cleanupFn = fn }
+func (f *fakeTB) Cleanup(fn func())                 { f.cleanupFns = append(f.cleanupFns, fn) }
 func (f *fakeTB) Fatalf(format string, args ...any) {}
 
 // registerStubs registers each stub and arranges cleanup so that
 // subsequent tests start from the original registry (which still
-// contains the core plugin from its package init).
+// contains the core plugin from its package init). Cleanup runs in
+// LIFO order to match testing.T.Cleanup semantics.
 func registerStubs(t *testing.T, stubs ...*stubPlugin) {
 	t.Helper()
 	tb := &fakeTB{}
 	for _, s := range stubs {
 		plugins.RegisterForTest(tb, s)
 	}
-	t.Cleanup(tb.cleanupFn)
+	t.Cleanup(func() {
+		for i := len(tb.cleanupFns) - 1; i >= 0; i-- {
+			tb.cleanupFns[i]()
+		}
+	})
 }
 
 func TestRunPlugins_AggregatesSuccessErrorPanic(t *testing.T) {
@@ -161,6 +171,40 @@ func TestRunPlugins_ParallelZeroUsesGOMAXPROCS(t *testing.T) {
 func TestRunPlugins_NilContextErrors(t *testing.T) {
 	if err := core.RunPlugins(context.Background(), nil, 1); err == nil {
 		t.Fatalf("expected error for nil PluginContext")
+	}
+}
+
+func TestRunPlugins_DrainsDataErrors(t *testing.T) {
+	// Stub plugin records a non-fatal error via Data.AppendError without
+	// returning the err from Run. The drain path is: plugin → Data.Errors
+	// (mutex-protected) → SnapshotErrors → engine.Result.Errors. This
+	// test exercises everything up through the SnapshotErrors call so a
+	// future change to the engine glue keeps the contract observable.
+	want := errors.New("paging: batch=1 failed after 3 retries")
+	registerStubs(
+		t,
+		&stubPlugin{
+			name: "stub-degraded",
+			run: func(ctx context.Context, pc *plugins.PluginContext) (any, error) {
+				pc.Data.AppendError(want)
+				return map[string]any{"partial": true}, nil
+			},
+		},
+	)
+
+	pc := &plugins.PluginContext{Data: plugins.NewData()}
+	if err := core.RunPlugins(context.Background(), pc, 1); err != nil {
+		t.Fatalf("RunPlugins: %v", err)
+	}
+
+	snap := pc.Data.SnapshotErrors()
+	if len(snap) != 1 || !errors.Is(snap[0], want) {
+		t.Fatalf("SnapshotErrors = %v, want [%v]", snap, want)
+	}
+	// The plugin's success payload still lands under Plugins so the
+	// degraded path is distinct from a hard failure.
+	if v, ok := pc.Data.GetPlugin("stub-degraded"); !ok || v == nil {
+		t.Fatalf("stub-degraded result missing: %v (ok=%v)", v, ok)
 	}
 }
 

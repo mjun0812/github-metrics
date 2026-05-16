@@ -104,20 +104,38 @@ func BaseRepositories(_ context.Context, pc *templates.PartialContext) (string, 
 	return b.String(), nil
 }
 
-// Lookup returns the registered partial by canonical name (matching the
-// strings inside assets/templates/classic/partials/_.json). The classic
-// template uses this to drive partial dispatch from data rather than
-// hard-coded switch statements.
+// registry maps partial names (e.g. "base.header" or "plugin.languages")
+// to their PartialFunc implementations. Populated by init() in this
+// package for M2 base.* partials, and by per-plugin packages
+// (internal/plugins/<name>/) via the Register entry point added in M4
+// for M4 plugin partials.
+var registry = map[string]templates.PartialFunc{}
+
+func init() {
+	Register("base.header", BaseHeader)
+	Register("introduction", Introduction)
+	Register("base.activity+community", BaseActivityCommunity)
+	Register("base.repositories", BaseRepositories)
+}
+
+// Register adds a PartialFunc under the given name. Subsequent calls
+// with the same name overwrite the previous registration — this is the
+// expected behavior for both the M2 init-based base partial setup and
+// the M4 plugin partial registration path where each plugin package
+// registers itself at process start. Not goroutine-safe; intended to
+// run from init() only.
+func Register(name string, fn templates.PartialFunc) {
+	registry[name] = fn
+}
+
+// Lookup returns the registered partial by canonical name. M2 base.*
+// partials are registered during package init(); M4 plugin partials
+// register themselves via Register from their owning plugin package's
+// init(). Returns (nil, false) for unknown names; the classic template
+// treats that as a contract failure for _.json entries and as a silent
+// skip for M4 plugin partials still in flight (US1/US2/US3 land
+// incrementally).
 func Lookup(name string) (templates.PartialFunc, bool) {
-	switch name {
-	case "base.header":
-		return BaseHeader, true
-	case "introduction":
-		return Introduction, true
-	case "base.activity+community":
-		return BaseActivityCommunity, true
-	case "base.repositories":
-		return BaseRepositories, true
-	}
-	return nil, false
+	fn, ok := registry[name]
+	return fn, ok
 }
