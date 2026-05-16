@@ -114,6 +114,24 @@ func (g *GraphQL) UserIndepth(ctx context.Context, login string, from, to *time.
 	return UserIndepth(ctx, g.client, login, from, to, reposFirst, reposAfter)
 }
 
+// UserStarredRepositories fetches the user's most-recently starred
+// repositories (most-recent first). Consumed by the "stars" plugin.
+func (g *GraphQL) UserStarredRepositories(ctx context.Context, login string, first int) (*UserStarredRepositoriesResponse, error) {
+	return UserStarredRepositories(ctx, g.client, login, first)
+}
+
+// UserReactions aggregates reaction totalCount across the user's
+// issues and issue comments. Consumed by the "reactions" plugin.
+func (g *GraphQL) UserReactions(ctx context.Context, login string, issuesFirst, commentsFirst int) (*UserReactionsResponse, error) {
+	return UserReactions(ctx, g.client, login, issuesFirst, commentsFirst)
+}
+
+// UserFollowers fetches the user's followers + following pages.
+// Consumed by the "people" plugin.
+func (g *GraphQL) UserFollowers(ctx context.Context, login string, first int) (*UserFollowersResponse, error) {
+	return UserFollowers(ctx, g.client, login, first)
+}
+
 // graphqlAuthTransport adds the Authorization and Accept headers that
 // every GitHub GraphQL request needs. inner may be nil, in which case
 // http.DefaultTransport is used.

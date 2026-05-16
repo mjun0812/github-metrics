@@ -59,6 +59,67 @@
       "events": null,
       "skipped": true
     },
+    "calendar": {
+      "limit": 0,
+      "skipped": true,
+      "years": []
+    },
+    "contributors": {
+      "base": "",
+      "head": "",
+      "list": [],
+      "sections": [],
+      "skipped": true
+    },
+    "habits": {
+      "charts": {
+        "days": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "days": 0,
+      "facts": {
+        "charsPerLine": 0,
+        "commitsPerDay": 0,
+        "indentStyle": "",
+        "linesPerCommit": 0
+      },
+      "from": 0,
+      "skipped": true,
+      "trim": false
+    },
     "isocalendar": {
       "average": 0,
       "duration": "half-year",
@@ -92,6 +153,28 @@
       ],
       "skipped": true
     },
+    "notable": {
+      "list": [],
+      "skipped": true
+    },
+    "people": {
+      "skipped": true,
+      "types": {}
+    },
+    "projects": {
+      "limit": 0,
+      "list": [],
+      "skipped": true
+    },
+    "reactions": {
+      "comments": 0,
+      "days": 0,
+      "details": null,
+      "discussions": 0,
+      "issues": 0,
+      "skipped": true,
+      "total": 0
+    },
     "repositories": {
       "featured": [
         {
@@ -123,6 +206,39 @@
       "random": null,
       "skipped": false,
       "starred": null
+    },
+    "sponsors": {
+      "past": null,
+      "sections": null,
+      "skipped": true,
+      "sponsors": []
+    },
+    "sponsorships": {
+      "active": [],
+      "past": null,
+      "skipped": false
+    },
+    "stargazers": {
+      "charts": {
+        "series": [],
+        "type": "classic"
+      },
+      "list": [],
+      "skipped": true,
+      "worldmap": null
+    },
+    "stars": {
+      "limit": 0,
+      "list": [],
+      "skipped": true
+    },
+    "traffic": {
+      "skipped": true,
+      "total": {
+        "count": 0,
+        "uniques": 0
+      },
+      "views": {}
     }
   },
   "user": {
