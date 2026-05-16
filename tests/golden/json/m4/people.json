@@ -1,0 +1,18 @@
+{
+  "types": {
+    "followers": [
+      {
+        "login": "alice",
+        "name": "Alice",
+        "avatarUrl": "a"
+      }
+    ],
+    "following": [
+      {
+        "login": "carol",
+        "name": "Carol",
+        "avatarUrl": "c"
+      }
+    ]
+  }
+}

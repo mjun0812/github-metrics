@@ -1,0 +1,11 @@
+{
+  "list": [
+    {
+      "nameWithOwner": "alice/x",
+      "description": "hi",
+      "stars": 100,
+      "starredAt": "2026-05-10T00:00:00Z"
+    }
+  ],
+  "limit": 4
+}

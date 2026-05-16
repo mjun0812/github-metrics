@@ -1,0 +1,20 @@
+query UserReactions($login: String!, $issuesFirst: Int!, $commentsFirst: Int!) {
+  user(login: $login) {
+    issues(first: $issuesFirst) {
+      totalCount
+      nodes {
+        reactions {
+          totalCount
+        }
+      }
+    }
+    issueComments(first: $commentsFirst) {
+      totalCount
+      nodes {
+        reactions {
+          totalCount
+        }
+      }
+    }
+  }
+}
