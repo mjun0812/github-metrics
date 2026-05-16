@@ -13,15 +13,18 @@ import (
 //
 // The first call issues the HTTP probe and caches the result; subsequent
 // calls return the cached slice without re-hitting the network. An empty
-// slice (with nil error) means the token has no scopes — for example an
-// unauthenticated request or a token whose grant carries no scope
-// header. Plugins that gate behavior on a particular scope (projects,
-// sponsors, traffic) can therefore call this helper without worrying
-// about request amplification.
+// slice (with nil error) means the token has no scopes — either the
+// response carried no X-OAuth-Scopes header, or the request itself was
+// unauthenticated (HTTP 401, which GitHub returns for a missing or
+// rejected token). Plugins that gate behavior on a particular scope
+// (projects, sponsors, traffic) can therefore call this helper without
+// worrying about request amplification — they Skip on the empty slice
+// regardless of whether the token was missing or merely under-scoped.
 //
-// On HTTP-level failure (network error, non-2xx status), the error is
-// surfaced verbatim and nothing is cached, so callers can retry on the
-// next request.
+// On HTTP-level failure (transport error, 5xx, or any other non-{2xx,
+// 401} status), the error is surfaced verbatim and nothing is cached so
+// callers can retry on the next request. Data-model contract anchor:
+// specs/004-m4-github-plugins/data-model.md#E-050.
 func (r *REST) Scopes(ctx context.Context) ([]string, error) {
 	r.scopesMu.Lock()
 	defer r.scopesMu.Unlock()
@@ -42,6 +45,16 @@ func (r *REST) Scopes(ctx context.Context) ([]string, error) {
 	}
 	if resp.Body != nil {
 		_ = resp.Body.Close()
+	}
+	// 401 means the token is missing or rejected — semantically "no
+	// scopes" rather than a transport failure. Cache the empty slice
+	// so subsequent callers don't re-issue the probe, matching the
+	// data-model E-050 contract that unauthenticated tokens return
+	// ([]string{}, nil).
+	if resp.StatusCode == http.StatusUnauthorized {
+		r.scopes = []string{}
+		r.scopesCached = true
+		return []string{}, nil
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("scopes: status %d", resp.StatusCode)

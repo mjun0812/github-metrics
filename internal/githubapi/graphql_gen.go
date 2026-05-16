@@ -375,6 +375,90 @@ type OrganizationResponse struct {
 // GetOrganization returns OrganizationResponse.Organization, and is useful for accessing the field via an interface.
 func (v *OrganizationResponse) GetOrganization() *OrganizationOrganization { return v.Organization }
 
+// UserFollowersResponse is returned by UserFollowers on success.
+type UserFollowersResponse struct {
+	User *UserFollowersUser `json:"user"`
+}
+
+// GetUser returns UserFollowersResponse.User, and is useful for accessing the field via an interface.
+func (v *UserFollowersResponse) GetUser() *UserFollowersUser { return v.User }
+
+// UserFollowersUser includes the requested fields of the GraphQL type User.
+type UserFollowersUser struct {
+	Followers *UserFollowersUserFollowersUserConnection `json:"followers"`
+	Following *UserFollowersUserFollowingUserConnection `json:"following"`
+}
+
+// GetFollowers returns UserFollowersUser.Followers, and is useful for accessing the field via an interface.
+func (v *UserFollowersUser) GetFollowers() *UserFollowersUserFollowersUserConnection {
+	return v.Followers
+}
+
+// GetFollowing returns UserFollowersUser.Following, and is useful for accessing the field via an interface.
+func (v *UserFollowersUser) GetFollowing() *UserFollowersUserFollowingUserConnection {
+	return v.Following
+}
+
+// UserFollowersUserFollowersUserConnection includes the requested fields of the GraphQL type UserConnection.
+type UserFollowersUserFollowersUserConnection struct {
+	TotalCount int                                                  `json:"totalCount"`
+	Nodes      []*UserFollowersUserFollowersUserConnectionNodesUser `json:"nodes"`
+}
+
+// GetTotalCount returns UserFollowersUserFollowersUserConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserFollowersUserFollowersUserConnection) GetTotalCount() int { return v.TotalCount }
+
+// GetNodes returns UserFollowersUserFollowersUserConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *UserFollowersUserFollowersUserConnection) GetNodes() []*UserFollowersUserFollowersUserConnectionNodesUser {
+	return v.Nodes
+}
+
+// UserFollowersUserFollowersUserConnectionNodesUser includes the requested fields of the GraphQL type User.
+type UserFollowersUserFollowersUserConnectionNodesUser struct {
+	Login     string  `json:"login"`
+	Name      *string `json:"name"`
+	AvatarUrl string  `json:"avatarUrl"`
+}
+
+// GetLogin returns UserFollowersUserFollowersUserConnectionNodesUser.Login, and is useful for accessing the field via an interface.
+func (v *UserFollowersUserFollowersUserConnectionNodesUser) GetLogin() string { return v.Login }
+
+// GetName returns UserFollowersUserFollowersUserConnectionNodesUser.Name, and is useful for accessing the field via an interface.
+func (v *UserFollowersUserFollowersUserConnectionNodesUser) GetName() *string { return v.Name }
+
+// GetAvatarUrl returns UserFollowersUserFollowersUserConnectionNodesUser.AvatarUrl, and is useful for accessing the field via an interface.
+func (v *UserFollowersUserFollowersUserConnectionNodesUser) GetAvatarUrl() string { return v.AvatarUrl }
+
+// UserFollowersUserFollowingUserConnection includes the requested fields of the GraphQL type UserConnection.
+type UserFollowersUserFollowingUserConnection struct {
+	TotalCount int                                                  `json:"totalCount"`
+	Nodes      []*UserFollowersUserFollowingUserConnectionNodesUser `json:"nodes"`
+}
+
+// GetTotalCount returns UserFollowersUserFollowingUserConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserFollowersUserFollowingUserConnection) GetTotalCount() int { return v.TotalCount }
+
+// GetNodes returns UserFollowersUserFollowingUserConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *UserFollowersUserFollowingUserConnection) GetNodes() []*UserFollowersUserFollowingUserConnectionNodesUser {
+	return v.Nodes
+}
+
+// UserFollowersUserFollowingUserConnectionNodesUser includes the requested fields of the GraphQL type User.
+type UserFollowersUserFollowingUserConnectionNodesUser struct {
+	Login     string  `json:"login"`
+	Name      *string `json:"name"`
+	AvatarUrl string  `json:"avatarUrl"`
+}
+
+// GetLogin returns UserFollowersUserFollowingUserConnectionNodesUser.Login, and is useful for accessing the field via an interface.
+func (v *UserFollowersUserFollowingUserConnectionNodesUser) GetLogin() string { return v.Login }
+
+// GetName returns UserFollowersUserFollowingUserConnectionNodesUser.Name, and is useful for accessing the field via an interface.
+func (v *UserFollowersUserFollowingUserConnectionNodesUser) GetName() *string { return v.Name }
+
+// GetAvatarUrl returns UserFollowersUserFollowingUserConnectionNodesUser.AvatarUrl, and is useful for accessing the field via an interface.
+func (v *UserFollowersUserFollowingUserConnectionNodesUser) GetAvatarUrl() string { return v.AvatarUrl }
+
 // UserIndepthResponse is returned by UserIndepth on success.
 type UserIndepthResponse struct {
 	User *UserIndepthUser `json:"user"`
@@ -794,6 +878,102 @@ func (v *UserIndepthUserRepositoriesRepositoryConnectionPageInfo) GetEndCursor()
 	return v.EndCursor
 }
 
+// UserReactionsResponse is returned by UserReactions on success.
+type UserReactionsResponse struct {
+	User *UserReactionsUser `json:"user"`
+}
+
+// GetUser returns UserReactionsResponse.User, and is useful for accessing the field via an interface.
+func (v *UserReactionsResponse) GetUser() *UserReactionsUser { return v.User }
+
+// UserReactionsUser includes the requested fields of the GraphQL type User.
+type UserReactionsUser struct {
+	Issues        *UserReactionsUserIssuesIssueConnectionWithReactions  `json:"issues"`
+	IssueComments *UserReactionsUserIssueCommentsIssueCommentConnection `json:"issueComments"`
+}
+
+// GetIssues returns UserReactionsUser.Issues, and is useful for accessing the field via an interface.
+func (v *UserReactionsUser) GetIssues() *UserReactionsUserIssuesIssueConnectionWithReactions {
+	return v.Issues
+}
+
+// GetIssueComments returns UserReactionsUser.IssueComments, and is useful for accessing the field via an interface.
+func (v *UserReactionsUser) GetIssueComments() *UserReactionsUserIssueCommentsIssueCommentConnection {
+	return v.IssueComments
+}
+
+// UserReactionsUserIssueCommentsIssueCommentConnection includes the requested fields of the GraphQL type IssueCommentConnection.
+type UserReactionsUserIssueCommentsIssueCommentConnection struct {
+	TotalCount int                                                                                   `json:"totalCount"`
+	Nodes      []*UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactions `json:"nodes"`
+}
+
+// GetTotalCount returns UserReactionsUserIssueCommentsIssueCommentConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserReactionsUserIssueCommentsIssueCommentConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetNodes returns UserReactionsUserIssueCommentsIssueCommentConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *UserReactionsUserIssueCommentsIssueCommentConnection) GetNodes() []*UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactions {
+	return v.Nodes
+}
+
+// UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactions includes the requested fields of the GraphQL type IssueCommentWithReactions.
+type UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactions struct {
+	Reactions *UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnection `json:"reactions"`
+}
+
+// GetReactions returns UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactions.Reactions, and is useful for accessing the field via an interface.
+func (v *UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactions) GetReactions() *UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnection {
+	return v.Reactions
+}
+
+// UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnection includes the requested fields of the GraphQL type ReactionConnection.
+type UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// UserReactionsUserIssuesIssueConnectionWithReactions includes the requested fields of the GraphQL type IssueConnectionWithReactions.
+type UserReactionsUserIssuesIssueConnectionWithReactions struct {
+	TotalCount int                                                                           `json:"totalCount"`
+	Nodes      []*UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactions `json:"nodes"`
+}
+
+// GetTotalCount returns UserReactionsUserIssuesIssueConnectionWithReactions.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserReactionsUserIssuesIssueConnectionWithReactions) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetNodes returns UserReactionsUserIssuesIssueConnectionWithReactions.Nodes, and is useful for accessing the field via an interface.
+func (v *UserReactionsUserIssuesIssueConnectionWithReactions) GetNodes() []*UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactions {
+	return v.Nodes
+}
+
+// UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactions includes the requested fields of the GraphQL type IssueWithReactions.
+type UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactions struct {
+	Reactions *UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnection `json:"reactions"`
+}
+
+// GetReactions returns UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactions.Reactions, and is useful for accessing the field via an interface.
+func (v *UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactions) GetReactions() *UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnection {
+	return v.Reactions
+}
+
+// UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnection includes the requested fields of the GraphQL type ReactionConnection.
+type UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
 // UserRepositoriesResponse is returned by UserRepositories on success.
 type UserRepositoriesResponse struct {
 	User *UserRepositoriesUser `json:"user"`
@@ -1032,6 +1212,112 @@ type UserResponse struct {
 // GetUser returns UserResponse.User, and is useful for accessing the field via an interface.
 func (v *UserResponse) GetUser() *UserUser { return v.User }
 
+// UserStarredRepositoriesResponse is returned by UserStarredRepositories on success.
+type UserStarredRepositoriesResponse struct {
+	User *UserStarredRepositoriesUser `json:"user"`
+}
+
+// GetUser returns UserStarredRepositoriesResponse.User, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesResponse) GetUser() *UserStarredRepositoriesUser { return v.User }
+
+// UserStarredRepositoriesUser includes the requested fields of the GraphQL type User.
+type UserStarredRepositoriesUser struct {
+	StarredRepositories *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnection `json:"starredRepositories"`
+}
+
+// GetStarredRepositories returns UserStarredRepositoriesUser.StarredRepositories, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUser) GetStarredRepositories() *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnection {
+	return v.StarredRepositories
+}
+
+// UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnection includes the requested fields of the GraphQL type StarredRepositoryConnection.
+type UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnection struct {
+	TotalCount int                                                                                                    `json:"totalCount"`
+	Edges      []*UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdge `json:"edges"`
+}
+
+// GetTotalCount returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetEdges returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnection.Edges, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnection) GetEdges() []*UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdge {
+	return v.Edges
+}
+
+// UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdge includes the requested fields of the GraphQL type StarredRepositoryEdge.
+type UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdge struct {
+	StarredAt time.Time                                                                                                          `json:"starredAt"`
+	Node      *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository `json:"node"`
+}
+
+// GetStarredAt returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdge.StarredAt, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdge) GetStarredAt() time.Time {
+	return v.StarredAt
+}
+
+// GetNode returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdge.Node, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdge) GetNode() *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository {
+	return v.Node
+}
+
+// UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository includes the requested fields of the GraphQL type Repository.
+type UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository struct {
+	NameWithOwner   string                                                                                                                            `json:"nameWithOwner"`
+	Description     *string                                                                                                                           `json:"description"`
+	Url             string                                                                                                                            `json:"url"`
+	StargazerCount  int                                                                                                                               `json:"stargazerCount"`
+	ForkCount       int                                                                                                                               `json:"forkCount"`
+	PrimaryLanguage *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPrimaryLanguage `json:"primaryLanguage"`
+}
+
+// GetNameWithOwner returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository.NameWithOwner, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository) GetNameWithOwner() string {
+	return v.NameWithOwner
+}
+
+// GetDescription returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository.Description, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository) GetDescription() *string {
+	return v.Description
+}
+
+// GetUrl returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository.Url, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository) GetUrl() string {
+	return v.Url
+}
+
+// GetStargazerCount returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository.StargazerCount, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository) GetStargazerCount() int {
+	return v.StargazerCount
+}
+
+// GetForkCount returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository.ForkCount, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository) GetForkCount() int {
+	return v.ForkCount
+}
+
+// GetPrimaryLanguage returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository.PrimaryLanguage, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository) GetPrimaryLanguage() *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPrimaryLanguage {
+	return v.PrimaryLanguage
+}
+
+// UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPrimaryLanguage includes the requested fields of the GraphQL type Language.
+type UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPrimaryLanguage struct {
+	Name  string  `json:"name"`
+	Color *string `json:"color"`
+}
+
+// GetName returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPrimaryLanguage.Name, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPrimaryLanguage) GetName() string {
+	return v.Name
+}
+
+// GetColor returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPrimaryLanguage.Color, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPrimaryLanguage) GetColor() *string {
+	return v.Color
+}
+
 // UserUser includes the requested fields of the GraphQL type User.
 type UserUser struct {
 	DatabaseId      *int      `json:"databaseId"`
@@ -1124,6 +1410,18 @@ func (v *__OrganizationRepositoriesInput) GetFirst() int { return v.First }
 // GetAfter returns __OrganizationRepositoriesInput.After, and is useful for accessing the field via an interface.
 func (v *__OrganizationRepositoriesInput) GetAfter() *string { return v.After }
 
+// __UserFollowersInput is used internally by genqlient
+type __UserFollowersInput struct {
+	Login string `json:"login"`
+	First int    `json:"first"`
+}
+
+// GetLogin returns __UserFollowersInput.Login, and is useful for accessing the field via an interface.
+func (v *__UserFollowersInput) GetLogin() string { return v.Login }
+
+// GetFirst returns __UserFollowersInput.First, and is useful for accessing the field via an interface.
+func (v *__UserFollowersInput) GetFirst() int { return v.First }
+
 // __UserIndepthInput is used internally by genqlient
 type __UserIndepthInput struct {
 	Login      string     `json:"login"`
@@ -1156,6 +1454,22 @@ type __UserInput struct {
 // GetLogin returns __UserInput.Login, and is useful for accessing the field via an interface.
 func (v *__UserInput) GetLogin() string { return v.Login }
 
+// __UserReactionsInput is used internally by genqlient
+type __UserReactionsInput struct {
+	Login         string `json:"login"`
+	IssuesFirst   int    `json:"issuesFirst"`
+	CommentsFirst int    `json:"commentsFirst"`
+}
+
+// GetLogin returns __UserReactionsInput.Login, and is useful for accessing the field via an interface.
+func (v *__UserReactionsInput) GetLogin() string { return v.Login }
+
+// GetIssuesFirst returns __UserReactionsInput.IssuesFirst, and is useful for accessing the field via an interface.
+func (v *__UserReactionsInput) GetIssuesFirst() int { return v.IssuesFirst }
+
+// GetCommentsFirst returns __UserReactionsInput.CommentsFirst, and is useful for accessing the field via an interface.
+func (v *__UserReactionsInput) GetCommentsFirst() int { return v.CommentsFirst }
+
 // __UserRepositoriesInput is used internally by genqlient
 type __UserRepositoriesInput struct {
 	Login string  `json:"login"`
@@ -1171,6 +1485,18 @@ func (v *__UserRepositoriesInput) GetFirst() int { return v.First }
 
 // GetAfter returns __UserRepositoriesInput.After, and is useful for accessing the field via an interface.
 func (v *__UserRepositoriesInput) GetAfter() *string { return v.After }
+
+// __UserStarredRepositoriesInput is used internally by genqlient
+type __UserStarredRepositoriesInput struct {
+	Login string `json:"login"`
+	First int    `json:"first"`
+}
+
+// GetLogin returns __UserStarredRepositoriesInput.Login, and is useful for accessing the field via an interface.
+func (v *__UserStarredRepositoriesInput) GetLogin() string { return v.Login }
+
+// GetFirst returns __UserStarredRepositoriesInput.First, and is useful for accessing the field via an interface.
+func (v *__UserStarredRepositoriesInput) GetFirst() int { return v.First }
 
 // The query executed by Organization.
 const Organization_Operation = `
@@ -1385,6 +1711,57 @@ func User(
 	return data_, err_
 }
 
+// The query executed by UserFollowers.
+const UserFollowers_Operation = `
+query UserFollowers ($login: String!, $first: Int!) {
+	user(login: $login) {
+		followers(first: $first) {
+			totalCount
+			nodes {
+				login
+				name
+				avatarUrl
+			}
+		}
+		following(first: $first) {
+			totalCount
+			nodes {
+				login
+				name
+				avatarUrl
+			}
+		}
+	}
+}
+`
+
+func UserFollowers(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	login string,
+	first int,
+) (data_ *UserFollowersResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UserFollowers",
+		Query:  UserFollowers_Operation,
+		Variables: &__UserFollowersInput{
+			Login: login,
+			First: first,
+		},
+	}
+
+	data_ = &UserFollowersResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The query executed by UserIndepth.
 const UserIndepth_Operation = `
 query UserIndepth ($login: String!, $from: DateTime, $to: DateTime, $reposFirst: Int!, $reposAfter: String) {
@@ -1466,6 +1843,59 @@ func UserIndepth(
 	return data_, err_
 }
 
+// The query executed by UserReactions.
+const UserReactions_Operation = `
+query UserReactions ($login: String!, $issuesFirst: Int!, $commentsFirst: Int!) {
+	user(login: $login) {
+		issues(first: $issuesFirst) {
+			totalCount
+			nodes {
+				reactions {
+					totalCount
+				}
+			}
+		}
+		issueComments(first: $commentsFirst) {
+			totalCount
+			nodes {
+				reactions {
+					totalCount
+				}
+			}
+		}
+	}
+}
+`
+
+func UserReactions(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	login string,
+	issuesFirst int,
+	commentsFirst int,
+) (data_ *UserReactionsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UserReactions",
+		Query:  UserReactions_Operation,
+		Variables: &__UserReactionsInput{
+			Login:         login,
+			IssuesFirst:   issuesFirst,
+			CommentsFirst: commentsFirst,
+		},
+	}
+
+	data_ = &UserReactionsResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The query executed by UserRepositories.
 const UserRepositories_Operation = `
 query UserRepositories ($login: String!, $first: Int!, $after: String) {
@@ -1531,6 +1961,58 @@ func UserRepositories(
 	}
 
 	data_ = &UserRepositoriesResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by UserStarredRepositories.
+const UserStarredRepositories_Operation = `
+query UserStarredRepositories ($login: String!, $first: Int!) {
+	user(login: $login) {
+		starredRepositories(first: $first, orderBy: {field:STARRED_AT,direction:DESC}) {
+			totalCount
+			edges {
+				starredAt
+				node {
+					nameWithOwner
+					description
+					url
+					stargazerCount
+					forkCount
+					primaryLanguage {
+						name
+						color
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func UserStarredRepositories(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	login string,
+	first int,
+) (data_ *UserStarredRepositoriesResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UserStarredRepositories",
+		Query:  UserStarredRepositories_Operation,
+		Variables: &__UserStarredRepositoriesInput{
+			Login: login,
+			First: first,
+		},
+	}
+
+	data_ = &UserStarredRepositoriesResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
