@@ -25,22 +25,32 @@ func (s *stubPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, e
 	return s.run(ctx, pc)
 }
 
-type fakeTB struct{ cleanupFn func() }
+// fakeTB collects every cleanup callback `plugins.RegisterForTest`
+// schedules. Earlier versions retained only the last fn, which caused
+// all-but-the-last stub to leak into the global registry once
+// registerStubs returned — masking parallel-runner regressions in any
+// test that registered more than one stub.
+type fakeTB struct{ cleanupFns []func() }
 
 func (f *fakeTB) Helper()                           {}
-func (f *fakeTB) Cleanup(fn func())                 { f.cleanupFn = fn }
+func (f *fakeTB) Cleanup(fn func())                 { f.cleanupFns = append(f.cleanupFns, fn) }
 func (f *fakeTB) Fatalf(format string, args ...any) {}
 
 // registerStubs registers each stub and arranges cleanup so that
 // subsequent tests start from the original registry (which still
-// contains the core plugin from its package init).
+// contains the core plugin from its package init). Cleanup runs in
+// LIFO order to match testing.T.Cleanup semantics.
 func registerStubs(t *testing.T, stubs ...*stubPlugin) {
 	t.Helper()
 	tb := &fakeTB{}
 	for _, s := range stubs {
 		plugins.RegisterForTest(tb, s)
 	}
-	t.Cleanup(tb.cleanupFn)
+	t.Cleanup(func() {
+		for i := len(tb.cleanupFns) - 1; i >= 0; i-- {
+			tb.cleanupFns[i]()
+		}
+	})
 }
 
 func TestRunPlugins_AggregatesSuccessErrorPanic(t *testing.T) {

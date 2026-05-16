@@ -3,12 +3,21 @@
 // plugin's paging loop already produced into
 // pc.Data.Computed.RepositoryList.
 //
-// Pinned, starred, and random subsections live in this plugin too.
-// MVP scope: Featured + Random + Forks/Affiliations filters use only
-// the base accumulator (no extra API calls). Pinned/Starred fetches
-// reuse the same base data in M4 standard mode; richer dedicated
-// GraphQL operations land alongside the P2 "stars" plugin in US2 since
-// they share the same starredRepositories schema fragment.
+// MVP scope (Phase 3 US1):
+//   - Featured: filter by `_forks` / `_skipped` and sort by `_order`
+//     (stars / forks / watchers).
+//   - Random: deterministic Fisher-Yates over Featured when
+//     `_random=true` (seed via `_random_seed`).
+//
+// Inputs accepted for upstream-compat but NOT yet wired in this MVP:
+//   - `plugin_repositories_affiliations`: parsed but ignored. Base
+//     surfaces OWNER repositories regardless. Future US2 work will
+//     route this through a dedicated GraphQL query.
+//   - `plugin_repositories_pinned` / `_starred`: when set, the
+//     corresponding Result section is populated by reusing Featured as
+//     a placeholder. Dedicated `user.pinnedItems` /
+//     `user.starredRepositories` GraphQL fragments land alongside the
+//     P2 `stars` plugin in US2.
 //
 // Contracts: specs/004-m4-github-plugins/contracts/plugin-p1-mvp.md §4
 // Data model: specs/004-m4-github-plugins/data-model.md E-015
@@ -81,6 +90,11 @@ func (p *repositoriesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (
 	}
 	in := parseInputs(pc.Inputs)
 
+	// The `affiliations` input is accepted by parseInputs for upstream-
+	// compat but does not gate filtering in this MVP — base only
+	// surfaces OWNER repositories today, so post-filtering would be a
+	// no-op. The dedicated US2 GraphQL fragment will wire this up; the
+	// package doc lists this carve-out.
 	filtered := make([]plugins.Repository, 0, len(repos))
 	for _, r := range repos {
 		if !in.includeForks && r.IsFork {
@@ -89,12 +103,6 @@ func (p *repositoriesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (
 		if _, drop := in.skipped[r.NameWithOwner]; drop {
 			continue
 		}
-		// affiliations filter is informational in M4: base does not
-		// surface per-repo ownership beyond OWNER (the default
-		// affiliation queryside). When _affiliations was explicitly
-		// set to something other than OWNER we keep every record so
-		// the dispatch order in the integration test still works.
-		_ = in.affiliations
 		filtered = append(filtered, r)
 	}
 

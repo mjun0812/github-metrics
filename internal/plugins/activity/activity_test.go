@@ -220,6 +220,37 @@ func TestRun_5xxRetryable(t *testing.T) {
 	}
 }
 
+// TestRun_4xxNotRetryable asserts a permanent 4xx (e.g. 404 login does
+// not exist) returns a regular error, NOT a *RetryableError. Retrying
+// 4xx would never succeed and breaks the contract that *RetryableError
+// is reserved for transient transport failures.
+func TestRun_4xxNotRetryable(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name   string
+		status int
+	}{
+		{name: "404_not_found", status: http.StatusNotFound},
+		{name: "403_forbidden", status: http.StatusForbidden},
+		{name: "401_unauthorized", status: http.StatusUnauthorized},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			mux := newRESTMux()
+			mux.on("/users/octocat/events", tc.status, `{"message":"nope"}`)
+			pc := newPC(t, mux, nil)
+			_, err := activity.Plugin.Run(context.Background(), pc)
+			if err == nil {
+				t.Fatalf("expected error for %d", tc.status)
+			}
+			var re *xerrors.RetryableError
+			if errors.As(err, &re) {
+				t.Errorf("%d wrapped as *RetryableError; should be permanent. err=%v", tc.status, err)
+			}
+		})
+	}
+}
+
 // TestRun_VisibilityFilter asserts visibility="private" drops public
 // events.
 func TestRun_VisibilityFilter(t *testing.T) {

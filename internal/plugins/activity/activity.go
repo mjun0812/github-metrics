@@ -9,8 +9,9 @@ package activity
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"net/http"
+	"net"
 	"net/url"
 	"sort"
 	"strconv"
@@ -97,9 +98,15 @@ func (p *activityPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 
 	raws, err := fetchEvents(ctx, pc, login, in.load)
 	if err != nil {
-		// Transient failures surface as *RetryableError so the engine
-		// records them on Result.Errors per contract §2.5.
-		return nil, xerrors.NewRetryableError(fmt.Errorf("activity: %w", err))
+		// 5xx and network timeouts are transient — surface as
+		// *RetryableError so the engine records them on Result.Errors
+		// per contract §2.5. Permanent failures (4xx, malformed login)
+		// stay as regular errors so the engine does not retry them.
+		wrapped := fmt.Errorf("activity: %w", err)
+		if isTransientFetchError(err) {
+			return nil, xerrors.NewRetryableError(wrapped)
+		}
+		return nil, wrapped
 	}
 
 	events := make([]ActivityEvent, 0, len(raws))
@@ -154,7 +161,7 @@ func fetchEvents(ctx context.Context, pc *plugins.PluginContext, login string, l
 			return nil, fmt.Errorf("activity: nil response")
 		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return nil, fmt.Errorf("activity: events status %d", resp.StatusCode)
+			return nil, &fetchStatusError{status: resp.StatusCode}
 		}
 		var batch []rawEvent
 		if err := json.Unmarshal(body, &batch); err != nil {
@@ -289,6 +296,39 @@ func trimEmpty(in []string) []string {
 	return out
 }
 
-// Compile-time guard: ensure http.Header import stays used (some
-// helpers below may go through pc.REST.Get with a nil header).
-var _ http.Header
+// fetchStatusError carries the HTTP status code surfaced by the events
+// endpoint so callers can distinguish transient (5xx) from permanent
+// (4xx) failures without scraping error strings.
+type fetchStatusError struct {
+	status int
+}
+
+func (e *fetchStatusError) Error() string {
+	return fmt.Sprintf("events status %d", e.status)
+}
+
+// isTransientFetchError reports whether err represents a retryable
+// failure. A typed *fetchStatusError carries the HTTP status code
+// directly (>= 500 = transient, 4xx = permanent). Other shapes — most
+// notably retryablehttp's "giving up after N attempt(s)" wrapper that
+// surfaces after the httpx layer exhausts its 5xx retries — are
+// treated as transient too. Permanent shapes (4xx + non-network
+// errors) stay permanent so the engine does not retry them.
+func isTransientFetchError(err error) bool {
+	var statusErr *fetchStatusError
+	if errors.As(err, &statusErr) {
+		return statusErr.status >= 500
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return true
+	}
+	// retryablehttp surfaces post-exhaustion 5xx as a wrapped error
+	// containing "giving up after"; httpx discards the underlying
+	// response so we string-match the marker. Same approach base.go
+	// uses for its paging-retry detection.
+	if msg := err.Error(); strings.Contains(msg, "giving up after") {
+		return true
+	}
+	return false
+}
