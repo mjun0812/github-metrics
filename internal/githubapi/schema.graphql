@@ -87,9 +87,21 @@ type Repository {
   forkCount: Int!
   watchers: WatcherConnection
   primaryLanguage: Language
+  languages(first: Int): LanguageConnection
   defaultBranchRef: Ref
   issues: IssueConnection
   pullRequests: PullRequestConnection
+}
+
+type LanguageConnection {
+  totalCount: Int!
+  totalSize: Int!
+  edges: [LanguageEdge!]
+}
+
+type LanguageEdge {
+  size: Int!
+  node: Language!
 }
 
 type Ref {

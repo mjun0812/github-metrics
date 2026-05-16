@@ -140,3 +140,22 @@ func (r *REST) HeadRoot(ctx context.Context) (*http.Response, error) {
 	_, resp, err := r.client.Get(ctx, r.baseURL+"/", r.header.Clone())
 	return resp, err
 }
+
+// Get issues an authenticated GET to path (which MUST start with "/")
+// and returns the raw body + response. The default GitHub Accept /
+// Authorization headers attached at construction time are sent on every
+// request; callers can layer additional headers via the second
+// argument.
+//
+// Used by plugins that need an arbitrary REST endpoint that hasn't
+// earned a dedicated typed helper yet (activity events, habits commit
+// diffs, traffic counters, ...). On non-2xx status the response is
+// still returned alongside the body so callers can inspect status code
+// + headers; a transport-level error returns (nil, nil, err).
+func (r *REST) Get(ctx context.Context, path string, extra http.Header) ([]byte, *http.Response, error) {
+	h := r.header.Clone()
+	for k, vs := range extra {
+		h[k] = append(h[k][:0:0], vs...)
+	}
+	return r.client.Get(ctx, r.baseURL+path, h)
+}

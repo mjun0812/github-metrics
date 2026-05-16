@@ -181,6 +181,12 @@ type Repository struct {
 	Forks         int
 	Watchers      int
 	Language      *LanguageStat
+	// Languages is the per-language byte breakdown for this repository
+	// as reported by GraphQL `repository.languages(first: 8).edges`.
+	// Each entry has Size (bytes in this repo) and Name/Color from the
+	// linguist palette. Downstream plugins (languages standard mode,
+	// achievements) aggregate across all repositories.
+	Languages []LanguageStat
 }
 
 // LanguageStat is the primary-language summary surfaced per repository.

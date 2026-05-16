@@ -1,0 +1,20 @@
+{
+  "list": [
+    {
+      "id": "commits",
+      "rank": "S",
+      "title": "Worker",
+      "description": "Total commits",
+      "icon": "git-commit",
+      "value": 6000
+    }
+  ],
+  "ranks": {
+    "commits": "S",
+    "followers": "X",
+    "issues": "B",
+    "pull-requests": "A",
+    "repositories": "A",
+    "stars": "B"
+  }
+}

@@ -30,6 +30,17 @@ query OrganizationRepositories($login: String!, $first: Int!, $after: String) {
           name
           color
         }
+        languages(first: 8) {
+          totalCount
+          totalSize
+          edges {
+            size
+            node {
+              name
+              color
+            }
+          }
+        }
       }
     }
   }

@@ -24,7 +24,107 @@
     }
   },
   "errors": [],
-  "plugins": {},
+  "plugins": {
+    "achievements": {
+      "list": [
+        {
+          "description": "Public repositories owned",
+          "icon": "repo",
+          "id": "repositories",
+          "rank": "S",
+          "title": "Member",
+          "value": 250
+        },
+        {
+          "description": "Total stars received across owned repositories",
+          "icon": "star",
+          "id": "stars",
+          "rank": "B",
+          "title": "Stargazer",
+          "value": 150
+        }
+      ],
+      "ranks": {
+        "commits": "X",
+        "followers": "X",
+        "issues": "X",
+        "pull-requests": "X",
+        "repositories": "S",
+        "stars": "B"
+      },
+      "skipped": false
+    },
+    "activity": {
+      "days": 0,
+      "events": null,
+      "skipped": true
+    },
+    "isocalendar": {
+      "average": 0,
+      "duration": "half-year",
+      "skipped": true,
+      "streak": {
+        "current": 0,
+        "max": 0
+      },
+      "sum": 0,
+      "weeks": []
+    },
+    "languages": {
+      "colors": {},
+      "favorites": [],
+      "mostly": {
+        "color": "",
+        "count": 0,
+        "name": "",
+        "size": 0,
+        "value": 0
+      },
+      "other": {
+        "color": "",
+        "count": 0,
+        "name": "",
+        "size": 0,
+        "value": 0
+      },
+      "sections": [
+        "most-used"
+      ],
+      "skipped": true
+    },
+    "repositories": {
+      "featured": [
+        {
+          "description": "",
+          "forks": 10,
+          "isFork": false,
+          "language": null,
+          "languages": null,
+          "nameWithOwner": "octocat/alpha",
+          "stars": 100,
+          "uRL": "https://github.com/octocat/alpha",
+          "visibility": "public",
+          "watchers": 5
+        },
+        {
+          "description": "",
+          "forks": 3,
+          "isFork": false,
+          "language": null,
+          "languages": null,
+          "nameWithOwner": "octocat/beta",
+          "stars": 50,
+          "uRL": "https://github.com/octocat/beta",
+          "visibility": "public",
+          "watchers": 2
+        }
+      ],
+      "pinned": null,
+      "random": null,
+      "skipped": false,
+      "starred": null
+    }
+  },
   "user": {
     "avatarUrl": "https://avatars.githubusercontent.com/u/12345?v=4",
     "login": "octocat",

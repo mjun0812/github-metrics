@@ -179,6 +179,18 @@ func repositoryFromUserNode(n *userRepoNode) plugins.Repository {
 			Color: derefString(n.PrimaryLanguage.Color),
 		}
 	}
+	if n.Languages != nil {
+		for _, e := range n.Languages.Edges {
+			if e == nil || e.Node == nil {
+				continue
+			}
+			r.Languages = append(r.Languages, plugins.LanguageStat{
+				Name:  e.Node.Name,
+				Color: derefString(e.Node.Color),
+				Size:  e.Size,
+			})
+		}
+	}
 	return r
 }
 
@@ -199,6 +211,18 @@ func repositoryFromOrgNode(n *orgRepoNode) plugins.Repository {
 		r.Language = &plugins.LanguageStat{
 			Name:  n.PrimaryLanguage.Name,
 			Color: derefString(n.PrimaryLanguage.Color),
+		}
+	}
+	if n.Languages != nil {
+		for _, e := range n.Languages.Edges {
+			if e == nil || e.Node == nil {
+				continue
+			}
+			r.Languages = append(r.Languages, plugins.LanguageStat{
+				Name:  e.Node.Name,
+				Color: derefString(e.Node.Color),
+				Size:  e.Size,
+			})
 		}
 	}
 	return r

@@ -169,20 +169,21 @@ func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnection) G
 
 // OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository includes the requested fields of the GraphQL type Repository.
 type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository struct {
-	DatabaseId      *int                                                                                                          `json:"databaseId"`
-	Id              string                                                                                                        `json:"id"`
-	Name            string                                                                                                        `json:"name"`
-	NameWithOwner   string                                                                                                        `json:"nameWithOwner"`
-	Description     *string                                                                                                       `json:"description"`
-	Url             string                                                                                                        `json:"url"`
-	IsPrivate       bool                                                                                                          `json:"isPrivate"`
-	IsFork          bool                                                                                                          `json:"isFork"`
-	PushedAt        *time.Time                                                                                                    `json:"pushedAt"`
-	UpdatedAt       *time.Time                                                                                                    `json:"updatedAt"`
-	StargazerCount  int                                                                                                           `json:"stargazerCount"`
-	ForkCount       int                                                                                                           `json:"forkCount"`
-	Watchers        *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection `json:"watchers"`
-	PrimaryLanguage *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage           `json:"primaryLanguage"`
+	DatabaseId      *int                                                                                                            `json:"databaseId"`
+	Id              string                                                                                                          `json:"id"`
+	Name            string                                                                                                          `json:"name"`
+	NameWithOwner   string                                                                                                          `json:"nameWithOwner"`
+	Description     *string                                                                                                         `json:"description"`
+	Url             string                                                                                                          `json:"url"`
+	IsPrivate       bool                                                                                                            `json:"isPrivate"`
+	IsFork          bool                                                                                                            `json:"isFork"`
+	PushedAt        *time.Time                                                                                                      `json:"pushedAt"`
+	UpdatedAt       *time.Time                                                                                                      `json:"updatedAt"`
+	StargazerCount  int                                                                                                             `json:"stargazerCount"`
+	ForkCount       int                                                                                                             `json:"forkCount"`
+	Watchers        *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection   `json:"watchers"`
+	PrimaryLanguage *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage             `json:"primaryLanguage"`
+	Languages       *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection `json:"languages"`
 }
 
 // GetDatabaseId returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.DatabaseId, and is useful for accessing the field via an interface.
@@ -253,6 +254,65 @@ func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNod
 // GetPrimaryLanguage returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.PrimaryLanguage, and is useful for accessing the field via an interface.
 func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetPrimaryLanguage() *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage {
 	return v.PrimaryLanguage
+}
+
+// GetLanguages returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.Languages, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetLanguages() *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection {
+	return v.Languages
+}
+
+// OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection includes the requested fields of the GraphQL type LanguageConnection.
+type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection struct {
+	TotalCount int                                                                                                                                `json:"totalCount"`
+	TotalSize  int                                                                                                                                `json:"totalSize"`
+	Edges      []*OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge `json:"edges"`
+}
+
+// GetTotalCount returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetTotalSize returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection.TotalSize, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection) GetTotalSize() int {
+	return v.TotalSize
+}
+
+// GetEdges returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection.Edges, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection) GetEdges() []*OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge {
+	return v.Edges
+}
+
+// OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge includes the requested fields of the GraphQL type LanguageEdge.
+type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge struct {
+	Size int                                                                                                                                          `json:"size"`
+	Node *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage `json:"node"`
+}
+
+// GetSize returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge.Size, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge) GetSize() int {
+	return v.Size
+}
+
+// GetNode returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge.Node, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge) GetNode() *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage {
+	return v.Node
+}
+
+// OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage includes the requested fields of the GraphQL type Language.
+type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage struct {
+	Name  string  `json:"name"`
+	Color *string `json:"color"`
+}
+
+// GetName returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage.Name, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage) GetName() string {
+	return v.Name
+}
+
+// GetColor returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage.Color, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage) GetColor() *string {
+	return v.Color
 }
 
 // OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage includes the requested fields of the GraphQL type Language.
@@ -776,20 +836,21 @@ func (v *UserRepositoriesUserRepositoriesRepositoryConnection) GetNodes() []*Use
 
 // UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository includes the requested fields of the GraphQL type Repository.
 type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository struct {
-	DatabaseId      *int                                                                                          `json:"databaseId"`
-	Id              string                                                                                        `json:"id"`
-	Name            string                                                                                        `json:"name"`
-	NameWithOwner   string                                                                                        `json:"nameWithOwner"`
-	Description     *string                                                                                       `json:"description"`
-	Url             string                                                                                        `json:"url"`
-	IsPrivate       bool                                                                                          `json:"isPrivate"`
-	IsFork          bool                                                                                          `json:"isFork"`
-	PushedAt        *time.Time                                                                                    `json:"pushedAt"`
-	UpdatedAt       *time.Time                                                                                    `json:"updatedAt"`
-	StargazerCount  int                                                                                           `json:"stargazerCount"`
-	ForkCount       int                                                                                           `json:"forkCount"`
-	Watchers        *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection `json:"watchers"`
-	PrimaryLanguage *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage           `json:"primaryLanguage"`
+	DatabaseId      *int                                                                                            `json:"databaseId"`
+	Id              string                                                                                          `json:"id"`
+	Name            string                                                                                          `json:"name"`
+	NameWithOwner   string                                                                                          `json:"nameWithOwner"`
+	Description     *string                                                                                         `json:"description"`
+	Url             string                                                                                          `json:"url"`
+	IsPrivate       bool                                                                                            `json:"isPrivate"`
+	IsFork          bool                                                                                            `json:"isFork"`
+	PushedAt        *time.Time                                                                                      `json:"pushedAt"`
+	UpdatedAt       *time.Time                                                                                      `json:"updatedAt"`
+	StargazerCount  int                                                                                             `json:"stargazerCount"`
+	ForkCount       int                                                                                             `json:"forkCount"`
+	Watchers        *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection   `json:"watchers"`
+	PrimaryLanguage *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage             `json:"primaryLanguage"`
+	Languages       *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection `json:"languages"`
 }
 
 // GetDatabaseId returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.DatabaseId, and is useful for accessing the field via an interface.
@@ -860,6 +921,65 @@ func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) Ge
 // GetPrimaryLanguage returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.PrimaryLanguage, and is useful for accessing the field via an interface.
 func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetPrimaryLanguage() *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage {
 	return v.PrimaryLanguage
+}
+
+// GetLanguages returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.Languages, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetLanguages() *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection {
+	return v.Languages
+}
+
+// UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection includes the requested fields of the GraphQL type LanguageConnection.
+type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection struct {
+	TotalCount int                                                                                                                `json:"totalCount"`
+	TotalSize  int                                                                                                                `json:"totalSize"`
+	Edges      []*UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge `json:"edges"`
+}
+
+// GetTotalCount returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetTotalSize returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection.TotalSize, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection) GetTotalSize() int {
+	return v.TotalSize
+}
+
+// GetEdges returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection.Edges, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection) GetEdges() []*UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge {
+	return v.Edges
+}
+
+// UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge includes the requested fields of the GraphQL type LanguageEdge.
+type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge struct {
+	Size int                                                                                                                          `json:"size"`
+	Node *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage `json:"node"`
+}
+
+// GetSize returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge.Size, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge) GetSize() int {
+	return v.Size
+}
+
+// GetNode returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge.Node, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdge) GetNode() *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage {
+	return v.Node
+}
+
+// UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage includes the requested fields of the GraphQL type Language.
+type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage struct {
+	Name  string  `json:"name"`
+	Color *string `json:"color"`
+}
+
+// GetName returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage.Name, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage) GetName() string {
+	return v.Name
+}
+
+// GetColor returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage.Color, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage) GetColor() *string {
+	return v.Color
 }
 
 // UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage includes the requested fields of the GraphQL type Language.
@@ -1174,6 +1294,17 @@ query OrganizationRepositories ($login: String!, $first: Int!, $after: String) {
 					name
 					color
 				}
+				languages(first: 8) {
+					totalCount
+					totalSize
+					edges {
+						size
+						node {
+							name
+							color
+						}
+					}
+				}
 			}
 		}
 	}
@@ -1364,6 +1495,17 @@ query UserRepositories ($login: String!, $first: Int!, $after: String) {
 				primaryLanguage {
 					name
 					color
+				}
+				languages(first: 8) {
+					totalCount
+					totalSize
+					edges {
+						size
+						node {
+							name
+							color
+						}
+					}
 				}
 			}
 		}
