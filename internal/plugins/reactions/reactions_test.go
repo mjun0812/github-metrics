@@ -141,14 +141,45 @@ func TestRun_NilGraphQL_Skipped(t *testing.T) {
 	}
 }
 
-func TestRun_NoLogin_Skipped(t *testing.T) {
+// TestRun_PluginDisabled_Skipped covers the gate-off path: when
+// `plugin_reactions` is not truthy in the input map, Run must Skip
+// before issuing any GraphQL call. The previous incarnation of this
+// test was misnamed (`TestRun_NoLogin_Skipped`) — it relied on the
+// gate-off behaviour rather than testing the no-login branch, so any
+// regression in the login check passed silently.
+func TestRun_PluginDisabled_Skipped(t *testing.T) {
 	t.Parallel()
 	body := `{"data":{"user":null}}`
 	pc := &plugins.PluginContext{Data: plugins.NewData(), Inputs: map[string]any{}, GraphQL: newGQL(t, body)}
 	out, _ := reactions.Plugin.Run(context.Background(), pc)
 	r := out.(*reactions.Result)
 	if !r.Skipped {
+		t.Errorf("missing plugin_reactions flag should yield Skipped")
+	}
+	if r.SkippedReason != "plugin disabled" {
+		t.Errorf("SkippedReason = %q, want %q", r.SkippedReason, "plugin disabled")
+	}
+}
+
+// TestRun_NoLogin_Skipped exercises the actual no-login branch:
+// `plugin_reactions: true` (passing the gate) + neither `user` nor
+// `login` set (so `loginFromInputs("") == ""`). The plugin must Skip
+// with SkippedReason "no login", not "plugin disabled".
+func TestRun_NoLogin_Skipped(t *testing.T) {
+	t.Parallel()
+	body := `{"data":{"user":null}}`
+	pc := &plugins.PluginContext{
+		Data:    plugins.NewData(),
+		Inputs:  map[string]any{"plugin_reactions": true},
+		GraphQL: newGQL(t, body),
+	}
+	out, _ := reactions.Plugin.Run(context.Background(), pc)
+	r := out.(*reactions.Result)
+	if !r.Skipped {
 		t.Errorf("missing login should yield Skipped")
+	}
+	if r.SkippedReason != "no login" {
+		t.Errorf("SkippedReason = %q, want %q", r.SkippedReason, "no login")
 	}
 }
 
