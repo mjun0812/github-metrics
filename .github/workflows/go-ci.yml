@@ -108,6 +108,23 @@ jobs:
       - name: go test -tags=chromedp
         run: go test -tags=chromedp ./...
 
+  test-heavy:
+    name: test-heavy
+    runs-on: ubuntu-latest
+    # `heavy` build tag covers M4 plugins that pull in go-enry's
+    # embedded language database and go-git's shallow clone path
+    # (languages.recent, languages.indepth). Both are pure Go, so no
+    # chromium container is needed; we just want the wall-time cost
+    # off the default `test` job. Parallel with `test` + `test-chromedp`.
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: go test -tags=heavy
+        run: go test -tags=heavy ./...
+
   compliance:
     name: compliance
     runs-on: ubuntu-latest

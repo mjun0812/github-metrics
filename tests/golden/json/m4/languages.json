@@ -1,0 +1,48 @@
+{
+  "favorites": [
+    {
+      "Name": "Go",
+      "Color": "#00ADD8",
+      "Size": 10000,
+      "Count": 2,
+      "Value": 0.5556
+    },
+    {
+      "Name": "TypeScript",
+      "Color": "#3178c6",
+      "Size": 4500,
+      "Count": 1,
+      "Value": 0.25
+    },
+    {
+      "Name": "JavaScript",
+      "Color": "#f1e05a",
+      "Size": 3000,
+      "Count": 2,
+      "Value": 0.1667
+    }
+  ],
+  "other": {
+    "Name": "Other",
+    "Color": "#cccccc",
+    "Size": 1100,
+    "Count": 2,
+    "Value": 0.0611
+  },
+  "sections": [
+    "most-used"
+  ],
+  "mostly": {
+    "Name": "Go",
+    "Color": "#00ADD8",
+    "Size": 10000,
+    "Count": 2,
+    "Value": 0.5556
+  },
+  "colors": {
+    "Go": "#00ADD8",
+    "JavaScript": "#f1e05a",
+    "Other": "#cccccc",
+    "TypeScript": "#3178c6"
+  }
+}
