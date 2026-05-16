@@ -89,15 +89,18 @@ const (
 		}
 	}`
 
+	// M4 fixture: hasNextPage:false terminates the new base-plugin
+	// batch-halving paging loop after the first page. totalCount stays
+	// 250 so the assertion on Computed.Repositories.Count still holds.
 	userRepositories250 = `{
 		"data": {
 			"user": {
 				"repositories": {
 					"totalCount": 250,
-					"pageInfo": {"hasNextPage": true, "endCursor": "Y3Vyc29yOnYyOpHOABcZJg=="},
+					"pageInfo": {"hasNextPage": false, "endCursor": null},
 					"nodes": [
-						{"databaseId": 1, "id": "R_kgDOA", "name": "alpha", "nameWithOwner": "octocat/alpha", "isFork": false, "stargazerCount": 100, "forkCount": 10, "watchers": {"totalCount": 5}},
-						{"databaseId": 2, "id": "R_kgDOB", "name": "beta",  "nameWithOwner": "octocat/beta",  "isFork": false, "stargazerCount":  50, "forkCount":  3, "watchers": {"totalCount": 2}}
+						{"databaseId": 1, "id": "R_kgDOA", "name": "alpha", "nameWithOwner": "octocat/alpha", "url": "https://github.com/octocat/alpha", "isPrivate": false, "isFork": false, "stargazerCount": 100, "forkCount": 10, "watchers": {"totalCount": 5}},
+						{"databaseId": 2, "id": "R_kgDOB", "name": "beta",  "nameWithOwner": "octocat/beta",  "url": "https://github.com/octocat/beta",  "isPrivate": false, "isFork": false, "stargazerCount":  50, "forkCount":  3, "watchers": {"totalCount": 2}}
 					]
 				}
 			}
@@ -121,6 +124,21 @@ const (
 		}
 	}`
 
+	// M4: base.runOrganization now also fetches members. The minimal
+	// payload below keeps the existing integration tests green without
+	// changing their assertions.
+	orgMembersEmpty = `{
+		"data": {
+			"organization": {
+				"membersWithRole": {
+					"totalCount": 0,
+					"pageInfo": {"hasNextPage": false, "endCursor": null},
+					"nodes": []
+				}
+			}
+		}
+	}`
+
 	orgRepositories12 = `{
 		"data": {
 			"organization": {
@@ -128,7 +146,7 @@ const (
 					"totalCount": 12,
 					"pageInfo": {"hasNextPage": false, "endCursor": null},
 					"nodes": [
-						{"databaseId": 100, "id": "R_kgDOX", "name": "site", "nameWithOwner": "github/site", "isFork": false, "stargazerCount": 7, "forkCount": 1, "watchers": {"totalCount": 4}}
+						{"databaseId": 100, "id": "R_kgDOX", "name": "site", "nameWithOwner": "github/site", "url": "https://github.com/github/site", "isPrivate": false, "isFork": false, "stargazerCount": 7, "forkCount": 1, "watchers": {"totalCount": 4}}
 					]
 				}
 			}
@@ -210,6 +228,7 @@ func TestEngine_ComputeOrganization(t *testing.T) {
 
 	deps, _ := newEngineDeps(t, map[string]string{
 		"Organization":             orgGithub,
+		"OrganizationMembers":      orgMembersEmpty,
 		"OrganizationRepositories": orgRepositories12,
 	})
 

@@ -83,6 +83,8 @@ func Hash(rendered string) (string, error) {
 - 上流結果は `tests/fixtures/upstream/svg_hash/<case>.{svg,hash}` に静的 vendor (sync-fixtures 不要、頻繁には変わらないため)。
 - 不一致が出たら SC-001 の前提 (DOM 単位互換性) が崩れているサインなので CI で fail させる。
 
+> **M3 closure note**: 上記 vendor は M3 PR #112 マージ時点で未完。puppeteer (Chrome DOM serializer) と goquery (pure Go) の outerHTML 正規化差で byte-identical なハッシュが取れない可能性が高いと判断し、follow-up issue [#113](https://github.com/mjun0812/github-metrics/issues/113) として M3 スコープ外に切り出した。テストスケルトン `TestUpstreamHashCompatible` は fixture 不在時に `t.Skip` するので M3 ロックは生じない。本互換性検証は M6 T-114 (`output_condition=data-changed`) が消費する前提条件なので、M6 着手前に #113 を解決すること。
+
 ## 6. パフォーマンス予算
 
 - 入力 SVG 500 KB (classic + 主要 10 plugin の最大ケース) に対し `Hash` 単体で **5 ms 以内** に完走 (`BenchmarkHash_LargeSVG`)。

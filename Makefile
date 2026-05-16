@@ -20,7 +20,7 @@ GOVULNCHECK_VERSION   := latest
 GOFUMPT_VERSION       := latest
 LEFTHOOK_VERSION      := latest
 
-.PHONY: all build test test-chromedp test-race lint vet bench gen \
+.PHONY: all build test test-chromedp test-heavy test-race lint vet bench gen \
         gen-octicons verify-octicons docker e2e \
         tools hooks-install hooks-run hooks-uninstall \
         check-compat sync-assets clean help
@@ -32,6 +32,7 @@ help:
 	@echo "  build               Build cmd/metrics-action and cmd/metrics-cli into bin/"
 	@echo "  test                Run unit tests (go test ./...)"
 	@echo "  test-chromedp       Run chromedp-tagged tests (requires chromium; set METRICS_CHROME_PATH)"
+	@echo "  test-heavy          Run heavy-tagged tests (M4 languages.recent / languages.indepth)"
 	@echo "  test-race           Run tests with the race detector"
 	@echo "  vet                 Run go vet ./..."
 	@echo "  lint                Run golangci-lint and govulncheck"
@@ -64,6 +65,14 @@ test:
 # contributors without chromium installed stay green.
 test-chromedp:
 	$(GO) test -tags=chromedp ./...
+
+# Runs the heavy-tagged tests (M4 languages.recent / languages.indepth).
+# These tests depend on go-enry's embedded language DB and go-git's
+# pure-Go shallow clone, both of which add wall time / I/O overhead.
+# Default `make test` skips them; CI runs them as a separate parallel
+# job. See specs/004-m4-github-plugins/quickstart.md §3.
+test-heavy:
+	$(GO) test -tags=heavy ./...
 
 test-race:
 	$(GO) test -race ./...

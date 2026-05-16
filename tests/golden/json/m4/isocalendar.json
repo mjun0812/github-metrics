@@ -1,0 +1,23 @@
+{
+  "weeks": [
+    {
+      "firstDay": "2026-W18",
+      "days": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "streak": {
+    "max": 1,
+    "current": 0
+  },
+  "average": 0.14,
+  "sum": 1,
+  "duration": "half-year"
+}

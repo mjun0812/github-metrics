@@ -1,0 +1,16 @@
+{
+  "featured": [
+    {
+      "NameWithOwner": "octocat/gamma",
+      "Description": "",
+      "URL": "https://github.com/octocat/gamma",
+      "Visibility": "",
+      "IsFork": false,
+      "Stars": 200,
+      "Forks": 10,
+      "Watchers": 0,
+      "Language": null,
+      "Languages": null
+    }
+  ]
+}

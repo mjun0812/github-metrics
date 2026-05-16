@@ -3,6 +3,7 @@ package githubapi
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 
@@ -81,18 +82,36 @@ func (g *GraphQL) Organization(ctx context.Context, login string) (*Organization
 	return Organization(ctx, g.client, login)
 }
 
-// UserRepositories returns the first `first` owner-affiliated
-// repositories for the given login. M1 fetches a single page (the full
-// upstream paging loop with cursor-driven traversal lands with the
-// M4 plugin work that actually consumes more than the totalCount).
-func (g *GraphQL) UserRepositories(ctx context.Context, login string, first int) (*UserRepositoriesResponse, error) {
-	return UserRepositories(ctx, g.client, login, first)
+// UserRepositories returns up to `first` owner-affiliated repositories
+// for the given login, starting after the `after` cursor (or from the
+// beginning when after is nil). Callers thread the
+// `pageInfo.endCursor` from one response into the next to walk the
+// entire connection; the base plugin's repositories.go does so with a
+// batch-halving retry strategy that mirrors upstream.
+func (g *GraphQL) UserRepositories(ctx context.Context, login string, first int, after *string) (*UserRepositoriesResponse, error) {
+	return UserRepositories(ctx, g.client, login, first, after)
 }
 
 // OrganizationRepositories is the organization-side equivalent of
-// [UserRepositories].
-func (g *GraphQL) OrganizationRepositories(ctx context.Context, login string, first int) (*OrganizationRepositoriesResponse, error) {
-	return OrganizationRepositories(ctx, g.client, login, first)
+// [UserRepositories]. The `after` cursor is threaded for paging the
+// same way.
+func (g *GraphQL) OrganizationRepositories(ctx context.Context, login string, first int, after *string) (*OrganizationRepositoriesResponse, error) {
+	return OrganizationRepositories(ctx, g.client, login, first, after)
+}
+
+// OrganizationMembers fetches a page of an organization's members. The
+// `after` cursor enables paging.
+func (g *GraphQL) OrganizationMembers(ctx context.Context, login string, first int, after *string) (*OrganizationMembersResponse, error) {
+	return OrganizationMembers(ctx, g.client, login, first, after)
+}
+
+// UserIndepth issues the "indepth" GraphQL query that augments the base
+// payload with per-repository commit/issue/PR totals and the user's
+// contribution calendar. Triggered only when at least one indepth-
+// dependent plugin is enabled (see specs/004-m4-github-plugins/
+// contracts/plugin-base-extension.md §2.1).
+func (g *GraphQL) UserIndepth(ctx context.Context, login string, from, to *time.Time, reposFirst int, reposAfter *string) (*UserIndepthResponse, error) {
+	return UserIndepth(ctx, g.client, login, from, to, reposFirst, reposAfter)
 }
 
 // graphqlAuthTransport adds the Authorization and Accept headers that

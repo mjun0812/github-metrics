@@ -145,6 +145,55 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 		b.WriteString(frag)
 	}
 
+	// M4 plugin partial dispatcher
+	// Contract: specs/004-m4-github-plugins/contracts/partial-classic-m4.md §3
+	//
+	// Walks partials.PluginPartialOrder, applying the truthy gate, the
+	// Skipped check, and the Lookup miss tolerance described in the
+	// contract. Each non-empty fragment is wrapped in
+	//   <div class="plugin-<slug>" data-plugin="<slug>">...</div>
+	// so downstream DOM diffing (data-changed mode, M6) can locate each
+	// plugin's output unambiguously.
+	for _, slug := range partials.PluginPartialOrder {
+		if !truthyInput(pc.Inputs, "plugin_"+slug) {
+			continue
+		}
+		// Plugin result must exist and not be Skipped. We use the
+		// minimal SkippableResult interface so the dispatcher does not
+		// need a hard dependency on every plugin's Result type.
+		if pc.Data == nil {
+			continue
+		}
+		raw, present := pc.Data.GetPlugin(slug)
+		if !present || raw == nil {
+			continue
+		}
+		if sr, ok := raw.(interface{ IsSkipped() bool }); ok && sr.IsSkipped() {
+			continue
+		}
+		fn, ok := partials.Lookup("plugin." + slug)
+		if !ok {
+			// Plugin partial not yet implemented (US1/US2/US3 land
+			// these incrementally). Silently skip; the per-plugin task
+			// will register Lookup before its integration test asserts
+			// the wrapper.
+			continue
+		}
+		frag, err := fn(ctx, pc)
+		if err != nil {
+			return "", fmt.Errorf("classic: plugin partial %q: %w", slug, err)
+		}
+		if frag == "" {
+			// Double guard: a registered partial that chose to render
+			// nothing (e.g. empty result list) emits no wrapper.
+			continue
+		}
+		fmt.Fprintf(&b, `<div class="plugin-%s" data-plugin="%s">`,
+			partials.EscapeXML(slug), partials.EscapeXML(slug))
+		b.WriteString(frag)
+		b.WriteString(`</div>`)
+	}
+
 	if footer := metadataFooter(pc); footer != "" {
 		b.WriteString(`<div id="metrics-end"></div>`)
 		b.WriteString(footer)

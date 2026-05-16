@@ -24,6 +24,13 @@ import (
 // engine's aggregation logic can decide whether to abort the request.
 // A non-nil error from RunPlugins itself indicates infrastructure
 // trouble (context cancellation, errgroup internals).
+//
+// Non-fatal errors that a plugin records via Data.AppendError (e.g. the
+// M4 indepth-GraphQL degraded path or the repositories paging
+// batch-halving failure) remain on Data.Errors and are merged into
+// Result.Errors by engine.Compute's collectPluginErrors. RunPlugins
+// itself does not touch Data.Errors so the mutex-protected accumulator
+// stays in one place.
 func RunPlugins(ctx context.Context, pc *plugins.PluginContext, parallel int) error {
 	if pc == nil {
 		return fmt.Errorf("core.RunPlugins: nil PluginContext")
