@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
@@ -24,6 +25,11 @@ type REST struct {
 	baseURL   string
 	tokenKind TokenKind
 	header    http.Header
+
+	// scopes cache populated lazily by (*REST).Scopes.
+	scopesMu     sync.Mutex
+	scopesCached bool
+	scopes       []string
 }
 
 // NewREST constructs a REST client. The token kind is classified

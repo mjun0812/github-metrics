@@ -164,6 +164,40 @@ func TestRunPlugins_NilContextErrors(t *testing.T) {
 	}
 }
 
+func TestRunPlugins_DrainsDataErrors(t *testing.T) {
+	// Stub plugin records a non-fatal error via Data.AppendError without
+	// returning the err from Run. The drain path is: plugin → Data.Errors
+	// (mutex-protected) → SnapshotErrors → engine.Result.Errors. This
+	// test exercises everything up through the SnapshotErrors call so a
+	// future change to the engine glue keeps the contract observable.
+	want := errors.New("paging: batch=1 failed after 3 retries")
+	registerStubs(
+		t,
+		&stubPlugin{
+			name: "stub-degraded",
+			run: func(ctx context.Context, pc *plugins.PluginContext) (any, error) {
+				pc.Data.AppendError(want)
+				return map[string]any{"partial": true}, nil
+			},
+		},
+	)
+
+	pc := &plugins.PluginContext{Data: plugins.NewData()}
+	if err := core.RunPlugins(context.Background(), pc, 1); err != nil {
+		t.Fatalf("RunPlugins: %v", err)
+	}
+
+	snap := pc.Data.SnapshotErrors()
+	if len(snap) != 1 || !errors.Is(snap[0], want) {
+		t.Fatalf("SnapshotErrors = %v, want [%v]", snap, want)
+	}
+	// The plugin's success payload still lands under Plugins so the
+	// degraded path is distinct from a hard failure.
+	if v, ok := pc.Data.GetPlugin("stub-degraded"); !ok || v == nil {
+		t.Fatalf("stub-degraded result missing: %v (ok=%v)", v, ok)
+	}
+}
+
 func TestRunPlugins_CancelledContextPropagates(t *testing.T) {
 	registerStubs(t, &stubPlugin{
 		name: "slow",

@@ -211,21 +211,27 @@ func mergeLogin(inputs map[string]any, login string) map[string]any {
 }
 
 // collectPluginErrors walks Data.Plugins looking for stored errors and
-// returns them in registration order.
+// returns them in registration order. Non-fatal errors plugins recorded
+// via Data.AppendError (the M4 plumbing for degraded paths like the
+// indepth GraphQL 5xx and the repositories paging batch-halving) are
+// appended after the per-plugin slot errors.
 func collectPluginErrors(d *plugins.Data) []error {
-	if d == nil || len(d.Plugins) == 0 {
+	if d == nil {
 		return nil
 	}
 	var out []error
-	_ = plugins.Each(func(name string, _ plugins.Plugin) error {
-		v, ok := d.GetPlugin(name)
-		if !ok {
+	if len(d.Plugins) > 0 {
+		_ = plugins.Each(func(name string, _ plugins.Plugin) error {
+			v, ok := d.GetPlugin(name)
+			if !ok {
+				return nil
+			}
+			if err, isErr := v.(error); isErr {
+				out = append(out, fmt.Errorf("plugin %q: %w", name, err))
+			}
 			return nil
-		}
-		if err, isErr := v.(error); isErr {
-			out = append(out, fmt.Errorf("plugin %q: %w", name, err))
-		}
-		return nil
-	})
+		})
+	}
+	out = append(out, d.SnapshotErrors()...)
 	return out
 }

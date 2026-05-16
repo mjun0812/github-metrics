@@ -1,14 +1,20 @@
 // Package base owns the special "base" plugin: it runs before every
-// other plugin and populates the shared Data.User / Data.Computed
-// fields that downstream plugins depend on.
+// other plugin and populates the shared Data.User / Data.Organization /
+// Data.Computed fields that downstream plugins depend on.
 //
-// In M1 the implementation covers the user-account and organization-
-// account branches plus a single-page repository fetch. The full
-// upstream behavior (bulk-then-fallback query, multi-page cursor
-// traversal with batch-halving) is documented in
-// specs/001-project-foundation/contracts/plugin-interface.md §5 and
-// lands incrementally with the M4 plugin work that actually exercises
-// every Computed field.
+// The M4 implementation covers:
+//   - user-account branch (runUser) and organization-account branch
+//     (runOrganization)
+//   - repository paging with batch-halving on transient 5xx / timeout
+//     (repositories.go), writing both totals into Computed.Repositories
+//     and the per-node accumulator into Computed.RepositoryList
+//   - indepth GraphQL query (indepth.go) that augments Computed with
+//     contribution-calendar / commits / issues / PR totals when at
+//     least one indepth-dependent plugin is enabled
+//
+// The repository-account branch (templates that target a single
+// repository) is M7 territory and currently returns (nil, nil).
+// Contracts: specs/004-m4-github-plugins/contracts/plugin-base-extension.md.
 package base
 
 import (
@@ -80,35 +86,22 @@ func (p *basePlugin) runUser(ctx context.Context, pc *plugins.PluginContext, log
 		AvatarURL: u.AvatarUrl,
 	}
 
-	// Fetch the first page of repositories so downstream plugins can
-	// observe Computed.Repositories.Count. The cursor-based loop with
-	// batch-halving on timeout is a documented M4 follow-up.
+	// M4: walk the entire repository connection with batch-halving on
+	// transient 5xx / timeout. Downstream plugins consume both the
+	// totals (Count, Stargazers, ...) and the per-node accumulator
+	// (RepositoryList).
 	if reposLimit := repositoriesLimit(pc.Settings); reposLimit > 0 {
 		if err := populateRepositories(ctx, pc, login, reposLimit, true); err != nil {
 			return nil, err
 		}
 	}
-	return nil, nil
-}
 
-func (p *basePlugin) runOrganization(ctx context.Context, pc *plugins.PluginContext, login string) (any, error) {
-	resp, err := pc.GraphQL.Organization(ctx, login)
-	if err != nil {
-		return nil, fmt.Errorf("base: organization(%q): %w", login, err)
-	}
-	if resp == nil || resp.Organization == nil {
-		return nil, fmt.Errorf("base: organization(%q): not found", login)
-	}
-	o := resp.Organization
-	pc.Data.Account = plugins.AccountOrganization
-	pc.Data.User = &plugins.User{
-		Login:     o.Login,
-		Name:      derefString(o.Name),
-		AvatarURL: o.AvatarUrl,
-	}
-
-	if reposLimit := repositoriesLimit(pc.Settings); reposLimit > 0 {
-		if err := populateRepositories(ctx, pc, login, reposLimit, false); err != nil {
+	// Trigger the indepth GraphQL query when at least one indepth-
+	// dependent plugin is enabled. Per the contract this stays best-
+	// effort: indepth failures land on Data.Errors and the standard
+	// fields still surface.
+	if indepthTriggered(pc.Inputs) {
+		if err := runIndepth(ctx, pc, login); err != nil {
 			return nil, err
 		}
 	}

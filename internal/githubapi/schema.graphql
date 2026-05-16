@@ -33,13 +33,37 @@ type User {
   email: String
   bio: String
   company: String
-  repositories(first: Int, ownerAffiliations: [RepositoryAffiliation!]): RepositoryConnection
+  repositories(
+    first: Int
+    after: String
+    ownerAffiliations: [RepositoryAffiliation!]
+    orderBy: RepositoryOrder
+  ): RepositoryConnection
+  contributionsCollection(from: DateTime, to: DateTime): ContributionsCollection
 }
 
 enum RepositoryAffiliation {
   OWNER
   COLLABORATOR
   ORGANIZATION_MEMBER
+}
+
+enum OrderDirection {
+  ASC
+  DESC
+}
+
+enum RepositoryOrderField {
+  CREATED_AT
+  UPDATED_AT
+  PUSHED_AT
+  NAME
+  STARGAZERS
+}
+
+input RepositoryOrder {
+  field: RepositoryOrderField!
+  direction: OrderDirection!
 }
 
 type RepositoryConnection {
@@ -53,10 +77,62 @@ type Repository {
   id: ID!
   name: String!
   nameWithOwner: String!
+  description: String
+  url: URI!
+  isPrivate: Boolean!
   isFork: Boolean!
+  pushedAt: DateTime
+  updatedAt: DateTime
   stargazerCount: Int!
   forkCount: Int!
   watchers: WatcherConnection
+  primaryLanguage: Language
+  defaultBranchRef: Ref
+  issues: IssueConnection
+  pullRequests: PullRequestConnection
+}
+
+type Ref {
+  name: String!
+  target: GitObject
+}
+
+interface GitObject {
+  id: ID!
+}
+
+type Commit implements GitObject {
+  id: ID!
+  history(first: Int): CommitHistoryConnection!
+}
+
+type Tree implements GitObject {
+  id: ID!
+}
+
+type Tag implements GitObject {
+  id: ID!
+}
+
+type Blob implements GitObject {
+  id: ID!
+}
+
+type CommitHistoryConnection {
+  totalCount: Int!
+}
+
+type IssueConnection {
+  totalCount: Int!
+}
+
+type PullRequestConnection {
+  totalCount: Int!
+}
+
+type Language {
+  name: String!
+  color: String
 }
 
 type WatcherConnection {
@@ -79,7 +155,35 @@ type Organization {
   websiteUrl: URI
   email: String
   description: String
-  repositories(first: Int): RepositoryConnection
+  membersWithRole(first: Int, after: String): OrganizationMemberConnection
+  repositories(first: Int, after: String, orderBy: RepositoryOrder): RepositoryConnection
+}
+
+type OrganizationMemberConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  nodes: [User!]
+}
+
+type ContributionsCollection {
+  contributionCalendar: ContributionCalendar!
+}
+
+type ContributionCalendar {
+  totalContributions: Int!
+  weeks: [ContributionCalendarWeek!]!
+}
+
+type ContributionCalendarWeek {
+  firstDay: String!
+  contributionDays: [ContributionCalendarDay!]!
+}
+
+type ContributionCalendarDay {
+  date: String!
+  contributionCount: Int!
+  weekday: Int!
+  color: String!
 }
 
 type RateLimit {

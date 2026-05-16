@@ -1,6 +1,10 @@
-query OrganizationRepositories($login: String!, $first: Int!) {
+query OrganizationRepositories($login: String!, $first: Int!, $after: String) {
   organization(login: $login) {
-    repositories(first: $first) {
+    repositories(
+      first: $first
+      after: $after
+      orderBy: { field: UPDATED_AT, direction: DESC }
+    ) {
       totalCount
       pageInfo {
         hasNextPage
@@ -11,11 +15,20 @@ query OrganizationRepositories($login: String!, $first: Int!) {
         id
         name
         nameWithOwner
+        description
+        url
+        isPrivate
         isFork
+        pushedAt
+        updatedAt
         stargazerCount
         forkCount
         watchers {
           totalCount
+        }
+        primaryLanguage {
+          name
+          color
         }
       }
     }

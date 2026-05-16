@@ -4,10 +4,92 @@ package githubapi
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
 )
+
+// OrganizationMembersOrganization includes the requested fields of the GraphQL type Organization.
+type OrganizationMembersOrganization struct {
+	MembersWithRole *OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnection `json:"membersWithRole"`
+}
+
+// GetMembersWithRole returns OrganizationMembersOrganization.MembersWithRole, and is useful for accessing the field via an interface.
+func (v *OrganizationMembersOrganization) GetMembersWithRole() *OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnection {
+	return v.MembersWithRole
+}
+
+// OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnection includes the requested fields of the GraphQL type OrganizationMemberConnection.
+type OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnection struct {
+	TotalCount int                                                                                    `json:"totalCount"`
+	PageInfo   *OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionPageInfo    `json:"pageInfo"`
+	Nodes      []*OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionNodesUser `json:"nodes"`
+}
+
+// GetTotalCount returns OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetPageInfo returns OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnection) GetPageInfo() *OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetNodes returns OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnection) GetNodes() []*OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionNodesUser {
+	return v.Nodes
+}
+
+// OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionNodesUser includes the requested fields of the GraphQL type User.
+type OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionNodesUser struct {
+	Login     string  `json:"login"`
+	Name      *string `json:"name"`
+	AvatarUrl string  `json:"avatarUrl"`
+}
+
+// GetLogin returns OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionNodesUser.Login, and is useful for accessing the field via an interface.
+func (v *OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionNodesUser) GetLogin() string {
+	return v.Login
+}
+
+// GetName returns OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionNodesUser.Name, and is useful for accessing the field via an interface.
+func (v *OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionNodesUser) GetName() *string {
+	return v.Name
+}
+
+// GetAvatarUrl returns OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionNodesUser.AvatarUrl, and is useful for accessing the field via an interface.
+func (v *OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionNodesUser) GetAvatarUrl() string {
+	return v.AvatarUrl
+}
+
+// OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+type OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionPageInfo struct {
+	HasNextPage bool    `json:"hasNextPage"`
+	EndCursor   *string `json:"endCursor"`
+}
+
+// GetHasNextPage returns OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// GetEndCursor returns OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *OrganizationMembersOrganizationMembersWithRoleOrganizationMemberConnectionPageInfo) GetEndCursor() *string {
+	return v.EndCursor
+}
+
+// OrganizationMembersResponse is returned by OrganizationMembers on success.
+type OrganizationMembersResponse struct {
+	Organization *OrganizationMembersOrganization `json:"organization"`
+}
+
+// GetOrganization returns OrganizationMembersResponse.Organization, and is useful for accessing the field via an interface.
+func (v *OrganizationMembersResponse) GetOrganization() *OrganizationMembersOrganization {
+	return v.Organization
+}
 
 // OrganizationOrganization includes the requested fields of the GraphQL type Organization.
 type OrganizationOrganization struct {
@@ -87,14 +169,20 @@ func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnection) G
 
 // OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository includes the requested fields of the GraphQL type Repository.
 type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository struct {
-	DatabaseId     *int                                                                                                          `json:"databaseId"`
-	Id             string                                                                                                        `json:"id"`
-	Name           string                                                                                                        `json:"name"`
-	NameWithOwner  string                                                                                                        `json:"nameWithOwner"`
-	IsFork         bool                                                                                                          `json:"isFork"`
-	StargazerCount int                                                                                                           `json:"stargazerCount"`
-	ForkCount      int                                                                                                           `json:"forkCount"`
-	Watchers       *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection `json:"watchers"`
+	DatabaseId      *int                                                                                                          `json:"databaseId"`
+	Id              string                                                                                                        `json:"id"`
+	Name            string                                                                                                        `json:"name"`
+	NameWithOwner   string                                                                                                        `json:"nameWithOwner"`
+	Description     *string                                                                                                       `json:"description"`
+	Url             string                                                                                                        `json:"url"`
+	IsPrivate       bool                                                                                                          `json:"isPrivate"`
+	IsFork          bool                                                                                                          `json:"isFork"`
+	PushedAt        *time.Time                                                                                                    `json:"pushedAt"`
+	UpdatedAt       *time.Time                                                                                                    `json:"updatedAt"`
+	StargazerCount  int                                                                                                           `json:"stargazerCount"`
+	ForkCount       int                                                                                                           `json:"forkCount"`
+	Watchers        *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection `json:"watchers"`
+	PrimaryLanguage *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage           `json:"primaryLanguage"`
 }
 
 // GetDatabaseId returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.DatabaseId, and is useful for accessing the field via an interface.
@@ -117,9 +205,34 @@ func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNod
 	return v.NameWithOwner
 }
 
+// GetDescription returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.Description, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetDescription() *string {
+	return v.Description
+}
+
+// GetUrl returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.Url, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetUrl() string {
+	return v.Url
+}
+
+// GetIsPrivate returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.IsPrivate, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetIsPrivate() bool {
+	return v.IsPrivate
+}
+
 // GetIsFork returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.IsFork, and is useful for accessing the field via an interface.
 func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetIsFork() bool {
 	return v.IsFork
+}
+
+// GetPushedAt returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.PushedAt, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetPushedAt() *time.Time {
+	return v.PushedAt
+}
+
+// GetUpdatedAt returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetUpdatedAt() *time.Time {
+	return v.UpdatedAt
 }
 
 // GetStargazerCount returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.StargazerCount, and is useful for accessing the field via an interface.
@@ -135,6 +248,27 @@ func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNod
 // GetWatchers returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.Watchers, and is useful for accessing the field via an interface.
 func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetWatchers() *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection {
 	return v.Watchers
+}
+
+// GetPrimaryLanguage returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.PrimaryLanguage, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetPrimaryLanguage() *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage {
+	return v.PrimaryLanguage
+}
+
+// OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage includes the requested fields of the GraphQL type Language.
+type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage struct {
+	Name  string  `json:"name"`
+	Color *string `json:"color"`
+}
+
+// GetName returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage.Name, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage) GetName() string {
+	return v.Name
+}
+
+// GetColor returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage.Color, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage) GetColor() *string {
+	return v.Color
 }
 
 // OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection includes the requested fields of the GraphQL type WatcherConnection.
@@ -181,6 +315,425 @@ type OrganizationResponse struct {
 // GetOrganization returns OrganizationResponse.Organization, and is useful for accessing the field via an interface.
 func (v *OrganizationResponse) GetOrganization() *OrganizationOrganization { return v.Organization }
 
+// UserIndepthResponse is returned by UserIndepth on success.
+type UserIndepthResponse struct {
+	User *UserIndepthUser `json:"user"`
+}
+
+// GetUser returns UserIndepthResponse.User, and is useful for accessing the field via an interface.
+func (v *UserIndepthResponse) GetUser() *UserIndepthUser { return v.User }
+
+// UserIndepthUser includes the requested fields of the GraphQL type User.
+type UserIndepthUser struct {
+	ContributionsCollection *UserIndepthUserContributionsCollection          `json:"contributionsCollection"`
+	Repositories            *UserIndepthUserRepositoriesRepositoryConnection `json:"repositories"`
+}
+
+// GetContributionsCollection returns UserIndepthUser.ContributionsCollection, and is useful for accessing the field via an interface.
+func (v *UserIndepthUser) GetContributionsCollection() *UserIndepthUserContributionsCollection {
+	return v.ContributionsCollection
+}
+
+// GetRepositories returns UserIndepthUser.Repositories, and is useful for accessing the field via an interface.
+func (v *UserIndepthUser) GetRepositories() *UserIndepthUserRepositoriesRepositoryConnection {
+	return v.Repositories
+}
+
+// UserIndepthUserContributionsCollection includes the requested fields of the GraphQL type ContributionsCollection.
+type UserIndepthUserContributionsCollection struct {
+	ContributionCalendar *UserIndepthUserContributionsCollectionContributionCalendar `json:"contributionCalendar"`
+}
+
+// GetContributionCalendar returns UserIndepthUserContributionsCollection.ContributionCalendar, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserContributionsCollection) GetContributionCalendar() *UserIndepthUserContributionsCollectionContributionCalendar {
+	return v.ContributionCalendar
+}
+
+// UserIndepthUserContributionsCollectionContributionCalendar includes the requested fields of the GraphQL type ContributionCalendar.
+type UserIndepthUserContributionsCollectionContributionCalendar struct {
+	TotalContributions int                                                                                        `json:"totalContributions"`
+	Weeks              []*UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek `json:"weeks"`
+}
+
+// GetTotalContributions returns UserIndepthUserContributionsCollectionContributionCalendar.TotalContributions, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserContributionsCollectionContributionCalendar) GetTotalContributions() int {
+	return v.TotalContributions
+}
+
+// GetWeeks returns UserIndepthUserContributionsCollectionContributionCalendar.Weeks, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserContributionsCollectionContributionCalendar) GetWeeks() []*UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek {
+	return v.Weeks
+}
+
+// UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek includes the requested fields of the GraphQL type ContributionCalendarWeek.
+type UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek struct {
+	FirstDay         string                                                                                                                            `json:"firstDay"`
+	ContributionDays []*UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay `json:"contributionDays"`
+}
+
+// GetFirstDay returns UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek.FirstDay, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek) GetFirstDay() string {
+	return v.FirstDay
+}
+
+// GetContributionDays returns UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek.ContributionDays, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek) GetContributionDays() []*UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay {
+	return v.ContributionDays
+}
+
+// UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay includes the requested fields of the GraphQL type ContributionCalendarDay.
+type UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay struct {
+	Date              string `json:"date"`
+	ContributionCount int    `json:"contributionCount"`
+	Weekday           int    `json:"weekday"`
+	Color             string `json:"color"`
+}
+
+// GetDate returns UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay.Date, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay) GetDate() string {
+	return v.Date
+}
+
+// GetContributionCount returns UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay.ContributionCount, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay) GetContributionCount() int {
+	return v.ContributionCount
+}
+
+// GetWeekday returns UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay.Weekday, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay) GetWeekday() int {
+	return v.Weekday
+}
+
+// GetColor returns UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay.Color, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay) GetColor() string {
+	return v.Color
+}
+
+// UserIndepthUserRepositoriesRepositoryConnection includes the requested fields of the GraphQL type RepositoryConnection.
+type UserIndepthUserRepositoriesRepositoryConnection struct {
+	TotalCount int                                                               `json:"totalCount"`
+	PageInfo   *UserIndepthUserRepositoriesRepositoryConnectionPageInfo          `json:"pageInfo"`
+	Nodes      []*UserIndepthUserRepositoriesRepositoryConnectionNodesRepository `json:"nodes"`
+}
+
+// GetTotalCount returns UserIndepthUserRepositoriesRepositoryConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnection) GetTotalCount() int { return v.TotalCount }
+
+// GetPageInfo returns UserIndepthUserRepositoriesRepositoryConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnection) GetPageInfo() *UserIndepthUserRepositoriesRepositoryConnectionPageInfo {
+	return v.PageInfo
+}
+
+// GetNodes returns UserIndepthUserRepositoriesRepositoryConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnection) GetNodes() []*UserIndepthUserRepositoriesRepositoryConnectionNodesRepository {
+	return v.Nodes
+}
+
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepository includes the requested fields of the GraphQL type Repository.
+type UserIndepthUserRepositoriesRepositoryConnectionNodesRepository struct {
+	NameWithOwner    string                                                                                           `json:"nameWithOwner"`
+	DefaultBranchRef *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef                  `json:"defaultBranchRef"`
+	Issues           *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection             `json:"issues"`
+	PullRequests     *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryPullRequestsPullRequestConnection `json:"pullRequests"`
+}
+
+// GetNameWithOwner returns UserIndepthUserRepositoriesRepositoryConnectionNodesRepository.NameWithOwner, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepository) GetNameWithOwner() string {
+	return v.NameWithOwner
+}
+
+// GetDefaultBranchRef returns UserIndepthUserRepositoriesRepositoryConnectionNodesRepository.DefaultBranchRef, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepository) GetDefaultBranchRef() *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef {
+	return v.DefaultBranchRef
+}
+
+// GetIssues returns UserIndepthUserRepositoriesRepositoryConnectionNodesRepository.Issues, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepository) GetIssues() *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection {
+	return v.Issues
+}
+
+// GetPullRequests returns UserIndepthUserRepositoriesRepositoryConnectionNodesRepository.PullRequests, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepository) GetPullRequests() *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryPullRequestsPullRequestConnection {
+	return v.PullRequests
+}
+
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef includes the requested fields of the GraphQL type Ref.
+type UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef struct {
+	Target *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject `json:"-"`
+}
+
+// GetTarget returns UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef.Target, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef) GetTarget() *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject {
+	return v.Target
+}
+
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef
+		Target json.RawMessage `json:"target"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Target
+		src := firstPass.Target
+		if len(src) != 0 && string(src) != "null" {
+			*dst = new(UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject)
+			err = __unmarshalUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject(
+				src, *dst,
+			)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef.Target: %w", err,
+				)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef struct {
+	Target json.RawMessage `json:"target"`
+}
+
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef) __premarshalJSON() (*__premarshalUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef, error) {
+	var retval __premarshalUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef
+
+	{
+
+		dst := &retval.Target
+		src := v.Target
+		if src != nil {
+			var err error
+			*dst, err = __marshalUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject(
+				src,
+			)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"unable to marshal UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef.Target: %w", err,
+				)
+			}
+		}
+	}
+	return &retval, nil
+}
+
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob includes the requested fields of the GraphQL type Blob.
+type UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob struct {
+	Typename *string `json:"__typename"`
+}
+
+// GetTypename returns UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob.Typename, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob) GetTypename() *string {
+	return v.Typename
+}
+
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit includes the requested fields of the GraphQL type Commit.
+type UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit struct {
+	Typename *string                                                                                                                   `json:"__typename"`
+	History  *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommitHistoryCommitHistoryConnection `json:"history"`
+}
+
+// GetTypename returns UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit.Typename, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit) GetTypename() *string {
+	return v.Typename
+}
+
+// GetHistory returns UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit.History, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit) GetHistory() *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommitHistoryCommitHistoryConnection {
+	return v.History
+}
+
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommitHistoryCommitHistoryConnection includes the requested fields of the GraphQL type CommitHistoryConnection.
+type UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommitHistoryCommitHistoryConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommitHistoryCommitHistoryConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommitHistoryCommitHistoryConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject includes the requested fields of the GraphQL interface GitObject.
+//
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject is implemented by the following types:
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree
+type UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject interface {
+	implementsGraphQLInterfaceUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() *string
+}
+
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob) implementsGraphQLInterfaceUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
+}
+
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit) implementsGraphQLInterfaceUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
+}
+
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag) implementsGraphQLInterfaceUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
+}
+
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree) implementsGraphQLInterfaceUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
+}
+
+func __unmarshalUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject(b []byte, v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "Blob":
+		*v = new(UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob)
+		return json.Unmarshal(b, *v)
+	case "Commit":
+		*v = new(UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit)
+		return json.Unmarshal(b, *v)
+	case "Tag":
+		*v = new(UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag)
+		return json.Unmarshal(b, *v)
+	case "Tree":
+		*v = new(UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing GitObject.__typename",
+		)
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject: "%v"`, tn.TypeName,
+		)
+	}
+}
+
+func __marshalUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject(v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject) ([]byte, error) {
+	var typename string
+	switch v := (*v).(type) {
+	case *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob:
+		typename = "Blob"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob
+		}{typename, v}
+		return json.Marshal(result)
+	case *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit:
+		typename = "Commit"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit
+		}{typename, v}
+		return json.Marshal(result)
+	case *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag:
+		typename = "Tag"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag
+		}{typename, v}
+		return json.Marshal(result)
+	case *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree:
+		typename = "Tree"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject: "%T"`, v,
+		)
+	}
+}
+
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag includes the requested fields of the GraphQL type Tag.
+type UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag struct {
+	Typename *string `json:"__typename"`
+}
+
+// GetTypename returns UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag.Typename, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag) GetTypename() *string {
+	return v.Typename
+}
+
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree includes the requested fields of the GraphQL type Tree.
+type UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree struct {
+	Typename *string `json:"__typename"`
+}
+
+// GetTypename returns UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree.Typename, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree) GetTypename() *string {
+	return v.Typename
+}
+
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection includes the requested fields of the GraphQL type IssueConnection.
+type UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryPullRequestsPullRequestConnection includes the requested fields of the GraphQL type PullRequestConnection.
+type UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryPullRequestsPullRequestConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryPullRequestsPullRequestConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryPullRequestsPullRequestConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// UserIndepthUserRepositoriesRepositoryConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+type UserIndepthUserRepositoriesRepositoryConnectionPageInfo struct {
+	HasNextPage bool    `json:"hasNextPage"`
+	EndCursor   *string `json:"endCursor"`
+}
+
+// GetHasNextPage returns UserIndepthUserRepositoriesRepositoryConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// GetEndCursor returns UserIndepthUserRepositoriesRepositoryConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *UserIndepthUserRepositoriesRepositoryConnectionPageInfo) GetEndCursor() *string {
+	return v.EndCursor
+}
+
 // UserRepositoriesResponse is returned by UserRepositories on success.
 type UserRepositoriesResponse struct {
 	User *UserRepositoriesUser `json:"user"`
@@ -223,14 +776,20 @@ func (v *UserRepositoriesUserRepositoriesRepositoryConnection) GetNodes() []*Use
 
 // UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository includes the requested fields of the GraphQL type Repository.
 type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository struct {
-	DatabaseId     *int                                                                                          `json:"databaseId"`
-	Id             string                                                                                        `json:"id"`
-	Name           string                                                                                        `json:"name"`
-	NameWithOwner  string                                                                                        `json:"nameWithOwner"`
-	IsFork         bool                                                                                          `json:"isFork"`
-	StargazerCount int                                                                                           `json:"stargazerCount"`
-	ForkCount      int                                                                                           `json:"forkCount"`
-	Watchers       *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection `json:"watchers"`
+	DatabaseId      *int                                                                                          `json:"databaseId"`
+	Id              string                                                                                        `json:"id"`
+	Name            string                                                                                        `json:"name"`
+	NameWithOwner   string                                                                                        `json:"nameWithOwner"`
+	Description     *string                                                                                       `json:"description"`
+	Url             string                                                                                        `json:"url"`
+	IsPrivate       bool                                                                                          `json:"isPrivate"`
+	IsFork          bool                                                                                          `json:"isFork"`
+	PushedAt        *time.Time                                                                                    `json:"pushedAt"`
+	UpdatedAt       *time.Time                                                                                    `json:"updatedAt"`
+	StargazerCount  int                                                                                           `json:"stargazerCount"`
+	ForkCount       int                                                                                           `json:"forkCount"`
+	Watchers        *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection `json:"watchers"`
+	PrimaryLanguage *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage           `json:"primaryLanguage"`
 }
 
 // GetDatabaseId returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.DatabaseId, and is useful for accessing the field via an interface.
@@ -253,9 +812,34 @@ func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) Ge
 	return v.NameWithOwner
 }
 
+// GetDescription returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.Description, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetDescription() *string {
+	return v.Description
+}
+
+// GetUrl returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.Url, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetUrl() string {
+	return v.Url
+}
+
+// GetIsPrivate returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.IsPrivate, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetIsPrivate() bool {
+	return v.IsPrivate
+}
+
 // GetIsFork returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.IsFork, and is useful for accessing the field via an interface.
 func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetIsFork() bool {
 	return v.IsFork
+}
+
+// GetPushedAt returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.PushedAt, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetPushedAt() *time.Time {
+	return v.PushedAt
+}
+
+// GetUpdatedAt returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetUpdatedAt() *time.Time {
+	return v.UpdatedAt
 }
 
 // GetStargazerCount returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.StargazerCount, and is useful for accessing the field via an interface.
@@ -271,6 +855,27 @@ func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) Ge
 // GetWatchers returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.Watchers, and is useful for accessing the field via an interface.
 func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetWatchers() *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection {
 	return v.Watchers
+}
+
+// GetPrimaryLanguage returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.PrimaryLanguage, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetPrimaryLanguage() *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage {
+	return v.PrimaryLanguage
+}
+
+// UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage includes the requested fields of the GraphQL type Language.
+type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage struct {
+	Name  string  `json:"name"`
+	Color *string `json:"color"`
+}
+
+// GetName returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage.Name, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage) GetName() string {
+	return v.Name
+}
+
+// GetColor returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage.Color, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage) GetColor() *string {
+	return v.Color
 }
 
 // UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection includes the requested fields of the GraphQL type WatcherConnection.
@@ -367,10 +972,27 @@ type __OrganizationInput struct {
 // GetLogin returns __OrganizationInput.Login, and is useful for accessing the field via an interface.
 func (v *__OrganizationInput) GetLogin() string { return v.Login }
 
+// __OrganizationMembersInput is used internally by genqlient
+type __OrganizationMembersInput struct {
+	Login string  `json:"login"`
+	First int     `json:"first"`
+	After *string `json:"after"`
+}
+
+// GetLogin returns __OrganizationMembersInput.Login, and is useful for accessing the field via an interface.
+func (v *__OrganizationMembersInput) GetLogin() string { return v.Login }
+
+// GetFirst returns __OrganizationMembersInput.First, and is useful for accessing the field via an interface.
+func (v *__OrganizationMembersInput) GetFirst() int { return v.First }
+
+// GetAfter returns __OrganizationMembersInput.After, and is useful for accessing the field via an interface.
+func (v *__OrganizationMembersInput) GetAfter() *string { return v.After }
+
 // __OrganizationRepositoriesInput is used internally by genqlient
 type __OrganizationRepositoriesInput struct {
-	Login string `json:"login"`
-	First int    `json:"first"`
+	Login string  `json:"login"`
+	First int     `json:"first"`
+	After *string `json:"after"`
 }
 
 // GetLogin returns __OrganizationRepositoriesInput.Login, and is useful for accessing the field via an interface.
@@ -378,6 +1000,33 @@ func (v *__OrganizationRepositoriesInput) GetLogin() string { return v.Login }
 
 // GetFirst returns __OrganizationRepositoriesInput.First, and is useful for accessing the field via an interface.
 func (v *__OrganizationRepositoriesInput) GetFirst() int { return v.First }
+
+// GetAfter returns __OrganizationRepositoriesInput.After, and is useful for accessing the field via an interface.
+func (v *__OrganizationRepositoriesInput) GetAfter() *string { return v.After }
+
+// __UserIndepthInput is used internally by genqlient
+type __UserIndepthInput struct {
+	Login      string     `json:"login"`
+	From       *time.Time `json:"from"`
+	To         *time.Time `json:"to"`
+	ReposFirst int        `json:"reposFirst"`
+	ReposAfter *string    `json:"reposAfter"`
+}
+
+// GetLogin returns __UserIndepthInput.Login, and is useful for accessing the field via an interface.
+func (v *__UserIndepthInput) GetLogin() string { return v.Login }
+
+// GetFrom returns __UserIndepthInput.From, and is useful for accessing the field via an interface.
+func (v *__UserIndepthInput) GetFrom() *time.Time { return v.From }
+
+// GetTo returns __UserIndepthInput.To, and is useful for accessing the field via an interface.
+func (v *__UserIndepthInput) GetTo() *time.Time { return v.To }
+
+// GetReposFirst returns __UserIndepthInput.ReposFirst, and is useful for accessing the field via an interface.
+func (v *__UserIndepthInput) GetReposFirst() int { return v.ReposFirst }
+
+// GetReposAfter returns __UserIndepthInput.ReposAfter, and is useful for accessing the field via an interface.
+func (v *__UserIndepthInput) GetReposAfter() *string { return v.ReposAfter }
 
 // __UserInput is used internally by genqlient
 type __UserInput struct {
@@ -389,8 +1038,9 @@ func (v *__UserInput) GetLogin() string { return v.Login }
 
 // __UserRepositoriesInput is used internally by genqlient
 type __UserRepositoriesInput struct {
-	Login string `json:"login"`
-	First int    `json:"first"`
+	Login string  `json:"login"`
+	First int     `json:"first"`
+	After *string `json:"after"`
 }
 
 // GetLogin returns __UserRepositoriesInput.Login, and is useful for accessing the field via an interface.
@@ -398,6 +1048,9 @@ func (v *__UserRepositoriesInput) GetLogin() string { return v.Login }
 
 // GetFirst returns __UserRepositoriesInput.First, and is useful for accessing the field via an interface.
 func (v *__UserRepositoriesInput) GetFirst() int { return v.First }
+
+// GetAfter returns __UserRepositoriesInput.After, and is useful for accessing the field via an interface.
+func (v *__UserRepositoriesInput) GetAfter() *string { return v.After }
 
 // The query executed by Organization.
 const Organization_Operation = `
@@ -442,11 +1095,60 @@ func Organization(
 	return data_, err_
 }
 
+// The query executed by OrganizationMembers.
+const OrganizationMembers_Operation = `
+query OrganizationMembers ($login: String!, $first: Int!, $after: String) {
+	organization(login: $login) {
+		membersWithRole(first: $first, after: $after) {
+			totalCount
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
+			nodes {
+				login
+				name
+				avatarUrl
+			}
+		}
+	}
+}
+`
+
+func OrganizationMembers(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	login string,
+	first int,
+	after *string,
+) (data_ *OrganizationMembersResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "OrganizationMembers",
+		Query:  OrganizationMembers_Operation,
+		Variables: &__OrganizationMembersInput{
+			Login: login,
+			First: first,
+			After: after,
+		},
+	}
+
+	data_ = &OrganizationMembersResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The query executed by OrganizationRepositories.
 const OrganizationRepositories_Operation = `
-query OrganizationRepositories ($login: String!, $first: Int!) {
+query OrganizationRepositories ($login: String!, $first: Int!, $after: String) {
 	organization(login: $login) {
-		repositories(first: $first) {
+		repositories(first: $first, after: $after, orderBy: {field:UPDATED_AT,direction:DESC}) {
 			totalCount
 			pageInfo {
 				hasNextPage
@@ -457,11 +1159,20 @@ query OrganizationRepositories ($login: String!, $first: Int!) {
 				id
 				name
 				nameWithOwner
+				description
+				url
+				isPrivate
 				isFork
+				pushedAt
+				updatedAt
 				stargazerCount
 				forkCount
 				watchers {
 					totalCount
+				}
+				primaryLanguage {
+					name
+					color
 				}
 			}
 		}
@@ -474,6 +1185,7 @@ func OrganizationRepositories(
 	client_ graphql.Client,
 	login string,
 	first int,
+	after *string,
 ) (data_ *OrganizationRepositoriesResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "OrganizationRepositories",
@@ -481,6 +1193,7 @@ func OrganizationRepositories(
 		Variables: &__OrganizationRepositoriesInput{
 			Login: login,
 			First: first,
+			After: after,
 		},
 	}
 
@@ -541,11 +1254,92 @@ func User(
 	return data_, err_
 }
 
+// The query executed by UserIndepth.
+const UserIndepth_Operation = `
+query UserIndepth ($login: String!, $from: DateTime, $to: DateTime, $reposFirst: Int!, $reposAfter: String) {
+	user(login: $login) {
+		contributionsCollection(from: $from, to: $to) {
+			contributionCalendar {
+				totalContributions
+				weeks {
+					firstDay
+					contributionDays {
+						date
+						contributionCount
+						weekday
+						color
+					}
+				}
+			}
+		}
+		repositories(first: $reposFirst, after: $reposAfter, ownerAffiliations: [OWNER], orderBy: {field:UPDATED_AT,direction:DESC}) {
+			totalCount
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
+			nodes {
+				nameWithOwner
+				defaultBranchRef {
+					target {
+						__typename
+						... on Commit {
+							history(first: 0) {
+								totalCount
+							}
+						}
+					}
+				}
+				issues {
+					totalCount
+				}
+				pullRequests {
+					totalCount
+				}
+			}
+		}
+	}
+}
+`
+
+func UserIndepth(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	login string,
+	from *time.Time,
+	to *time.Time,
+	reposFirst int,
+	reposAfter *string,
+) (data_ *UserIndepthResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UserIndepth",
+		Query:  UserIndepth_Operation,
+		Variables: &__UserIndepthInput{
+			Login:      login,
+			From:       from,
+			To:         to,
+			ReposFirst: reposFirst,
+			ReposAfter: reposAfter,
+		},
+	}
+
+	data_ = &UserIndepthResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The query executed by UserRepositories.
 const UserRepositories_Operation = `
-query UserRepositories ($login: String!, $first: Int!) {
+query UserRepositories ($login: String!, $first: Int!, $after: String) {
 	user(login: $login) {
-		repositories(first: $first, ownerAffiliations: [OWNER]) {
+		repositories(first: $first, after: $after, ownerAffiliations: [OWNER], orderBy: {field:UPDATED_AT,direction:DESC}) {
 			totalCount
 			pageInfo {
 				hasNextPage
@@ -556,11 +1350,20 @@ query UserRepositories ($login: String!, $first: Int!) {
 				id
 				name
 				nameWithOwner
+				description
+				url
+				isPrivate
 				isFork
+				pushedAt
+				updatedAt
 				stargazerCount
 				forkCount
 				watchers {
 					totalCount
+				}
+				primaryLanguage {
+					name
+					color
 				}
 			}
 		}
@@ -573,6 +1376,7 @@ func UserRepositories(
 	client_ graphql.Client,
 	login string,
 	first int,
+	after *string,
 ) (data_ *UserRepositoriesResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "UserRepositories",
@@ -580,6 +1384,7 @@ func UserRepositories(
 		Variables: &__UserRepositoriesInput{
 			Login: login,
 			First: first,
+			After: after,
 		},
 	}
 
