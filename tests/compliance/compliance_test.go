@@ -66,6 +66,14 @@ var allowedFiles = map[string]struct{}{
 	"tests/compliance/compliance_test.go": {},
 	"internal/render/svg_hash.go":         {},
 	"internal/render/svg_resize.go":       {},
+	// reactions plugin exposes `Discussions int json:"discussions"` as
+	// part of the upstream data.plugins.reactions JSON shape per
+	// data-model.md E-028 (constitution 原則 II output contract). The
+	// word "discussions" overlaps the unadopted upstream "discussions"
+	// plugin name; this allow-list entry preserves the JSON-shape
+	// requirement.
+	"internal/plugins/reactions/reactions.go": {},
+	"internal/plugins/reactions/partial.go":   {},
 }
 
 // TestNoUnadoptedPluginReference walks scanRoots and asserts that no

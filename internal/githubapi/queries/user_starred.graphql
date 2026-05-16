@@ -1,0 +1,21 @@
+query UserStarredRepositories($login: String!, $first: Int!) {
+  user(login: $login) {
+    starredRepositories(first: $first, orderBy: { field: STARRED_AT, direction: DESC }) {
+      totalCount
+      edges {
+        starredAt
+        node {
+          nameWithOwner
+          description
+          url
+          stargazerCount
+          forkCount
+          primaryLanguage {
+            name
+            color
+          }
+        }
+      }
+    }
+  }
+}

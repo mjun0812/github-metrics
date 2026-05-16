@@ -18,6 +18,7 @@ type Query {
   user(login: String!): User
   organization(login: String!): Organization
   rateLimit: RateLimit
+  viewer: User
 }
 
 type User {
@@ -40,6 +41,57 @@ type User {
     orderBy: RepositoryOrder
   ): RepositoryConnection
   contributionsCollection(from: DateTime, to: DateTime): ContributionsCollection
+  starredRepositories(first: Int, orderBy: StarOrder): StarredRepositoryConnection
+  followers(first: Int): UserConnection
+  following(first: Int): UserConnection
+  issues(first: Int): IssueConnectionWithReactions
+  issueComments(first: Int): IssueCommentConnection
+}
+
+type UserConnection {
+  totalCount: Int!
+  nodes: [User!]
+}
+
+input StarOrder {
+  field: StarOrderField!
+  direction: OrderDirection!
+}
+
+enum StarOrderField {
+  STARRED_AT
+}
+
+type StarredRepositoryConnection {
+  totalCount: Int!
+  edges: [StarredRepositoryEdge!]
+}
+
+type StarredRepositoryEdge {
+  starredAt: DateTime!
+  node: Repository!
+}
+
+type IssueConnectionWithReactions {
+  totalCount: Int!
+  nodes: [IssueWithReactions!]
+}
+
+type IssueWithReactions {
+  reactions: ReactionConnection
+}
+
+type IssueCommentConnection {
+  totalCount: Int!
+  nodes: [IssueCommentWithReactions!]
+}
+
+type IssueCommentWithReactions {
+  reactions: ReactionConnection
+}
+
+type ReactionConnection {
+  totalCount: Int!
 }
 
 enum RepositoryAffiliation {

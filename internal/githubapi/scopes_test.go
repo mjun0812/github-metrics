@@ -58,6 +58,32 @@ func TestREST_Scopes_HTTPErrorReturnsError(t *testing.T) {
 	}
 }
 
+// TestREST_Scopes_401ReturnsEmptyNotError covers the contract documented
+// in data-model.md E-050: GitHub returns HTTP 401 for a missing /
+// rejected token, which is semantically "no scopes" rather than a
+// transport failure. The helper MUST surface that as ([]string{}, nil)
+// and cache it so subsequent callers do not re-probe.
+func TestREST_Scopes_401ReturnsEmptyNotError(t *testing.T) {
+	t.Parallel()
+
+	mock := githubapi.NewMockTransport()
+	mock.Set("GET", "/", githubapi.MockResponse{Status: http.StatusUnauthorized, Body: []byte(`{"message":"Bad credentials"}`)})
+
+	rest := newRESTWithMock(t, mock)
+	got, err := rest.Scopes(context.Background())
+	if err != nil {
+		t.Fatalf("Scopes on 401: expected (empty, nil); got err=%v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("Scopes on 401 = %v, want empty slice", got)
+	}
+	// Second call should hit the cache (no extra HTTP probe).
+	_, _ = rest.Scopes(context.Background())
+	if calls := mock.Calls(); len(calls) != 1 {
+		t.Fatalf("expected 1 HTTP call (401 cached); got %d", len(calls))
+	}
+}
+
 func TestREST_Scopes_CachedAfterFirstCall(t *testing.T) {
 	t.Parallel()
 

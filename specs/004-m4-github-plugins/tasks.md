@@ -136,80 +136,80 @@ description: "Task list for m4-github-plugins (採用 21 plugin + base 拡張 + 
 
 ### plugin: calendar (T-050)
 
-- [ ] T038 [P] [US2] Add `internal/plugins/calendar/calendar_test.go` (5 cases) + fixture `tests/fixtures/plugins/calendar/octocat_5years.json`.
-- [ ] T039 [P] [US2] Implement `internal/plugins/calendar/calendar.go` per [contracts/plugin-p2-graphql.md §1](./contracts/plugin-p2-graphql.md#1-calendar-t-050)。Result は [data-model.md E-020](./data-model.md#E-020)。Make T038 pass.
-- [ ] T040 [P] [US2] Add `internal/templates/classic/partials/calendar.svg.tmpl` (`<g class="calendar-year">` × ≥ 1) + golden file 生成。
+- [X] T038 [P] [US2] Add `internal/plugins/calendar/calendar_test.go` (5 cases) + fixture `tests/fixtures/plugins/calendar/octocat_5years.json`.
+- [X] T039 [P] [US2] Implement `internal/plugins/calendar/calendar.go` per [contracts/plugin-p2-graphql.md §1](./contracts/plugin-p2-graphql.md#1-calendar-t-050)。Result は [data-model.md E-020](./data-model.md#E-020)。Make T038 pass.
+- [X] T040 [P] [US2] Add `internal/templates/classic/partials/calendar.svg.tmpl` (`<g class="calendar-year">` × ≥ 1) + golden file 生成。
 
 ### plugin: habits (T-051)
 
-- [ ] T041 [P] [US2] Add `internal/plugins/habits/habits_test.go` (5 cases) + fixtures `tests/fixtures/plugins/habits/{octocat_commits.json, indent_tabs.json, no_commits.json}`.
-- [ ] T042 [P] [US2] Implement `internal/plugins/habits/habits.go` per [contracts/plugin-p2-graphql.md §2](./contracts/plugin-p2-graphql.md#2-habits-t-051)。PushEvent から最新 N コミット → 各 commit diff (mocked REST `/repos/X/commits/Y`) → indent / lines / Days/Hours 集計。Result は [data-model.md E-021](./data-model.md#E-021)。Make T041 pass.
-- [ ] T043 [P] [US2] Add `internal/templates/classic/partials/habits.svg.tmpl` (`<g class="habit-chart">` charts=true 時) + golden。
+- [X] T041 [P] [US2] Add `internal/plugins/habits/habits_test.go` (5 cases) + fixtures `tests/fixtures/plugins/habits/{octocat_commits.json, indent_tabs.json, no_commits.json}`.
+- [X] T042 [P] [US2] Implement `internal/plugins/habits/habits.go` per [contracts/plugin-p2-graphql.md §2](./contracts/plugin-p2-graphql.md#2-habits-t-051)。PushEvent から最新 N コミット → 各 commit diff (mocked REST `/repos/X/commits/Y`) → indent / lines / Days/Hours 集計。Result は [data-model.md E-021](./data-model.md#E-021)。Make T041 pass.
+- [X] T043 [P] [US2] Add `internal/templates/classic/partials/habits.svg.tmpl` (`<g class="habit-chart">` charts=true 時) + golden。
 
 ### plugin: stars (T-052)
 
-- [ ] T044 [P] [US2] Add `internal/plugins/stars/stars_test.go` (5 cases) + fixture `tests/fixtures/plugins/stars/octocat_starred.json`.
-- [ ] T045 [P] [US2] Implement `internal/plugins/stars/stars.go` per [contracts/plugin-p2-graphql.md §3](./contracts/plugin-p2-graphql.md#3-stars-t-052)。GraphQL `user.starredRepositories(orderBy:STARRED_AT, last:limit)`。Result は [data-model.md E-022](./data-model.md#E-022)。Make T044 pass.
-- [ ] T046 [P] [US2] Add `internal/templates/classic/partials/stars.svg.tmpl` (`<a class="starred-repo">` × ≥ 1) + golden。
+- [X] T044 [P] [US2] Add `internal/plugins/stars/stars_test.go` (5 cases) + fixture `tests/fixtures/plugins/stars/octocat_starred.json`.
+- [X] T045 [P] [US2] Implement `internal/plugins/stars/stars.go` per [contracts/plugin-p2-graphql.md §3](./contracts/plugin-p2-graphql.md#3-stars-t-052)。GraphQL `user.starredRepositories(orderBy:STARRED_AT, last:limit)`。Result は [data-model.md E-022](./data-model.md#E-022)。Make T044 pass.
+- [X] T046 [P] [US2] Add `internal/templates/classic/partials/stars.svg.tmpl` (`<a class="starred-repo">` × ≥ 1) + golden。
 
 ### plugin: people (T-055)
 
-- [ ] T047 [P] [US2] Add `internal/plugins/people/people_test.go` (5 cases) + fixtures `tests/fixtures/plugins/people/{followers.json, following.json, contributors.json, unknown_type.json}`.
-- [ ] T048 [P] [US2] Implement `internal/plugins/people/people.go` per [contracts/plugin-p2-graphql.md §4](./contracts/plugin-p2-graphql.md#4-people-t-055)。`_types` ごとに別 GraphQL を並列発行 (errgroup)、未知 type は WARN ログ 1 行で無視、`_shuffle=true` で fisher-yates。Result は [data-model.md E-025](./data-model.md#E-025)。Make T047 pass.
-- [ ] T049 [P] [US2] Add `internal/templates/classic/partials/people.svg.tmpl` (`<g class="person">` + `<image class="avatar">`) + golden。
+- [X] T047 [P] [US2] Add `internal/plugins/people/people_test.go` (5 cases) + fixtures `tests/fixtures/plugins/people/{followers.json, following.json, contributors.json, unknown_type.json}`.
+- [X] T048 [P] [US2] Implement `internal/plugins/people/people.go` per [contracts/plugin-p2-graphql.md §4](./contracts/plugin-p2-graphql.md#4-people-t-055)。`_types` ごとに別 GraphQL を並列発行 (errgroup)、未知 type は WARN ログ 1 行で無視、`_shuffle=true` で fisher-yates。Result は [data-model.md E-025](./data-model.md#E-025)。Make T047 pass.
+- [X] T049 [P] [US2] Add `internal/templates/classic/partials/people.svg.tmpl` (`<g class="person">` + `<image class="avatar">`) + golden。
 
 ### plugin: notable (T-056)
 
-- [ ] T050 [P] [US2] Add `internal/plugins/notable/notable_test.go` (5 cases) + fixture `tests/fixtures/plugins/notable/octocat_contribs.json`.
-- [ ] T051 [P] [US2] Implement `internal/plugins/notable/notable.go` per [contracts/plugin-p2-graphql.md §5](./contracts/plugin-p2-graphql.md#5-notable-t-056)。`_indepth=true` の追加クエリ条件分岐込み。Result は [data-model.md E-026](./data-model.md#E-026)。Make T050 pass.
-- [ ] T052 [P] [US2] Add `internal/templates/classic/partials/notable.svg.tmpl` (`<g class="notable-contrib">`) + golden。
+- [X] T050 [P] [US2] Add `internal/plugins/notable/notable_test.go` (5 cases) + fixture `tests/fixtures/plugins/notable/octocat_contribs.json`.
+- [X] T051 [P] [US2] Implement `internal/plugins/notable/notable.go` per [contracts/plugin-p2-graphql.md §5](./contracts/plugin-p2-graphql.md#5-notable-t-056)。`_indepth=true` の追加クエリ条件分岐込み。Result は [data-model.md E-026](./data-model.md#E-026)。Make T050 pass.
+- [X] T052 [P] [US2] Add `internal/templates/classic/partials/notable.svg.tmpl` (`<g class="notable-contrib">`) + golden。
 
 ### plugin: contributors (T-059, M4 では account 検証のみ)
 
-- [ ] T053 [P] [US2] Add `internal/plugins/contributors/contributors_test.go` (3 cases — user account → skipped, organization → skipped, repository account → would-be normal but M4 doesn't have repository templates yet so also `Skipped=true, SkippedReason="repository template not yet available"`).
-- [ ] T054 [P] [US2] Implement `internal/plugins/contributors/contributors.go` per [contracts/plugin-p2-graphql.md §6](./contracts/plugin-p2-graphql.md#6-contributors-t-059)。M4 段階では account kind 検証 + skipped path のみ実装、実 GraphQL/REST 呼び出しは M7 (repository template) 完成後の N-task で活性化。Result は [data-model.md E-027](./data-model.md#E-027)。Make T053 pass.
-- [ ] T055 [P] [US2] Add `internal/templates/classic/partials/contributors.svg.tmpl` — skipped=true 時は空文字列を返すガードのみ。golden は `tests/golden/classic/m4/contributors.svg` を空 SVG fragment で commit (ファイル存在の整合性確保)。
+- [X] T053 [P] [US2] Add `internal/plugins/contributors/contributors_test.go` (3 cases — user account → skipped, organization → skipped, repository account → would-be normal but M4 doesn't have repository templates yet so also `Skipped=true, SkippedReason="repository template not yet available"`).
+- [X] T054 [P] [US2] Implement `internal/plugins/contributors/contributors.go` per [contracts/plugin-p2-graphql.md §6](./contracts/plugin-p2-graphql.md#6-contributors-t-059)。M4 段階では account kind 検証 + skipped path のみ実装、実 GraphQL/REST 呼び出しは M7 (repository template) 完成後の N-task で活性化。Result は [data-model.md E-027](./data-model.md#E-027)。Make T053 pass.
+- [X] T055 [P] [US2] Add `internal/templates/classic/partials/contributors.svg.tmpl` — skipped=true 時は空文字列を返すガードのみ。golden は `tests/golden/classic/m4/contributors.svg` を空 SVG fragment で commit (ファイル存在の整合性確保)。
 
 ### plugin: reactions (T-062)
 
-- [ ] T056 [P] [US2] Add `internal/plugins/reactions/reactions_test.go` (5 cases) + fixtures `tests/fixtures/plugins/reactions/{issues.json, comments.json, discussions.json, mixed.json, empty.json}`.
-- [ ] T057 [P] [US2] Implement `internal/plugins/reactions/reactions.go` per [contracts/plugin-p2-graphql.md §7](./contracts/plugin-p2-graphql.md#7-reactions-t-062)。`user.issues / issueComments / discussionComments` の reactions を集計、`_details=true` で `Details map[emoji]int` を埋める。Result は [data-model.md E-028](./data-model.md#E-028)。Make T056 pass.
-- [ ] T058 [P] [US2] Add `internal/templates/classic/partials/reactions.svg.tmpl` (`<text class="reaction-count">`) + golden。
+- [X] T056 [P] [US2] Add `internal/plugins/reactions/reactions_test.go` (5 cases) + fixtures `tests/fixtures/plugins/reactions/{issues.json, comments.json, discussions.json, mixed.json, empty.json}`.
+- [X] T057 [P] [US2] Implement `internal/plugins/reactions/reactions.go` per [contracts/plugin-p2-graphql.md §7](./contracts/plugin-p2-graphql.md#7-reactions-t-062)。`user.issues / issueComments / discussionComments` の reactions を集計、`_details=true` で `Details map[emoji]int` を埋める。Result は [data-model.md E-028](./data-model.md#E-028)。Make T056 pass.
+- [X] T058 [P] [US2] Add `internal/templates/classic/partials/reactions.svg.tmpl` (`<text class="reaction-count">`) + golden。
 
 ### plugin: projects (T-063, scope 検証付き)
 
-- [ ] T059 [P] [US2] Add `internal/plugins/projects/projects_test.go` (5 cases) + fixtures `tests/fixtures/plugins/projects/{has_scope.json, no_scope.json, user_projects.json, repo_projects.json}`. `no_scope.json` ケースで `_test.go` 内で `REST.Scopes()` を `[]string{}` (空) に注入し `Skipped=true, SkippedReason="missing read:project scope"` を assert。
-- [ ] T060 [P] [US2] Implement `internal/plugins/projects/projects.go` per [contracts/plugin-p2-graphql.md §8](./contracts/plugin-p2-graphql.md#8-projects-t-063)。`pc.REST.Scopes()` で `read:project` 不在を検出 → `Skipped=true`。Result は [data-model.md E-029](./data-model.md#E-029)。Make T059 pass.
-- [ ] T061 [P] [US2] Add `internal/templates/classic/partials/projects.svg.tmpl` (`<g class="project">` skipped=false 時のみ) + golden。
+- [X] T059 [P] [US2] Add `internal/plugins/projects/projects_test.go` (5 cases) + fixtures `tests/fixtures/plugins/projects/{has_scope.json, no_scope.json, user_projects.json, repo_projects.json}`. `no_scope.json` ケースで `_test.go` 内で `REST.Scopes()` を `[]string{}` (空) に注入し `Skipped=true, SkippedReason="missing read:project scope"` を assert。
+- [X] T060 [P] [US2] Implement `internal/plugins/projects/projects.go` per [contracts/plugin-p2-graphql.md §8](./contracts/plugin-p2-graphql.md#8-projects-t-063)。`pc.REST.Scopes()` で `read:project` 不在を検出 → `Skipped=true`。Result は [data-model.md E-029](./data-model.md#E-029)。Make T059 pass.
+- [X] T061 [P] [US2] Add `internal/templates/classic/partials/projects.svg.tmpl` (`<g class="project">` skipped=false 時のみ) + golden。
 
 ### plugin: sponsors (T-064, scope 検証付き)
 
-- [ ] T062 [P] [US2] Add `internal/plugins/sponsors/sponsors_test.go` (5 cases) + fixtures `tests/fixtures/plugins/sponsors/{active.json, past_included.json, no_scope.json}`. `no_scope.json` で `read:user` + `read:org` 両方不在 → `Skipped=true`。
-- [ ] T063 [P] [US2] Implement `internal/plugins/sponsors/sponsors.go` per [contracts/plugin-p2-graphql.md §9](./contracts/plugin-p2-graphql.md#9-sponsors-t-064)。`_past=true` で `Past` フィールド埋め。Result は [data-model.md E-030](./data-model.md#E-030)。Make T062 pass.
-- [ ] T064 [P] [US2] Add `internal/templates/classic/partials/sponsors.svg.tmpl` (`<g class="sponsor">`) + golden。
+- [X] T062 [P] [US2] Add `internal/plugins/sponsors/sponsors_test.go` (5 cases) + fixtures `tests/fixtures/plugins/sponsors/{active.json, past_included.json, no_scope.json}`. `no_scope.json` で `read:user` + `read:org` 両方不在 → `Skipped=true`。
+- [X] T063 [P] [US2] Implement `internal/plugins/sponsors/sponsors.go` per [contracts/plugin-p2-graphql.md §9](./contracts/plugin-p2-graphql.md#9-sponsors-t-064)。`_past=true` で `Past` フィールド埋め。Result は [data-model.md E-030](./data-model.md#E-030)。Make T062 pass.
+- [X] T064 [P] [US2] Add `internal/templates/classic/partials/sponsors.svg.tmpl` (`<g class="sponsor">`) + golden。
 
 ### plugin: sponsorships (T-065)
 
-- [ ] T065 [P] [US2] Add `internal/plugins/sponsorships/sponsorships_test.go` (5 cases) + fixture `tests/fixtures/plugins/sponsorships/viewer_sponsoring.json`.
-- [ ] T066 [P] [US2] Implement `internal/plugins/sponsorships/sponsorships.go` per [contracts/plugin-p2-graphql.md §10](./contracts/plugin-p2-graphql.md#10-sponsorships-t-065)。`viewer.sponsorshipsAsSponsor(activeOnly:false)` を呼び `Active` / `Past` に振り分け。Result は [data-model.md E-031](./data-model.md#E-031)。Make T065 pass.
-- [ ] T067 [P] [US2] Add `internal/templates/classic/partials/sponsorships.svg.tmpl` (`<g class="sponsored">`) + golden。
+- [X] T065 [P] [US2] Add `internal/plugins/sponsorships/sponsorships_test.go` (5 cases) + fixture `tests/fixtures/plugins/sponsorships/viewer_sponsoring.json`.
+- [X] T066 [P] [US2] Implement `internal/plugins/sponsorships/sponsorships.go` per [contracts/plugin-p2-graphql.md §10](./contracts/plugin-p2-graphql.md#10-sponsorships-t-065)。`viewer.sponsorshipsAsSponsor(activeOnly:false)` を呼び `Active` / `Past` に振り分け。Result は [data-model.md E-031](./data-model.md#E-031)。Make T065 pass.
+- [X] T067 [P] [US2] Add `internal/templates/classic/partials/sponsorships.svg.tmpl` (`<g class="sponsored">`) + golden。
 
 ### plugin: stargazers (T-066, worldmap は nil)
 
-- [ ] T068 [P] [US2] Add `internal/plugins/stargazers/stargazers_test.go` (5 cases) + fixtures `tests/fixtures/plugins/stargazers/{repo_stargazers.json, user_account.json, worldmap_input.json}`. `worldmap_input.json` で `_worldmap=true` 指定でも `Result.Worldmap == nil` + WARN ログを assert。
-- [ ] T069 [P] [US2] Implement `internal/plugins/stargazers/stargazers.go` per [contracts/plugin-p2-graphql.md §11](./contracts/plugin-p2-graphql.md#11-stargazers-t-066-worldmap-は-nil)。GraphQL `repository.stargazers(orderBy:STARRED_AT, first:N)` paging で `List` 構築、`Charts` を時系列に整形。`Worldmap` は **常に nil** (M4 では実装しない、R-012)。Result は [data-model.md E-032](./data-model.md#E-032)。Make T068 pass.
-- [ ] T070 [P] [US2] Add `internal/templates/classic/partials/stargazers.svg.tmpl` (`<g class="stargazers-charts">`、worldmap セクションは省略) + golden。
+- [X] T068 [P] [US2] Add `internal/plugins/stargazers/stargazers_test.go` (5 cases) + fixtures `tests/fixtures/plugins/stargazers/{repo_stargazers.json, user_account.json, worldmap_input.json}`. `worldmap_input.json` で `_worldmap=true` 指定でも `Result.Worldmap == nil` + WARN ログを assert。
+- [X] T069 [P] [US2] Implement `internal/plugins/stargazers/stargazers.go` per [contracts/plugin-p2-graphql.md §11](./contracts/plugin-p2-graphql.md#11-stargazers-t-066-worldmap-は-nil)。GraphQL `repository.stargazers(orderBy:STARRED_AT, first:N)` paging で `List` 構築、`Charts` を時系列に整形。`Worldmap` は **常に nil** (M4 では実装しない、R-012)。Result は [data-model.md E-032](./data-model.md#E-032)。Make T068 pass.
+- [X] T070 [P] [US2] Add `internal/templates/classic/partials/stargazers.svg.tmpl` (`<g class="stargazers-charts">`、worldmap セクションは省略) + golden。
 
 ### plugin: traffic (T-068, scope 検証付き)
 
-- [ ] T071 [P] [US2] Add `internal/plugins/traffic/traffic_test.go` (5 cases) + fixtures `tests/fixtures/plugins/traffic/{has_repo_scope.json, no_repo_scope.json, partial_403.json}`. `partial_403.json` で 1 repo が 403 を返しても他 repo の集計が継続することを assert。
-- [ ] T072 [P] [US2] Implement `internal/plugins/traffic/traffic.go` per [contracts/plugin-p2-graphql.md §12](./contracts/plugin-p2-graphql.md#12-traffic-t-068)。`pc.REST.Scopes()` で `repo` 不在 → `Skipped=true`。`base.Computed.Repositories` を並列 GET、403 repo は除外 continue。Result は [data-model.md E-033](./data-model.md#E-033)。Make T071 pass.
-- [ ] T073 [P] [US2] Add `internal/templates/classic/partials/traffic.svg.tmpl` (`<text class="traffic-count">` skipped=false 時のみ) + golden。
+- [X] T071 [P] [US2] Add `internal/plugins/traffic/traffic_test.go` (5 cases) + fixtures `tests/fixtures/plugins/traffic/{has_repo_scope.json, no_repo_scope.json, partial_403.json}`. `partial_403.json` で 1 repo が 403 を返しても他 repo の集計が継続することを assert。
+- [X] T072 [P] [US2] Implement `internal/plugins/traffic/traffic.go` per [contracts/plugin-p2-graphql.md §12](./contracts/plugin-p2-graphql.md#12-traffic-t-068)。`pc.REST.Scopes()` で `repo` 不在 → `Skipped=true`。`base.Computed.Repositories` を並列 GET、403 repo は除外 continue。Result は [data-model.md E-033](./data-model.md#E-033)。Make T071 pass.
+- [X] T073 [P] [US2] Add `internal/templates/classic/partials/traffic.svg.tmpl` (`<text class="traffic-count">` skipped=false 時のみ) + golden。
 
 ### US2 integration tests
 
-- [ ] T074 [US2] Add `tests/integration/plugins_p2_test.go::TestComputeSVG_P2Bundle_A` covering 4 plugin (habits / calendar / stars / people)、`tests/integration/plugins_p2_test.go::TestComputeSVG_P2Bundle_B` (notable / contributors / reactions / projects)、`tests/integration/plugins_p2_test.go::TestComputeSVG_P2Bundle_C` (sponsors / sponsorships / stargazers / traffic)。各バンドルで mocked deps を組み立て classic SVG 経由で必須 DOM 痕跡を assert。
-- [ ] T075 [US2] Add `tests/integration/plugins_p2_test.go::TestComputeJSON_P2AllPlugins`: 12 plugin すべてを有効化した状態で `Format:"json"`、`data.Plugins` に 12 キー non-null で含まれることを assert (P2 単独、P1 とは独立にテスト可能)。
+- [X] T074 [US2] Add `tests/integration/plugins_p2_test.go::TestComputeSVG_P2Bundle_A` covering 4 plugin (habits / calendar / stars / people)、`tests/integration/plugins_p2_test.go::TestComputeSVG_P2Bundle_B` (notable / contributors / reactions / projects)、`tests/integration/plugins_p2_test.go::TestComputeSVG_P2Bundle_C` (sponsors / sponsorships / stargazers / traffic)。各バンドルで mocked deps を組み立て classic SVG 経由で必須 DOM 痕跡を assert。
+- [X] T075 [US2] Add `tests/integration/plugins_p2_test.go::TestComputeJSON_P2AllPlugins`: 12 plugin すべてを有効化した状態で `Format:"json"`、`data.Plugins` に 12 キー non-null で含まれることを assert (P2 単独、P1 とは独立にテスト可能)。
 
 **Checkpoint (US2)**: 採用 21 plugin 中 17 (P1+P2) が動く。GraphQL/REST 単体経路は完成。chromedp / heavy 依存 plugin は未着手。
 
