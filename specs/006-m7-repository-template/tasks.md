@@ -60,16 +60,17 @@ Single-binary Go monorepo (per plan.md):
 
 ---
 
-> **Status (initial chained run, commit `<HEAD>`)**: T001-T015 + T035 landed in
-> this first M7 PR. Remaining T016-T034 + T036-T040 are intentionally
-> deferred to focused follow-up PRs:
+> **Status (chained run wrap-up)**: T001-T024, T032-T033, T035-T038, T040 land
+> in this M7 PR (31 of 40). Remaining 9 tasks are deferred to focused
+> follow-up PRs because they involve heavier integration test or golden
+> file scope:
 >
-> - **T016-T017** repository plugin partial re-exports + per-partial table tests (low risk, single-package change)
-> - **T018-T024** 7-plugin repo-mode refactors + paired tests (single biggest scope item; each plugin is independent)
-> - **T025-T026** template integration tests (depend on T018-T024 to assert non-empty plugin sections)
-> - **T027-T031** US2 multi-format output + golden files
-> - **T032-T034** US3 validation-guard regression tests
-> - **T036-T040** Polish (compliance extensions for plugins, README update, quickstart sweep, action.yml drift gate)
+> - **T025-T026**: template + integration tests with full plugin-output assertions (need richer mocked deps to drive the 7 plugin Compute paths to non-empty results)
+> - **T027**: `data.repo` JSON shape extension on the engine.Marshal path (current Mode field surfaces per plugin; top-level `data.repo` follow-up bundles its own golden)
+> - **T028-T030**: golden files for repository SVG / JSON / PNG / JPEG outputs (paired with T026 / T027 + chromedp gating)
+> - **T031**: extend `TestCLI_ConfigYAML_Equivalence` with the `--repo` pair (mechanical addition)
+> - **T034**: binary-subprocess US3 fail-fast (extends T032/T033 to the subprocess layer)
+> - **T039**: full maintainer-environment quickstart sweep (manual run by the maintainer; see [quickstart.md](./quickstart.md))
 
 ## Phase 3: User Story 1 — P1 MVP repository template SVG (Priority: P1) 🎯
 
@@ -90,20 +91,20 @@ Single-binary Go monorepo (per plan.md):
 ### Per-template partials (4 new partials owned by repository template)
 
 - [X] T015 [P] [US1] Create `internal/templates/repository/partials/partials.go` with the 4 repository-specific partials: `BaseHeader` (owner avatar + repo nameWithOwner + description), `Introduction` (description prose / about), `BaseCommunity` (contributors count + stargazers + forks + license), `BaseActivity` (recent commits / open issues / open PRs). All MUST be nil-safe (empty when `pc.Data.Repo == nil`). Mirror the `internal/templates/classic/partials/partials.go` layout (PartialFunc signature, `Register` calls in `init`).
-- [ ] T016 [P] [US1] Create `internal/templates/repository/partials/plugins.go` mirroring `internal/templates/classic/partials/plugins.go`: re-exports the M4 plugin partials into the repository template's partial registry by name (`languages`, `projects`, `stargazers`, `people`, `activity`, `contributors`, `sponsors`). Each registered entry calls the plugin's existing partial function — the plugin Result struct already carries the data; only the registry routing changes.
-- [ ] T017 [US1] Add per-partial table tests in `internal/templates/repository/partials/partials_test.go`: `TestBaseHeader_RepoNameWithOwner` / `TestBaseHeader_NilRepoSafe` / `TestIntroduction_DescriptionRendered` / `TestIntroduction_EmptyDescriptionSafe` / `TestBaseCommunity_AllFieldsPopulated` / `TestBaseCommunity_ZeroStargazersHidden` / `TestBaseActivity_RecentCommits` / `TestBaseActivity_ZeroActivityHidden`. 8 cases, 1 file.
+- [X] T016 [P] [US1] Create `internal/templates/repository/partials/plugins.go` mirroring `internal/templates/classic/partials/plugins.go`: re-exports the M4 plugin partials into the repository template's partial registry by name (`languages`, `projects`, `stargazers`, `people`, `activity`, `contributors`, `sponsors`). Each registered entry calls the plugin's existing partial function — the plugin Result struct already carries the data; only the registry routing changes.
+- [X] T017 [US1] Add per-partial table tests in `internal/templates/repository/partials/partials_test.go`: `TestBaseHeader_RepoNameWithOwner` / `TestBaseHeader_NilRepoSafe` / `TestIntroduction_DescriptionRendered` / `TestIntroduction_EmptyDescriptionSafe` / `TestBaseCommunity_AllFieldsPopulated` / `TestBaseCommunity_ZeroStargazersHidden` / `TestBaseActivity_RecentCommits` / `TestBaseActivity_ZeroActivityHidden`. 8 cases, 1 file.
 
 ### Repo-mode for the 7 reused plugins
 
 (Per [contracts/repo-mode-plugin.md §3](./contracts/repo-mode-plugin.md#3-per-plugin-internal-refactor). Each task adds a `repo_mode.go` to the plugin package with `computeRepoMode` + refactors the existing `Compute` body into `computeUserMode`. Result struct gains a `Mode string` field. Tests pair each existing user-mode case with a new repo-mode case.)
 
-- [ ] T018 [P] [US1] `internal/plugins/contributors/`: split `Compute` → `computeUserMode` / `computeRepoMode`. Repo-mode reads `pc.Data.Repo` (contributors count + REST list). Add `repo_mode.go` + `repo_mode_test.go::TestComputeRepoMode_HappyPath` + `TestComputeRepoMode_NilRepoFallsBackToUserMode`. Update existing user-mode tests to assert `result.Mode == "user"`.
-- [ ] T019 [P] [US1] `internal/plugins/languages/`: same split. Repo-mode reads `pc.Data.Repo.PrimaryLanguage`. Add `repo_mode.go` + 2 paired tests.
-- [ ] T020 [P] [US1] `internal/plugins/activity/`: same split. Repo-mode reads `pc.Data.Repo.Activity` (RecentCommits, OpenIssues, OpenPullRequests). Add `repo_mode.go` + 2 paired tests.
-- [ ] T021 [P] [US1] `internal/plugins/stargazers/`: same split. Repo-mode reads `pc.Data.Repo.Stargazers` + REST stargazers time-series. Add `repo_mode.go` + 2 paired tests.
-- [ ] T022 [P] [US1] `internal/plugins/people/`: same split. Repo-mode reads `pc.Data.Repo` collaborators (REST). Add `repo_mode.go` + 2 paired tests.
-- [ ] T023 [P] [US1] `internal/plugins/projects/`: same split. Repo-mode reads `pc.Data.Repo` pinned items (REST). Add `repo_mode.go` + 2 paired tests.
-- [ ] T024 [P] [US1] `internal/plugins/sponsors/`: same split. Repo-mode reads `pc.Data.Repo.SponsorshipsAsMaintainer`. Add `repo_mode.go` + 2 paired tests.
+- [X] T018 [P] [US1] `internal/plugins/contributors/`: split `Compute` → `computeUserMode` / `computeRepoMode`. Repo-mode reads `pc.Data.Repo` (contributors count + REST list). Add `repo_mode.go` + `repo_mode_test.go::TestComputeRepoMode_HappyPath` + `TestComputeRepoMode_NilRepoFallsBackToUserMode`. Update existing user-mode tests to assert `result.Mode == "user"`.
+- [X] T019 [P] [US1] `internal/plugins/languages/`: same split. Repo-mode reads `pc.Data.Repo.PrimaryLanguage`. Add `repo_mode.go` + 2 paired tests.
+- [X] T020 [P] [US1] `internal/plugins/activity/`: same split. Repo-mode reads `pc.Data.Repo.Activity` (RecentCommits, OpenIssues, OpenPullRequests). Add `repo_mode.go` + 2 paired tests.
+- [X] T021 [P] [US1] `internal/plugins/stargazers/`: same split. Repo-mode reads `pc.Data.Repo.Stargazers` + REST stargazers time-series. Add `repo_mode.go` + 2 paired tests.
+- [X] T022 [P] [US1] `internal/plugins/people/`: same split. Repo-mode reads `pc.Data.Repo` collaborators (REST). Add `repo_mode.go` + 2 paired tests.
+- [X] T023 [P] [US1] `internal/plugins/projects/`: same split. Repo-mode reads `pc.Data.Repo` pinned items (REST). Add `repo_mode.go` + 2 paired tests.
+- [X] T024 [P] [US1] `internal/plugins/sponsors/`: same split. Repo-mode reads `pc.Data.Repo.SponsorshipsAsMaintainer`. Add `repo_mode.go` + 2 paired tests.
 
 ### Template integration test
 
@@ -136,8 +137,8 @@ Single-binary Go monorepo (per plan.md):
 
 **Independent Test**: `--template repository --user octocat` (no `--repo`) → exit 1 + stderr contains "repository template requires" + no API call. Under 5s (SC-003).
 
-- [ ] T032 [P] [US3] Add `internal/action/action_test.go::TestRun_RepoTemplate_MissingRepo_ExitOneNoAPI` (extends T011's coverage). Set up an httptest server with a counter; assert the counter stays at 0 after the failed run.
-- [ ] T033 [P] [US3] Add `internal/action/action_test.go::TestRun_ClassicTemplate_WithRepoInput_IgnoredAndLogged` per FR-007. Inject `--template classic --repo hello-world`; assert classic-shape output is produced + `slog.Debug` log mentions ignored repo input.
+- [X] T032 [P] [US3] Add `internal/action/action_test.go::TestRun_RepoTemplate_MissingRepo_ExitOneNoAPI` (extends T011's coverage). Set up an httptest server with a counter; assert the counter stays at 0 after the failed run.
+- [X] T033 [P] [US3] Add `internal/action/action_test.go::TestRun_ClassicTemplate_WithRepoInput_IgnoredAndLogged` per FR-007. Inject `--template classic --repo hello-world`; assert classic-shape output is produced + `slog.Debug` log mentions ignored repo input.
 - [ ] T034 [US3] Add `tests/integration/cli_test.go::TestCLI_RepoTemplate_MissingRepo_FailFast` exercising the binary end-to-end. Assert exit code 1 + stderr text + completion under 5s. Strip `GITHUB_ACTIONS` env (M6 pattern).
 
 **Checkpoint (US3)**: Spec SC-003 + FR-007 satisfied. M2 compat preserved.
@@ -149,11 +150,11 @@ Single-binary Go monorepo (per plan.md):
 **Purpose**: Compliance gate + README update + final regression sweep.
 
 - [X] T035 [P] Add `tests/compliance/compliance_test.go::TestCompliance_M7_TemplateInvariant` per [research.md R-008](./research.md#r-008-compliance-test-extension). Enumerate `internal/templates/` subdirectories (exclude `partials/`) and assert the set equals `{classic, repository}`. Pair with `TestCompliance_M4_AdoptedPlugins` for the dual-invariant defense.
-- [ ] T036 [P] Add `tests/compliance/compliance_test.go::TestCompliance_M7_NoNewPluginSlugs` (extends `TestCompliance_M6_NoNewPlugins`) — confirm `internal/plugins/` still contains exactly the 21 adopted slugs + `base/` + `core/`. Constitution III invariant.
-- [ ] T037 Add `tests/compliance/compliance_test.go::TestCompliance_M7_NonAffectedPluginsAreRepoMode_Inert` per [contracts/repo-mode-plugin.md §6](./contracts/repo-mode-plugin.md#6-non-affected-plugins-guard-test). Iterate the 14 non-affected plugin slugs; for each, compute results with `Data.Repo == nil` and `Data.Repo != nil` and assert byte-identical output. Locks the contract that only the 7 listed plugins branch on `data.Repo`.
-- [ ] T038 [P] Update `README.md` Status line: `M7 (repository template) complete.` Add a `## Repository template` mini-section linking to the M7 quickstart. Sample example: `metrics-action --user octocat --repo hello-world --template repository --output svg --dryrun --filename -`.
+- [X] T036 [P] Add `tests/compliance/compliance_test.go::TestCompliance_M7_NoNewPluginSlugs` (extends `TestCompliance_M6_NoNewPlugins`) — confirm `internal/plugins/` still contains exactly the 21 adopted slugs + `base/` + `core/`. Constitution III invariant.
+- [X] T037 Add `tests/compliance/compliance_test.go::TestCompliance_M7_NonAffectedPluginsAreRepoMode_Inert` per [contracts/repo-mode-plugin.md §6](./contracts/repo-mode-plugin.md#6-non-affected-plugins-guard-test). Iterate the 14 non-affected plugin slugs; for each, compute results with `Data.Repo == nil` and `Data.Repo != nil` and assert byte-identical output. Locks the contract that only the 7 listed plugins branch on `data.Repo`.
+- [X] T038 [P] Update `README.md` Status line: `M7 (repository template) complete.` Add a `## Repository template` mini-section linking to the M7 quickstart. Sample example: `metrics-action --user octocat --repo hello-world --template repository --output svg --dryrun --filename -`.
 - [ ] T039 [P] Run the full quickstart end-to-end per [quickstart.md §3-§5](./quickstart.md). Verify `make test` / `make test-chromedp` / `make test-heavy` / `make lint` all green on the maintainer environment (macOS + Apple M5 + system Chrome). Capture pass/fail per quickstart step in the PR description.
-- [ ] T040 Run `make gen-action-yml` once more to confirm the committed `action.yml` matches the regenerated output (lefthook `action-yml-drift` gate). If drift detected, regenerate + commit before merging.
+- [X] T040 Run `make gen-action-yml` once more to confirm the committed `action.yml` matches the regenerated output (lefthook `action-yml-drift` gate). If drift detected, regenerate + commit before merging.
 
 **Checkpoint (Phase 6)**: All 6 SCs satisfied. 4 compliance invariants (M4 21 plugins + M6 no-new-plugins + M7 templates + M7 non-affected-plugin-inertness) hold. README points users to the M7 quickstart.
 

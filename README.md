@@ -6,19 +6,43 @@ Go port of [lowlighter/metrics](https://github.com/lowlighter/metrics) for the
 adopted feature subset documented in
 [`docs/design/15-selection-answer.md`](docs/design/15-selection-answer.md).
 
-**Status: M6 (Action / CLI) complete.** The `metrics-action` binary
-is now usable as both a GitHub Action (Docker image at
-`ghcr.io/mjun0812/github-metrics:<tag>`) and a standalone CLI on
-macOS / Linux. Inputs flow through one unified pipeline that wraps
-M1-M4: 21 plugins + classic template + M3 chromedp render. The
-release pipeline (`.github/workflows/release.yml`) publishes a
-multi-tag image (`vX.Y.Z` + `latest` + `sha-<short>`) and four
-cross-compiled binaries (linux/darwin × amd64/arm64) on every semver
-tag. See [`specs/005-m6-action-cli/`](specs/005-m6-action-cli/) for
-the spec, plan, and tasks. M5 (Web instance) is intentionally
-out-of-scope per
+**Status: M7 (repository template) complete.** The `metrics-action`
+binary now ships the second adopted template (`repository`) alongside
+the existing `classic` template — `--template repository --user owner
+--repo name` re-centers the rendered SVG on a single GitHub repository
+(owner avatar, description, community health, recent activity) instead
+of a user profile. The 7 reused plugins (`languages`, `projects`,
+`stargazers`, `people`, `activity`, `contributors`, `sponsors`)
+internally switch their aggregation target to the single repo via a
+per-plugin `mode` field — no new plugin slug enters
+`internal/plugins/`. The M6 baseline (Docker image + CLI + release
+pipeline) carries over unchanged. See
+[`specs/006-m7-repository-template/`](specs/006-m7-repository-template/)
+for the spec, plan, and tasks. M5 (Web instance) and M8 (social
+plugins) stay intentionally out-of-scope per
 [`docs/design/15-selection-answer.md`](docs/design/15-selection-answer.md);
-M7+ continues with snapshot / replay infrastructure.
+M9+ continues with snapshot / replay infrastructure.
+
+## Repository template
+
+```sh
+# Render a repo's metrics SVG to stdout (mocked deps, no token needed).
+metrics-action --user octocat --repo hello-world --template repository \
+  --output svg --dryrun --filename -
+
+# Or via Action (in a workflow that targets the host repo):
+# - uses: mjun0812/github-metrics@vX.Y.Z
+#   with:
+#     user: ${{ github.repository_owner }}
+#     repo: ${{ github.event.repository.name }}
+#     template: repository
+#     token: ${{ secrets.METRICS_TOKEN }}
+```
+
+See [`specs/006-m7-repository-template/quickstart.md`](specs/006-m7-repository-template/quickstart.md)
+for the full workflow example, multi-format output (SVG/PNG/JPEG/JSON),
+and the upstream-compatible JSON shape that surfaces a new `data.repo`
+field alongside the existing `data.user`.
 
 ## Usage as a GitHub Action
 

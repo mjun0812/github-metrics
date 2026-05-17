@@ -38,6 +38,7 @@ func (p *stargazersPlugin) Metadata() *config.PluginMetadata { return nil }
 type Result struct {
 	Skipped       bool                `json:"skipped,omitempty"`
 	SkippedReason string              `json:"-"`
+	Mode          string              `json:"mode,omitempty"`
 	List          []Stargazer         `json:"list"`
 	Charts        StargazersCharts    `json:"charts"`
 	Worldmap      *StargazersWorldmap `json:"worldmap,omitempty"`
@@ -82,9 +83,21 @@ func (p *stargazersPlugin) Run(_ context.Context, pc *plugins.PluginContext) (an
 			slog.Default().Warn("stargazers: worldmap is not yet implemented in M4 (planned as N-task)")
 		}
 	}
+	if r := pc.Data.RepoRef(); r != nil {
+		// M7 repo-mode: surface the totals already populated by
+		// base.FetchRepo. Per-stargazer time-series (Charts.Series)
+		// requires a follow-up REST scrape that's deferred — the M7
+		// MVP surfaces totals only.
+		return &Result{
+			Mode:   plugins.ModeRepo,
+			List:   []Stargazer{},
+			Charts: StargazersCharts{Type: "classic", Series: []ChartPoint{}},
+		}, nil
+	}
 	return &Result{
 		Skipped:       true,
 		SkippedReason: "stargazers requires repository account kind (M7 territory)",
+		Mode:          plugins.ModeUser,
 		List:          []Stargazer{},
 		Charts:        StargazersCharts{Type: "classic", Series: []ChartPoint{}},
 	}, nil

@@ -44,6 +44,7 @@ func (p *activityPlugin) Metadata() *config.PluginMetadata { return nil }
 type Result struct {
 	Skipped       bool            `json:"skipped,omitempty"`
 	SkippedReason string          `json:"-"`
+	Mode          string          `json:"mode,omitempty"`
 	Events        []ActivityEvent `json:"events"`
 	Days          int             `json:"days"`
 }
@@ -139,6 +140,7 @@ func (p *activityPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 	}
 
 	return &Result{
+		Mode:   plugins.AggregationMode(pc.Data),
 		Events: events,
 		Days:   in.days,
 	}, nil

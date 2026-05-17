@@ -44,6 +44,7 @@ func (p *languagesPlugin) Metadata() *config.PluginMetadata { return nil }
 type Result struct {
 	Skipped       bool                   `json:"skipped,omitempty"`
 	SkippedReason string                 `json:"-"`
+	Mode          string                 `json:"mode,omitempty"`
 	Favorites     []plugins.LanguageStat `json:"favorites"`
 	Other         plugins.LanguageStat   `json:"other"`
 	Sections      []string               `json:"sections"`
@@ -201,6 +202,7 @@ func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any
 	}
 
 	return &Result{
+		Mode:      plugins.AggregationMode(pc.Data),
 		Favorites: favorites,
 		Other:     other,
 		Sections:  in.sections,

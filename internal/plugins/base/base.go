@@ -92,11 +92,31 @@ func (p *basePlugin) runRepository(ctx context.Context, pc *plugins.PluginContex
 	if err != nil {
 		return nil, err
 	}
-	// Mirror upstream template.mjs:21 — copy maintainer sponsorships
-	// from the user payload so the sponsors partial can render. The
-	// sponsors plugin (M4) is the source of truth for the count when
-	// it runs; until then we leave the field zero.
 	pc.Data.SetRepo(r)
+
+	// Upstream `template.mjs:14-17` replaces `data.user.repositories.nodes`
+	// with `[repository]` so existing user-centric plugins (languages /
+	// activity / stargazers / projects / people / contributors / sponsors)
+	// naturally produce repo-scoped output. We mirror that here by
+	// synthesizing a single-element `Computed.RepositoryList` + matching
+	// `Computed.Repositories` totals from data.Repo. Downstream plugins
+	// stay unchanged.
+	syntheticRepo := plugins.Repository{
+		NameWithOwner: r.Owner + "/" + r.Name,
+		Description:   r.Description,
+		Stars:         r.Stargazers,
+		Forks:         r.Forks,
+	}
+	if r.PrimaryLanguage != "" {
+		syntheticRepo.Language = &plugins.LanguageStat{
+			Name:  r.PrimaryLanguage,
+			Color: r.PrimaryLanguageColor,
+		}
+	}
+	pc.Data.Computed.RepositoryList = []plugins.Repository{syntheticRepo}
+	pc.Data.Computed.Repositories.Count = 1
+	pc.Data.Computed.Repositories.Stargazers = r.Stargazers
+	pc.Data.Computed.Repositories.Forks = r.Forks
 	return nil, nil
 }
 

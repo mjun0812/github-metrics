@@ -57,6 +57,7 @@
     "activity": {
       "days": 0,
       "events": null,
+      "mode": "",
       "skipped": true
     },
     "calendar": {
@@ -68,6 +69,7 @@
       "base": "",
       "head": "",
       "list": [],
+      "mode": "user",
       "sections": [],
       "skipped": true
     },
@@ -134,6 +136,7 @@
     "languages": {
       "colors": {},
       "favorites": [],
+      "mode": "",
       "mostly": {
         "color": "",
         "count": 0,
@@ -181,12 +184,14 @@
       "skipped": true
     },
     "people": {
+      "mode": "",
       "skipped": true,
       "types": {}
     },
     "projects": {
       "limit": 0,
       "list": [],
+      "mode": "",
       "skipped": true
     },
     "reactions": {
@@ -231,6 +236,7 @@
       "starred": null
     },
     "sponsors": {
+      "mode": "",
       "past": null,
       "sections": null,
       "skipped": true,
@@ -247,6 +253,7 @@
         "type": "classic"
       },
       "list": [],
+      "mode": "user",
       "skipped": true,
       "worldmap": null
     },
