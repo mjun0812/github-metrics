@@ -49,13 +49,22 @@ type Options struct {
 	// internal/githubapi swaps this for mock transports during tests.
 	Transport http.RoundTripper
 	// MaxRetries caps the number of retry attempts after the initial
-	// request. Default 4 (so total = 5 attempts).
+	// request. Default 4 (so total = 5 attempts). Ignored when
+	// DisableRetries is true.
 	MaxRetries int
 	// MinBackoff is the floor for the exponential backoff. Default 1s.
 	MinBackoff time.Duration
 	// MaxBackoff is the ceiling for the exponential backoff.
 	// Default 30s.
 	MaxBackoff time.Duration
+	// DisableRetries turns off the inner retryablehttp loop entirely.
+	// Callers that own retry classification at a higher layer (M6
+	// action package's RetryPolicy) MUST set this true to avoid the
+	// double-retry tower (1+MaxRetries)·(1+action.Retries) attempts,
+	// which is especially harmful for non-idempotent POST /pulls and
+	// POST /git/refs (would create duplicate PRs / refs on a 5xx after
+	// a successful server-side write).
+	DisableRetries bool
 }
 
 // New constructs a Client using opts; zero-value Options is a valid
@@ -69,7 +78,9 @@ func New(opts Options) *Client {
 		opts.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 	maxRetries := opts.MaxRetries
-	if maxRetries <= 0 {
+	if opts.DisableRetries {
+		maxRetries = 0
+	} else if maxRetries <= 0 {
 		maxRetries = 4
 	}
 	minBackoff := opts.MinBackoff

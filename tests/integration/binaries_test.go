@@ -90,9 +90,13 @@ func exeSuffix() string {
 }
 
 // runBin runs the given binary with args and returns stdout, stderr, exit code.
+// The child env strips GITHUB_ACTIONS so the binary dispatches to CLI mode
+// regardless of whether the test itself runs under GitHub Actions (where
+// GITHUB_ACTIONS=true is baked into os.Environ).
 func runBin(t *testing.T, bin string, args ...string) (stdout, stderr string, exitCode int) {
 	t.Helper()
 	cmd := exec.Command(bin, args...)
+	cmd.Env = stripGitHubActionsEnv(os.Environ())
 	var outBuf, errBuf bytes.Buffer
 	cmd.Stdout = &outBuf
 	cmd.Stderr = &errBuf
@@ -105,6 +109,23 @@ func runBin(t *testing.T, bin string, args ...string) (stdout, stderr string, ex
 		exitCode = exitErr.ExitCode()
 	}
 	return outBuf.String(), errBuf.String(), exitCode
+}
+
+// stripGitHubActionsEnv removes GITHUB_ACTIONS (and the related
+// CI / RUNNER_OS marker) so the spawned binary doesn't route to
+// Action mode when the test happens to run on a GitHub Actions
+// runner. Without this, every integration test inherits
+// GITHUB_ACTIONS=true and hits action.Run (which requires INPUT_*)
+// instead of action.RunCLI (which the tests are exercising).
+func stripGitHubActionsEnv(env []string) []string {
+	out := env[:0:0]
+	for _, kv := range env {
+		if strings.HasPrefix(kv, "GITHUB_ACTIONS=") {
+			continue
+		}
+		out = append(out, kv)
+	}
+	return out
 }
 
 func asExitError(err error, target **exec.ExitError) bool {

@@ -46,6 +46,21 @@ pre-commit:
       run: golangci-lint run --fix --timeout=5m
       stage_fixed: true
 
+    - name: action-yml-drift
+      # When plugin metadata.yml or the generator changes, regenerate
+      # action.yml + re-stage so committers never push a stale Action
+      # interface. M6 T019.
+      glob:
+        - "assets/plugins/*/metadata.yml"
+        - "internal/tools/gen-action-yml/*.go"
+      run: |
+        go run ./internal/tools/gen-action-yml --output ./action.yml
+        if ! git diff --quiet -- action.yml; then
+          echo "action.yml regenerated; staging the updated copy."
+          git add action.yml
+        fi
+      stage_fixed: true
+
 pre-push:
   jobs:
     - name: tests
