@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -187,6 +188,92 @@ func TestNoRemovedSentinelComments(t *testing.T) {
 		for _, h := range hits {
 			t.Errorf("constitution Development Workflow: %s", h)
 		}
+	}
+}
+
+// adoptedM4Plugins is the canonical 21-plugin list M4 ships. Mirrors
+// FR-018 + specs/004-m4-github-plugins/contracts/plugin-*.md. Each
+// entry corresponds to a subdirectory under internal/plugins/ that
+// MUST exist after M4. Two entries — `languages.recent` and
+// `languages.indepth` — are sub-modes of the `languages` plugin and
+// share its directory; they don't map to their own subdirectories.
+var adoptedM4Plugins = []string{
+	// P1 MVP (5)
+	"languages", "activity", "achievements", "repositories", "isocalendar",
+	// P2 GraphQL/REST (12)
+	"calendar", "habits", "stars", "people", "notable",
+	"contributors", "reactions", "projects", "sponsors", "sponsorships",
+	"stargazers", "traffic",
+	// P3 chromedp / heavy (2 with own directories; the recent/indepth
+	// sub-modes live in internal/plugins/languages/)
+	"topics", "starlists",
+}
+
+// nonPluginInternalDirs are internal/plugins/ children that are
+// infrastructure, not plugin slugs. They MUST be excluded from the
+// adopted-set comparison.
+var nonPluginInternalDirs = map[string]struct{}{
+	"base": {}, // base plugin (account-kind dispatcher; not a user-facing slug)
+	"core": {}, // core plugin (settings + parallel runner)
+}
+
+// TestCompliance_M4_AdoptedPlugins (T096 / SC-007) scans
+// internal/plugins/ for subdirectories and asserts the directory set
+// exactly matches the 21 採用 plugin list (less the base/core
+// infrastructure plugins). Any extra directory is treated as an
+// unadopted plugin landing in production — a constitution 原則 III
+// violation. Any missing directory means an adopted plugin was lost.
+func TestCompliance_M4_AdoptedPlugins(t *testing.T) {
+	root := mustRepoRoot(t)
+	entries, err := os.ReadDir(filepath.Join(root, "internal", "plugins"))
+	if err != nil {
+		t.Fatalf("read internal/plugins/: %v", err)
+	}
+
+	have := map[string]struct{}{}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if _, skip := nonPluginInternalDirs[name]; skip {
+			continue
+		}
+		have[name] = struct{}{}
+	}
+
+	want := map[string]struct{}{}
+	for _, slug := range adoptedM4Plugins {
+		// languages.recent / languages.indepth share the languages dir.
+		if strings.Contains(slug, ".") {
+			continue
+		}
+		want[slug] = struct{}{}
+	}
+
+	missing := []string{}
+	for slug := range want {
+		if _, ok := have[slug]; !ok {
+			missing = append(missing, slug)
+		}
+	}
+	extra := []string{}
+	for dir := range have {
+		if _, ok := want[dir]; !ok {
+			extra = append(extra, dir)
+		}
+	}
+
+	if len(missing) > 0 {
+		sort.Strings(missing)
+		t.Errorf("constitution 原則 III (採用 21): missing adopted plugin dirs: %v", missing)
+	}
+	if len(extra) > 0 {
+		sort.Strings(extra)
+		t.Errorf("constitution 原則 III (採用 21): unadopted plugin dirs landed in internal/plugins/: %v", extra)
+	}
+	if len(missing) == 0 && len(extra) == 0 {
+		t.Logf("M4 採用 21 plugin compliance OK (dirs: %d adopted + base + core)", len(have))
 	}
 }
 
