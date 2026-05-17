@@ -40,11 +40,12 @@ type basePlugin struct{}
 func (p *basePlugin) Name() string                     { return Name }
 func (p *basePlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Run dispatches by account kind. Each branch populates
-// data.User and (when relevant) data.Computed.Repositories from the
-// GraphQL client. M1 uses simple single-shot queries; the field-level
-// fallback path described in the spec is documented but not yet
-// exercised because the bulk UserX query lands with M4.
+// Run dispatches by account kind. Each branch populates data.User /
+// data.Organization and data.Computed.{Repositories, RepositoryList,
+// ContributionCalendar, TotalCommits / Issues / PullRequests} from the
+// GraphQL client. The full upstream-compatible behavior (batch-halving
+// paging, organization branch, indepth augmentation) lands with M4 per
+// specs/004-m4-github-plugins/contracts/plugin-base-extension.md.
 func (p *basePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, fmt.Errorf("base: nil PluginContext or Data")
