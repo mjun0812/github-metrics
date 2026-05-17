@@ -5,58 +5,74 @@
 branch_numbering: sequential
 
 # Commit message used by `git commit` during repository initialization
-init_commit_message: "[Spec Kit] Initial commit"
+init_commit_message: "chore: initial commit"
 
 # Auto-commit before/after core commands.
-# Set "default" to enable for all commands, then override per-command.
-# Each key can be true/false. Message is customizable per-command.
+#
+# Policy for this project:
+# - Documentation phases (constitution / specify / clarify / plan / tasks /
+#   checklist / analyze) auto-commit with Conventional Commits-formatted
+#   static messages. No amend needed.
+# - The implement phase stays MANUAL (`enabled: false`) because each
+#   implementation commit's content is unique; a static template would be
+#   misleading. Run `/speckit-git-commit` manually and write a specific
+#   message (or use the manual `git commit` flow). See
+#   .claude/projects/.../memory/feedback_speckit_commit_amend.md.
+# - before_* hooks stay disabled by default; enable per-need if you want
+#   to checkpoint WIP before the next phase runs.
 auto_commit:
   default: false
+
+  # ----- before_* hooks: WIP checkpoint before next phase (default off) -----
   before_clarify:
     enabled: false
-    message: "[Spec Kit] Save progress before clarification"
+    message: "chore(wip): checkpoint before clarification"
   before_plan:
     enabled: false
-    message: "[Spec Kit] Save progress before planning"
+    message: "chore(wip): checkpoint before planning"
   before_tasks:
     enabled: false
-    message: "[Spec Kit] Save progress before task generation"
+    message: "chore(wip): checkpoint before task generation"
   before_implement:
     enabled: false
-    message: "[Spec Kit] Save progress before implementation"
+    message: "chore(wip): checkpoint before implementation"
   before_checklist:
     enabled: false
-    message: "[Spec Kit] Save progress before checklist"
+    message: "chore(wip): checkpoint before checklist"
   before_analyze:
     enabled: false
-    message: "[Spec Kit] Save progress before analysis"
+    message: "chore(wip): checkpoint before analysis"
   before_taskstoissues:
     enabled: false
-    message: "[Spec Kit] Save progress before issue sync"
+    message: "chore(wip): checkpoint before issue sync"
+
+  # ----- after_* hooks: documentation phases auto-commit -----
   after_constitution:
-    enabled: false
-    message: "[Spec Kit] Add project constitution"
+    enabled: true
+    message: "docs(spec): add project constitution"
   after_specify:
     enabled: true
-    message: "[Spec Kit] Add specification"
+    message: "docs(spec): add feature specification"
   after_clarify:
-    enabled: false
-    message: "[Spec Kit] Clarify specification"
+    enabled: true
+    message: "docs(spec): resolve clarification questions"
   after_plan:
     enabled: true
-    message: "[Spec Kit] Add implementation plan"
+    message: "docs(spec): add implementation plan"
   after_tasks:
     enabled: true
-    message: "[Spec Kit] Add tasks"
-  after_implement:
-    enabled: true
-    message: "[Spec Kit] Implementation progress"
+    message: "docs(spec): add task breakdown"
   after_checklist:
-    enabled: false
-    message: "[Spec Kit] Add checklist"
+    enabled: true
+    message: "docs(spec): add quality checklist"
   after_analyze:
     enabled: true
-    message: "[Spec Kit] Add analysis report"
+    message: "docs(spec): add analysis report"
   after_taskstoissues:
+    enabled: true
+    message: "docs(spec): sync tasks to issues"
+
+  # ----- after_implement: MANUAL — see policy comment above -----
+  after_implement:
     enabled: false
-    message: "[Spec Kit] Sync tasks to issues"
+    message: "(manual — write a specific message describing the change)"

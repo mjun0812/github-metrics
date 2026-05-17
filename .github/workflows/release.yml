@@ -1,0 +1,117 @@
+name: Release
+
+# Triggers on semver tags (v1.2.3) pushed to the repository. Builds
+# and publishes 2 artifact sets:
+#
+#   1. Multi-tag Docker image to ghcr.io/mjun0812/github-metrics
+#      (vX.Y.Z + latest + sha-<short>) — consumed by
+#      `uses: mjun0812/github-metrics@<tag>` workflow callers.
+#   2. Cross-compiled CLI binaries (linux/darwin × amd64/arm64) as
+#      GitHub Releases assets — for users running metrics-action
+#      outside Docker.
+#
+# Configured per spec clarifications Q1 (GHCR + semver) and Q2
+# (GitHub Releases + go install). See specs/005-m6-action-cli/spec.md.
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'When true, build artifacts but skip publish steps.'
+        required: false
+        default: 'true'
+
+permissions:
+  contents: write  # GitHub Releases asset upload
+  packages: write  # GHCR push
+
+jobs:
+  release-docker:
+    name: Publish Docker image to GHCR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract semver tag
+        id: tag
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          short_sha="${GITHUB_SHA::7}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        if: github.event.inputs.dry_run != 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image (vX.Y.Z + latest + sha-<short>)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event.inputs.dry_run != 'true' }}
+          build-args: |
+            VERSION=${{ steps.tag.outputs.tag }}
+          tags: |
+            ghcr.io/mjun0812/github-metrics:${{ steps.tag.outputs.tag }}
+            ghcr.io/mjun0812/github-metrics:latest
+            ghcr.io/mjun0812/github-metrics:sha-${{ steps.tag.outputs.short_sha }}
+
+  release-binary:
+    name: Publish CLI binaries to GitHub Releases
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { goos: linux,   goarch: amd64 }
+          - { goos: linux,   goarch: arm64 }
+          - { goos: darwin,  goarch: amd64 }
+          - { goos: darwin,  goarch: arm64 }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build metrics-action binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          mkdir -p dist
+          out="dist/metrics-action_${tag}_${GOOS}_${GOARCH}"
+          go build -trimpath -ldflags="-s -w -X main.version=${tag}" \
+            -o "${out}" ./cmd/metrics-action
+
+      - name: Upload artifact (dry run)
+        if: github.event.inputs.dry_run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-action-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/
+          retention-days: 7
+
+      - name: Upload to GitHub Release
+        if: github.event.inputs.dry_run != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          gh release upload "${tag}" dist/* --clobber

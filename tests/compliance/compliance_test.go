@@ -45,6 +45,7 @@ var unadoptedPluginNames = []string{
 // full backlog).
 var scanRoots = []string{
 	"cmd",
+	"internal/action",
 	"internal/engine",
 	"internal/plugins",
 	"internal/render",
@@ -75,6 +76,15 @@ var allowedFiles = map[string]struct{}{
 	// requirement.
 	"internal/plugins/reactions/reactions.go": {},
 	"internal/plugins/reactions/partial.go":   {},
+	// M6 output_action registry includes the literal "support" inside
+	// the migration message ("if Gist support is critical..."), which
+	// false-matches the unadopted "support" plugin slug. The reference
+	// is documentation/error-message English text, not plugin code.
+	"internal/action/output_action.go": {},
+	// M6 outputs.go imports crypto/rand for heredoc delimiter
+	// uniqueness; the "crypto" substring is a standard-library import,
+	// not the unadopted "crypto" plugin slug.
+	"internal/action/outputs.go": {},
 }
 
 // TestNoUnadoptedPluginReference walks scanRoots and asserts that no
@@ -274,6 +284,37 @@ func TestCompliance_M4_AdoptedPlugins(t *testing.T) {
 	}
 	if len(missing) == 0 && len(extra) == 0 {
 		t.Logf("M4 採用 21 plugin compliance OK (dirs: %d adopted + base + core)", len(have))
+	}
+}
+
+// TestCompliance_M6_NoNewPlugins asserts the M6 invariant that the
+// Action / CLI surface code (internal/action/, cmd/metrics-action/)
+// does NOT introduce new plugin or template subdirectories. M6 is a
+// delivery layer — it wires existing M1-M4 components together. New
+// adopted slugs must come through a separate spec to avoid silently
+// landing unadopted plugins under the polish phase.
+func TestCompliance_M6_NoNewPlugins(t *testing.T) {
+	root := mustRepoRoot(t)
+	for _, rel := range []string{
+		filepath.Join("internal", "action"),
+		filepath.Join("cmd", "metrics-action"),
+	} {
+		path := filepath.Join(root, rel)
+		entries, err := os.ReadDir(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", rel, err)
+		}
+		for _, e := range entries {
+			if !e.IsDir() {
+				continue
+			}
+			name := e.Name()
+			// `testdata/` is an std-go convention for test fixtures.
+			if name == "testdata" {
+				continue
+			}
+			t.Errorf("M6 constraint violated: %s/%s/ — Action surface must not host plugin/template subpackages", rel, name)
+		}
 	}
 }
 
