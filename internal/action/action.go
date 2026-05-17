@@ -250,11 +250,157 @@ func runWith(ctx context.Context, opts runOptions) error {
 	return nil
 }
 
-// RunCLI is the CLI-mode entry point. Implementation lands in T039
-// (Phase 5). For Phase 3 (P1 MVP) the CLI path returns a sentinel
-// error so the binary surface compiles + advertises the gap.
-func RunCLI(_ context.Context, _ []string) error {
-	return errors.New("action.RunCLI: not implemented (T039 / Phase 5)")
+// RunCLI is the CLI-mode entry point (spec FR-019). Pipeline:
+//
+//  1. Parse flags (T034) + load --config YAML (T035).
+//  2. Merge inputs via CLIFlags.ToInvocation (T036).
+//  3. Resolve token (T037) — flag > env > error.
+//  4. newInvocation + output_action validation (shared with Action).
+//  5. Banner + engine.Compute + retry policy (shared).
+//  6. Write output to --filename or stdout (T038).
+//  7. Committer dispatch unless --dryrun.
+func RunCLI(ctx context.Context, args []string) error {
+	cf, err := ParseFlags(args)
+	if err != nil {
+		return fmt.Errorf("action: cli flags: %w", err)
+	}
+	cwd, _ := os.Getwd()
+	return runCLIWith(ctx, cf, runOptions{
+		Mode:       ModeCLI,
+		Env:        os.Environ(),
+		Stdout:     os.Stdout,
+		OutputDir:  cwd,
+		WorkingDir: cwd,
+	})
+}
+
+func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
+	env := envSliceToMap(opts.Env)
+	inputs, err := cf.ToInvocation(env)
+	if err != nil {
+		return err
+	}
+
+	// Preset overlay (mirrors Action path) — runs after --config so the
+	// preset's q: map overrides defaults but not CLI flags / config.
+	if presetPath, ok := inputs["config_presets"].(string); ok && presetPath != "" {
+		preset, perr := LoadPreset(presetPath)
+		if perr != nil {
+			return fmt.Errorf("action: load preset: %w", perr)
+		}
+		preset.MergeInto(inputs)
+	}
+
+	// Token resolution — applied after the merge so INPUT_TOKEN serves as
+	// the fallback when --token / --token-env are absent.
+	inputTok, _ := inputs["token"].(string)
+	tok, terr := ResolveToken(cf, os.Getenv, inputTok)
+	if terr != nil {
+		// Allow dryrun + mocked-data to bypass token requirement.
+		if !cf.Dryrun || stringInput(inputs, "use_mocked_data", "") == "" {
+			return terr
+		}
+	}
+	if tok != "" {
+		inputs["token"] = tok
+	}
+
+	inv, ierr := newInvocation(ModeCLI, inputs, env, opts.OutputDir)
+	if ierr != nil {
+		return ierr
+	}
+
+	if verr := DefaultRegistry().Validate(inv.OutputAction); verr != nil {
+		return verr
+	}
+
+	var deps engine.Deps
+	if opts.BuildDeps != nil {
+		deps, err = opts.BuildDeps(ctx, inv)
+	} else {
+		deps, err = defaultBuildDeps(ctx, inv)
+	}
+	if err != nil {
+		return fmt.Errorf("action: build deps: %w", err)
+	}
+
+	if !inv.UseMockedData {
+		validator := &TokenValidator{Token: inv.Token, REST: deps.REST, UseMockedData: inv.UseMockedData}
+		vRes, verr := validator.Validate(ctx)
+		if verr != nil {
+			return verr
+		}
+		if !vRes.QuotaSufficient {
+			slog.Info("metrics-action skipped: insufficient GitHub API quota",
+				"reset", vRes.RateState.REST.Reset)
+			return nil
+		}
+		if len(vRes.MissingScopes) > 0 {
+			slog.Warn("token is missing some scopes; affected plugins will skip",
+				"missing", vRes.MissingScopes)
+		}
+	}
+
+	PrintBanner(opts.Stdout, BannerInfo{
+		Version:     engine.Version(),
+		Mode:        inv.Mode.String(),
+		Template:    inv.Template,
+		Plugins:     sortedTruthyPluginGates(inputs),
+		TokenMasked: inv.Token.String(),
+		GoVersion:   runtime.Version(),
+		OSArch:      runtime.GOOS + "/" + runtime.GOARCH,
+	})
+
+	var res *engine.Result
+	cerr := inv.RetryPolicy.Do(ctx, func() error {
+		var e error
+		res, e = engine.Compute(ctx, engine.Request{
+			Login:    inv.Login,
+			Template: inv.Template,
+			Format:   inv.Format,
+			Inputs:   inv.Inputs,
+		}, deps)
+		return e
+	})
+	if cerr != nil {
+		return fmt.Errorf("action: engine.Compute: %w", cerr)
+	}
+	if res == nil {
+		return errors.New("action: engine.Compute returned nil result")
+	}
+
+	w, closeFn, oerr := ResolveOutputWriter(targetOutputPath(inv), inv.Format)
+	if oerr != nil {
+		return fmt.Errorf("action: open output: %w", oerr)
+	}
+	defer func() { _ = closeFn() }()
+	if _, werr := w.Write(res.Output); werr != nil {
+		return fmt.Errorf("action: write output: %w", werr)
+	}
+
+	if !inv.Dryrun && inv.OutputAction != "none" {
+		committer, nerr := NewCommitter(deps.REST, inv, res.Output)
+		if nerr != nil {
+			return fmt.Errorf("action: committer init: %w", nerr)
+		}
+		if cerr := committer.Run(ctx); cerr != nil {
+			slog.Warn("committer failed (action continues)", "err", cerr)
+		}
+	}
+	return nil
+}
+
+// targetOutputPath chooses the destination for the CLI Write step.
+// `-` (stdout) stays as is; otherwise the resolved filename is joined
+// to OutputDir when it's relative.
+func targetOutputPath(inv *Invocation) string {
+	if inv.OutputFilename == "-" {
+		return "-"
+	}
+	if filepath.IsAbs(inv.OutputFilename) {
+		return inv.OutputFilename
+	}
+	return filepath.Join(inv.OutputDir, inv.OutputFilename)
 }
 
 // ---------- helpers ----------

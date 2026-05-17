@@ -67,14 +67,16 @@ func TestRun_ActionMode_DispatchesEnvDetected(t *testing.T) {
 }
 
 // TestRun_CLIMode_DispatchesWhenArgsProvided confirms a non-bootstrap
-// arg routes to action.RunCLI (which returns the T039 sentinel for
-// the Phase 3 skeleton).
+// arg routes to action.RunCLI. After Phase 5 (T039), RunCLI is fully
+// implemented; we trigger the token-required branch because the test
+// supplies neither --token / --token-env nor --dryrun + mocked data,
+// which is the cheapest deterministic exit through the CLI surface.
 func TestRun_CLIMode_DispatchesWhenArgsProvided(t *testing.T) {
 	t.Parallel()
 	var out, errOut bytes.Buffer
 	err := run([]string{"--user", "octocat"}, &out, &errOut, nil)
-	if err == nil || !strings.Contains(err.Error(), "RunCLI") {
-		t.Fatalf("expected action.RunCLI sentinel, got err=%v", err)
+	if err == nil || !strings.Contains(err.Error(), "token required") {
+		t.Fatalf("expected token-required error from RunCLI, got err=%v", err)
 	}
 }
 
