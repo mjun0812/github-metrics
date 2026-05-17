@@ -375,6 +375,342 @@ type OrganizationResponse struct {
 // GetOrganization returns OrganizationResponse.Organization, and is useful for accessing the field via an interface.
 func (v *OrganizationResponse) GetOrganization() *OrganizationOrganization { return v.Organization }
 
+// RepositoryRepository includes the requested fields of the GraphQL type Repository.
+type RepositoryRepository struct {
+	DatabaseId       *int                                                   `json:"databaseId"`
+	Name             string                                                 `json:"name"`
+	NameWithOwner    string                                                 `json:"nameWithOwner"`
+	Description      *string                                                `json:"description"`
+	StargazerCount   int                                                    `json:"stargazerCount"`
+	ForkCount        int                                                    `json:"forkCount"`
+	IsArchived       bool                                                   `json:"isArchived"`
+	PrimaryLanguage  *RepositoryRepositoryPrimaryLanguage                   `json:"primaryLanguage"`
+	LicenseInfo      *RepositoryRepositoryLicenseInfoLicense                `json:"licenseInfo"`
+	DefaultBranchRef *RepositoryRepositoryDefaultBranchRef                  `json:"defaultBranchRef"`
+	Owner            RepositoryRepositoryOwner                              `json:"-"`
+	Issues           *RepositoryRepositoryIssuesIssueConnection             `json:"issues"`
+	PullRequests     *RepositoryRepositoryPullRequestsPullRequestConnection `json:"pullRequests"`
+}
+
+// GetDatabaseId returns RepositoryRepository.DatabaseId, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetDatabaseId() *int { return v.DatabaseId }
+
+// GetName returns RepositoryRepository.Name, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetName() string { return v.Name }
+
+// GetNameWithOwner returns RepositoryRepository.NameWithOwner, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetNameWithOwner() string { return v.NameWithOwner }
+
+// GetDescription returns RepositoryRepository.Description, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetDescription() *string { return v.Description }
+
+// GetStargazerCount returns RepositoryRepository.StargazerCount, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetStargazerCount() int { return v.StargazerCount }
+
+// GetForkCount returns RepositoryRepository.ForkCount, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetForkCount() int { return v.ForkCount }
+
+// GetIsArchived returns RepositoryRepository.IsArchived, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetIsArchived() bool { return v.IsArchived }
+
+// GetPrimaryLanguage returns RepositoryRepository.PrimaryLanguage, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetPrimaryLanguage() *RepositoryRepositoryPrimaryLanguage {
+	return v.PrimaryLanguage
+}
+
+// GetLicenseInfo returns RepositoryRepository.LicenseInfo, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetLicenseInfo() *RepositoryRepositoryLicenseInfoLicense {
+	return v.LicenseInfo
+}
+
+// GetDefaultBranchRef returns RepositoryRepository.DefaultBranchRef, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetDefaultBranchRef() *RepositoryRepositoryDefaultBranchRef {
+	return v.DefaultBranchRef
+}
+
+// GetOwner returns RepositoryRepository.Owner, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetOwner() RepositoryRepositoryOwner { return v.Owner }
+
+// GetIssues returns RepositoryRepository.Issues, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetIssues() *RepositoryRepositoryIssuesIssueConnection {
+	return v.Issues
+}
+
+// GetPullRequests returns RepositoryRepository.PullRequests, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetPullRequests() *RepositoryRepositoryPullRequestsPullRequestConnection {
+	return v.PullRequests
+}
+
+func (v *RepositoryRepository) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*RepositoryRepository
+		Owner json.RawMessage `json:"owner"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.RepositoryRepository = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Owner
+		src := firstPass.Owner
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalRepositoryRepositoryOwner(
+				src, dst,
+			)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal RepositoryRepository.Owner: %w", err,
+				)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalRepositoryRepository struct {
+	DatabaseId *int `json:"databaseId"`
+
+	Name string `json:"name"`
+
+	NameWithOwner string `json:"nameWithOwner"`
+
+	Description *string `json:"description"`
+
+	StargazerCount int `json:"stargazerCount"`
+
+	ForkCount int `json:"forkCount"`
+
+	IsArchived bool `json:"isArchived"`
+
+	PrimaryLanguage *RepositoryRepositoryPrimaryLanguage `json:"primaryLanguage"`
+
+	LicenseInfo *RepositoryRepositoryLicenseInfoLicense `json:"licenseInfo"`
+
+	DefaultBranchRef *RepositoryRepositoryDefaultBranchRef `json:"defaultBranchRef"`
+
+	Owner json.RawMessage `json:"owner"`
+
+	Issues *RepositoryRepositoryIssuesIssueConnection `json:"issues"`
+
+	PullRequests *RepositoryRepositoryPullRequestsPullRequestConnection `json:"pullRequests"`
+}
+
+func (v *RepositoryRepository) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *RepositoryRepository) __premarshalJSON() (*__premarshalRepositoryRepository, error) {
+	var retval __premarshalRepositoryRepository
+
+	retval.DatabaseId = v.DatabaseId
+	retval.Name = v.Name
+	retval.NameWithOwner = v.NameWithOwner
+	retval.Description = v.Description
+	retval.StargazerCount = v.StargazerCount
+	retval.ForkCount = v.ForkCount
+	retval.IsArchived = v.IsArchived
+	retval.PrimaryLanguage = v.PrimaryLanguage
+	retval.LicenseInfo = v.LicenseInfo
+	retval.DefaultBranchRef = v.DefaultBranchRef
+	{
+
+		dst := &retval.Owner
+		src := v.Owner
+		var err error
+		*dst, err = __marshalRepositoryRepositoryOwner(
+			&src,
+		)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal RepositoryRepository.Owner: %w", err,
+			)
+		}
+	}
+	retval.Issues = v.Issues
+	retval.PullRequests = v.PullRequests
+	return &retval, nil
+}
+
+// RepositoryRepositoryDefaultBranchRef includes the requested fields of the GraphQL type Ref.
+type RepositoryRepositoryDefaultBranchRef struct {
+	Name string `json:"name"`
+}
+
+// GetName returns RepositoryRepositoryDefaultBranchRef.Name, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryDefaultBranchRef) GetName() string { return v.Name }
+
+// RepositoryRepositoryIssuesIssueConnection includes the requested fields of the GraphQL type IssueConnection.
+type RepositoryRepositoryIssuesIssueConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns RepositoryRepositoryIssuesIssueConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryIssuesIssueConnection) GetTotalCount() int { return v.TotalCount }
+
+// RepositoryRepositoryLicenseInfoLicense includes the requested fields of the GraphQL type License.
+type RepositoryRepositoryLicenseInfoLicense struct {
+	Name   string  `json:"name"`
+	SpdxId *string `json:"spdxId"`
+}
+
+// GetName returns RepositoryRepositoryLicenseInfoLicense.Name, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryLicenseInfoLicense) GetName() string { return v.Name }
+
+// GetSpdxId returns RepositoryRepositoryLicenseInfoLicense.SpdxId, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryLicenseInfoLicense) GetSpdxId() *string { return v.SpdxId }
+
+// RepositoryRepositoryOwner includes the requested fields of the GraphQL interface RepositoryOwner.
+//
+// RepositoryRepositoryOwner is implemented by the following types:
+// RepositoryRepositoryOwnerOrganization
+// RepositoryRepositoryOwnerUser
+type RepositoryRepositoryOwner interface {
+	implementsGraphQLInterfaceRepositoryRepositoryOwner()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() *string
+	// GetLogin returns the interface-field "login" from its implementation.
+	GetLogin() string
+	// GetAvatarUrl returns the interface-field "avatarUrl" from its implementation.
+	GetAvatarUrl() string
+}
+
+func (v *RepositoryRepositoryOwnerOrganization) implementsGraphQLInterfaceRepositoryRepositoryOwner() {
+}
+func (v *RepositoryRepositoryOwnerUser) implementsGraphQLInterfaceRepositoryRepositoryOwner() {}
+
+func __unmarshalRepositoryRepositoryOwner(b []byte, v *RepositoryRepositoryOwner) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "Organization":
+		*v = new(RepositoryRepositoryOwnerOrganization)
+		return json.Unmarshal(b, *v)
+	case "User":
+		*v = new(RepositoryRepositoryOwnerUser)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing RepositoryOwner.__typename",
+		)
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for RepositoryRepositoryOwner: "%v"`, tn.TypeName,
+		)
+	}
+}
+
+func __marshalRepositoryRepositoryOwner(v *RepositoryRepositoryOwner) ([]byte, error) {
+	var typename string
+	switch v := (*v).(type) {
+	case *RepositoryRepositoryOwnerOrganization:
+		typename = "Organization"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*RepositoryRepositoryOwnerOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *RepositoryRepositoryOwnerUser:
+		typename = "User"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*RepositoryRepositoryOwnerUser
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for RepositoryRepositoryOwner: "%T"`, v,
+		)
+	}
+}
+
+// RepositoryRepositoryOwnerOrganization includes the requested fields of the GraphQL type Organization.
+type RepositoryRepositoryOwnerOrganization struct {
+	Typename  *string `json:"__typename"`
+	Login     string  `json:"login"`
+	AvatarUrl string  `json:"avatarUrl"`
+}
+
+// GetTypename returns RepositoryRepositoryOwnerOrganization.Typename, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryOwnerOrganization) GetTypename() *string { return v.Typename }
+
+// GetLogin returns RepositoryRepositoryOwnerOrganization.Login, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryOwnerOrganization) GetLogin() string { return v.Login }
+
+// GetAvatarUrl returns RepositoryRepositoryOwnerOrganization.AvatarUrl, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryOwnerOrganization) GetAvatarUrl() string { return v.AvatarUrl }
+
+// RepositoryRepositoryOwnerUser includes the requested fields of the GraphQL type User.
+type RepositoryRepositoryOwnerUser struct {
+	Typename  *string `json:"__typename"`
+	Login     string  `json:"login"`
+	AvatarUrl string  `json:"avatarUrl"`
+}
+
+// GetTypename returns RepositoryRepositoryOwnerUser.Typename, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryOwnerUser) GetTypename() *string { return v.Typename }
+
+// GetLogin returns RepositoryRepositoryOwnerUser.Login, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryOwnerUser) GetLogin() string { return v.Login }
+
+// GetAvatarUrl returns RepositoryRepositoryOwnerUser.AvatarUrl, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryOwnerUser) GetAvatarUrl() string { return v.AvatarUrl }
+
+// RepositoryRepositoryPrimaryLanguage includes the requested fields of the GraphQL type Language.
+type RepositoryRepositoryPrimaryLanguage struct {
+	Name  string  `json:"name"`
+	Color *string `json:"color"`
+}
+
+// GetName returns RepositoryRepositoryPrimaryLanguage.Name, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryPrimaryLanguage) GetName() string { return v.Name }
+
+// GetColor returns RepositoryRepositoryPrimaryLanguage.Color, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryPrimaryLanguage) GetColor() *string { return v.Color }
+
+// RepositoryRepositoryPullRequestsPullRequestConnection includes the requested fields of the GraphQL type PullRequestConnection.
+type RepositoryRepositoryPullRequestsPullRequestConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns RepositoryRepositoryPullRequestsPullRequestConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryPullRequestsPullRequestConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// RepositoryResponse is returned by Repository on success.
+type RepositoryResponse struct {
+	Repository *RepositoryRepository `json:"repository"`
+}
+
+// GetRepository returns RepositoryResponse.Repository, and is useful for accessing the field via an interface.
+func (v *RepositoryResponse) GetRepository() *RepositoryRepository { return v.Repository }
+
 // UserFollowersResponse is returned by UserFollowers on success.
 type UserFollowersResponse struct {
 	User *UserFollowersUser `json:"user"`
@@ -1410,6 +1746,18 @@ func (v *__OrganizationRepositoriesInput) GetFirst() int { return v.First }
 // GetAfter returns __OrganizationRepositoriesInput.After, and is useful for accessing the field via an interface.
 func (v *__OrganizationRepositoriesInput) GetAfter() *string { return v.After }
 
+// __RepositoryInput is used internally by genqlient
+type __RepositoryInput struct {
+	Login string `json:"login"`
+	Repo  string `json:"repo"`
+}
+
+// GetLogin returns __RepositoryInput.Login, and is useful for accessing the field via an interface.
+func (v *__RepositoryInput) GetLogin() string { return v.Login }
+
+// GetRepo returns __RepositoryInput.Repo, and is useful for accessing the field via an interface.
+func (v *__RepositoryInput) GetRepo() string { return v.Repo }
+
 // __UserFollowersInput is used internally by genqlient
 type __UserFollowersInput struct {
 	Login string `json:"login"`
@@ -1655,6 +2003,78 @@ func OrganizationRepositories(
 	}
 
 	data_ = &OrganizationRepositoriesResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by Repository.
+const Repository_Operation = `
+query Repository ($login: String!, $repo: String!) {
+	repository(owner: $login, name: $repo) {
+		databaseId
+		name
+		nameWithOwner
+		description
+		stargazerCount
+		forkCount
+		isArchived
+		primaryLanguage {
+			name
+			color
+		}
+		licenseInfo {
+			name
+			spdxId
+		}
+		defaultBranchRef {
+			name
+		}
+		owner {
+			__typename
+			login
+			avatarUrl
+		}
+		issues(states: [OPEN]) {
+			totalCount
+		}
+		pullRequests(states: [OPEN]) {
+			totalCount
+		}
+	}
+}
+`
+
+// Query: single repository for the M7 `repository` template.
+//
+// Returns the union of fields the template's partials need to render
+// the "repo identity + community + activity" panes. REST fallback
+// fields (contributors count, recent commits) live in
+// `internal/plugins/base/repository.go` and are NOT fetched here.
+//
+// Spec: specs/006-m7-repository-template/contracts/base-repository-query.md
+func Repository(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	login string,
+	repo string,
+) (data_ *RepositoryResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "Repository",
+		Query:  Repository_Operation,
+		Variables: &__RepositoryInput{
+			Login: login,
+			Repo:  repo,
+		},
+	}
+
+	data_ = &RepositoryResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

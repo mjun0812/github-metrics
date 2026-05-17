@@ -64,11 +64,53 @@ func (p *basePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, e
 	case plugins.AccountOrganization:
 		return p.runOrganization(ctx, pc, login)
 	case plugins.AccountRepository:
-		// M7 territory; base does no work for repository templates.
-		return nil, nil
+		return p.runRepository(ctx, pc, login)
 	default:
 		return nil, fmt.Errorf("base: unknown account kind %q", pc.Data.Account)
 	}
+}
+
+// runRepository is the M7 base-plugin entry point for the
+// repository template. It runs the same user fetch as runUser
+// (downstream plugins still need data.User populated for things like
+// avatar / sponsorshipsAsMaintainer) and then layers the single-repo
+// fetch on top.
+func (p *basePlugin) runRepository(ctx context.Context, pc *plugins.PluginContext, login string) (any, error) {
+	// Fetch user first — downstream plugins + the repository template
+	// header still need data.User.AvatarURL, etc.
+	if _, err := p.runUser(ctx, pc, login); err != nil {
+		return nil, err
+	}
+	pc.Data.Account = plugins.AccountRepository
+
+	repo := repoFromInputs(pc.Inputs)
+	if repo == "" {
+		return nil, fmt.Errorf("base: repository template requires `repo` input")
+	}
+
+	r, err := FetchRepo(ctx, login, repo, pc.REST, pc.GraphQL)
+	if err != nil {
+		return nil, err
+	}
+	// Mirror upstream template.mjs:21 — copy maintainer sponsorships
+	// from the user payload so the sponsors partial can render. The
+	// sponsors plugin (M4) is the source of truth for the count when
+	// it runs; until then we leave the field zero.
+	pc.Data.SetRepo(r)
+	return nil, nil
+}
+
+// repoFromInputs returns the `repo` input value, or "" when unset.
+func repoFromInputs(inputs map[string]any) string {
+	if inputs == nil {
+		return ""
+	}
+	v, ok := inputs["repo"]
+	if !ok {
+		return ""
+	}
+	s, _ := v.(string)
+	return s
 }
 
 func (p *basePlugin) runUser(ctx context.Context, pc *plugins.PluginContext, login string) (any, error) {

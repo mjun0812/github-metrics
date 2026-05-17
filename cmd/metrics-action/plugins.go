@@ -30,4 +30,5 @@ import (
 	_ "github.com/mjun0812/github-metrics/internal/plugins/traffic"
 
 	_ "github.com/mjun0812/github-metrics/internal/templates/classic"
+	_ "github.com/mjun0812/github-metrics/internal/templates/repository"
 )
