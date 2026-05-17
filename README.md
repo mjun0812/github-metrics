@@ -6,24 +6,77 @@ Go port of [lowlighter/metrics](https://github.com/lowlighter/metrics) for the
 adopted feature subset documented in
 [`docs/design/15-selection-answer.md`](docs/design/15-selection-answer.md).
 
-**Status: M4 (GitHub plugins) complete.** All 21 採用 plugins are now
-live: P1 MVP 5 (languages / activity / achievements / repositories /
-isocalendar), P2 GraphQL+REST 12 (calendar / habits / stars / people /
-notable / contributors / reactions / projects / sponsors / sponsorships
-/ stargazers / traffic), and P3 chromedp + heavy 4 (topics + starlists
-+ languages.recent + languages.indepth — the last two are sub-modes
-that share the `languages` package). All four P3 plugin **runtimes**
-register on every build and skip at runtime when their preconditions
-are unmet (chromedp not available, heavy extras flag off); only their
-fixture-heavy / browser-driven **tests** are isolated behind the
-`chromedp` and `heavy` build tags. `engine.Compute` drives the full
-plugin pipeline, the classic template renders per-plugin DOM, and the
-M3 chromedp render path (octicon → optional CSS purge → optional XML
-format → chromedp Resize → PNG / JPEG) wraps the result. See
-[`specs/004-m4-github-plugins/tasks.md`](specs/004-m4-github-plugins/tasks.md)
-for the per-task breakdown. M5 (Web instance — chi server skeleton +
-cache / rate-limit middleware) is next per
-[`docs/design/12-tasks.md`](docs/design/12-tasks.md#phase-m5).
+**Status: M6 (Action / CLI) complete.** The `metrics-action` binary
+is now usable as both a GitHub Action (Docker image at
+`ghcr.io/mjun0812/github-metrics:<tag>`) and a standalone CLI on
+macOS / Linux. Inputs flow through one unified pipeline that wraps
+M1-M4: 21 plugins + classic template + M3 chromedp render. The
+release pipeline (`.github/workflows/release.yml`) publishes a
+multi-tag image (`vX.Y.Z` + `latest` + `sha-<short>`) and four
+cross-compiled binaries (linux/darwin × amd64/arm64) on every semver
+tag. See [`specs/005-m6-action-cli/`](specs/005-m6-action-cli/) for
+the spec, plan, and tasks. M5 (Web instance) is intentionally
+out-of-scope per
+[`docs/design/15-selection-answer.md`](docs/design/15-selection-answer.md);
+M7+ continues with snapshot / replay infrastructure.
+
+## Usage as a GitHub Action
+
+```yaml
+# .github/workflows/metrics.yml
+name: Metrics
+on:
+  schedule: [{cron: '0 0 * * *'}]
+  workflow_dispatch:
+
+jobs:
+  github-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: mjun0812/github-metrics@v0.6.0
+        with:
+          user: octocat
+          token: ${{ secrets.METRICS_TOKEN }}
+          template: classic
+          plugin_languages: 'yes'
+          plugin_languages_limit: '5'
+          committer_branch: main
+          output_action: commit
+          output_condition: data-changed
+```
+
+The action runs the `metrics-action` binary inside the
+`ghcr.io/mjun0812/github-metrics` Docker image. Pin to a semver tag
+(`@v0.6.0`) for reproducibility; the `@latest` tag is also published
+for convenience.
+
+## Usage as a CLI
+
+```sh
+# Install from a GitHub Release (linux/darwin × amd64/arm64).
+curl -L -o metrics-action \
+  https://github.com/mjun0812/github-metrics/releases/download/v0.6.0/metrics-action_v0.6.0_darwin_arm64
+chmod +x metrics-action
+
+# Or via go install (requires Go 1.26+).
+go install github.com/mjun0812/github-metrics/cmd/metrics-action@v0.6.0
+
+# Or via Docker (no install needed).
+docker run --rm \
+  -v "$PWD/out:/renders" \
+  -e GITHUB_TOKEN \
+  ghcr.io/mjun0812/github-metrics:v0.6.0 \
+  --user octocat --token-env GITHUB_TOKEN --template classic \
+  --output svg --filename github-metrics.svg
+
+# Minimum dryrun pipe — mocked deps, stdout SVG, no token needed.
+metrics-action --user octocat --output svg --dryrun --filename - \
+  --plugin use_mocked_data=true | xmllint --format -
+```
+
+See [`specs/005-m6-action-cli/quickstart.md`](specs/005-m6-action-cli/quickstart.md)
+for the full input matrix (`--config <path>.yaml`, `--preset`,
+`--token-env`, all 21 plugin gates).
 
 ### Output paths at a glance
 

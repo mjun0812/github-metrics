@@ -12,10 +12,6 @@ name: Release
 #
 # Configured per spec clarifications Q1 (GHCR + semver) and Q2
 # (GitHub Releases + go install). See specs/005-m6-action-cli/spec.md.
-#
-# Phase 1 skeleton (T006): the structure compiles + the jobs are
-# enabled but the actual `gh release create` + `docker buildx push`
-# wiring is finalized in T044 (Phase 6 Polish).
 
 on:
   push:

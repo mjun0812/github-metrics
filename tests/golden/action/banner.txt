@@ -1,0 +1,9 @@
+──────────────────────────────────────────────────────────────
+── metrics-action — startup banner ──
+Version            │ v0.0.0-test
+Mode               │ action
+Template           │ classic
+Plugins            │ activity, languages
+Token              │ ghp_***masked***
+Runtime            │ go1.26.0, linux/amd64
+──────────────────────────────────────────────────────────────

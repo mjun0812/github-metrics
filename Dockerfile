@@ -9,11 +9,7 @@
 #
 # Image: ghcr.io/mjun0812/github-metrics:vX.Y.Z (semver) + :latest +
 # :sha-<short> per the release pipeline in
-# .github/workflows/release.yml (M6 T044).
-#
-# Phase 1 skeleton (T005): the structure is complete but the
-# binary-build step uses the standard `make build-action` target;
-# finalization (chromium pin, image size optimization) lands in T043.
+# .github/workflows/release.yml.
 
 # -------- Builder stage --------
 FROM golang:1.26-alpine AS builder
