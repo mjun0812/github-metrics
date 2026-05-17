@@ -8,13 +8,12 @@ package integration_test
 import (
 	"context"
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/mjun0812/github-metrics/internal/engine"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/testutil/golden"
 
 	// Side-effect imports to register the M7 repository template +
 	// the base/core plugin pipeline + the classic template (sibling).
@@ -160,10 +159,9 @@ func TestRepositoryTemplate_ClassicJSON_OmitsDataRepo(t *testing.T) {
 	}
 }
 
-// TestRepositoryTemplate_HelloWorld_SVG_Golden (T029) seeds /
-// compares the SVG output for the repository template against a
-// committed golden under tests/golden/repository/. Seed via
-// `go test -update ./tests/integration/...`.
+// TestRepositoryTemplate_HelloWorld_SVG_Golden compares the SVG
+// output for the repository template via the M9 shared
+// `golden.CompareSVG` helper.
 func TestRepositoryTemplate_HelloWorld_SVG_Golden(t *testing.T) {
 	t.Parallel()
 	engine.SetVersionForTest(t, "test-version")
@@ -183,28 +181,11 @@ func TestRepositoryTemplate_HelloWorld_SVG_Golden(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Compute: %v", err)
 	}
-	goldenPath := filepath.Join("..", "golden", "repository", "octocat_hello-world.svg")
-	if *updateGolden {
-		if mkErr := os.MkdirAll(filepath.Dir(goldenPath), 0o750); mkErr != nil {
-			t.Fatalf("mkdir: %v", mkErr)
-		}
-		if wErr := os.WriteFile(goldenPath, res.Output, 0o600); wErr != nil {
-			t.Fatalf("write: %v", wErr)
-		}
-		return
-	}
-	want, err := os.ReadFile(goldenPath)
-	if err != nil {
-		t.Fatalf("read golden: %v (run with -update to seed)", err)
-	}
-	if string(res.Output) != string(want) {
-		t.Errorf("SVG drift; len got=%d want=%d", len(res.Output), len(want))
-	}
+	golden.CompareSVG(t, res.Output, "repository/octocat_hello-world.svg")
 }
 
-// TestRepositoryTemplate_HelloWorld_JSON_Golden (T028) seeds /
-// compares the JSON output for the repository template. Seed via
-// `go test -update ./tests/integration/...`.
+// TestRepositoryTemplate_HelloWorld_JSON_Golden compares the JSON
+// output via the M9 shared `golden.CompareJSON` helper.
 func TestRepositoryTemplate_HelloWorld_JSON_Golden(t *testing.T) {
 	t.Parallel()
 	engine.SetVersionForTest(t, "test-version")
@@ -224,41 +205,7 @@ func TestRepositoryTemplate_HelloWorld_JSON_Golden(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Compute: %v", err)
 	}
-	goldenPath := filepath.Join("..", "golden", "repository", "octocat_hello-world.json")
-	if *updateGolden {
-		if mkErr := os.MkdirAll(filepath.Dir(goldenPath), 0o750); mkErr != nil {
-			t.Fatalf("mkdir: %v", mkErr)
-		}
-		var box any
-		if dErr := json.Unmarshal(res.Output, &box); dErr != nil {
-			t.Fatalf("decode: %v", dErr)
-		}
-		pretty, mErr := json.MarshalIndent(box, "", "  ")
-		if mErr != nil {
-			t.Fatalf("indent: %v", mErr)
-		}
-		pretty = append(pretty, '\n')
-		if wErr := os.WriteFile(goldenPath, pretty, 0o600); wErr != nil {
-			t.Fatalf("write: %v", wErr)
-		}
-		return
-	}
-	want, err := os.ReadFile(goldenPath)
-	if err != nil {
-		t.Fatalf("read golden: %v (run with -update to seed)", err)
-	}
-	var gotShape, wantShape any
-	if err := json.Unmarshal(res.Output, &gotShape); err != nil {
-		t.Fatalf("unmarshal got: %v", err)
-	}
-	if err := json.Unmarshal(want, &wantShape); err != nil {
-		t.Fatalf("unmarshal want: %v", err)
-	}
-	gotPretty, _ := json.MarshalIndent(gotShape, "", "  ")
-	wantPretty, _ := json.MarshalIndent(wantShape, "", "  ")
-	if string(gotPretty) != string(wantPretty) {
-		t.Errorf("JSON drift; len got=%d want=%d", len(gotPretty), len(wantPretty))
-	}
+	golden.CompareJSON(t, res.Output, "repository/octocat_hello-world.json")
 }
 
 func min(a, b int) int {

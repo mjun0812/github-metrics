@@ -65,6 +65,21 @@ linters:
       excludes:
         # G104: errcheck already covers unchecked errors with better targeting.
         - G104
+    staticcheck:
+      # M9 explicit enable of the QF (quick-fix) subset that M6/M7
+      # self-reviews surfaced manually (QF1001 De Morgan, QF1003 tagged
+      # switch, QF1004 strings.ReplaceAll, etc.). "all" keeps the
+      # default checks; the explicit listing prevents accidental
+      # regression if defaults change between staticcheck releases.
+      checks:
+        - "all"
+        - "QF1001"
+        - "QF1003"
+        - "QF1004"
+    # gocritic: ifElseChain is already enabled by gocritic's default
+    # set in golangci-lint v2; paramTypeCombine is already disabled.
+    # No additional gocritic configuration needed for M9 — the
+    # existing default set covers the M9 lint surface.
     revive:
       rules:
         - name: var-naming
