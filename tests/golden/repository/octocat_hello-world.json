@@ -1,0 +1,302 @@
+{
+  "account": "repository",
+  "computed": {
+    "commits": 0,
+    "repositories": {
+      "count": 1,
+      "forks": 9,
+      "issues": 0,
+      "languages": {},
+      "pullRequests": 0,
+      "releases": 0,
+      "stargazers": 80,
+      "watchers": 7
+    }
+  },
+  "config": {
+    "animations": true,
+    "base64": true,
+    "debugFlags": null,
+    "display": "",
+    "timezone": {
+      "error": null,
+      "name": "UTC"
+    }
+  },
+  "errors": [],
+  "plugins": {
+    "achievements": {
+      "list": [
+        {
+          "description": "Total stars received across owned repositories",
+          "icon": "star",
+          "id": "stars",
+          "rank": "C",
+          "title": "Stargazer",
+          "value": 80
+        }
+      ],
+      "ranks": {
+        "commits": "X",
+        "followers": "X",
+        "issues": "X",
+        "pull-requests": "X",
+        "repositories": "X",
+        "stars": "C"
+      },
+      "skipped": false
+    },
+    "activity": {
+      "days": 0,
+      "events": null,
+      "mode": "",
+      "skipped": true
+    },
+    "calendar": {
+      "limit": 0,
+      "skipped": true,
+      "years": []
+    },
+    "contributors": {
+      "base": "master",
+      "head": "HEAD",
+      "list": [],
+      "mode": "repo",
+      "sections": [
+        "contributors"
+      ],
+      "skipped": false
+    },
+    "habits": {
+      "charts": {
+        "days": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "days": 0,
+      "facts": {
+        "charsPerLine": 0,
+        "commitsPerDay": 0,
+        "indentStyle": "",
+        "linesPerCommit": 0
+      },
+      "from": 0,
+      "skipped": true,
+      "trim": false
+    },
+    "isocalendar": {
+      "average": 0,
+      "duration": "half-year",
+      "skipped": true,
+      "streak": {
+        "current": 0,
+        "max": 0
+      },
+      "sum": 0,
+      "weeks": []
+    },
+    "languages": {
+      "colors": {},
+      "favorites": [],
+      "mode": "",
+      "mostly": {
+        "color": "",
+        "count": 0,
+        "name": "",
+        "size": 0,
+        "value": 0
+      },
+      "other": {
+        "color": "",
+        "count": 0,
+        "name": "",
+        "size": 0,
+        "value": 0
+      },
+      "sections": [
+        "most-used"
+      ],
+      "skipped": true
+    },
+    "languages.indepth": {
+      "analyzed": [],
+      "errors": null,
+      "repositories": {},
+      "skipped": true,
+      "total": {
+        "bytes": {}
+      }
+    },
+    "languages.recent": {
+      "days": 14,
+      "favorites": [],
+      "load": 100,
+      "other": {
+        "color": "",
+        "count": 0,
+        "name": "",
+        "size": 0,
+        "value": 0
+      },
+      "repos": [],
+      "skipped": true
+    },
+    "notable": {
+      "list": [],
+      "skipped": true
+    },
+    "people": {
+      "mode": "",
+      "skipped": true,
+      "types": {}
+    },
+    "projects": {
+      "limit": 0,
+      "list": [],
+      "mode": "",
+      "skipped": true
+    },
+    "reactions": {
+      "comments": 0,
+      "days": 0,
+      "details": null,
+      "discussions": 0,
+      "issues": 0,
+      "skipped": true,
+      "total": 0
+    },
+    "repositories": {
+      "featured": [
+        {
+          "description": "My first repository on GitHub.",
+          "forks": 9,
+          "isFork": false,
+          "language": {
+            "color": "#00ADD8",
+            "count": 0,
+            "name": "Go",
+            "size": 0,
+            "value": 0
+          },
+          "languages": null,
+          "nameWithOwner": "octocat/hello-world",
+          "stars": 80,
+          "uRL": "",
+          "visibility": "",
+          "watchers": 0
+        }
+      ],
+      "pinned": null,
+      "random": null,
+      "skipped": false,
+      "starred": null
+    },
+    "sponsors": {
+      "mode": "",
+      "past": null,
+      "sections": null,
+      "skipped": true,
+      "sponsors": []
+    },
+    "sponsorships": {
+      "active": [],
+      "past": null,
+      "skipped": false
+    },
+    "stargazers": {
+      "charts": {
+        "series": [],
+        "type": "classic"
+      },
+      "list": [],
+      "mode": "repo",
+      "skipped": false,
+      "worldmap": null
+    },
+    "starlists": {
+      "languages": false,
+      "list": [],
+      "skipped": true
+    },
+    "stars": {
+      "limit": 0,
+      "list": [],
+      "skipped": true
+    },
+    "topics": {
+      "limit": 15,
+      "list": [],
+      "mode": "icons",
+      "skipped": true,
+      "sort": "name"
+    },
+    "traffic": {
+      "skipped": true,
+      "total": {
+        "count": 0,
+        "uniques": 0
+      },
+      "views": {}
+    }
+  },
+  "repo": {
+    "activity": {
+      "open_issues": 5,
+      "open_pull_requests": 2,
+      "recent_commits": 0
+    },
+    "contributors": 0,
+    "default_branch": "master",
+    "description": "My first repository on GitHub.",
+    "forks": 9,
+    "is_archived": false,
+    "license_name": "MIT License",
+    "name": "hello-world",
+    "name_with_owner": "octocat/hello-world",
+    "owner": "octocat",
+    "owner_avatar": "https://avatars.githubusercontent.com/u/12345?v=4",
+    "primary_language": {
+      "color": "#00ADD8",
+      "name": "Go"
+    },
+    "sponsorships_as_maintainer": 0,
+    "stargazers": 80
+  },
+  "user": {
+    "avatarUrl": "https://avatars.githubusercontent.com/u/12345?v=4",
+    "login": "octocat",
+    "name": "The Octocat"
+  }
+}

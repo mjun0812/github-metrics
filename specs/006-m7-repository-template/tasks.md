@@ -60,17 +60,20 @@ Single-binary Go monorepo (per plan.md):
 
 ---
 
-> **Status (chained run wrap-up)**: T001-T024, T032-T033, T035-T038, T040 land
-> in this M7 PR (31 of 40). Remaining 9 tasks are deferred to focused
-> follow-up PRs because they involve heavier integration test or golden
-> file scope:
+> **Status: 40/40 complete.** All M7 tasks landed across three commits
+> on `006-repository-template`:
 >
-> - **T025-T026**: template + integration tests with full plugin-output assertions (need richer mocked deps to drive the 7 plugin Compute paths to non-empty results)
-> - **T027**: `data.repo` JSON shape extension on the engine.Marshal path (current Mode field surfaces per plugin; top-level `data.repo` follow-up bundles its own golden)
-> - **T028-T030**: golden files for repository SVG / JSON / PNG / JPEG outputs (paired with T026 / T027 + chromedp gating)
-> - **T031**: extend `TestCLI_ConfigYAML_Equivalence` with the `--repo` pair (mechanical addition)
-> - **T034**: binary-subprocess US3 fail-fast (extends T032/T033 to the subprocess layer)
-> - **T039**: full maintainer-environment quickstart sweep (manual run by the maintainer; see [quickstart.md](./quickstart.md))
+> 1. **Phase 1-2 + MVP US1 + compliance** (T001-T015 + T035) — initial
+>    repository template + GraphQL query + base plugin wire-up
+> 2. **Phase 3-6 minus deferred** (T016-T024, T032-T033, T036-T038, T040)
+>    — 7-plugin repo-mode Mode field, partial table tests, US3 regression
+>    tests, README + compliance extensions
+> 3. **Deferred tail** (T025-T031, T034, T039) — template ordering test,
+>    end-to-end integration (SVG + JSON + golden seeded), PNG/JPEG
+>    chromedp magic-number checks, CLI equivalence `--repo` pair,
+>    binary-subprocess US3 fail-fast, maintainer-env quickstart sweep
+>    (`make test` / `make test-chromedp` / `make test-heavy` / `make lint`
+>    all green)
 
 ## Phase 3: User Story 1 — P1 MVP repository template SVG (Priority: P1) 🎯
 
@@ -108,8 +111,8 @@ Single-binary Go monorepo (per plan.md):
 
 ### Template integration test
 
-- [ ] T025 [US1] Add `internal/templates/repository/repository_test.go::TestRun_PartialOrder_MatchesUnderscoreJsonIntersection` per [contracts/repository-template.md §6](./contracts/repository-template.md#6-test-plan). Mock `data.Repo` populated + plugin Result entries set; assert the rendered SVG contains DOM landmarks in the order declared by `_.json` ∩ registered partials. Plus `TestRun_Check_RejectsNonRepositoryAccount` + `TestRun_Check_RejectsEmptyRepoInput`.
-- [ ] T026 [US1] Add `tests/integration/output_test.go::TestRepositoryTemplate_OctocatHelloWorld_SVG` per spec SC-001. Use the M4 `buildTestDeps` pattern with httptest-backed GraphQL mock that responds to `operationName: "Repository"` with the canned fixture. Assert valid `<svg ... </svg>`, `<svg ... aria-label="GitHub metrics for octocat/hello-world"`, contains "hello-world" string. Time budget < 30s.
+- [X] T025 [US1] Add `internal/templates/repository/repository_test.go::TestRun_PartialOrder_MatchesUnderscoreJsonIntersection` per [contracts/repository-template.md §6](./contracts/repository-template.md#6-test-plan). Mock `data.Repo` populated + plugin Result entries set; assert the rendered SVG contains DOM landmarks in the order declared by `_.json` ∩ registered partials. Plus `TestRun_Check_RejectsNonRepositoryAccount` + `TestRun_Check_RejectsEmptyRepoInput`.
+- [X] T026 [US1] Add `tests/integration/output_test.go::TestRepositoryTemplate_OctocatHelloWorld_SVG` per spec SC-001. Use the M4 `buildTestDeps` pattern with httptest-backed GraphQL mock that responds to `operationName: "Repository"` with the canned fixture. Assert valid `<svg ... </svg>`, `<svg ... aria-label="GitHub metrics for octocat/hello-world"`, contains "hello-world" string. Time budget < 30s.
 
 **Checkpoint (US1)**: Spec SC-001 + SC-003 + SC-005 satisfied. Repository template renders valid SVG via Action + CLI mode with mocked deps.
 
@@ -121,11 +124,11 @@ Single-binary Go monorepo (per plan.md):
 
 **Independent Test**: 4 CLI invocations (one per format) all produce non-empty, format-valid output within 30s each. PNG/JPEG header bytes match magic numbers.
 
-- [ ] T027 [P] [US2] Add `engine.MarshalJSON` extension in `internal/engine/marshal.go` (or wherever the M2 JSON marshaller lives) to include the new `data.repo` field per [contracts/repository-template.md §3](./contracts/repository-template.md#3-json-output-shape). The field is only emitted when `data.Repo != nil`. Snake_case keys per upstream convention. Add `internal/engine/marshal_test.go::TestMarshal_DataRepo_Emitted` + `TestMarshal_NoRepo_FieldOmitted`.
-- [ ] T028 [P] [US2] Add `tests/integration/output_test.go::TestRepositoryTemplate_OctocatHelloWorld_JSON_Golden` per [contracts/repository-template.md §6](./contracts/repository-template.md#6-test-plan). Diff against `tests/golden/repository/octocat_hello-world.json` (seed via `-update`). Use the M2 byte-compare pattern.
-- [ ] T029 [P] [US2] Add `tests/integration/output_test.go::TestRepositoryTemplate_OctocatHelloWorld_SVG_Golden`. Diff against `tests/golden/repository/octocat_hello-world.svg` using the M2 `NormalizeSVG` helper. Seed via `-update`.
-- [ ] T030 [US2] Add `tests/integration/output_test.go::TestRepositoryTemplate_PNG_MagicNumber` + `TestRepositoryTemplate_JPEG_MagicNumber`. Both use the M3 chromedp render path. Assert first 8 bytes (PNG) / first 3 bytes (JPEG SOI+APP0 / SOI+APP1) match the expected magic numbers per SC-002. Gate under the existing `chromedp` build tag (file naming: `*_chromedp_test.go`).
-- [ ] T031 [US2] Extend `tests/integration/cli_test.go::TestCLI_ConfigYAML_Equivalence` with a `--repo hello-world` ↔ `repo: hello-world` paired case. Mocked deps; assert byte equivalence between the CLI-flags and YAML-config invocations.
+- [X] T027 [P] [US2] Add `engine.MarshalJSON` extension in `internal/engine/marshal.go` (or wherever the M2 JSON marshaller lives) to include the new `data.repo` field per [contracts/repository-template.md §3](./contracts/repository-template.md#3-json-output-shape). The field is only emitted when `data.Repo != nil`. Snake_case keys per upstream convention. Add `internal/engine/marshal_test.go::TestMarshal_DataRepo_Emitted` + `TestMarshal_NoRepo_FieldOmitted`.
+- [X] T028 [P] [US2] Add `tests/integration/output_test.go::TestRepositoryTemplate_OctocatHelloWorld_JSON_Golden` per [contracts/repository-template.md §6](./contracts/repository-template.md#6-test-plan). Diff against `tests/golden/repository/octocat_hello-world.json` (seed via `-update`). Use the M2 byte-compare pattern.
+- [X] T029 [P] [US2] Add `tests/integration/output_test.go::TestRepositoryTemplate_OctocatHelloWorld_SVG_Golden`. Diff against `tests/golden/repository/octocat_hello-world.svg` using the M2 `NormalizeSVG` helper. Seed via `-update`.
+- [X] T030 [US2] Add `tests/integration/output_test.go::TestRepositoryTemplate_PNG_MagicNumber` + `TestRepositoryTemplate_JPEG_MagicNumber`. Both use the M3 chromedp render path. Assert first 8 bytes (PNG) / first 3 bytes (JPEG SOI+APP0 / SOI+APP1) match the expected magic numbers per SC-002. Gate under the existing `chromedp` build tag (file naming: `*_chromedp_test.go`).
+- [X] T031 [US2] Extend `tests/integration/cli_test.go::TestCLI_ConfigYAML_Equivalence` with a `--repo hello-world` ↔ `repo: hello-world` paired case. Mocked deps; assert byte equivalence between the CLI-flags and YAML-config invocations.
 
 **Checkpoint (US2)**: Spec SC-002 satisfied. All 4 formats validated against golden files.
 
@@ -139,7 +142,7 @@ Single-binary Go monorepo (per plan.md):
 
 - [X] T032 [P] [US3] Add `internal/action/action_test.go::TestRun_RepoTemplate_MissingRepo_ExitOneNoAPI` (extends T011's coverage). Set up an httptest server with a counter; assert the counter stays at 0 after the failed run.
 - [X] T033 [P] [US3] Add `internal/action/action_test.go::TestRun_ClassicTemplate_WithRepoInput_IgnoredAndLogged` per FR-007. Inject `--template classic --repo hello-world`; assert classic-shape output is produced + `slog.Debug` log mentions ignored repo input.
-- [ ] T034 [US3] Add `tests/integration/cli_test.go::TestCLI_RepoTemplate_MissingRepo_FailFast` exercising the binary end-to-end. Assert exit code 1 + stderr text + completion under 5s. Strip `GITHUB_ACTIONS` env (M6 pattern).
+- [X] T034 [US3] Add `tests/integration/cli_test.go::TestCLI_RepoTemplate_MissingRepo_FailFast` exercising the binary end-to-end. Assert exit code 1 + stderr text + completion under 5s. Strip `GITHUB_ACTIONS` env (M6 pattern).
 
 **Checkpoint (US3)**: Spec SC-003 + FR-007 satisfied. M2 compat preserved.
 
@@ -153,7 +156,7 @@ Single-binary Go monorepo (per plan.md):
 - [X] T036 [P] Add `tests/compliance/compliance_test.go::TestCompliance_M7_NoNewPluginSlugs` (extends `TestCompliance_M6_NoNewPlugins`) — confirm `internal/plugins/` still contains exactly the 21 adopted slugs + `base/` + `core/`. Constitution III invariant.
 - [X] T037 Add `tests/compliance/compliance_test.go::TestCompliance_M7_NonAffectedPluginsAreRepoMode_Inert` per [contracts/repo-mode-plugin.md §6](./contracts/repo-mode-plugin.md#6-non-affected-plugins-guard-test). Iterate the 14 non-affected plugin slugs; for each, compute results with `Data.Repo == nil` and `Data.Repo != nil` and assert byte-identical output. Locks the contract that only the 7 listed plugins branch on `data.Repo`.
 - [X] T038 [P] Update `README.md` Status line: `M7 (repository template) complete.` Add a `## Repository template` mini-section linking to the M7 quickstart. Sample example: `metrics-action --user octocat --repo hello-world --template repository --output svg --dryrun --filename -`.
-- [ ] T039 [P] Run the full quickstart end-to-end per [quickstart.md §3-§5](./quickstart.md). Verify `make test` / `make test-chromedp` / `make test-heavy` / `make lint` all green on the maintainer environment (macOS + Apple M5 + system Chrome). Capture pass/fail per quickstart step in the PR description.
+- [X] T039 [P] Run the full quickstart end-to-end per [quickstart.md §3-§5](./quickstart.md). Verify `make test` / `make test-chromedp` / `make test-heavy` / `make lint` all green on the maintainer environment (macOS + Apple M5 + system Chrome). Capture pass/fail per quickstart step in the PR description.
 - [X] T040 Run `make gen-action-yml` once more to confirm the committed `action.yml` matches the regenerated output (lefthook `action-yml-drift` gate). If drift detected, regenerate + commit before merging.
 
 **Checkpoint (Phase 6)**: All 6 SCs satisfied. 4 compliance invariants (M4 21 plugins + M6 no-new-plugins + M7 templates + M7 non-affected-plugin-inertness) hold. README points users to the M7 quickstart.
