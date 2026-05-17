@@ -58,6 +58,7 @@ type Invocation struct {
 	NoticeReleases   bool
 	RepoOwner        string
 	RepoName         string
+	RunID            string // GITHUB_RUN_ID; used by pull-request* head branch naming
 	Branch           string // committer_branch; empty = default
 	CommitterMessage string
 	CommitterAuthor  string
@@ -314,7 +315,7 @@ func newInvocation(mode RunMode, inputs map[string]any, env map[string]string, o
 	}
 	inv.OutputFilename = resolved
 
-	// Resolve repo from GITHUB_REPOSITORY.
+	// Resolve repo from GITHUB_REPOSITORY + run id from GITHUB_RUN_ID.
 	if mode == ModeAction {
 		if repo, ok := env["GITHUB_REPOSITORY"]; ok && repo != "" {
 			parts := strings.SplitN(repo, "/", 2)
@@ -323,6 +324,7 @@ func newInvocation(mode RunMode, inputs map[string]any, env map[string]string, o
 				inv.RepoName = parts[1]
 			}
 		}
+		inv.RunID = env["GITHUB_RUN_ID"]
 	}
 
 	// Login fallback: GITHUB_ACTOR.
