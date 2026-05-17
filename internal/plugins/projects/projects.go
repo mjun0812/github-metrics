@@ -36,6 +36,7 @@ func (p *projectsPlugin) Metadata() *config.PluginMetadata { return nil }
 type Result struct {
 	Skipped       bool      `json:"skipped,omitempty"`
 	SkippedReason string    `json:"-"`
+	Mode          string    `json:"mode,omitempty"`
 	List          []Project `json:"list"`
 	Limit         int       `json:"limit"`
 }
@@ -86,7 +87,7 @@ func (p *projectsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 	}
 	// MVP: scope is present but the GraphQL fetch lands in a follow-up.
 	// Return an empty Result so JSON shape stays stable.
-	return &Result{List: []Project{}, Limit: 4}, nil
+	return &Result{Mode: plugins.AggregationMode(pc.Data), List: []Project{}, Limit: 4}, nil
 }
 
 func hasScope(scopes []string, want string) bool {

@@ -42,6 +42,7 @@ func (p *peoplePlugin) Metadata() *config.PluginMetadata { return nil }
 type Result struct {
 	Skipped       bool                `json:"skipped,omitempty"`
 	SkippedReason string              `json:"-"`
+	Mode          string              `json:"mode,omitempty"`
 	Types         map[string][]Person `json:"types"`
 }
 
@@ -134,7 +135,7 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		}
 	}
 
-	return &Result{Types: out}, nil
+	return &Result{Mode: plugins.AggregationMode(pc.Data), Types: out}, nil
 }
 
 func followersToPeople(nodes []*githubapi.UserFollowersUserFollowersUserConnectionNodesUser) []Person {

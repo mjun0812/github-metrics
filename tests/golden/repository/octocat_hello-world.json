@@ -1,15 +1,15 @@
 {
-  "account": "user",
+  "account": "repository",
   "computed": {
     "commits": 0,
     "repositories": {
-      "count": 250,
-      "forks": 13,
+      "count": 1,
+      "forks": 9,
       "issues": 0,
       "languages": {},
       "pullRequests": 0,
       "releases": 0,
-      "stargazers": 150,
+      "stargazers": 80,
       "watchers": 7
     }
   },
@@ -28,20 +28,12 @@
     "achievements": {
       "list": [
         {
-          "description": "Public repositories owned",
-          "icon": "repo",
-          "id": "repositories",
-          "rank": "S",
-          "title": "Member",
-          "value": 250
-        },
-        {
           "description": "Total stars received across owned repositories",
           "icon": "star",
           "id": "stars",
-          "rank": "B",
+          "rank": "C",
           "title": "Stargazer",
-          "value": 150
+          "value": 80
         }
       ],
       "ranks": {
@@ -49,8 +41,8 @@
         "followers": "X",
         "issues": "X",
         "pull-requests": "X",
-        "repositories": "S",
-        "stars": "B"
+        "repositories": "X",
+        "stars": "C"
       },
       "skipped": false
     },
@@ -66,12 +58,14 @@
       "years": []
     },
     "contributors": {
-      "base": "",
-      "head": "",
+      "base": "master",
+      "head": "HEAD",
       "list": [],
-      "mode": "user",
-      "sections": [],
-      "skipped": true
+      "mode": "repo",
+      "sections": [
+        "contributors"
+      ],
+      "skipped": false
     },
     "habits": {
       "charts": {
@@ -134,27 +128,38 @@
       "weeks": []
     },
     "languages": {
-      "colors": {},
-      "favorites": [],
-      "mode": "",
+      "colors": {
+        "Go": "#00ADD8",
+        "Other": "#cccccc"
+      },
+      "favorites": [
+        {
+          "color": "#00ADD8",
+          "count": 1,
+          "name": "Go",
+          "size": 1,
+          "value": 1
+        }
+      ],
+      "mode": "repo",
       "mostly": {
-        "color": "",
-        "count": 0,
-        "name": "",
-        "size": 0,
-        "value": 0
+        "color": "#00ADD8",
+        "count": 1,
+        "name": "Go",
+        "size": 1,
+        "value": 1
       },
       "other": {
-        "color": "",
+        "color": "#cccccc",
         "count": 0,
-        "name": "",
+        "name": "Other",
         "size": 0,
         "value": 0
       },
       "sections": [
         "most-used"
       ],
-      "skipped": true
+      "skipped": false
     },
     "languages.indepth": {
       "analyzed": [],
@@ -206,28 +211,30 @@
     "repositories": {
       "featured": [
         {
-          "description": "",
-          "forks": 10,
+          "description": "My first repository on GitHub.",
+          "forks": 9,
           "isFork": false,
-          "language": null,
-          "languages": null,
-          "nameWithOwner": "octocat/alpha",
-          "stars": 100,
-          "uRL": "https://github.com/octocat/alpha",
-          "visibility": "public",
-          "watchers": 5
-        },
-        {
-          "description": "",
-          "forks": 3,
-          "isFork": false,
-          "language": null,
-          "languages": null,
-          "nameWithOwner": "octocat/beta",
-          "stars": 50,
-          "uRL": "https://github.com/octocat/beta",
-          "visibility": "public",
-          "watchers": 2
+          "language": {
+            "color": "#00ADD8",
+            "count": 0,
+            "name": "Go",
+            "size": 0,
+            "value": 0
+          },
+          "languages": [
+            {
+              "color": "#00ADD8",
+              "count": 0,
+              "name": "Go",
+              "size": 1,
+              "value": 0
+            }
+          ],
+          "nameWithOwner": "octocat/hello-world",
+          "stars": 80,
+          "uRL": "",
+          "visibility": "",
+          "watchers": 0
         }
       ],
       "pinned": null,
@@ -253,8 +260,8 @@
         "type": "classic"
       },
       "list": [],
-      "mode": "user",
-      "skipped": true,
+      "mode": "repo",
+      "skipped": false,
       "worldmap": null
     },
     "starlists": {
@@ -282,6 +289,29 @@
       },
       "views": {}
     }
+  },
+  "repo": {
+    "activity": {
+      "open_issues": 5,
+      "open_pull_requests": 2,
+      "recent_commits": 0
+    },
+    "contributors": 0,
+    "default_branch": "master",
+    "description": "My first repository on GitHub.",
+    "forks": 9,
+    "is_archived": false,
+    "license_name": "MIT License",
+    "name": "hello-world",
+    "name_with_owner": "octocat/hello-world",
+    "owner": "octocat",
+    "owner_avatar": "https://avatars.githubusercontent.com/u/12345?v=4",
+    "primary_language": {
+      "color": "#00ADD8",
+      "name": "Go"
+    },
+    "sponsorships_as_maintainer": 0,
+    "stargazers": 80
   },
   "user": {
     "avatarUrl": "https://avatars.githubusercontent.com/u/12345?v=4",

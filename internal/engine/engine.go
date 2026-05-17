@@ -25,6 +25,10 @@ import (
 type Request struct {
 	// Login is the GitHub login the engine should compute metrics for.
 	Login string
+	// Repo is the repository name when Template == "repository" (M7).
+	// Empty for the classic user / organization templates. Combined
+	// with Login as `<Login>/<Repo>` to form the GitHub identifier.
+	Repo string
 	// Template is the registered template name to invoke for output.
 	// Pass "noop" (or any registered no-op template) to wire the
 	// pipeline without actually rendering anything (M1 default).
