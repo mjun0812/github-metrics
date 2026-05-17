@@ -6,6 +6,12 @@ org_repo/
 *.test
 *.out
 coverage.out
+# Stray binaries from `go build` without --output flag (M6 main.go path)
+/metrics-action
+/metrics-cli
+/gen-action-yml
+# M6 cross-compile output
+/dist/
 
 # Asset generation toolchain (M3: @primer/octicons drives gen-octicons,
 # but the resolved tree must not enter git history — only the generated

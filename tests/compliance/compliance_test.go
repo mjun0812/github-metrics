@@ -45,6 +45,7 @@ var unadoptedPluginNames = []string{
 // full backlog).
 var scanRoots = []string{
 	"cmd",
+	"internal/action",
 	"internal/engine",
 	"internal/plugins",
 	"internal/render",
@@ -75,6 +76,15 @@ var allowedFiles = map[string]struct{}{
 	// requirement.
 	"internal/plugins/reactions/reactions.go": {},
 	"internal/plugins/reactions/partial.go":   {},
+	// M6 output_action registry includes the literal "support" inside
+	// the migration message ("if Gist support is critical..."), which
+	// false-matches the unadopted "support" plugin slug. The reference
+	// is documentation/error-message English text, not plugin code.
+	"internal/action/output_action.go": {},
+	// M6 outputs.go imports crypto/rand for heredoc delimiter
+	// uniqueness; the "crypto" substring is a standard-library import,
+	// not the unadopted "crypto" plugin slug.
+	"internal/action/outputs.go": {},
 }
 
 // TestNoUnadoptedPluginReference walks scanRoots and asserts that no

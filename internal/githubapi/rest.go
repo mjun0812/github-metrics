@@ -1,9 +1,11 @@
 package githubapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -158,4 +160,58 @@ func (r *REST) Get(ctx context.Context, path string, extra http.Header) ([]byte,
 		h[k] = append(h[k][:0:0], vs...)
 	}
 	return r.client.Get(ctx, r.baseURL+path, h)
+}
+
+// Put issues an authenticated PUT with the given JSON body. Mirrors
+// Get's response surface (body + http.Response + transport error).
+// Used by the M6 committer for `PUT /repos/.../contents/<filename>`
+// (content commits) and `PUT /git/refs` (branch creation).
+func (r *REST) Put(ctx context.Context, path string, body []byte, extra http.Header) (*http.Response, error) {
+	return r.doBody(ctx, http.MethodPut, path, body, extra)
+}
+
+// Post issues an authenticated POST with the given JSON body. Used by
+// the M6 committer for `POST /repos/.../pulls` (PR creation, Phase 4).
+func (r *REST) Post(ctx context.Context, path string, body []byte, extra http.Header) (*http.Response, error) {
+	return r.doBody(ctx, http.MethodPost, path, body, extra)
+}
+
+// Delete issues an authenticated DELETE. No body. Used by the M6
+// committer for `DELETE /git/refs/heads/<branch>` (PR head branch
+// cleanup, Phase 4).
+func (r *REST) Delete(ctx context.Context, path string, extra http.Header) (*http.Response, error) {
+	return r.doBody(ctx, http.MethodDelete, path, nil, extra)
+}
+
+// doBody is the shared helper for non-GET requests. Builds the
+// http.Request via the underlying *http.Client so we bypass the
+// retryablehttp body re-read mechanic — committer-class operations
+// are not idempotent and the M6 RetryPolicy (action package) handles
+// retry classification at a higher level.
+func (r *REST) doBody(ctx context.Context, method, path string, body []byte, extra http.Header) (*http.Response, error) {
+	h := r.header.Clone()
+	for k, vs := range extra {
+		h[k] = append(h[k][:0:0], vs...)
+	}
+	if body != nil && h.Get("Content-Type") == "" {
+		h.Set("Content-Type", "application/json")
+	}
+	var rdr io.Reader
+	if body != nil {
+		rdr = bytes.NewReader(body)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, r.baseURL+path, rdr)
+	if err != nil {
+		return nil, err
+	}
+	for k, vs := range h {
+		for _, v := range vs {
+			req.Header.Add(k, v)
+		}
+	}
+	resp, err := r.client.HTTPClient().Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }

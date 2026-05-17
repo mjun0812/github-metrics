@@ -20,8 +20,8 @@ GOVULNCHECK_VERSION   := latest
 GOFUMPT_VERSION       := latest
 LEFTHOOK_VERSION      := latest
 
-.PHONY: all build test test-chromedp test-heavy test-race lint vet bench gen \
-        gen-octicons verify-octicons docker e2e \
+.PHONY: all build build-action test test-chromedp test-heavy test-race lint vet bench gen \
+        gen-octicons verify-octicons gen-action-yml docker docker-build docker-run-cli e2e \
         tools hooks-install hooks-run hooks-uninstall \
         check-compat sync-assets clean help
 
@@ -30,6 +30,10 @@ all: build
 help:
 	@echo "Targets:"
 	@echo "  build               Build cmd/metrics-action and cmd/metrics-cli into bin/"
+	@echo "  build-action        Build only cmd/metrics-action (M6 shortcut)"
+	@echo "  gen-action-yml      Generate action.yml from assets/plugins/*/metadata.yml + core inputs (M6)"
+	@echo "  docker-build        Build the metrics-action Docker image as ghcr.io/mjun0812/github-metrics:dev"
+	@echo "  docker-run-cli      Run the metrics-action Docker image in CLI mode against mocked octocat"
 	@echo "  test                Run unit tests (go test ./...)"
 	@echo "  test-chromedp       Run chromedp-tagged tests (requires chromium; set METRICS_CHROME_PATH)"
 	@echo "  test-heavy          Run heavy-tagged tests (M4 languages.recent / languages.indepth)"
@@ -52,9 +56,35 @@ help:
 
 build: $(addprefix $(BIN_DIR)/, $(BINARIES))
 
+build-action: $(BIN_DIR)/metrics-action
+
 $(BIN_DIR)/%: cmd/%/main.go
 	@mkdir -p $(BIN_DIR)
 	$(GO) build -trimpath -ldflags="$(LDFLAGS)" $(GOFLAGS) -o $@ ./cmd/$*
+
+# Generate action.yml from assets/plugins/<slug>/metadata.yml + core
+# inputs. Driven by internal/tools/gen-action-yml/. Must be re-run
+# whenever a plugin metadata.yml changes; CI gates `git diff --quiet
+# action.yml` after running this target.
+gen-action-yml:
+	$(GO) run ./internal/tools/gen-action-yml --output ./action.yml
+
+# Build the metrics-action Docker image with the local source tree as
+# context. The image is multi-stage: builder produces the binary +
+# runtime layer adds chromium for SVG/PNG/JPEG rendering. Image
+# published in M6 release pipeline (.github/workflows/release.yml).
+docker-build:
+	docker build -t ghcr.io/mjun0812/github-metrics:dev .
+
+# Run the metrics-action Docker image in CLI mode against the
+# `octocat` mock fixture. Prints the rendered SVG to stdout. Use to
+# smoke-test the image without needing a real GitHub token.
+docker-run-cli:
+	docker run --rm \
+	  -e GITHUB_ACTIONS=false \
+	  ghcr.io/mjun0812/github-metrics:dev \
+	  --user octocat --plugin use_mocked_data=true --template classic \
+	  --output svg --dryrun --filename -
 
 test:
 	$(GO) test ./...
