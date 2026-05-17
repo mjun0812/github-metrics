@@ -163,30 +163,49 @@ func fetchRecentCommitCount(ctx context.Context, rest *githubapi.REST, owner, re
 }
 
 // parseLinkLastPage scans a GitHub Link header for `; rel="last"` and
-// extracts the `&page=N` value from that URL. Returns 0 when not found.
+// extracts the `page=N` query value from that URL. Returns 0 when not
+// found. The parser only matches `page=` when preceded by `?` or `&`
+// (a real query-parameter boundary) so it does NOT mistakenly match
+// the `page=` substring inside `per_page=`.
 func parseLinkLastPage(link string) int {
 	for _, part := range strings.Split(link, ",") {
 		part = strings.TrimSpace(part)
 		if !strings.Contains(part, `rel="last"`) {
 			continue
 		}
-		open := strings.Index(part, "<")
-		close := strings.Index(part, ">")
-		if open < 0 || close < 0 || close <= open+1 {
+		openIdx := strings.Index(part, "<")
+		closeIdx := strings.Index(part, ">")
+		if openIdx < 0 || closeIdx < 0 || closeIdx <= openIdx+1 {
 			continue
 		}
-		u := part[open+1 : close]
-		idx := strings.Index(u, "page=")
-		if idx < 0 {
+		u := part[openIdx+1 : closeIdx]
+		n := extractPageQueryParam(u)
+		if n > 0 {
+			return n
+		}
+	}
+	return 0
+}
+
+// extractPageQueryParam returns the integer value of the `page` query
+// parameter in u, or 0 when absent / malformed. Matches `?page=` or
+// `&page=` so the more permissive `per_page=` substring is rejected.
+func extractPageQueryParam(u string) int {
+	queryStart := strings.Index(u, "?")
+	if queryStart < 0 {
+		return 0
+	}
+	query := u[queryStart+1:]
+	for _, kv := range strings.Split(query, "&") {
+		if !strings.HasPrefix(kv, "page=") {
 			continue
 		}
-		rest := u[idx+len("page="):]
-		end := strings.IndexAny(rest, "&#")
-		if end >= 0 {
-			rest = rest[:end]
+		val := strings.TrimPrefix(kv, "page=")
+		if hash := strings.Index(val, "#"); hash >= 0 {
+			val = val[:hash]
 		}
 		var n int
-		_, _ = fmt.Sscanf(rest, "%d", &n)
+		_, _ = fmt.Sscanf(val, "%d", &n)
 		return n
 	}
 	return 0

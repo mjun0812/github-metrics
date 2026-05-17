@@ -108,10 +108,23 @@ func (p *basePlugin) runRepository(ctx context.Context, pc *plugins.PluginContex
 		Forks:         r.Forks,
 	}
 	if r.PrimaryLanguage != "" {
-		syntheticRepo.Language = &plugins.LanguageStat{
+		lang := plugins.LanguageStat{
 			Name:  r.PrimaryLanguage,
 			Color: r.PrimaryLanguageColor,
 		}
+		syntheticRepo.Language = &lang
+		// languages.Run iterates `repo.Languages` exclusively — leaving
+		// the slice nil makes the plugin treat the synthetic repo as
+		// having zero-byte language data and return Skipped. Seed a
+		// single-language byte stat from PrimaryLanguage so the
+		// languages plugin renders the section (FR-005). Size = 1
+		// avoids zero-division; the displayed favorite is the primary
+		// language regardless of the absolute number.
+		syntheticRepo.Languages = []plugins.LanguageStat{{
+			Name:  r.PrimaryLanguage,
+			Color: r.PrimaryLanguageColor,
+			Size:  1,
+		}}
 	}
 	pc.Data.Computed.RepositoryList = []plugins.Repository{syntheticRepo}
 	pc.Data.Computed.Repositories.Count = 1

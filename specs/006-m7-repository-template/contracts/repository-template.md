@@ -41,24 +41,38 @@ Future M8 adoption may grow this set.
 
 ## 2. SVG root element
 
-The SVG opening tag matches the classic template's shape:
+The SVG opening tag matches the classic template's shape one-for-one
+(no template-conditional attributes in M7):
 
 ```xml
 <svg xmlns="http://www.w3.org/2000/svg"
-     xmlns:xlink="http://www.w3.org/1999/xlink"
-     width="480" height="..."  <!-- height computed by chromedp Resize -->
-     viewBox="0 0 480 ..."
-     fill="none"
-     role="img"
-     aria-label="GitHub metrics for owner/name">
+     width="480"
+     height="99999"
+     class="">
 ```
+
+- `height="99999"` is the placeholder the M3 chromedp `Resize` step
+  shrinks to the rendered content height.
+- The `class=""` slot is reserved for the user-template-only
+  `large` / `columns` modifiers; M7 always emits an empty value.
+- A repository-template marker lands on the first inner section
+  (`<section data-section="header" data-template="repository">`),
+  not on the root `<svg>` element. Downstream consumers that need to
+  distinguish templates SHOULD switch on `data.meta.template` (JSON
+  output) or that section attribute (SVG output).
 
 Differences from classic:
 
-- `aria-label` includes the repo name (`owner/name`) instead of the
-  user login
-- No `class="large"` or `class="columns"` for M7 (those layouts are
-  user-template-only)
+- The repository-template root is otherwise indistinguishable from
+  the classic template root — both reuse the same shared CSS
+  (`assets/templates/classic/style.css`) and chromedp Resize pipeline.
+  Per-template content lives in the inner partial DOM, not the root
+  envelope.
+
+Note: future work could add `aria-label="GitHub metrics for
+<owner>/<name>"`, `role="img"`, or `viewBox` to improve accessibility
+and downstream tooling integration. Those attributes are NOT shipped
+in M7 — see the open issue tracker if you need them.
 
 ## 3. JSON output shape
 

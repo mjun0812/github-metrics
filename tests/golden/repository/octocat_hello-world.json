@@ -128,27 +128,38 @@
       "weeks": []
     },
     "languages": {
-      "colors": {},
-      "favorites": [],
-      "mode": "",
+      "colors": {
+        "Go": "#00ADD8",
+        "Other": "#cccccc"
+      },
+      "favorites": [
+        {
+          "color": "#00ADD8",
+          "count": 1,
+          "name": "Go",
+          "size": 1,
+          "value": 1
+        }
+      ],
+      "mode": "repo",
       "mostly": {
-        "color": "",
-        "count": 0,
-        "name": "",
-        "size": 0,
-        "value": 0
+        "color": "#00ADD8",
+        "count": 1,
+        "name": "Go",
+        "size": 1,
+        "value": 1
       },
       "other": {
-        "color": "",
+        "color": "#cccccc",
         "count": 0,
-        "name": "",
+        "name": "Other",
         "size": 0,
         "value": 0
       },
       "sections": [
         "most-used"
       ],
-      "skipped": true
+      "skipped": false
     },
     "languages.indepth": {
       "analyzed": [],
@@ -210,7 +221,15 @@
             "size": 0,
             "value": 0
           },
-          "languages": null,
+          "languages": [
+            {
+              "color": "#00ADD8",
+              "count": 0,
+              "name": "Go",
+              "size": 1,
+              "value": 0
+            }
+          ],
           "nameWithOwner": "octocat/hello-world",
           "stars": 80,
           "uRL": "",

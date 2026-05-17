@@ -26,9 +26,12 @@ M9+ continues with snapshot / replay infrastructure.
 ## Repository template
 
 ```sh
-# Render a repo's metrics SVG to stdout (mocked deps, no token needed).
+# Render a repo's metrics SVG to stdout. Requires a real GITHUB_TOKEN
+# in the shell because the base/core plugin fetches the user profile
+# from api.github.com even when other plugin gates are off (same
+# behavior as the classic-template CLI example above).
 metrics-action --user octocat --repo hello-world --template repository \
-  --output svg --dryrun --filename -
+  --token-env GITHUB_TOKEN --output svg --dryrun --filename -
 
 # Or via Action (in a workflow that targets the host repo):
 # - uses: mjun0812/github-metrics@vX.Y.Z
