@@ -6,16 +6,18 @@ Go port of [lowlighter/metrics](https://github.com/lowlighter/metrics) for the
 adopted feature subset documented in
 [`docs/design/15-selection-answer.md`](docs/design/15-selection-answer.md).
 
-**Status: M3 (chromedp rendering pipeline) complete.** Building on M1
-(foundation) and M2 (classic template + JSON output), `engine.Compute`
-now drives the upstream-compatible decoration pipeline (octicon
-substitution + optional CSS purge + optional XML format) and the
-chromedp-backed `svg.Resize` to produce real PNG / JPEG bytes — the
-M2-era "chromedp conversion lands in M3" warn log is gone. The new
-`render.Hash` is in place ahead of M6 `output_condition=data-changed`.
-See
-[`specs/003-chromedp-rendering-pipeline/tasks.md`](specs/003-chromedp-rendering-pipeline/tasks.md)
-for the per-task breakdown. M4 (plugins) is next.
+**Status: M4 (GitHub plugins) complete.** All 21 採用 plugins are now
+live: P1 MVP 5 (languages / activity / achievements / repositories /
+isocalendar), P2 GraphQL+REST 12 (calendar / habits / stars / people /
+notable / contributors / reactions / projects / sponsors / sponsorships
+/ stargazers / traffic), and P3 chromedp + heavy 4 (topics + starlists
+behind `chromedp` build tag, languages.recent + languages.indepth
+behind `heavy` build tag). `engine.Compute` drives the full plugin
+pipeline, the classic template renders per-plugin DOM, and the M3
+chromedp render path (octicon → optional CSS purge → optional XML
+format → chromedp Resize → PNG / JPEG) wraps the result. See
+[`specs/004-m4-github-plugins/tasks.md`](specs/004-m4-github-plugins/tasks.md)
+for the per-task breakdown. M5 (deferred-async + caching) is next.
 
 ### Output paths at a glance
 
@@ -49,8 +51,9 @@ make lint
 ### chromedp tests (M3+)
 
 The default `make test` deliberately skips the chromedp-backed render
-tests so contributors without a chromium binary stay green. To
-exercise the resize / PNG / JPEG path on a machine with chromium:
+tests + the M4 chromedp plugins (topics / starlists) so contributors
+without a chromium binary stay green. To exercise the resize / PNG /
+JPEG path + chromedp plugins on a machine with chromium:
 
 ```sh
 # macOS — point at the system Chrome (or `brew install chromium`).
@@ -61,10 +64,20 @@ METRICS_CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrom
 METRICS_CHROME_PATH=/usr/bin/chromium make test-chromedp
 ```
 
-CI runs the chromedp suite in a dedicated job using the
-`chromedp/headless-shell:latest` container image, so a fresh
-checkout that opts out of chromedp locally still gates against
-regressions.
+### heavy tests (M4+)
+
+M4 ships two `heavy`-tagged plugins (languages.recent / languages.indepth)
+that pull in go-enry + go-git fixtures. Their tests are isolated behind
+`//go:build heavy` so `make test` stays fast. To run them:
+
+```sh
+make test-heavy
+```
+
+CI runs all three test jobs in parallel (`test`, `test-chromedp` via
+`chromedp/headless-shell:latest`, `test-heavy` on the standard runner),
+so a fresh checkout that opts out of chromedp/heavy locally still
+gates against regressions in CI.
 
 ### Octicon asset regeneration
 
