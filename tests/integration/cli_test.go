@@ -159,6 +159,14 @@ func TestCLI_ConfigYAML_Equivalence(t *testing.T) {
 			yamlExtra: "committer:\n  branch: main\n",
 			flagArgs:  []string{"--plugin", "committer_branch=main"},
 		},
+		{
+			// M7 T031: --repo top-level flag vs YAML top-level repo
+			// key. The classic template ignores the value (FR-007), so
+			// the SVG body stays byte-identical between the two paths.
+			name:      "m7_repo_input",
+			yamlExtra: "repo: hello-world\n",
+			flagArgs:  []string{"--repo", "hello-world"},
+		},
 	}
 
 	for _, tc := range pairs {
@@ -243,4 +251,41 @@ func trunc(s string, n int) string {
 		return s
 	}
 	return s[:n] + "..."
+}
+
+// TestCLI_RepoTemplate_MissingRepo_FailFast (M7 T034 / SC-003):
+// Invoke the binary with `--template repository` but no `--repo`
+// flag and assert it exits with code 1 in under 5 seconds without
+// contacting GitHub. We strip GITHUB_ACTIONS so the binary dispatches
+// to RunCLI even on a CI runner.
+func TestCLI_RepoTemplate_MissingRepo_FailFast(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	start := time.Now()
+	cmd := exec.CommandContext(
+		ctx, actionBin, //nolint:gosec // actionBin from TestMain
+		"--user", "octocat",
+		"--template", "repository",
+		// --repo deliberately omitted.
+		"--output", "svg",
+		"--dryrun",
+		"--filename", "-",
+		"--token-env", "GH_TOKEN_FOR_CLI_TEST",
+	)
+	cmd.Env = append(stripGitHubActionsEnv(os.Environ()), "GH_TOKEN_FOR_CLI_TEST=ghp_mock_pat_valid")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	elapsed := time.Since(start)
+	if err == nil {
+		t.Fatalf("expected non-zero exit; stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+	if elapsed > 5*time.Second {
+		t.Errorf("SC-003 budget violated: exit took %v (want <5s)", elapsed)
+	}
+	if !strings.Contains(stderr.String(), "repo") {
+		t.Errorf("stderr should mention 'repo'; got %q", stderr.String())
+	}
 }

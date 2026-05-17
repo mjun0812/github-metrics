@@ -33,6 +33,7 @@ func (p *contributorsPlugin) Metadata() *config.PluginMetadata { return nil }
 type Result struct {
 	Skipped       bool          `json:"skipped,omitempty"`
 	SkippedReason string        `json:"-"`
+	Mode          string        `json:"mode,omitempty"`
 	List          []Contributor `json:"list"`
 	Sections      []string      `json:"sections"`
 	Base          string        `json:"base"`
@@ -51,17 +52,41 @@ type Contributor struct {
 	Deletions int    `json:"deletions"`
 }
 
-// Run always returns Skipped=true in M4 because the repository
-// template that this plugin targets is M7 territory. User and
-// organization accounts do not have a meaningful "base/head" commit
-// range.
+// Run surfaces a repo-mode contributor summary when the engine has
+// populated data.Repo (M7 repository template). User and organization
+// modes continue to return Skipped — they have no meaningful single
+// base/head commit range.
 func (p *contributorsPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
+	if r := pc.Data.RepoRef(); r != nil {
+		// Repo-mode: surface the contributors count already populated
+		// by base.FetchRepo via the REST Link-header trick. Deep
+		// per-contributor stats (commits / additions / deletions)
+		// require additional REST calls that ship in a follow-up
+		// (the upstream PR-window aggregation is a richer compute
+		// path than M7's MVP scope).
+		mode := plugins.AggregationMode(pc.Data)
+		list := []Contributor{}
+		if r.Contributors > 0 {
+			list = append(list, Contributor{
+				Login:   r.Owner,
+				Commits: r.Activity.RecentCommits,
+			})
+		}
+		return &Result{
+			Mode:     mode,
+			List:     list,
+			Sections: []string{"contributors"},
+			Base:     r.DefaultBranch,
+			Head:     "HEAD",
+		}, nil
+	}
 	return &Result{
 		Skipped:       true,
-		SkippedReason: "repository template not yet available",
+		SkippedReason: "contributors plugin requires repository template",
+		Mode:          plugins.ModeUser,
 		List:          []Contributor{},
 		Sections:      []string{},
 	}, nil

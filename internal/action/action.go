@@ -17,6 +17,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/engine"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/httpx"
+	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/render"
 )
 
@@ -143,6 +144,12 @@ func runWith(ctx context.Context, opts runOptions) error {
 		return verr
 	}
 
+	// 4b. M7: repository template requires the `repo` input. Validate
+	// before deps so SC-003 holds (5-second exit, zero API calls).
+	if verr := validateRepositoryInput(inv); verr != nil {
+		return verr
+	}
+
 	// 5. Build engine deps (real or mocked).
 	var deps engine.Deps
 	if opts.BuildDeps != nil {
@@ -203,6 +210,8 @@ func runWith(ctx context.Context, opts runOptions) error {
 		var e error
 		res, e = engine.Compute(ctx, engine.Request{
 			Login:    inv.Login,
+			Repo:     stringInput(inv.Inputs, "repo", ""),
+			Account:  accountForTemplate(inv.Template),
 			Template: inv.Template,
 			Format:   inv.Format,
 			Inputs:   inv.Inputs,
@@ -313,6 +322,9 @@ func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
 	if verr := DefaultRegistry().Validate(inv.OutputAction); verr != nil {
 		return verr
 	}
+	if verr := validateRepositoryInput(inv); verr != nil {
+		return verr
+	}
 
 	var deps engine.Deps
 	if opts.BuildDeps != nil {
@@ -356,6 +368,8 @@ func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
 		var e error
 		res, e = engine.Compute(ctx, engine.Request{
 			Login:    inv.Login,
+			Repo:     stringInput(inv.Inputs, "repo", ""),
+			Account:  accountForTemplate(inv.Template),
 			Template: inv.Template,
 			Format:   inv.Format,
 			Inputs:   inv.Inputs,
@@ -404,6 +418,40 @@ func targetOutputPath(inv *Invocation) string {
 }
 
 // ---------- helpers ----------
+
+// validateRepositoryInput enforces the M7 requirement that the
+// `repository` template runs only when the user provided a non-empty
+// `repo` input. Returns nil for non-repository templates so the
+// classic + (future) other templates remain unaffected.
+//
+// Per spec SC-003 + research R-006, this runs before deps construction
+// so we exit with code 1 in under 5 seconds without contacting the
+// GitHub API.
+func validateRepositoryInput(inv *Invocation) error {
+	if inv == nil || inv.Template != "repository" {
+		return nil
+	}
+	if stringInput(inv.Inputs, "repo", "") == "" {
+		return &ConfigError{
+			Key:   "repo",
+			Value: "",
+			Msg:   "template 'repository' requires --repo / INPUT_REPO (the GitHub repository name)",
+		}
+	}
+	return nil
+}
+
+// accountForTemplate maps the action's template input to the
+// plugins.AccountKind value the engine + base plugin use to branch
+// between user-centric (M2/M4) and repository-centric (M7) flows.
+// Unknown template names default to AccountUser to preserve the
+// existing classic-template behavior.
+func accountForTemplate(template string) plugins.AccountKind {
+	if template == "repository" {
+		return plugins.AccountRepository
+	}
+	return plugins.AccountUser
+}
 
 func defaultOutputDir() string {
 	// Action mode writes to /renders inside the Docker container.

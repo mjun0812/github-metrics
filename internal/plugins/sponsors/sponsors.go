@@ -35,6 +35,7 @@ func (p *sponsorsPlugin) Metadata() *config.PluginMetadata { return nil }
 type Result struct {
 	Skipped       bool      `json:"skipped,omitempty"`
 	SkippedReason string    `json:"-"`
+	Mode          string    `json:"mode,omitempty"`
 	Sections      []string  `json:"sections"`
 	Sponsors      []Sponsor `json:"sponsors"`
 	Past          []Sponsor `json:"past,omitempty"`
@@ -82,6 +83,7 @@ func (p *sponsorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 		}, nil
 	}
 	return &Result{
+		Mode:     plugins.AggregationMode(pc.Data),
 		Sections: []string{"sponsors"},
 		Sponsors: []Sponsor{},
 	}, nil

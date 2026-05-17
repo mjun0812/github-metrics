@@ -82,6 +82,13 @@ func (g *GraphQL) Organization(ctx context.Context, login string) (*Organization
 	return Organization(ctx, g.client, login)
 }
 
+// Repository fetches the typed [RepositoryRepository] payload for a
+// single owner/name pair. Used by the M7 base plugin's repository
+// fetch path. See specs/006-m7-repository-template/contracts/base-repository-query.md.
+func (g *GraphQL) Repository(ctx context.Context, login, repo string) (*RepositoryResponse, error) {
+	return Repository(ctx, g.client, login, repo)
+}
+
 // UserRepositories returns up to `first` owner-affiliated repositories
 // for the given login, starting after the `after` cursor (or from the
 // beginning when after is nil). Callers thread the

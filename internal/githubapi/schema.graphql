@@ -17,11 +17,12 @@ scalar URI
 type Query {
   user(login: String!): User
   organization(login: String!): Organization
+  repository(owner: String!, name: String!): Repository
   rateLimit: RateLimit
   viewer: User
 }
 
-type User {
+type User implements RepositoryOwner {
   databaseId: Int
   id: ID!
   login: String!
@@ -133,6 +134,7 @@ type Repository {
   url: URI!
   isPrivate: Boolean!
   isFork: Boolean!
+  isArchived: Boolean!
   pushedAt: DateTime
   updatedAt: DateTime
   stargazerCount: Int!
@@ -140,9 +142,32 @@ type Repository {
   watchers: WatcherConnection
   primaryLanguage: Language
   languages(first: Int): LanguageConnection
+  licenseInfo: License
   defaultBranchRef: Ref
-  issues: IssueConnection
-  pullRequests: PullRequestConnection
+  owner: RepositoryOwner!
+  issues(states: [IssueState!]): IssueConnection
+  pullRequests(states: [PullRequestState!]): PullRequestConnection
+}
+
+interface RepositoryOwner {
+  login: String!
+  avatarUrl(size: Int): URI!
+}
+
+type License {
+  name: String!
+  spdxId: String
+}
+
+enum IssueState {
+  OPEN
+  CLOSED
+}
+
+enum PullRequestState {
+  OPEN
+  CLOSED
+  MERGED
 }
 
 type LanguageConnection {
@@ -208,7 +233,7 @@ type PageInfo {
   endCursor: String
 }
 
-type Organization {
+type Organization implements RepositoryOwner {
   databaseId: Int
   id: ID!
   login: String!

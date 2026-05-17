@@ -64,11 +64,86 @@ func (p *basePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, e
 	case plugins.AccountOrganization:
 		return p.runOrganization(ctx, pc, login)
 	case plugins.AccountRepository:
-		// M7 territory; base does no work for repository templates.
-		return nil, nil
+		return p.runRepository(ctx, pc, login)
 	default:
 		return nil, fmt.Errorf("base: unknown account kind %q", pc.Data.Account)
 	}
+}
+
+// runRepository is the M7 base-plugin entry point for the
+// repository template. It runs the same user fetch as runUser
+// (downstream plugins still need data.User populated for things like
+// avatar / sponsorshipsAsMaintainer) and then layers the single-repo
+// fetch on top.
+func (p *basePlugin) runRepository(ctx context.Context, pc *plugins.PluginContext, login string) (any, error) {
+	// Fetch user first — downstream plugins + the repository template
+	// header still need data.User.AvatarURL, etc.
+	if _, err := p.runUser(ctx, pc, login); err != nil {
+		return nil, err
+	}
+	pc.Data.Account = plugins.AccountRepository
+
+	repo := repoFromInputs(pc.Inputs)
+	if repo == "" {
+		return nil, fmt.Errorf("base: repository template requires `repo` input")
+	}
+
+	r, err := FetchRepo(ctx, login, repo, pc.REST, pc.GraphQL)
+	if err != nil {
+		return nil, err
+	}
+	pc.Data.SetRepo(r)
+
+	// Upstream `template.mjs:14-17` replaces `data.user.repositories.nodes`
+	// with `[repository]` so existing user-centric plugins (languages /
+	// activity / stargazers / projects / people / contributors / sponsors)
+	// naturally produce repo-scoped output. We mirror that here by
+	// synthesizing a single-element `Computed.RepositoryList` + matching
+	// `Computed.Repositories` totals from data.Repo. Downstream plugins
+	// stay unchanged.
+	syntheticRepo := plugins.Repository{
+		NameWithOwner: r.Owner + "/" + r.Name,
+		Description:   r.Description,
+		Stars:         r.Stargazers,
+		Forks:         r.Forks,
+	}
+	if r.PrimaryLanguage != "" {
+		lang := plugins.LanguageStat{
+			Name:  r.PrimaryLanguage,
+			Color: r.PrimaryLanguageColor,
+		}
+		syntheticRepo.Language = &lang
+		// languages.Run iterates `repo.Languages` exclusively — leaving
+		// the slice nil makes the plugin treat the synthetic repo as
+		// having zero-byte language data and return Skipped. Seed a
+		// single-language byte stat from PrimaryLanguage so the
+		// languages plugin renders the section (FR-005). Size = 1
+		// avoids zero-division; the displayed favorite is the primary
+		// language regardless of the absolute number.
+		syntheticRepo.Languages = []plugins.LanguageStat{{
+			Name:  r.PrimaryLanguage,
+			Color: r.PrimaryLanguageColor,
+			Size:  1,
+		}}
+	}
+	pc.Data.Computed.RepositoryList = []plugins.Repository{syntheticRepo}
+	pc.Data.Computed.Repositories.Count = 1
+	pc.Data.Computed.Repositories.Stargazers = r.Stargazers
+	pc.Data.Computed.Repositories.Forks = r.Forks
+	return nil, nil
+}
+
+// repoFromInputs returns the `repo` input value, or "" when unset.
+func repoFromInputs(inputs map[string]any) string {
+	if inputs == nil {
+		return ""
+	}
+	v, ok := inputs["repo"]
+	if !ok {
+		return ""
+	}
+	s, _ := v.(string)
+	return s
 }
 
 func (p *basePlugin) runUser(ctx context.Context, pc *plugins.PluginContext, login string) (any, error) {
