@@ -1,10 +1,12 @@
 // Package main provides the metrics-action binary entrypoint.
 //
 // This is the GitHub Action / CLI surface for the Go port of
-// lowlighter/metrics. In M1 (project foundation) it exposes --help and
-// --version, initializes the foundational logger and a signal-aware
-// context, and emits a startup banner. The real entrypoint logic ships
-// in task T-105 (M6).
+// lowlighter/metrics. The binary dispatches based on the
+// `GITHUB_ACTIONS=true` env var: when set, the Action path
+// (action.Run) reads INPUTS / INPUT_<UPPER> env vars; otherwise the
+// CLI path (action.RunCLI) parses os.Args flags. The legacy
+// --help / --version / --debug / --log-format flags from M1 stay
+// supported so existing wrappers do not break.
 package main
 
 import (
@@ -17,8 +19,10 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strings"
 	"syscall"
 
+	"github.com/mjun0812/github-metrics/internal/action"
 	"github.com/mjun0812/github-metrics/internal/engine"
 	"github.com/mjun0812/github-metrics/internal/logger"
 )
@@ -40,23 +44,37 @@ const usageText = `metrics-action: GitHub Action / CLI entry point for github-me
 Usage:
   metrics-action [flags]
 
-Flags:
+Action mode (set automatically by the GitHub Actions runner):
+  GITHUB_ACTIONS=true INPUT_USER=octocat INPUT_TOKEN=<PAT> metrics-action
+
+CLI mode (direct invocation):
+  metrics-action --user <login> --template classic [--config inputs.yaml]
+                 [--token <PAT> | --token-env <ENV_NAME>]
+                 [--plugin key=value ...] [--output svg|png|jpeg|json]
+                 [--filename <path-or-->] [--dryrun]
+
+Common flags:
   -h, --help        Show this help message and exit.
       --version     Print the version string and exit.
       --debug       Enable debug-level logging.
       --log-format  Logging format: "json" (default) or "text".
 
-In M1 this binary only supports the flags above. Full GitHub Action
-entrypoint logic is implemented in T-105 (Phase M6).`
+See https://github.com/mjun0812/github-metrics for full documentation.`
 
 func main() {
-	if err := run(os.Args[1:], os.Stdout, os.Stderr); err != nil {
+	if err := run(os.Args[1:], os.Stdout, os.Stderr, os.Environ()); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func run(args []string, stdout, stderr io.Writer) error {
+func run(args []string, stdout, stderr io.Writer, env []string) error {
+	// Handle the no-arg help-friendly bootstrap flags (--help / --version /
+	// --debug / --log-format) first. These are kept outside action.Run /
+	// action.RunCLI so the binary stays usable as a diagnostic tool even
+	// when full Action / CLI inputs are unavailable.
+	cliArgs, bootArgs := splitBootstrapArgs(args)
+
 	fs := flag.NewFlagSet(binaryName, flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	var (
@@ -69,7 +87,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 	fs.StringVar(&logFormat, "log-format", "json", `log format: "json" or "text"`)
 	fs.Usage = func() { _, _ = fmt.Fprintln(stdout, usageText) }
 
-	if err := fs.Parse(args); err != nil {
+	if err := fs.Parse(bootArgs); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return nil
 		}
@@ -80,8 +98,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return nil
 	}
 
-	// Wire the foundational logger and signal-aware context. Downstream
-	// phases (M6 T-105) take this context into setup() / engine.Compute.
+	// Configure foundational logger before handing off to the action
+	// pipeline so all downstream logs flow through one handler.
 	level := slog.LevelInfo
 	if debug {
 		level = slog.LevelDebug
@@ -94,11 +112,69 @@ func run(args []string, stdout, stderr io.Writer) error {
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	_ = ctx // not yet consumed in M1; reserved for T-105.
 
-	banner(stdout)
-	_, _ = fmt.Fprintln(stdout, usageText)
-	return nil
+	// Dispatch: Action mode when GitHub Actions runner sets
+	// GITHUB_ACTIONS=true; CLI mode otherwise. The CLI path receives
+	// the user-supplied args after the bootstrap flags are removed so
+	// `--user`, `--template`, `--plugin key=value` etc. land in the
+	// flag.FlagSet that action.RunCLI defines.
+	if envValue(env, "GITHUB_ACTIONS") == "true" {
+		return action.Run(ctx)
+	}
+
+	// No-arg CLI invocation = print banner + usage (legacy M1 behavior).
+	if len(cliArgs) == 0 {
+		banner(stdout)
+		_, _ = fmt.Fprintln(stdout, usageText)
+		return nil
+	}
+	return action.RunCLI(ctx, cliArgs)
+}
+
+// splitBootstrapArgs separates the M1 bootstrap flags (--help, -h,
+// --version, --debug, --log-format) from the rest of the args so the
+// bootstrap fs only sees what it understands and the remaining args
+// flow into action.RunCLI's own flag set.
+func splitBootstrapArgs(args []string) (cliArgs, bootArgs []string) {
+	bootstrap := map[string]bool{
+		"--help": true, "-h": true,
+		"--version":    true,
+		"--debug":      true,
+		"--log-format": true,
+	}
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		// --log-format=text  ←single arg
+		if strings.HasPrefix(a, "--log-format=") {
+			bootArgs = append(bootArgs, a)
+			continue
+		}
+		// --log-format text  ←two-arg form
+		if a == "--log-format" && i+1 < len(args) {
+			bootArgs = append(bootArgs, a, args[i+1])
+			i++
+			continue
+		}
+		if bootstrap[a] {
+			bootArgs = append(bootArgs, a)
+			continue
+		}
+		cliArgs = append(cliArgs, a)
+	}
+	return cliArgs, bootArgs
+}
+
+// envValue looks up `name=value` in the supplied env slice (matching
+// os.Environ()'s format). Returns "" when missing — same semantics as
+// os.Getenv but operating on a passed-in slice for testability.
+func envValue(env []string, name string) string {
+	prefix := name + "="
+	for _, e := range env {
+		if strings.HasPrefix(e, prefix) {
+			return strings.TrimPrefix(e, prefix)
+		}
+	}
+	return ""
 }
 
 func banner(w io.Writer) {

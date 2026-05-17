@@ -1,5 +1,23 @@
 # 12. Issue 化用タスク分解
 
+> ⚠️ **重要 — このドキュメントは upstream の全機能を網羅したリストです (採用外を含む)**
+>
+> 本プロジェクトでは upstream `lowlighter/metrics` の **subset** のみを実装しています。
+> Phase 順序やタスクの採用判断には **このファイルを直接使わないでください**。代わりに:
+>
+> - **採用機能定義**: [15-selection-answer.md](./15-selection-answer.md)
+> - **MVP タスク順序**: [16-tasks-mvp.md](./16-tasks-mvp.md)
+>
+> 採用 phase 順序: `M1 → M2 → M3 → M4 → **M6** → M7 → M9 → M10`
+>
+> **非ゴール (実装禁止)**:
+>
+> - **M5** (Web インスタンス: chi server / OAuth / insights 等の HTTP 公開機能)
+> - **M8** (ソーシャル / 外部 API plugin: anilist / leetcode / chess / steam / music / pagespeed / tweets / stackoverflow / wakatime 等)
+>
+> 本ファイル内の M5 / M8 セクションのタスクは upstream 設計の完全性のため残してあるだけで、
+> 本プロジェクトでは着手しません。
+
 本ドキュメントは Go 移植を **GitHub Issue 駆動** で進めるためのタスクリストです。
 各タスクはそのまま issue 本文に貼れる粒度で記述されています。
 
