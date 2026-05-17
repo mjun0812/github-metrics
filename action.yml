@@ -866,4 +866,11 @@ outputs:
 
 runs:
   using: 'docker'
-  image: 'docker://ghcr.io/mjun0812/github-metrics:latest'
+  # Build from the Dockerfile shipped at the consumer-pinned ref so a
+  # `uses: mjun0812/github-metrics@vX.Y.Z` invocation runs the source
+  # code committed at that tag — not whatever `:latest` resolves to on
+  # the GitHub Container Registry at run time. This is the only way the
+  # SemVer publish strategy provides supply-chain integrity. The
+  # release pipeline still publishes `ghcr.io/...:vX.Y.Z` for users who
+  # want to `docker run` the image directly outside Actions.
+  image: 'Dockerfile'

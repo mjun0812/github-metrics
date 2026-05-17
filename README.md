@@ -61,17 +61,22 @@ chmod +x metrics-action
 # Or via go install (requires Go 1.26+).
 go install github.com/mjun0812/github-metrics/cmd/metrics-action@v0.6.0
 
-# Or via Docker (no install needed).
+# Or via Docker (no install needed). The CLI's --filename is relative
+# to the binary's working directory; pass an absolute path so the file
+# lands inside the mounted volume, or override the working dir via -w.
 docker run --rm \
   -v "$PWD/out:/renders" \
+  -w /renders \
   -e GITHUB_TOKEN \
   ghcr.io/mjun0812/github-metrics:v0.6.0 \
   --user octocat --token-env GITHUB_TOKEN --template classic \
   --output svg --filename github-metrics.svg
 
-# Minimum dryrun pipe — mocked deps, stdout SVG, no token needed.
-metrics-action --user octocat --output svg --dryrun --filename - \
-  --plugin use_mocked_data=true | xmllint --format -
+# Pipe to xmllint for a quick sanity check. Requires a real GITHUB_TOKEN
+# (set in your shell) because the base/core plugin fetches the user
+# profile from api.github.com even when other plugin gates are off.
+metrics-action --user octocat --token-env GITHUB_TOKEN \
+  --output svg --dryrun --filename - | xmllint --format -
 ```
 
 See [`specs/005-m6-action-cli/quickstart.md`](specs/005-m6-action-cli/quickstart.md)

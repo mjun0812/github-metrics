@@ -142,14 +142,14 @@ func buildTestDeps(t *testing.T, rest *fakeREST) func(context.Context, *Invocati
 	return func(_ context.Context, inv *Invocation) (engine.Deps, error) {
 		restClient, err := githubapi.NewREST(
 			inv.Token, "http://mock.localhost",
-			httpx.Options{Transport: rest, MaxRetries: 0},
+			httpx.Options{Transport: rest, DisableRetries: true},
 		)
 		if err != nil {
 			return engine.Deps{}, err
 		}
 		gqlClient, err := githubapi.NewGraphQL(
 			inv.Token, "http://mock.localhost/graphql",
-			httpx.Options{Transport: &fakeGraphQL{}, MaxRetries: 0},
+			httpx.Options{Transport: &fakeGraphQL{}, DisableRetries: true},
 		)
 		if err != nil {
 			return engine.Deps{}, err

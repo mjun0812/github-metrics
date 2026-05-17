@@ -99,7 +99,7 @@ func TestCLI_OctocatSVG_Stdout(t *testing.T) {
 		"--config", cfgPath,
 		"--token-env", "GH_TOKEN_FOR_CLI_TEST",
 	)
-	cmd.Env = append(os.Environ(), "GH_TOKEN_FOR_CLI_TEST=ghp_mock_pat_valid")
+	cmd.Env = append(stripGitHubActionsEnv(os.Environ()), "GH_TOKEN_FOR_CLI_TEST=ghp_mock_pat_valid")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -220,7 +220,7 @@ func execCLI(t *testing.T, args ...string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, actionBin, args...) //nolint:gosec // actionBin from TestMain
-	cmd.Env = append(os.Environ(), "GH_TOKEN_FOR_CLI_TEST=ghp_mock_pat_valid")
+	cmd.Env = append(stripGitHubActionsEnv(os.Environ()), "GH_TOKEN_FOR_CLI_TEST=ghp_mock_pat_valid")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

@@ -19,7 +19,11 @@ func TestGenerate_HasRequiredSections(t *testing.T) {
 		"outputs:",
 		"runs:",
 		"using: 'docker'",
-		"ghcr.io/mjun0812/github-metrics",
+		// Build from Dockerfile at the consumer-pinned ref — see the
+		// gen-action-yml runs footer comment for the supply-chain
+		// rationale. Reverting to ":latest" reintroduces the
+		// REQUEST_CHANGES finding from the PR #266 self-review.
+		"image: 'Dockerfile'",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("generated action.yml missing %q", want)

@@ -297,7 +297,7 @@ func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
 	tok, terr := ResolveToken(cf, os.Getenv, inputTok)
 	if terr != nil {
 		// Allow dryrun + mocked-data to bypass token requirement.
-		if !cf.Dryrun || stringInput(inputs, "use_mocked_data", "") == "" {
+		if !cf.Dryrun || !boolInput(inputs, "use_mocked_data", false) {
 			return terr
 		}
 	}
@@ -489,7 +489,7 @@ func defaultBuildDeps(_ context.Context, inv *Invocation) (engine.Deps, error) {
 	rest, err := githubapi.NewREST(
 		inv.Token,
 		inv.GitHubAPIRest,
-		httpx.Options{MaxRetries: 0},
+		httpx.Options{DisableRetries: true},
 	)
 	if err != nil {
 		return engine.Deps{}, fmt.Errorf("new REST: %w", err)
@@ -497,7 +497,7 @@ func defaultBuildDeps(_ context.Context, inv *Invocation) (engine.Deps, error) {
 	gql, err := githubapi.NewGraphQL(
 		inv.Token,
 		inv.GitHubAPIGraphQL,
-		httpx.Options{MaxRetries: 0},
+		httpx.Options{DisableRetries: true},
 	)
 	if err != nil {
 		return engine.Deps{}, fmt.Errorf("new GraphQL: %w", err)

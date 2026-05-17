@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
@@ -249,7 +248,7 @@ func (c *Committer) putContents(ctx context.Context, branch, prevSHA string) err
 	if err != nil {
 		return err
 	}
-	resp, err := c.REST.Put(ctx, path, body, nil)
+	_, resp, err := c.REST.Put(ctx, path, body, nil)
 	if err != nil {
 		return wrapRetryable(err, resp)
 	}
@@ -352,7 +351,7 @@ func (c *Committer) createBranchFromBase(ctx context.Context, baseBranch, headBr
 		"ref": "refs/heads/" + headBranch,
 		"sha": baseSHA,
 	})
-	resp, err := c.REST.Post(ctx, fmt.Sprintf("/repos/%s/%s/git/refs", c.RepoOwner, c.RepoName), body, nil)
+	_, resp, err := c.REST.Post(ctx, fmt.Sprintf("/repos/%s/%s/git/refs", c.RepoOwner, c.RepoName), body, nil)
 	if err != nil {
 		return wrapRetryable(err, resp)
 	}
@@ -453,15 +452,13 @@ func (c *Committer) createPullRequest(ctx context.Context, baseBranch, headBranc
 		"base":                  resolvedBase,
 		"maintainer_can_modify": true,
 	})
-	resp, err := c.REST.Post(ctx, fmt.Sprintf("/repos/%s/%s/pulls", c.RepoOwner, c.RepoName), body, nil)
+	respBody, resp, err := c.REST.Post(ctx, fmt.Sprintf("/repos/%s/%s/pulls", c.RepoOwner, c.RepoName), body, nil)
 	if err != nil {
 		return 0, "", wrapRetryable(err, resp)
 	}
 	if resp == nil || resp.StatusCode != http.StatusCreated {
 		return 0, "", fmt.Errorf("create PR: status %d", statusOf(resp))
 	}
-	defer func() { _ = resp.Body.Close() }()
-	respBody, _ := io.ReadAll(resp.Body)
 	var doc struct {
 		Number  int    `json:"number"`
 		HTMLURL string `json:"html_url"`
@@ -480,7 +477,7 @@ func (c *Committer) mergePullRequest(ctx context.Context, prNumber int, method s
 		"merge_method":   method,
 		"commit_message": c.Message,
 	})
-	resp, err := c.REST.Put(ctx, path, body, nil)
+	_, resp, err := c.REST.Put(ctx, path, body, nil)
 	if err != nil {
 		return wrapRetryable(err, resp)
 	}

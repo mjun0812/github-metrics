@@ -110,7 +110,7 @@ func newRESTPR(t *testing.T, mock http.RoundTripper) *githubapi.REST {
 	rest, err := githubapi.NewREST(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost",
-		httpx.Options{Transport: mock, MaxRetries: 0},
+		httpx.Options{Transport: mock, DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
