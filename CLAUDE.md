@@ -2,8 +2,9 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Active plan: [specs/004-m4-github-plugins/plan.md](specs/004-m4-github-plugins/plan.md)
-- Feature spec: [specs/004-m4-github-plugins/spec.md](specs/004-m4-github-plugins/spec.md)
+- Active plan: [specs/005-m6-action-cli/plan.md](specs/005-m6-action-cli/plan.md)
+- Feature spec: [specs/005-m6-action-cli/spec.md](specs/005-m6-action-cli/spec.md)
+- M4 baseline (completed): [specs/004-m4-github-plugins/plan.md](specs/004-m4-github-plugins/plan.md)
 - M3 baseline (completed): [specs/003-chromedp-rendering-pipeline/plan.md](specs/003-chromedp-rendering-pipeline/plan.md)
 - M2 baseline (completed): [specs/002-output-classic-json/plan.md](specs/002-output-classic-json/plan.md)
 - M1 baseline (completed): [specs/001-project-foundation/plan.md](specs/001-project-foundation/plan.md)
