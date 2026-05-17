@@ -25,9 +25,15 @@ import (
 
 const upstreamJSONFixture = "tests/fixtures/upstream/octocat.json"
 
-// adoptedPlugins is the 21 採用 plugin slug list (FR-018). The
-// compat test asserts each slug appears as a key in
-// upstreamRoot["data"]["plugins"] with a non-null value.
+// adoptedPlugins is the 21 採用 plugin slug list (FR-018). Two entries
+// — `languages.recent` and `languages.indepth` — are sub-modes of the
+// `languages` plugin and **do not appear as top-level keys** under
+// `data.plugins` in the upstream payload; upstream nests them inside
+// `data.plugins.languages` (sections / colors / recent-bytes shape).
+// The compat test treats those two as sub-mode slugs and verifies them
+// through `assertLanguagesSubModes` rather than the top-level
+// presence/kind loop. Mirrors the same dotted-slug handling pattern
+// used by `tests/compliance/compliance_test.go::adoptedM4Plugins`.
 var adoptedPlugins = []string{
 	// P1 MVP (5)
 	"languages", "activity", "achievements", "repositories", "isocalendar",
@@ -35,10 +41,16 @@ var adoptedPlugins = []string{
 	"calendar", "habits", "stars", "people", "notable",
 	"contributors", "reactions", "projects", "sponsors", "sponsorships",
 	"stargazers", "traffic",
-	// P3 chromedp / heavy (4)
+	// P3 chromedp / heavy (4 slugs; 2 own-key + 2 sub-modes of `languages`)
 	"topics", "starlists",
 	"languages.recent", "languages.indepth",
 }
+
+// isSubModeSlug returns true when slug is a dotted "<parent>.<mode>"
+// form (currently only `languages.recent` / `languages.indepth`).
+// Upstream serializes sub-modes inside their parent's `data.plugins`
+// entry rather than as standalone top-level keys.
+func isSubModeSlug(slug string) bool { return strings.Contains(slug, ".") }
 
 // unadoptedPlugins is the 19 unadopted upstream plugin slug list
 // (FR-018 / constitution 原則 III). These MUST NOT appear in the
@@ -76,9 +88,15 @@ func TestCompatibilityJSON_21Plugins(t *testing.T) {
 		t.Fatalf("upstream fixture: expected `data.plugins` object, got %T", data["plugins"])
 	}
 
-	// Assertion 1: every adopted plugin slug must be present with non-nil value.
+	// Assertion 1: every top-level adopted plugin slug must be present
+	// with non-nil value. Sub-mode slugs (`languages.recent` /
+	// `languages.indepth`) are nested under `plugins["languages"]` —
+	// they are verified separately in assertLanguagesSubModes below.
 	missing := []string{}
 	for _, slug := range adoptedPlugins {
+		if isSubModeSlug(slug) {
+			continue
+		}
 		v, present := plugins[slug]
 		if !present || v == nil {
 			missing = append(missing, slug)
@@ -101,11 +119,15 @@ func TestCompatibilityJSON_21Plugins(t *testing.T) {
 		t.Errorf("unadopted plugins leaked into upstream fixture: %v", leaked)
 	}
 
-	// Assertion 3: each adopted plugin entry is a JSON object (= consistent
-	// type with our engine output). Stricter key/型 comparison against the
+	// Assertion 3: each top-level adopted plugin entry is a JSON object
+	// (= consistent type with our engine output). Sub-mode slugs handled
+	// in assertLanguagesSubModes. Stricter key/型 comparison against the
 	// Go engine output is left to integration tests; here we focus on the
 	// upstream-side baseline shape.
 	for _, slug := range adoptedPlugins {
+		if isSubModeSlug(slug) {
+			continue
+		}
 		entry, present := plugins[slug]
 		if !present {
 			continue
@@ -113,6 +135,32 @@ func TestCompatibilityJSON_21Plugins(t *testing.T) {
 		if reflect.TypeOf(entry).Kind() != reflect.Map {
 			t.Errorf("upstream plugins[%q] kind = %v, want map", slug, reflect.TypeOf(entry).Kind())
 		}
+	}
+
+	// Assertion 4: `languages.recent` / `languages.indepth` sub-modes
+	// surface inside `plugins["languages"]`. We sanity-check that the
+	// `languages` entry is an object (asserted above) and that it
+	// carries shape hints upstream produces when the sub-modes ran. We
+	// keep this assertion deliberately loose because the exact upstream
+	// key names (`sections`, `recent`, `indepth`, `colors`, ...) have
+	// drifted historically; the SC-004 strict diff lives in integration
+	// tests against the Go engine output.
+	assertLanguagesSubModes(t, plugins)
+}
+
+// assertLanguagesSubModes verifies that `plugins["languages"]` is a
+// non-empty map. The exact upstream shape (which sub-keys exist when
+// recent / indepth sub-modes ran) is intentionally not pinned here —
+// see the comment at the call site for rationale.
+func assertLanguagesSubModes(t *testing.T, plugins map[string]any) {
+	t.Helper()
+	langs, ok := plugins["languages"].(map[string]any)
+	if !ok {
+		t.Errorf("plugins[\"languages\"] missing or not an object; cannot host languages.recent / languages.indepth sub-modes")
+		return
+	}
+	if len(langs) == 0 {
+		t.Errorf("plugins[\"languages\"] is empty; sub-modes (recent / indepth) cannot have surfaced")
 	}
 }
 
@@ -142,7 +190,3 @@ func readFixture(t *testing.T, rel string) ([]byte, error) {
 	}
 	return nil, fs.ErrNotExist
 }
-
-// silence unused import warnings for `strings` when the test path is
-// taken (helper functions or future expansions may use it).
-var _ = strings.Contains

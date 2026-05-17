@@ -11,13 +11,19 @@ live: P1 MVP 5 (languages / activity / achievements / repositories /
 isocalendar), P2 GraphQL+REST 12 (calendar / habits / stars / people /
 notable / contributors / reactions / projects / sponsors / sponsorships
 / stargazers / traffic), and P3 chromedp + heavy 4 (topics + starlists
-behind `chromedp` build tag, languages.recent + languages.indepth
-behind `heavy` build tag). `engine.Compute` drives the full plugin
-pipeline, the classic template renders per-plugin DOM, and the M3
-chromedp render path (octicon → optional CSS purge → optional XML
++ languages.recent + languages.indepth — the last two are sub-modes
+that share the `languages` package). All four P3 plugin **runtimes**
+register on every build and skip at runtime when their preconditions
+are unmet (chromedp not available, heavy extras flag off); only their
+fixture-heavy / browser-driven **tests** are isolated behind the
+`chromedp` and `heavy` build tags. `engine.Compute` drives the full
+plugin pipeline, the classic template renders per-plugin DOM, and the
+M3 chromedp render path (octicon → optional CSS purge → optional XML
 format → chromedp Resize → PNG / JPEG) wraps the result. See
 [`specs/004-m4-github-plugins/tasks.md`](specs/004-m4-github-plugins/tasks.md)
-for the per-task breakdown. M5 (deferred-async + caching) is next.
+for the per-task breakdown. M5 (Web instance — chi server skeleton +
+cache / rate-limit middleware) is next per
+[`docs/design/12-tasks.md`](docs/design/12-tasks.md#phase-m5).
 
 ### Output paths at a glance
 
@@ -51,9 +57,13 @@ make lint
 ### chromedp tests (M3+)
 
 The default `make test` deliberately skips the chromedp-backed render
-tests + the M4 chromedp plugins (topics / starlists) so contributors
-without a chromium binary stay green. To exercise the resize / PNG /
-JPEG path + chromedp plugins on a machine with chromium:
+tests and the M4 chromedp plugins' browser-driven tests
+(`*_chromedp_test.go` for topics / starlists) so contributors without a
+chromium binary stay green. The plugin runtimes themselves still
+compile and register on every build — they just return `Skipped=true`
+at runtime when `pc.Render` is not a real `*render.Browser`. To
+exercise the resize / PNG / JPEG path and the topics / starlists
+scrape end-to-end on a machine with chromium:
 
 ```sh
 # macOS — point at the system Chrome (or `brew install chromium`).
@@ -66,9 +76,13 @@ METRICS_CHROME_PATH=/usr/bin/chromium make test-chromedp
 
 ### heavy tests (M4+)
 
-M4 ships two `heavy`-tagged plugins (languages.recent / languages.indepth)
-that pull in go-enry + go-git fixtures. Their tests are isolated behind
-`//go:build heavy` so `make test` stays fast. To run them:
+M4 ships two `languages` sub-mode plugins (`languages.recent` /
+`languages.indepth`) whose fixture-heavy tests pull in go-enry +
+go-git. The runtimes ship without a build tag and register on every
+build, but their fixture tests (`recent_heavy_test.go` /
+`indepth_heavy_test.go` and `tests/integration/plugins_p3_heavy_test.go`)
+are isolated behind `//go:build heavy` so `make test` stays fast. To
+run them:
 
 ```sh
 make test-heavy

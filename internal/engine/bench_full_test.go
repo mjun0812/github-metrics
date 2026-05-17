@@ -24,6 +24,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"math"
 	"net/http"
 	"runtime"
 	"sort"
@@ -268,21 +269,30 @@ func BenchmarkCompute_MemoryPeak(b *testing.B) {
 	}
 }
 
-// TestCompute_Full_21Plugins_PerformanceBudget runs 5 iterations of
-// engine.Compute, sorts wall times, picks the p95 (= the slowest
-// here, since N=5), and asserts it stays under p95WallBudget. With
-// mocked Deps this trivially passes — the test guards against
-// regressions large enough to be visible (e.g. an accidental
-// time.Sleep or a synchronous loop blowing past 5s).
+// p95PerfBudgetIters controls the sample size of the p95 regression
+// guard. N must be large enough that durations[ceil(0.95*N)-1] is a
+// meaningful percentile estimate — 20 is the conventional lower bound
+// for an unambiguous "p95 ≠ max" interpretation.
+const p95PerfBudgetIters = 20
+
+// TestCompute_Full_21Plugins_PerformanceBudget runs
+// p95PerfBudgetIters iterations of engine.Compute, sorts wall times,
+// computes the genuine 95th percentile via the nearest-rank method
+// (index = ceil(0.95 * N) - 1, 0-based), and asserts it stays under
+// p95WallBudget. With mocked Deps this trivially passes — the test
+// guards against regressions large enough to be visible (e.g. an
+// accidental time.Sleep blocking a single plugin Run past 5s).
+//
+// Intentionally not t.Parallel(): wall-clock measurement, parallel
+// execution would inject contention into the very metric we measure.
 func TestCompute_Full_21Plugins_PerformanceBudget(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipped under -short (bench-shaped regression guard)")
 	}
 	deps := newBenchDeps(t)
 	inputs := fullPluginInputs()
-	const iters = 5
-	durations := make([]time.Duration, 0, iters)
-	for i := 0; i < iters; i++ {
+	durations := make([]time.Duration, 0, p95PerfBudgetIters)
+	for i := 0; i < p95PerfBudgetIters; i++ {
 		start := time.Now()
 		_, err := engine.Compute(context.Background(), engine.Request{
 			Login:    "octocat",
@@ -296,18 +306,38 @@ func TestCompute_Full_21Plugins_PerformanceBudget(t *testing.T) {
 		durations = append(durations, time.Since(start))
 	}
 	sort.Slice(durations, func(i, j int) bool { return durations[i] < durations[j] })
-	p95 := durations[len(durations)-1]
-	if p95 > p95WallBudget {
-		t.Errorf("p95 wall time = %v, want < %v (durations=%v)", p95, p95WallBudget, durations)
+	// Nearest-rank p95 index for N samples (1-based ⌈0.95·N⌉, then
+	// converted to 0-based). For N=20 this yields index 18 (= 19th
+	// value), leaving exactly 1 sample beyond the threshold.
+	p95Idx := int(math.Ceil(0.95*float64(len(durations)))) - 1
+	if p95Idx < 0 {
+		p95Idx = 0
 	}
-	t.Logf("p95 wall time = %v across %d iterations (budget: %v)", p95, iters, p95WallBudget)
+	p95 := durations[p95Idx]
+	maxWall := durations[len(durations)-1]
+	if p95 > p95WallBudget {
+		t.Errorf("p95 wall time = %v (max = %v), want < %v (durations=%v)", p95, maxWall, p95WallBudget, durations)
+	}
+	t.Logf("p95 wall time = %v (max = %v) across %d iterations (budget: %v)",
+		p95, maxWall, p95PerfBudgetIters, p95WallBudget)
 }
 
-// TestCompute_MemoryPeak_RegressionGuard runs Compute under a
-// MemStats sampler that measures HeapInuse before / after. With mocked
-// Deps the delta is sub-MB so this trivially passes, but a regression
-// like "load every repository into memory at once" would blow past
-// the 800 MB budget.
+// peakSamplerInterval controls how often the background sampler reads
+// runtime.MemStats during Compute. 10 ms is a tradeoff between capture
+// fidelity and sampler overhead: lower values catch short-lived peaks
+// more reliably but each ReadMemStats call stops the world briefly.
+const peakSamplerInterval = 10 * time.Millisecond
+
+// TestCompute_MemoryPeak_RegressionGuard spins a background sampler
+// that polls runtime.MemStats every peakSamplerInterval during
+// engine.Compute and tracks the maximum HeapInuse observed. Asserts
+// the peak (= max(HeapInuse) - baseline_HeapInuse) stays under
+// peakMemoryBudget. Unlike a post-Compute snapshot, this catches
+// regressions that allocate large transient buffers inside a plugin
+// goroutine and release them before Run() exits.
+//
+// Intentionally not t.Parallel(): runtime.MemStats is process-global
+// shared state; parallel tests would poison the heap delta.
 func TestCompute_MemoryPeak_RegressionGuard(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipped under -short (bench-shaped regression guard)")
@@ -315,9 +345,44 @@ func TestCompute_MemoryPeak_RegressionGuard(t *testing.T) {
 	deps := newBenchDeps(t)
 	inputs := fullPluginInputs()
 
+	// Two consecutive GCs flush finalizable-but-not-finalized objects
+	// from prior tests so the baseline reads the live-set HeapInuse.
+	runtime.GC()
 	runtime.GC()
 	var before runtime.MemStats
 	runtime.ReadMemStats(&before)
+
+	// Background sampler: polls HeapInuse on a ticker and tracks the
+	// max via an atomic. Stops via stopCh once Compute returns; the
+	// done channel ensures we read the final max after the goroutine
+	// observes the stop signal (no race on peakHeapInuse).
+	var peakHeapInuse atomic.Uint64
+	peakHeapInuse.Store(before.HeapInuse)
+	stopCh := make(chan struct{})
+	doneCh := make(chan struct{})
+	go func() {
+		defer close(doneCh)
+		ticker := time.NewTicker(peakSamplerInterval)
+		defer ticker.Stop()
+		var sample runtime.MemStats
+		for {
+			select {
+			case <-stopCh:
+				return
+			case <-ticker.C:
+				runtime.ReadMemStats(&sample)
+				for {
+					prev := peakHeapInuse.Load()
+					if sample.HeapInuse <= prev {
+						break
+					}
+					if peakHeapInuse.CompareAndSwap(prev, sample.HeapInuse) {
+						break
+					}
+				}
+			}
+		}
+	}()
 
 	_, err := engine.Compute(context.Background(), engine.Request{
 		Login:    "octocat",
@@ -325,23 +390,35 @@ func TestCompute_MemoryPeak_RegressionGuard(t *testing.T) {
 		Format:   "svg",
 		Inputs:   inputs,
 	}, deps)
+
+	close(stopCh)
+	<-doneCh
+
 	if err != nil {
 		t.Fatalf("Compute: %v", err)
 	}
 
-	var peak runtime.MemStats
-	runtime.ReadMemStats(&peak)
-
-	// HeapInuse during Compute may overshoot HeapAlloc by allocator
-	// fragmentation, but for a regression guard the delta on HeapInuse
-	// captures both "did we grow the heap" and "did we hold huge
-	// objects". Use TotalAlloc delta as a secondary signal.
-	heapDelta := int64(peak.HeapInuse) - int64(before.HeapInuse)
-	totalAllocDelta := peak.TotalAlloc - before.TotalAlloc
-	if heapDelta > peakMemoryBudget {
-		t.Errorf("HeapInuse delta = %d bytes, want < %d (TotalAlloc delta = %d)",
-			heapDelta, peakMemoryBudget, totalAllocDelta)
+	// Final read to capture any allocation that happened between the
+	// last ticker fire and Compute return; fold it into the peak.
+	var after runtime.MemStats
+	runtime.ReadMemStats(&after)
+	for {
+		prev := peakHeapInuse.Load()
+		if after.HeapInuse <= prev {
+			break
+		}
+		if peakHeapInuse.CompareAndSwap(prev, after.HeapInuse) {
+			break
+		}
 	}
-	t.Logf("HeapInuse delta = %d B, TotalAlloc delta = %d B (budget: %d B)",
-		heapDelta, totalAllocDelta, peakMemoryBudget)
+
+	peak := peakHeapInuse.Load()
+	heapPeakDelta := int64(peak) - int64(before.HeapInuse)
+	totalAllocDelta := after.TotalAlloc - before.TotalAlloc
+	if heapPeakDelta > peakMemoryBudget {
+		t.Errorf("HeapInuse peak delta = %d bytes, want < %d (TotalAlloc delta = %d)",
+			heapPeakDelta, peakMemoryBudget, totalAllocDelta)
+	}
+	t.Logf("HeapInuse peak delta = %d B (sampled every %v during Compute), TotalAlloc delta = %d B (budget: %d B)",
+		heapPeakDelta, peakSamplerInterval, totalAllocDelta, peakMemoryBudget)
 }
