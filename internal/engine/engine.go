@@ -148,6 +148,7 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 		Data:       data,
 		Metadata:   deps.Metadata,
 		Imports:    plugins.NewImports(data),
+		Render:     deps.Render,
 	}
 
 	// Stage 1: base plugin. This populates data.User and the

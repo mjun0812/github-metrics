@@ -10,6 +10,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/httpx"
+	"github.com/mjun0812/github-metrics/internal/render"
 )
 
 // Plugin is the contract every github-metrics data source implements.
@@ -34,6 +35,12 @@ type PluginContext struct {
 	Data       *Data
 	Metadata   *config.MetadataLoader
 	Imports    PluginImports
+	// Render carries the engine's renderer. P3 chromedp-dependent
+	// plugins (topics / starlists) type-assert this to `*render.Browser`
+	// to obtain a navigation surface; the type assertion failing (nil
+	// or *render.FakeRenderer) is the documented skip path per
+	// specs/004-m4-github-plugins/contracts/plugin-p3-heavy.md §3.4.
+	Render render.Renderer
 }
 
 // PluginImports lets a plugin read another plugin's published result
