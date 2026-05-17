@@ -287,6 +287,91 @@ func TestCompliance_M4_AdoptedPlugins(t *testing.T) {
 	}
 }
 
+// TestCompliance_M7_NonAffectedPluginsAreInvariantOnRepo verifies the
+// contract from `contracts/repo-mode-plugin.md §6`: only the 7 listed
+// plugins (activity, contributors, languages, people, projects,
+// sponsors, stargazers) gain a Mode field in JSON output. The other
+// 14 adopted plugins MUST remain untouched. We inspect the plugin
+// package source rather than running them to stay hermetic.
+func TestCompliance_M7_NonAffectedPluginsAreInvariantOnRepo(t *testing.T) {
+	root := mustRepoRoot(t)
+	affected := map[string]struct{}{
+		"activity":     {},
+		"contributors": {},
+		"languages":    {},
+		"people":       {},
+		"projects":     {},
+		"sponsors":     {},
+		"stargazers":   {},
+	}
+	entries, err := os.ReadDir(filepath.Join(root, "internal", "plugins"))
+	if err != nil {
+		t.Fatalf("read plugins dir: %v", err)
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		slug := e.Name()
+		if _, skip := nonPluginInternalDirs[slug]; skip {
+			continue
+		}
+		// languages.recent / languages.indepth live under languages/.
+		if _, isAffected := affected[slug]; isAffected {
+			continue
+		}
+		// Check the main plugin file for an AggregationMode reference,
+		// which would indicate the plugin grew a repo-mode branch.
+		// Topics has a pre-existing Mode field of its own that's
+		// unrelated to M7 (icons vs spdx display).
+		if slug == "topics" {
+			continue
+		}
+		mainFile := filepath.Join(root, "internal", "plugins", slug, slug+".go")
+		body, err := os.ReadFile(mainFile)
+		if err != nil {
+			continue
+		}
+		if strings.Contains(string(body), "plugins.AggregationMode") {
+			t.Errorf("plugin %s: unexpected AggregationMode usage; M7 contract limits repo-mode to the 7 enumerated plugins", slug)
+		}
+	}
+}
+
+// TestCompliance_M7_TemplateInvariant asserts that `internal/templates/`
+// hosts exactly the adopted templates (classic from M2, repository
+// from M7) and nothing else. Adding `markdown`/`terminal`/etc. would
+// silently violate the M5/M8 skipped-scope rule from
+// docs/design/15-selection-answer.md.
+func TestCompliance_M7_TemplateInvariant(t *testing.T) {
+	root := mustRepoRoot(t)
+	entries, err := os.ReadDir(filepath.Join(root, "internal", "templates"))
+	if err != nil {
+		t.Fatalf("read internal/templates/: %v", err)
+	}
+	want := map[string]struct{}{
+		"classic":    {},
+		"repository": {},
+	}
+	have := map[string]struct{}{}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		have[e.Name()] = struct{}{}
+	}
+	for name := range want {
+		if _, ok := have[name]; !ok {
+			t.Errorf("adopted template missing: internal/templates/%s/", name)
+		}
+	}
+	for name := range have {
+		if _, ok := want[name]; !ok {
+			t.Errorf("unadopted template landed: internal/templates/%s/ — constitution III violation", name)
+		}
+	}
+}
+
 // TestCompliance_M6_NoNewPlugins asserts the M6 invariant that the
 // Action / CLI surface code (internal/action/, cmd/metrics-action/)
 // does NOT introduce new plugin or template subdirectories. M6 is a

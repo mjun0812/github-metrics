@@ -42,6 +42,7 @@ func TestGenerate_CoreInputsPresent(t *testing.T) {
 	for _, key := range []string{
 		"\n  token:\n",
 		"\n  user:\n",
+		"\n  repo:\n", // M7 — top-level repo input (already shipped by core metadata; locked here)
 		"\n  committer_branch:\n",
 		"\n  filename:\n",
 	} {

@@ -1,0 +1,40 @@
+# Query: single repository for the M7 `repository` template.
+#
+# Returns the union of fields the template's partials need to render
+# the "repo identity + community + activity" panes. REST fallback
+# fields (contributors count, recent commits) live in
+# `internal/plugins/base/repository.go` and are NOT fetched here.
+#
+# Spec: specs/006-m7-repository-template/contracts/base-repository-query.md
+query Repository($login: String!, $repo: String!) {
+  repository(owner: $login, name: $repo) {
+    databaseId
+    name
+    nameWithOwner
+    description
+    stargazerCount
+    forkCount
+    isArchived
+    primaryLanguage {
+      name
+      color
+    }
+    licenseInfo {
+      name
+      spdxId
+    }
+    defaultBranchRef {
+      name
+    }
+    owner {
+      login
+      avatarUrl
+    }
+    issues(states: [OPEN]) {
+      totalCount
+    }
+    pullRequests(states: [OPEN]) {
+      totalCount
+    }
+  }
+}

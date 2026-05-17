@@ -27,6 +27,7 @@ type CLIFlags struct {
 	Template string            // --template <name>
 	Token    string            // --token <PAT>
 	TokenEnv string            // --token-env <ENV_NAME>
+	Repo     string            // --repo <name> (M7 — repository template input)
 	Plugins  map[string]string // --plugin key=value (repeatable)
 	Output   string            // --output svg|png|jpeg|json
 	Filename string            // --filename <path-or-->
@@ -44,6 +45,7 @@ func ParseFlags(args []string) (*CLIFlags, error) {
 
 	fs.StringVar(&cf.Config, "config", "", "YAML config path (action.yml-equivalent inputs)")
 	fs.StringVar(&cf.User, "user", "", "GitHub user / org login")
+	fs.StringVar(&cf.Repo, "repo", "", "repository name (required when --template=repository)")
 	fs.StringVar(&cf.Template, "template", "", "template name (default: classic)")
 	fs.StringVar(&cf.Token, "token", "", "GitHub PAT (history-visible; prefer --token-env)")
 	fs.StringVar(&cf.TokenEnv, "token-env", "", "read token from os.Getenv(<NAME>)")
@@ -183,6 +185,17 @@ func (c *CLIFlags) ToInvocation(env map[string]string) (map[string]any, error) {
 
 	if c.User != "" {
 		inputs["user"] = c.User
+	}
+	if c.Repo != "" {
+		// Strip an accidental `owner/` prefix; canonical CLI form is
+		// `--user owner --repo name`. Warn once when we do.
+		repo := c.Repo
+		if idx := strings.LastIndex(repo, "/"); idx >= 0 {
+			slog.Warn("--repo: drop the 'owner/' prefix; canonical form is --user <owner> --repo <name>",
+				"got", repo, "using", repo[idx+1:])
+			repo = repo[idx+1:]
+		}
+		inputs["repo"] = repo
 	}
 	if c.Template != "" {
 		inputs["template"] = c.Template

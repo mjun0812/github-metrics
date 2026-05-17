@@ -32,10 +32,31 @@ type Data struct {
 	Account      AccountKind
 	User         *User
 	Organization *Organization
+	Repo         *Repo // M7: populated when AccountKind == AccountRepository; nil otherwise. Guarded by mu when accessed off the base-plugin goroutine — use RepoRef.
 	Config       ComputedConfig
 	Computed     Computed
 	Plugins      map[string]any
 	Errors       []error
+}
+
+// RepoRef returns a goroutine-safe snapshot of d.Repo. nil when the
+// engine did not request the repository template (M2/M4 classic flow)
+// or when the base plugin's repository fetch failed. Callers must not
+// mutate the returned *Repo — the M7 contract treats it as
+// write-once-read-many.
+func (d *Data) RepoRef() *Repo {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.Repo
+}
+
+// SetRepo stores the resolved repository payload. Goroutine-safe;
+// intended to be called once by the base plugin before plugin
+// dispatch fans out.
+func (d *Data) SetRepo(r *Repo) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.Repo = r
 }
 
 // NewData returns a zero-value Data with the Plugins map initialised.

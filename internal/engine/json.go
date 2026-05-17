@@ -58,6 +58,12 @@ func buildEnvelope(data *plugins.Data) map[string]any {
 	cd := newCycleDetector()
 	envelope["account"] = string(data.Account)
 	envelope["user"] = userToMap(data.User)
+	if r := data.RepoRef(); r != nil {
+		// M7: emit `data.repo` only when the repository template
+		// populated it. Classic-template runs omit the field entirely
+		// (golden classic shape stays unchanged).
+		envelope["repo"] = repoToMap(r)
+	}
 	envelope["config"] = configToMap(data.Config)
 	envelope["computed"] = computedToMap(data.Computed)
 
@@ -90,6 +96,41 @@ func userToMap(u *plugins.User) any {
 		"name":      u.Name,
 		"avatarUrl": u.AvatarURL,
 	}
+}
+
+// repoToMap renders the M7 `data.repo` envelope field. Snake_case
+// keys match the upstream `template.mjs:14-17` convention so JSON
+// consumers porting from lowlighter/metrics see the same shape.
+func repoToMap(r *plugins.Repo) map[string]any {
+	if r == nil {
+		return nil
+	}
+	out := map[string]any{
+		"owner":                      r.Owner,
+		"owner_avatar":               r.OwnerAvatar,
+		"name":                       r.Name,
+		"name_with_owner":            r.Owner + "/" + r.Name,
+		"description":                r.Description,
+		"stargazers":                 r.Stargazers,
+		"forks":                      r.Forks,
+		"contributors":               r.Contributors,
+		"is_archived":                r.IsArchived,
+		"default_branch":             r.DefaultBranch,
+		"license_name":               r.LicenseName,
+		"sponsorships_as_maintainer": r.SponsorshipsAsMaintainer,
+		"activity": map[string]any{
+			"recent_commits":     r.Activity.RecentCommits,
+			"open_issues":        r.Activity.OpenIssues,
+			"open_pull_requests": r.Activity.OpenPullRequests,
+		},
+	}
+	if r.PrimaryLanguage != "" {
+		out["primary_language"] = map[string]any{
+			"name":  r.PrimaryLanguage,
+			"color": r.PrimaryLanguageColor,
+		}
+	}
+	return out
 }
 
 func configToMap(c plugins.ComputedConfig) map[string]any {
