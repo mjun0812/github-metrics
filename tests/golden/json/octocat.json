@@ -153,6 +153,29 @@
       ],
       "skipped": true
     },
+    "languages.indepth": {
+      "analyzed": [],
+      "errors": null,
+      "repositories": {},
+      "skipped": true,
+      "total": {
+        "bytes": {}
+      }
+    },
+    "languages.recent": {
+      "days": 14,
+      "favorites": [],
+      "load": 100,
+      "other": {
+        "color": "",
+        "count": 0,
+        "name": "",
+        "size": 0,
+        "value": 0
+      },
+      "repos": [],
+      "skipped": true
+    },
     "notable": {
       "list": [],
       "skipped": true
@@ -227,10 +250,22 @@
       "skipped": true,
       "worldmap": null
     },
+    "starlists": {
+      "languages": false,
+      "list": [],
+      "skipped": true
+    },
     "stars": {
       "limit": 0,
       "list": [],
       "skipped": true
+    },
+    "topics": {
+      "limit": 15,
+      "list": [],
+      "mode": "icons",
+      "skipped": true,
+      "sort": "name"
     },
     "traffic": {
       "skipped": true,

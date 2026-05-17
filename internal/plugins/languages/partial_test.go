@@ -115,3 +115,68 @@ func TestPartial_Languages_Skipped(t *testing.T) {
 		t.Errorf("expected empty fragment for Skipped=true; got %q", got)
 	}
 }
+
+// TestPartial_Languages_Recent verifies the recently-used section is
+// emitted as a <g class="languages-recent"> when languages.recent has a
+// non-skipped result.
+func TestPartial_Languages_Recent(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.SetPlugin(languages.Name, &languages.Result{
+		Favorites: []plugins.LanguageStat{{Name: "Go", Color: "#00ADD8", Size: 100, Value: 1}},
+		Sections:  []string{"most-used", "recently-used"},
+		Mostly:    plugins.LanguageStat{Name: "Go", Color: "#00ADD8", Size: 100, Value: 1},
+		Colors:    map[string]string{"Go": "#00ADD8"},
+	})
+	data.SetPlugin(languages.RecentName, &languages.RecentResult{
+		Favorites: []plugins.LanguageStat{{Name: "Python", Color: "#3572A5", Size: 200, Value: 1}},
+		Days:      7,
+		Load:      50,
+		Repos:     []string{"octocat/py"},
+	})
+	pc := &templates.PartialContext{Data: data}
+	got, err := languages.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	if !strings.Contains(got, `<g class="languages-recent"`) {
+		t.Errorf("missing recently-used marker in:\n%s", got)
+	}
+	if !strings.Contains(got, `data-language="Python"`) {
+		t.Errorf("missing Python data attr in:\n%s", got)
+	}
+}
+
+// TestPartial_Languages_Indepth verifies the indepth section is emitted
+// as a <g class="languages-indepth"> when languages.indepth has totals.
+func TestPartial_Languages_Indepth(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.SetPlugin(languages.Name, &languages.Result{
+		Favorites: []plugins.LanguageStat{{Name: "Go", Color: "#00ADD8", Size: 100, Value: 1}},
+		Sections:  []string{"most-used"},
+		Mostly:    plugins.LanguageStat{Name: "Go", Color: "#00ADD8", Size: 100, Value: 1},
+		Colors:    map[string]string{"Go": "#00ADD8"},
+	})
+	data.SetPlugin(languages.IndepthName, &languages.IndepthResult{
+		Total:    languages.LanguageBytes{Bytes: map[string]int64{"Go": 5000, "Rust": 2500}},
+		Analyzed: []string{"octocat/svc"},
+	})
+	pc := &templates.PartialContext{Data: data}
+	got, err := languages.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	if !strings.Contains(got, `<g class="languages-indepth">`) {
+		t.Errorf("missing indepth marker in:\n%s", got)
+	}
+	if !strings.Contains(got, `data-bytes="5000"`) {
+		t.Errorf("missing Go bytes attr in:\n%s", got)
+	}
+	// Sort: Go (5000) should come before Rust (2500).
+	goIdx := strings.Index(got, `data-language="Go"`)
+	rustIdx := strings.Index(got, `data-language="Rust"`)
+	if goIdx == -1 || rustIdx == -1 || goIdx > rustIdx {
+		t.Errorf("indepth ordering wrong; Go=%d Rust=%d in:\n%s", goIdx, rustIdx, got)
+	}
+}

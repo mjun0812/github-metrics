@@ -20,6 +20,15 @@ import (
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/render"
+
+	// Side-effect imports keep the P3 plugins (topics, starlists)
+	// registered in the global plugin registry regardless of which
+	// build tag the test runs under. Without this, the JSON golden
+	// differs between `go test ./...` (topics/starlists absent) and
+	// `go test -tags=chromedp ./...` (topics/starlists present via the
+	// chromedp-tagged integration file).
+	_ "github.com/mjun0812/github-metrics/internal/plugins/starlists"
+	_ "github.com/mjun0812/github-metrics/internal/plugins/topics"
 )
 
 // graphQLFixture is a tiny RoundTripper that inspects the GraphQL
