@@ -5,6 +5,8 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -173,10 +175,20 @@ func TestPartial_Languages_Indepth(t *testing.T) {
 	if !strings.Contains(got, `data-bytes="5000"`) {
 		t.Errorf("missing Go bytes attr in:\n%s", got)
 	}
-	// Sort: Go (5000) should come before Rust (2500).
-	goIdx := strings.Index(got, `data-language="Go"`)
-	rustIdx := strings.Index(got, `data-language="Rust"`)
-	if goIdx == -1 || rustIdx == -1 || goIdx > rustIdx {
-		t.Errorf("indepth ordering wrong; Go=%d Rust=%d in:\n%s", goIdx, rustIdx, got)
+	// Sort: Go (5000) should come before Rust (2500). The data-language
+	// attribute also appears in the standard "most-used" <rect> output
+	// above the indepth section, so we must scope the comparison to the
+	// indepth <g class="indepth-language"> entries only. Using the
+	// dedicated `indepth-language` class via regexp guarantees we are
+	// matching the indepth ordering instead of the most-used favorites.
+	indepthRe := regexp.MustCompile(`<text class="indepth-language" data-language="([^"]+)"`)
+	matches := indepthRe.FindAllStringSubmatch(got, -1)
+	indepthOrder := make([]string, 0, len(matches))
+	for _, m := range matches {
+		indepthOrder = append(indepthOrder, m[1])
+	}
+	wantOrder := []string{"Go", "Rust"}
+	if !reflect.DeepEqual(indepthOrder, wantOrder) {
+		t.Errorf("indepth ordering = %v, want %v in:\n%s", indepthOrder, wantOrder, got)
 	}
 }

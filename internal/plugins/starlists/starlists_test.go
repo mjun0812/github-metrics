@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/starlists"
 	"github.com/mjun0812/github-metrics/internal/templates"
@@ -65,7 +66,10 @@ func newPC(_ *testing.T, nav starlists.Navigator, inputs map[string]any) *plugin
 func TestRun_Skipped_ChromedpUnavailable(t *testing.T) {
 	t.Parallel()
 	pc := newPC(t, nil, nil)
-	out, _ := starlists.Plugin.Run(context.Background(), pc)
+	out, err := starlists.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
 	r := out.(*starlists.Result)
 	if !r.Skipped {
 		t.Fatalf("Skipped = false, want true")
@@ -73,8 +77,13 @@ func TestRun_Skipped_ChromedpUnavailable(t *testing.T) {
 	if r.SkippedReason != "chromedp not available" {
 		t.Errorf("SkippedReason = %q", r.SkippedReason)
 	}
-	if len(pc.Data.SnapshotErrors()) == 0 {
-		t.Errorf("expected *RetryableError on Data.Errors")
+	snapshot := pc.Data.SnapshotErrors()
+	if len(snapshot) == 0 {
+		t.Fatalf("expected *RetryableError on Data.Errors")
+	}
+	var re *xerrors.RetryableError
+	if !errors.As(snapshot[0], &re) {
+		t.Errorf("Data.Errors[0] type = %T, want *xerrors.RetryableError; err=%v", snapshot[0], snapshot[0])
 	}
 }
 
@@ -171,6 +180,10 @@ func TestRun_TimeoutWrapped(t *testing.T) {
 	_, err := starlists.Plugin.Run(context.Background(), pc)
 	if err == nil {
 		t.Fatalf("expected error")
+	}
+	var re *xerrors.RetryableError
+	if !errors.As(err, &re) {
+		t.Fatalf("err type = %T, want *xerrors.RetryableError; err=%v", err, err)
 	}
 	if !strings.Contains(err.Error(), "starlists") {
 		t.Errorf("err = %v, want starlists-prefixed", err)

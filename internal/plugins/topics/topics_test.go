@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/topics"
 	"github.com/mjun0812/github-metrics/internal/templates"
@@ -66,8 +67,13 @@ func TestRun_Skipped_ChromedpUnavailable(t *testing.T) {
 	if r.SkippedReason != "chromedp not available" {
 		t.Errorf("SkippedReason = %q", r.SkippedReason)
 	}
-	if len(pc.Data.SnapshotErrors()) == 0 {
-		t.Errorf("expected *RetryableError on Data.Errors")
+	snapshot := pc.Data.SnapshotErrors()
+	if len(snapshot) == 0 {
+		t.Fatalf("expected *RetryableError on Data.Errors")
+	}
+	var re *xerrors.RetryableError
+	if !errors.As(snapshot[0], &re) {
+		t.Errorf("Data.Errors[0] type = %T, want *xerrors.RetryableError; err=%v", snapshot[0], snapshot[0])
 	}
 }
 
@@ -130,13 +136,12 @@ func TestRun_TimeoutWrapped(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error")
 	}
-	// Want *RetryableError per contract §3.6.
-	type retryable interface{ Retryable() bool }
-	if _, ok := err.(retryable); !ok {
-		// Fall back: at least the underlying error must be wrapped.
-		if !strings.Contains(err.Error(), "chromedp") {
-			t.Errorf("err = %v, want chromedp underlying", err)
-		}
+	var re *xerrors.RetryableError
+	if !errors.As(err, &re) {
+		t.Fatalf("err type = %T, want *xerrors.RetryableError; err=%v", err, err)
+	}
+	if !strings.Contains(err.Error(), "topics") {
+		t.Errorf("err = %v, want topics-prefixed", err)
 	}
 }
 
