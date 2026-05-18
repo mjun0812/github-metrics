@@ -21,7 +21,8 @@ GOFUMPT_VERSION       := latest
 LEFTHOOK_VERSION      := latest
 
 .PHONY: all build build-action test test-chromedp test-heavy test-race lint vet bench gen \
-        gen-octicons verify-octicons gen-action-yml docker docker-build docker-run-cli e2e \
+        gen-octicons verify-octicons gen-action-yml docker docker-build docker-run-cli \
+        docker-smoke release-dry-run \
         tools hooks-install hooks-run hooks-uninstall \
         check-compat sync-assets clean help
 
@@ -32,8 +33,10 @@ help:
 	@echo "  build               Build cmd/metrics-action and cmd/metrics-cli into bin/"
 	@echo "  build-action        Build only cmd/metrics-action (M6 shortcut)"
 	@echo "  gen-action-yml      Generate action.yml from assets/plugins/*/metadata.yml + core inputs (M6)"
-	@echo "  docker-build        Build the metrics-action Docker image as ghcr.io/mjun0812/github-metrics:dev"
+	@echo "  docker-build        Build the metrics-action Docker image from deploy/Dockerfile (tagged :dev)"
 	@echo "  docker-run-cli      Run the metrics-action Docker image in CLI mode against mocked octocat"
+	@echo "  docker-smoke        Run the M10 docker-smoke integration test (requires docker)"
+	@echo "  release-dry-run     Trigger .github/workflows/release.yml in dry_run=true mode and watch (requires gh CLI)"
 	@echo "  test                Run unit tests (go test ./...)"
 	@echo "  test-chromedp       Run chromedp-tagged tests (requires chromium; set METRICS_CHROME_PATH)"
 	@echo "  test-heavy          Run heavy-tagged tests (M4 languages.recent / languages.indepth)"
@@ -69,12 +72,12 @@ $(BIN_DIR)/%: cmd/%/main.go
 gen-action-yml:
 	$(GO) run ./internal/tools/gen-action-yml --output ./action.yml
 
-# Build the metrics-action Docker image with the local source tree as
-# context. The image is multi-stage: builder produces the binary +
-# runtime layer adds chromium for SVG/PNG/JPEG rendering. Image
-# published in M6 release pipeline (.github/workflows/release.yml).
+# Build the metrics-action Docker image from deploy/Dockerfile. The
+# image is multi-stage: builder produces the binary + runtime layer
+# adds chromium for SVG/PNG/JPEG rendering. Multi-arch build + size
+# budget assertion live in .github/workflows/release.yml (M10).
 docker-build:
-	docker build -t ghcr.io/mjun0812/github-metrics:dev .
+	docker build -f deploy/Dockerfile -t ghcr.io/mjun0812/github-metrics:dev .
 
 # Run the metrics-action Docker image in CLI mode against the
 # `octocat` mock fixture. Prints the rendered SVG to stdout. Use to
@@ -135,11 +138,24 @@ gen-octicons:
 verify-octicons: gen-octicons
 	git diff --exit-code assets/octicons/data.json
 
-docker:
-	@echo "docker target placeholder - implemented in T-126 (M10)"
+# M10 production build alias — points at docker-build now that
+# deploy/Dockerfile is the canonical production Dockerfile (T-126).
+docker: docker-build
 
-e2e:
-	@echo "e2e target placeholder - implemented in T122 (M9)"
+# Run the M10 docker-smoke integration test. The test is gated by the
+# `docker_smoke` build tag so default `make test` skips it. Skips
+# automatically if the docker binary is not available on PATH.
+docker-smoke:
+	$(GO) test -tags=docker_smoke -v ./tests/integration/...
+
+# Trigger the release workflow in dry-run mode and follow its output.
+# Pushes all artifacts as workflow-artifacts with 7-day retention;
+# no GHCR push, no GitHub Release entry, no cosign signing happens.
+# Useful as a pre-tag verification gate.
+release-dry-run:
+	gh workflow run release.yml -f dry_run=true
+	@sleep 3
+	gh run watch
 
 tools:
 	$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
