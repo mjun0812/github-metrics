@@ -1,52 +1,43 @@
 # github-metrics
 
 [![CI](https://github.com/mjun0812/github-metrics/actions/workflows/go-ci.yml/badge.svg)](https://github.com/mjun0812/github-metrics/actions/workflows/go-ci.yml)
+[![Release](https://img.shields.io/github/v/release/mjun0812/github-metrics?sort=semver)](https://github.com/mjun0812/github-metrics/releases)
+[![Go version](https://img.shields.io/github/go-mod/go-version/mjun0812/github-metrics)](https://github.com/mjun0812/github-metrics/blob/main/go.mod)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Go port of [lowlighter/metrics](https://github.com/lowlighter/metrics) for the
-adopted feature subset documented in
-[`docs/design/15-selection-answer.md`](docs/design/15-selection-answer.md).
+Generate SVG / PNG / JPEG / JSON metrics for your GitHub profile or a single
+repository — as a **GitHub Action**, a **standalone CLI**, or a **Docker
+container**. Single Go binary, no Node runtime required.
 
-**Status: v1.0.0 — M10 (release / Docker distribution) complete.**
-The `metrics-action` binary ships as a published multi-arch
-(linux/amd64 + linux/arm64) Docker image on GHCR plus signed CLI
-binaries on GitHub Releases. Upstream users can migrate by swapping
-one `uses:` line — see
-[`docs/migration-to-go.md`](docs/migration-to-go.md) for the
-adopted-vs-unported plugin matrix and rollback procedure.
+This project is a Go reimplementation of a curated subset of
+[lowlighter/metrics](https://github.com/lowlighter/metrics). Adopted inputs
+are drop-in compatible: existing upstream workflows continue to run by
+swapping one `uses:` line. See
+[`docs/migration-to-go.md`](docs/migration-to-go.md) for the full migration
+guide and unported-feature list.
 
-The M7 baseline (repository template) and M9 baseline (shared test
-infrastructure) carry over unchanged: `--template repository --user
-owner --repo name` re-centers the rendered SVG on a single GitHub
-repository, and `internal/testutil/` hosts the shared mocks +
-golden helpers consumed by every plugin's tests. M5 (Web instance)
-and M8 (social plugins) stay intentionally out-of-scope per
-[`docs/design/15-selection-answer.md`](docs/design/15-selection-answer.md).
+---
 
-## Repository template
+## Highlights
 
-```sh
-# Render a repo's metrics SVG to stdout. Requires a real GITHUB_TOKEN
-# in the shell because the base/core plugin fetches the user profile
-# from api.github.com even when other plugin gates are off (same
-# behavior as the classic-template CLI example above).
-metrics-action --user octocat --repo hello-world --template repository \
-  --token-env GITHUB_TOKEN --output svg --dryrun --filename -
+- **Drop-in Action upgrade** — `uses: mjun0812/github-metrics@v1` reads the
+  same `with:` inputs as `lowlighter/metrics@v3` for every adopted feature.
+  Unported feature gates (`plugin_anilist: yes` etc.) are silently no-op'd
+  so workflow files migrate without edits.
+- **21 plugins** across two templates — see [Plugins](#plugins) below.
+- **4 output formats** — SVG, PNG, JPEG, JSON (upstream byte-compatible).
+- **Multi-arch container** — `linux/amd64` + `linux/arm64` on
+  `ghcr.io/mjun0812/github-metrics`, signed with Sigstore cosign keyless
+  OIDC (transparency log).
+- **Cross-compiled binaries** — Linux / macOS × amd64 / arm64 attached to
+  every release with `SHA256SUMS` and per-artifact cosign sign-blob
+  bundles.
+- **Hardened runtime** — non-root user (uid 10001), chromium + Noto fonts
+  bundled, no Node toolchain.
 
-# Or via Action (in a workflow that targets the host repo):
-# - uses: mjun0812/github-metrics@vX.Y.Z
-#   with:
-#     user: ${{ github.repository_owner }}
-#     repo: ${{ github.event.repository.name }}
-#     template: repository
-#     token: ${{ secrets.METRICS_TOKEN }}
-```
+## Quick start
 
-See [`specs/006-m7-repository-template/quickstart.md`](specs/006-m7-repository-template/quickstart.md)
-for the full workflow example, multi-format output (SVG/PNG/JPEG/JSON),
-and the upstream-compatible JSON shape that surfaces a new `data.repo`
-field alongside the existing `data.user`.
-
-## Usage as a GitHub Action
+### GitHub Action
 
 ```yaml
 # .github/workflows/metrics.yml
@@ -71,25 +62,48 @@ jobs:
           output_condition: data-changed
 ```
 
-The action runs the `metrics-action` binary inside the
-`ghcr.io/mjun0812/github-metrics` Docker image. Pin to a semver tag
-(`@v1.0.0`) for reproducibility; the `@latest` tag is also published
-for convenience.
+Pin to a semver tag (`@v1.0.0`) for reproducibility; the workflow resolves
+to the matching multi-arch image on GHCR. `@latest` is also published for
+convenience but is not recommended for production workflows.
 
-## Usage as a CLI
+### Repository template
+
+`template: repository` re-centers the rendered SVG on a single repository
+instead of a user profile:
+
+```yaml
+- uses: mjun0812/github-metrics@v1.0.0
+  with:
+    user: ${{ github.repository_owner }}
+    repo: ${{ github.event.repository.name }}
+    template: repository
+    token: ${{ secrets.METRICS_TOKEN }}
+```
+
+The JSON output adds a `data.repo` field next to the existing `data.user`;
+the SVG features the repo's avatar, description, community health and
+recent activity.
+
+### CLI
 
 ```sh
 # Install from a GitHub Release (linux/darwin × amd64/arm64).
+# Replace `linux_amd64` with your platform tag.
 curl -L -o metrics-action \
-  https://github.com/mjun0812/github-metrics/releases/download/v1.0.0/metrics-action_v1.0.0_darwin_arm64
+  https://github.com/mjun0812/github-metrics/releases/download/v1.0.0/metrics-action_v1.0.0_linux_amd64
 chmod +x metrics-action
 
-# Or via go install (requires Go 1.26+).
+# …or via go install (requires Go 1.26+):
 go install github.com/mjun0812/github-metrics/cmd/metrics-action@v1.0.0
 
-# Or via Docker (no install needed). The CLI's --filename is relative
-# to the binary's working directory; pass an absolute path so the file
-# lands inside the mounted volume, or override the working dir via -w.
+# Render an SVG to stdout. GITHUB_TOKEN must be set in your shell.
+metrics-action --user octocat --token-env GITHUB_TOKEN \
+  --output svg --dryrun --filename -
+```
+
+### Docker
+
+```sh
 docker run --rm \
   -v "$PWD/out:/renders" \
   -w /renders \
@@ -97,167 +111,121 @@ docker run --rm \
   ghcr.io/mjun0812/github-metrics:v1.0.0 \
   --user octocat --token-env GITHUB_TOKEN --template classic \
   --output svg --filename github-metrics.svg
-
-# Pipe to xmllint for a quick sanity check. Requires a real GITHUB_TOKEN
-# (set in your shell) because the base/core plugin fetches the user
-# profile from api.github.com even when other plugin gates are off.
-metrics-action --user octocat --token-env GITHUB_TOKEN \
-  --output svg --dryrun --filename - | xmllint --format -
 ```
 
-See [`specs/005-m6-action-cli/quickstart.md`](specs/005-m6-action-cli/quickstart.md)
-for the full input matrix (`--config <path>.yaml`, `--preset`,
-`--token-env`, all 21 plugin gates).
+The image is multi-arch — `docker pull` automatically resolves to your
+host architecture.
 
-### Output paths at a glance
+## Authentication
 
-| Format | Wired in | Output | MIME |
-| --- | --- | --- | --- |
-| `json` | M2 | `engine.Marshal(data)` | `application/json` |
-| `svg` | M2 + M3 deco/resize | classic template → octicon → optional css/xml → chromedp Resize | `image/svg+xml` |
-| `png` / `jpeg` | M3 | same as `svg` + chromedp `page.CaptureScreenshot` | `image/png` / `image/jpeg` |
+Every invocation needs a GitHub token:
 
-## Quickstart for contributors
+- **Action mode**: pass via `with.token` — typically
+  `${{ secrets.METRICS_TOKEN }}` (a Personal Access Token) for full
+  metrics, or `${{ github.token }}` for public-only data.
+- **CLI / Docker mode**: set `GITHUB_TOKEN` in the environment and use
+  `--token-env GITHUB_TOKEN`.
+
+The token needs at minimum `public_repo` (classic PAT) or the read scopes
+for each enabled plugin's data (issues, pulls, projects, etc.) for
+fine-grained tokens. The `base` / `core` plugins always fetch the target
+user's profile, so a missing token fails immediately.
+
+## Plugins
+
+The 19 user-facing plugins below are always available; enable each via
+`plugin_<slug>: yes`. Two additional internal plugins (`base`, `core`)
+power the metadata pipeline and run automatically.
+
+| Tier         | Plugins                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------ |
+| MVP          | `languages`, `activity`, `achievements`, `repositories`, `isocalendar`                           |
+| GraphQL/REST | `calendar`, `habits`, `stars`, `people`, `notable`, `contributors`, `reactions`, `projects`, `sponsors`, `sponsorships`, `stargazers`, `traffic` |
+| chromedp     | `topics`, `starlists`                                                                            |
+
+The `languages` plugin ships `recent` and `indepth` sub-modes via
+`plugin_languages_sections`.
+
+Every input is documented in [`action.yml`](action.yml) and is identical
+to the corresponding upstream input. Inputs gating unported plugins
+(e.g., `plugin_anilist`, `plugin_leetcode`) are accepted and silently
+ignored — no migration of existing workflows is required.
+
+## Output formats
+
+| Format         | MIME              | Rendering pipeline                                  |
+| -------------- | ----------------- | --------------------------------------------------- |
+| `svg`          | `image/svg+xml`   | Go templates → chromedp `Resize`                    |
+| `png` / `jpeg` | `image/png/jpeg`  | + chromedp `CaptureScreenshot`                      |
+| `json`         | `application/json`| Upstream byte-compatible envelope                   |
+
+JSON output is **byte-compatible** with upstream `lowlighter/metrics` for
+the adopted plugins; downstream tools that consume the JSON envelope work
+unchanged. SVG output is **DOM-structurally equivalent** — element /
+attribute / class structure matches upstream, but dynamic strings
+(version footer, generated timestamp) differ.
+
+## Migrating from `lowlighter/metrics`
+
+1. Swap the `uses:` line:
+
+   ```diff
+   - uses: lowlighter/metrics@v3.34
+   + uses: mjun0812/github-metrics@v1.0.0
+   ```
+
+2. Re-run the workflow. Unported plugin gates remain in your `with:`
+   block silently; remove them at your leisure.
+
+3. Compare output: JSON should diff cleanly; SVG should match
+   structurally (`xmllint --format` before diffing).
+
+[`docs/migration-to-go.md`](docs/migration-to-go.md) walks through the
+full matrix — adopted vs unported plugins, templates, output formats,
+and the one-line rollback procedure.
+
+## Release verification
+
+Every release is signed with cosign keyless OIDC against the GitHub
+Actions issuer. To verify the image manifest:
 
 ```sh
-git clone https://github.com/mjun0812/github-metrics.git
-cd github-metrics
-
-# Install developer tooling pinned to the same versions CI uses.
-# This brings in gofumpt, golangci-lint, govulncheck, and lefthook.
-make tools
-
-# Wire the lefthook git hooks so format + lint + `go mod tidy` run
-# automatically on every `git commit`. They run the same binaries CI
-# runs, so a failing commit is the same failure CI would report.
-make hooks-install
-
-# Build, test, and lint.
-make build
-make test
-make lint
+cosign verify ghcr.io/mjun0812/github-metrics:v1.0.0 \
+  --certificate-identity-regexp \
+    'https://github.com/mjun0812/github-metrics/.github/workflows/release.yml@refs/tags/v.*' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-### chromedp tests (M3+)
-
-The default `make test` deliberately skips the chromedp-backed render
-tests and the M4 chromedp plugins' browser-driven tests
-(`*_chromedp_test.go` for topics / starlists) so contributors without a
-chromium binary stay green. The plugin runtimes themselves still
-compile and register on every build — they just return `Skipped=true`
-at runtime when `pc.Render` is not a real `*render.Browser`. To
-exercise the resize / PNG / JPEG path and the topics / starlists
-scrape end-to-end on a machine with chromium:
+Binaries on the GitHub Release ship with a `SHA256SUMS` file plus
+per-artifact `.sig`, `.cert`, and `.cosign.bundle` files. Verify a
+binary with `cosign verify-blob`:
 
 ```sh
-# macOS — point at the system Chrome (or `brew install chromium`).
-METRICS_CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-    make test-chromedp
-
-# Linux — system chromium or chromedp/headless-shell container.
-METRICS_CHROME_PATH=/usr/bin/chromium make test-chromedp
+cosign verify-blob metrics-action_v1.0.0_linux_amd64 \
+  --bundle metrics-action_v1.0.0_linux_amd64.cosign.bundle \
+  --certificate-identity-regexp \
+    'https://github.com/mjun0812/github-metrics/.github/workflows/release.yml@refs/tags/v.*' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-### heavy tests (M4+)
+The helper [`scripts/release-verify.sh`](scripts/release-verify.sh) wraps
+the manifest, checksum, signature, and `action.yml` reference checks
+into a single command for maintainer post-release validation.
 
-M4 ships two `languages` sub-mode plugins (`languages.recent` /
-`languages.indepth`) whose fixture-heavy tests pull in go-enry +
-go-git. The runtimes ship without a build tag and register on every
-build, but their fixture tests (`recent_heavy_test.go` /
-`indepth_heavy_test.go` and `tests/integration/plugins_p3_heavy_test.go`)
-are isolated behind `//go:build heavy` so `make test` stays fast. To
-run them:
+## Contributing
 
-```sh
-make test-heavy
-```
-
-CI runs all three test jobs in parallel (`test`, `test-chromedp` via
-`chromedp/headless-shell:latest`, `test-heavy` on the standard runner),
-so a fresh checkout that opts out of chromedp/heavy locally still
-gates against regressions in CI.
-
-### Octicon asset regeneration
-
-`assets/octicons/data.json` is generated from the npm-published
-`@primer/octicons` build. To refresh it (when bumping the upstream
-version):
-
-```sh
-npm install --no-save @primer/octicons
-make gen-octicons
-```
-
-`make verify-octicons` re-runs the generator and diffs the result —
-useful as a CI gate when the upstream version pin advances. (The
-embedded `_meta.generated_at` is non-deterministic; a Polish-phase
-follow-up will flag this with a `--frozen-source` switch.)
-
-To run the full pre-commit pipeline manually (e.g. before pushing a
-branch that has stacked commits):
-
-```sh
-make hooks-run
-```
-
-To bypass the hooks for a single commit (do not make a habit):
-
-```sh
-git commit --no-verify
-```
-
-### Upstream fixtures (optional)
-
-The SC-001 compatibility check compares the engine's JSON output to a
-captured upstream baseline at `tests/fixtures/upstream/octocat.json`.
-That fixture is regenerated from a local `./org_repo` checkout via:
-
-```sh
-make sync-fixtures
-```
-
-`./org_repo` is intentionally gitignored — the constitution forbids
-mixing upstream history into this repository. Contributors who need to
-refresh the fixture clone `lowlighter/metrics` to `./org_repo` first
-(`cd org_repo && npm install`) and then run the target. Tests skip
-gracefully when the fixture is absent, so a fresh checkout without
-`./org_repo` still passes CI.
-
-## Toolchain
-
-| Tool | Pinned version | Where it lives |
-| --- | --- | --- |
-| Go | 1.26.3 | `.github/workflows/go-ci.yml`, `go.mod` (minimum 1.26) |
-| golangci-lint | v2.12.2 | `Makefile`, `.github/workflows/go-ci.yml`, `lefthook.yml` |
-| gofumpt | latest | `Makefile`, `lefthook.yml` |
-| govulncheck | latest | `Makefile`, `.github/workflows/go-ci.yml` |
-| lefthook | latest | `Makefile`, `lefthook.yml` (the git-hook manager) |
-
-`lefthook` is a single Go binary — no Python, Node, or Ruby toolchain
-required. Bump these together when upgrading; drift between local and
-CI is the single biggest source of red builds.
-
-## Project layout
-
-See [`specs/001-project-foundation/plan.md`](specs/001-project-foundation/plan.md)
-for the authoritative reference. The short version:
-
-```
-cmd/metrics-action/   GitHub Action / CLI entry point
-cmd/metrics-cli/      Standalone CLI entry point
-internal/             All non-public packages (logger, errors, ctxutil,
-                      format, config, httpx, githubapi, plugins,
-                      templates, plugins/core, ...)
-internal/testutil/    Shared mocks + golden file helpers (M9; test-only)
-assets/               Embedded plugin/template metadata (vendored from
-                      ./org_repo via scripts/sync-assets.sh)
-tests/                Fixtures, golden files, and integration tests
-docs/design/          Design corpus (Japanese)
-specs/                Spec Kit feature specifications and plans
-.specify/             Spec Kit machinery (workflow templates, hooks)
-```
+Bug reports and pull requests welcome. Before opening a PR, please read
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for the development workflow
+(toolchain, hooks, test categories) and the project's scope discipline
+(see also [`docs/migration-to-go.md`](docs/migration-to-go.md) §3 for the
+unported-feature list — additions to that scope require constitution
+amendment before implementation).
 
 ## License
 
-[MIT](LICENSE). Portions are derived from `lowlighter/metrics`
-(MIT-licensed); the upstream attribution is preserved.
+[MIT](LICENSE). This project is a Go reimplementation derived from
+[lowlighter/metrics](https://github.com/lowlighter/metrics) (MIT-licensed);
+upstream attribution is preserved per the MIT license terms.
+
+GitHub Octicons assets (under `assets/octicons/`) are MIT-licensed by
+GitHub, Inc. and embedded via `//go:embed`.
