@@ -38,7 +38,7 @@ if [[ -z "$CHROME_BIN" ]]; then
 fi
 
 OUTDIR="specs/011-plugin-rendering-parity/plugins/screenshots"
-SVGDIR="docs/.tmp/mjun-render"
+SVGDIR="specs/011-plugin-rendering-parity/plugins/svgs"
 mkdir -p "$OUTDIR" "$SVGDIR"
 
 render_and_capture() {
