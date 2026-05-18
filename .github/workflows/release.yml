@@ -1,17 +1,35 @@
 name: Release
 
 # Triggers on semver tags (v1.2.3) pushed to the repository. Builds
-# and publishes 2 artifact sets:
+# and publishes 3 artifact classes (M10 final shape):
 #
-#   1. Multi-tag Docker image to ghcr.io/mjun0812/github-metrics
-#      (vX.Y.Z + latest + sha-<short>) — consumed by
-#      `uses: mjun0812/github-metrics@<tag>` workflow callers.
+#   1. Multi-arch Docker manifest list (linux/amd64 + linux/arm64) on
+#      ghcr.io/mjun0812/github-metrics (vX.Y.Z + latest + sha-<short>)
+#      — consumed by `uses: mjun0812/github-metrics@<tag>` callers.
 #   2. Cross-compiled CLI binaries (linux/darwin × amd64/arm64) as
-#      GitHub Releases assets — for users running metrics-action
-#      outside Docker.
+#      GitHub Releases assets plus a SHA256SUMS file.
+#   3. Cosign keyless OIDC signatures for the image manifest and
+#      every binary + SHA256SUMS, verifiable against the GitHub
+#      Actions OIDC issuer (sigstore Rekor public transparency log).
 #
-# Configured per spec clarifications Q1 (GHCR + semver) and Q2
-# (GitHub Releases + go install). See specs/005-m6-action-cli/spec.md.
+# Pipeline ordering: a `docker-smoke` gate job builds the image
+# locally (amd64) and runs `metrics-action --help` + size-budget
+# assertion (FR-006). If it fails, release-docker and release-binary
+# do not start — nothing oversized lands on GHCR.
+#
+# Dry-run: `workflow_dispatch` with `dry_run=true` (default) runs
+# the full build chain but skips GHCR push, GitHub Release upload,
+# and cosign signing. Artifacts are uploaded as workflow artifacts
+# with 7-day retention for manual inspection.
+#
+# Source of truth:
+#   - specs/008-m10-release-distribution/contracts/release-workflow.md
+#   - specs/008-m10-release-distribution/contracts/dockerfile.md
+#   - specs/008-m10-release-distribution/research.md R-001 (cosign)
+#     and R-002 (buildx + QEMU).
+# Originally configured per M6 spec clarifications Q1 (GHCR + semver)
+# and Q2 (GitHub Releases + go install); see
+# specs/005-m6-action-cli/spec.md.
 
 on:
   push:
@@ -25,60 +43,14 @@ on:
         default: 'true'
 
 permissions:
-  contents: write  # GitHub Releases asset upload
-  packages: write  # GHCR push
+  contents: write   # GitHub Releases asset upload
+  packages: write   # GHCR push
+  id-token: write   # cosign keyless OIDC (M10)
 
 jobs:
-  release-docker:
-    name: Publish Docker image to GHCR
+  docker-smoke:
+    name: Smoke-test the production Docker image
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Extract semver tag
-        id: tag
-        run: |
-          tag="${GITHUB_REF#refs/tags/}"
-          short_sha="${GITHUB_SHA::7}"
-          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
-          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
-
-      - name: Log in to GHCR
-        if: github.event.inputs.dry_run != 'true'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push image (vX.Y.Z + latest + sha-<short>)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: ${{ github.event.inputs.dry_run != 'true' }}
-          build-args: |
-            VERSION=${{ steps.tag.outputs.tag }}
-          tags: |
-            ghcr.io/mjun0812/github-metrics:${{ steps.tag.outputs.tag }}
-            ghcr.io/mjun0812/github-metrics:latest
-            ghcr.io/mjun0812/github-metrics:sha-${{ steps.tag.outputs.short_sha }}
-
-  release-binary:
-    name: Publish CLI binaries to GitHub Releases
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - { goos: linux,   goarch: amd64 }
-          - { goos: linux,   goarch: arm64 }
-          - { goos: darwin,  goarch: amd64 }
-          - { goos: darwin,  goarch: arm64 }
     steps:
       - uses: actions/checkout@v4
         with:
@@ -88,30 +60,165 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Build metrics-action binary
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: '0'
-        run: |
-          tag="${GITHUB_REF#refs/tags/}"
-          mkdir -p dist
-          out="dist/metrics-action_${tag}_${GOOS}_${GOARCH}"
-          go build -trimpath -ldflags="-s -w -X main.version=${tag}" \
-            -o "${out}" ./cmd/metrics-action
+      - name: Run M10 docker-smoke (build + --help + ≤900MB assertion)
+        run: make docker-smoke
 
-      - name: Upload artifact (dry run)
-        if: github.event.inputs.dry_run == 'true'
+  release-docker:
+    name: Publish Docker image to GHCR (multi-arch + cosign)
+    needs: docker-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract semver tag (or dry-run placeholder)
+        id: tag
+        run: |
+          short_sha="${GITHUB_SHA::7}"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            tag="${GITHUB_REF#refs/tags/}"
+          else
+            # workflow_dispatch from a branch — emit a placeholder
+            # that is valid as a Docker image tag and as a filename
+            # suffix. Real GHCR push is gated on dry_run='false' so
+            # this placeholder never leaves the workflow run.
+            tag="dryrun-${short_sha}"
+          fi
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU (multi-arch emulation)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push multi-arch image (linux/amd64,linux/arm64)
+        id: build_push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./deploy/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event.inputs.dry_run != 'true' }}
+          build-args: |
+            VERSION=${{ steps.tag.outputs.tag }}
+          tags: |
+            ghcr.io/mjun0812/github-metrics:${{ steps.tag.outputs.tag }}
+            ghcr.io/mjun0812/github-metrics:latest
+            ghcr.io/mjun0812/github-metrics:sha-${{ steps.tag.outputs.short_sha }}
+
+      - name: Inspect multi-arch manifest (informational)
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          docker manifest inspect "ghcr.io/mjun0812/github-metrics:${{ steps.tag.outputs.tag }}" || true
+
+      - name: Install cosign
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign multi-arch image manifest (cosign keyless OIDC)
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        env:
+          COSIGN_EXPERIMENTAL: '1'
+        run: |
+          cosign sign --yes "ghcr.io/mjun0812/github-metrics:${{ steps.tag.outputs.tag }}"
+          cosign sign --yes "ghcr.io/mjun0812/github-metrics:latest"
+          cosign sign --yes "ghcr.io/mjun0812/github-metrics:sha-${{ steps.tag.outputs.short_sha }}"
+
+  release-binary:
+    name: Cross-compile + sign + publish CLI binaries
+    needs: docker-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Extract semver tag (or dry-run placeholder)
+        id: tag
+        run: |
+          short_sha="${GITHUB_SHA::7}"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            tag="${GITHUB_REF#refs/tags/}"
+          else
+            tag="dryrun-${short_sha}"
+          fi
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Cross-compile metrics-action (linux/darwin × amd64/arm64)
+        env:
+          CGO_ENABLED: '0'
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
+            goos="${target%/*}"
+            goarch="${target#*/}"
+            out="dist/metrics-action_${TAG}_${goos}_${goarch}"
+            echo "==> building ${out}"
+            GOOS="${goos}" GOARCH="${goarch}" go build -trimpath \
+              -ldflags="-s -w -X main.version=${TAG}" \
+              -o "${out}" ./cmd/metrics-action
+          done
+
+      - name: Generate SHA256SUMS
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          sha256sum metrics-action_* > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Install cosign
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign binaries + SHA256SUMS (cosign sign-blob keyless)
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        working-directory: dist
+        env:
+          COSIGN_EXPERIMENTAL: '1'
+        run: |
+          set -euo pipefail
+          for f in metrics-action_* SHA256SUMS; do
+            echo "==> signing ${f}"
+            cosign sign-blob --yes \
+              --output-signature "${f}.sig" \
+              --output-certificate "${f}.cert" \
+              --bundle "${f}.cosign.bundle" \
+              "${f}"
+          done
+
+      - name: Upload artifacts (dry run)
+        if: ${{ github.event.inputs.dry_run == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: metrics-action-${{ matrix.goos }}-${{ matrix.goarch }}
+          name: release-binaries-dryrun
           path: dist/
           retention-days: 7
 
-      - name: Upload to GitHub Release
-        if: github.event.inputs.dry_run != 'true'
+      - name: Upload to GitHub Release (production)
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        working-directory: dist
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.tag }}
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
-          gh release upload "${tag}" dist/* --clobber
+          set -euo pipefail
+          # Upload every artifact in dist/: 4 binaries + SHA256SUMS +
+          # per-artifact .sig / .cert / .cosign.bundle (when signed).
+          gh release upload "${TAG}" * --clobber

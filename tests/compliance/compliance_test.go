@@ -436,6 +436,87 @@ func TestCompliance_M6_NoNewPlugins(t *testing.T) {
 	}
 }
 
+// TestCompliance_M10_PluginTemplateInvariant re-asserts the M1-M9
+// adopted-feature set is unchanged after M10. M10 is a delivery
+// pipeline finalization phase — constitution principle III says no
+// plugin / template additions land here. This test consolidates the
+// per-phase M4 / M7 invariants into one explicit M10 epoch gate so a
+// silent regression (e.g. someone copies an M8 plugin into the tree
+// alongside a Dockerfile change) is surfaced as an M10 failure.
+//
+// Source: specs/008-m10-release-distribution/spec.md FR-010 +
+// plan.md Constitution Check III.
+func TestCompliance_M10_PluginTemplateInvariant(t *testing.T) {
+	root := mustRepoRoot(t)
+
+	// 21 adopted plugins (mirrors adoptedM4Plugins, with the two
+	// language sub-modes collapsed into the languages directory).
+	wantPlugins := map[string]struct{}{}
+	for _, slug := range adoptedM4Plugins {
+		if strings.Contains(slug, ".") {
+			continue
+		}
+		wantPlugins[slug] = struct{}{}
+	}
+
+	havePlugins := map[string]struct{}{}
+	entries, err := os.ReadDir(filepath.Join(root, "internal", "plugins"))
+	if err != nil {
+		t.Fatalf("read internal/plugins/: %v", err)
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if _, skip := nonPluginInternalDirs[name]; skip {
+			continue
+		}
+		havePlugins[name] = struct{}{}
+	}
+
+	wantTemplates := map[string]struct{}{
+		"classic":    {},
+		"repository": {},
+	}
+	haveTemplates := map[string]struct{}{}
+	entries, err = os.ReadDir(filepath.Join(root, "internal", "templates"))
+	if err != nil {
+		t.Fatalf("read internal/templates/: %v", err)
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		haveTemplates[e.Name()] = struct{}{}
+	}
+
+	diff := func(label string, want, have map[string]struct{}) {
+		t.Helper()
+		var missing, extra []string
+		for k := range want {
+			if _, ok := have[k]; !ok {
+				missing = append(missing, k)
+			}
+		}
+		for k := range have {
+			if _, ok := want[k]; !ok {
+				extra = append(extra, k)
+			}
+		}
+		if len(missing) > 0 {
+			sort.Strings(missing)
+			t.Errorf("M10 invariant: %s missing after M10: %v", label, missing)
+		}
+		if len(extra) > 0 {
+			sort.Strings(extra)
+			t.Errorf("M10 invariant: %s extras landed after M10 (constitution III): %v", label, extra)
+		}
+	}
+	diff("plugin dirs", wantPlugins, havePlugins)
+	diff("template dirs", wantTemplates, haveTemplates)
+}
+
 // TestOrgRepoIgnored asserts the constitution rule that ./org_repo
 // MUST stay out of git history. We check .gitignore declaratively.
 func TestOrgRepoIgnored(t *testing.T) {

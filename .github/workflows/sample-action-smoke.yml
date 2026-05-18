@@ -1,0 +1,54 @@
+name: Sample (post-release smoke)
+
+# Post-release smoke verification for `uses: mjun0812/github-metrics@v1.0.0`.
+# Triggered manually by maintainers after publishing a release; not on a
+# schedule and not auto-triggered. Runs the published Action on both x86
+# and arm64 hosted runners and asserts both jobs complete within 90s
+# per specs/008-m10-release-distribution/spec.md SC-006.
+#
+# The two jobs use --dryrun so they do not need write access to anything;
+# they just exercise the metrics-action binary inside the published GHCR
+# image end-to-end.
+#
+# Requirements:
+#   - A secret named METRICS_TOKEN must be configured on the repo. The
+#     token only needs `repo: read` (octocat profile is public so a
+#     classic PAT or the workflow's GITHUB_TOKEN can also be used by
+#     swapping the `with.token:` line — but METRICS_TOKEN is the
+#     project convention per README.md).
+#   - The release vX.Y.Z must exist on GHCR and the GitHub Release page.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'The published release tag to smoke-test (e.g. v1.0.0).'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  smoke-x86:
+    name: x86_64 smoke (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: mjun0812/github-metrics@v1.0.0
+        with:
+          user: octocat
+          token: ${{ secrets.METRICS_TOKEN }}
+          template: classic
+          output: svg
+          dryrun: 'yes'
+
+  smoke-arm:
+    name: arm64 smoke (ubuntu-24.04-arm)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    steps:
+      - uses: mjun0812/github-metrics@v1.0.0
+        with:
+          user: octocat
+          token: ${{ secrets.METRICS_TOKEN }}
+          template: classic
+          output: svg
+          dryrun: 'yes'

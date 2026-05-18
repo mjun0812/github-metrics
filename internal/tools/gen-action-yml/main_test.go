@@ -6,10 +6,11 @@ import (
 )
 
 // TestGenerate_HasRequiredSections confirms the generator emits the
-// four mandatory action.yml top-level keys.
+// four mandatory action.yml top-level keys with the default
+// (pre-release) image directive.
 func TestGenerate_HasRequiredSections(t *testing.T) {
 	t.Parallel()
-	body, err := generate("../../../assets")
+	body, err := generate("../../../assets", "")
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}
@@ -19,11 +20,11 @@ func TestGenerate_HasRequiredSections(t *testing.T) {
 		"outputs:",
 		"runs:",
 		"using: 'docker'",
-		// Build from Dockerfile at the consumer-pinned ref — see the
-		// gen-action-yml runs footer comment for the supply-chain
-		// rationale. Reverting to ":latest" reintroduces the
-		// REQUEST_CHANGES finding from the PR #266 self-review.
-		"image: 'Dockerfile'",
+		// Local-dev / pre-release fallback: build from the M10
+		// production Dockerfile at deploy/Dockerfile. The release
+		// pipeline rewrites this to docker:// when run with
+		// VERSION=vX.Y.Z.
+		"image: 'deploy/Dockerfile'",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("generated action.yml missing %q", want)
@@ -31,11 +32,42 @@ func TestGenerate_HasRequiredSections(t *testing.T) {
 	}
 }
 
+// TestGenerate_VersionedImageRef confirms a semver VERSION env value
+// emits the docker:// reference pinned to the published GHCR tag
+// per M10 contracts/action-yml.md.
+func TestGenerate_VersionedImageRef(t *testing.T) {
+	t.Parallel()
+	body, err := generate("../../../assets", "v1.0.0")
+	if err != nil {
+		t.Fatalf("generate: %v", err)
+	}
+	want := "image: 'docker://ghcr.io/mjun0812/github-metrics:v1.0.0'"
+	if !strings.Contains(body, want) {
+		t.Errorf("generated action.yml missing versioned image ref %q", want)
+	}
+	if strings.Contains(body, "image: 'deploy/Dockerfile'") {
+		t.Errorf("generated action.yml still contains local Dockerfile fallback when VERSION set")
+	}
+}
+
+// TestGenerate_DevVersionFallsBackToLocalDockerfile confirms VERSION=dev
+// keeps the local-build behavior (parity with empty VERSION).
+func TestGenerate_DevVersionFallsBackToLocalDockerfile(t *testing.T) {
+	t.Parallel()
+	body, err := generate("../../../assets", "dev")
+	if err != nil {
+		t.Fatalf("generate: %v", err)
+	}
+	if !strings.Contains(body, "image: 'deploy/Dockerfile'") {
+		t.Errorf("VERSION=dev should emit deploy/Dockerfile fallback")
+	}
+}
+
 // TestGenerate_CoreInputsPresent confirms the core inputs (token,
 // user, committer_*, filename) land in action.yml.
 func TestGenerate_CoreInputsPresent(t *testing.T) {
 	t.Parallel()
-	body, err := generate("../../../assets")
+	body, err := generate("../../../assets", "")
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}
@@ -56,7 +88,7 @@ func TestGenerate_CoreInputsPresent(t *testing.T) {
 // `plugin_<slug>` enable gate appears.
 func TestGenerate_AdoptedPluginGatesPresent(t *testing.T) {
 	t.Parallel()
-	body, err := generate("../../../assets")
+	body, err := generate("../../../assets", "")
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}
@@ -79,7 +111,7 @@ func TestGenerate_AdoptedPluginGatesPresent(t *testing.T) {
 // TestGenerate_NoUnadoptedPluginSlug enforces constitution 原則 III.
 func TestGenerate_NoUnadoptedPluginSlug(t *testing.T) {
 	t.Parallel()
-	body, err := generate("../../../assets")
+	body, err := generate("../../../assets", "")
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}
@@ -98,18 +130,22 @@ func TestGenerate_NoUnadoptedPluginSlug(t *testing.T) {
 }
 
 // TestGenerate_Deterministic confirms two consecutive runs produce
-// byte-identical output (drift gate prerequisite).
+// byte-identical output (drift gate prerequisite). Tests both the
+// pre-release path (empty VERSION) and the pinned-release path
+// (VERSION=v1.0.0) so neither toggle introduces randomness.
 func TestGenerate_Deterministic(t *testing.T) {
 	t.Parallel()
-	a, err := generate("../../../assets")
-	if err != nil {
-		t.Fatal(err)
-	}
-	b, err := generate("../../../assets")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if a != b {
-		t.Errorf("two runs produced different output (non-deterministic)")
+	for _, version := range []string{"", "v1.0.0"} {
+		a, err := generate("../../../assets", version)
+		if err != nil {
+			t.Fatal(err)
+		}
+		b, err := generate("../../../assets", version)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if a != b {
+			t.Errorf("two runs with version=%q produced different output", version)
+		}
 	}
 }
