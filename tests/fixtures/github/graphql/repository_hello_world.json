@@ -1,0 +1,19 @@
+{
+  "data": {
+    "repository": {
+      "databaseId": 1296269,
+      "name": "hello-world",
+      "nameWithOwner": "octocat/hello-world",
+      "description": "My first repository on GitHub.",
+      "stargazerCount": 80,
+      "forkCount": 9,
+      "isArchived": false,
+      "primaryLanguage": { "name": "Go", "color": "#00ADD8" },
+      "licenseInfo": { "name": "MIT License", "spdxId": "MIT" },
+      "defaultBranchRef": { "name": "master" },
+      "owner": { "__typename": "User", "login": "octocat", "avatarUrl": "https://avatars.githubusercontent.com/u/12345?v=4" },
+      "issues": { "totalCount": 5 },
+      "pullRequests": { "totalCount": 2 }
+    }
+  }
+}
