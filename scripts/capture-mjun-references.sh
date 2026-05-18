@@ -47,6 +47,10 @@ render_and_capture() {
   local png_out="${OUTDIR}/mjun-${label}-ours.png"
 
   echo "=> ${label}"
+  # mjun0812's workflow uses base: "" (no base sections) for per-plugin
+  # SVGs — pass it via --plugin base= so inputs["base"]="" is set in
+  # the partial dispatcher. The classic Run gates base.* partials on
+  # this key (see internal/templates/classic/classic.go).
   if ! docker run --rm \
       -e GITHUB_TOKEN \
       -v "$(pwd)/${SVGDIR}:/out" \
@@ -57,6 +61,7 @@ render_and_capture() {
       --output svg \
       --filename "/out/metrics_${label}.svg" \
       --dryrun \
+      --plugin "base=" \
       "$@" >/dev/null 2>"/tmp/cap-mjun-${label}.log"
   then
     echo "   FAIL docker render"
