@@ -6,22 +6,21 @@ Go port of [lowlighter/metrics](https://github.com/lowlighter/metrics) for the
 adopted feature subset documented in
 [`docs/design/15-selection-answer.md`](docs/design/15-selection-answer.md).
 
-**Status: M7 (repository template) complete.** The `metrics-action`
-binary now ships the second adopted template (`repository`) alongside
-the existing `classic` template — `--template repository --user owner
---repo name` re-centers the rendered SVG on a single GitHub repository
-(owner avatar, description, community health, recent activity) instead
-of a user profile. The 7 reused plugins (`languages`, `projects`,
-`stargazers`, `people`, `activity`, `contributors`, `sponsors`)
-internally switch their aggregation target to the single repo via a
-per-plugin `mode` field — no new plugin slug enters
-`internal/plugins/`. The M6 baseline (Docker image + CLI + release
-pipeline) carries over unchanged. See
-[`specs/006-m7-repository-template/`](specs/006-m7-repository-template/)
-for the spec, plan, and tasks. M5 (Web instance) and M8 (social
-plugins) stay intentionally out-of-scope per
-[`docs/design/15-selection-answer.md`](docs/design/15-selection-answer.md);
-M9+ continues with snapshot / replay infrastructure.
+**Status: v1.0.0 — M10 (release / Docker distribution) complete.**
+The `metrics-action` binary ships as a published multi-arch
+(linux/amd64 + linux/arm64) Docker image on GHCR plus signed CLI
+binaries on GitHub Releases. Upstream users can migrate by swapping
+one `uses:` line — see
+[`docs/migration-to-go.md`](docs/migration-to-go.md) for the
+adopted-vs-unported plugin matrix and rollback procedure.
+
+The M7 baseline (repository template) and M9 baseline (shared test
+infrastructure) carry over unchanged: `--template repository --user
+owner --repo name` re-centers the rendered SVG on a single GitHub
+repository, and `internal/testutil/` hosts the shared mocks +
+golden helpers consumed by every plugin's tests. M5 (Web instance)
+and M8 (social plugins) stay intentionally out-of-scope per
+[`docs/design/15-selection-answer.md`](docs/design/15-selection-answer.md).
 
 ## Repository template
 
@@ -60,7 +59,7 @@ jobs:
   github-metrics:
     runs-on: ubuntu-latest
     steps:
-      - uses: mjun0812/github-metrics@v0.6.0
+      - uses: mjun0812/github-metrics@v1.0.0
         with:
           user: octocat
           token: ${{ secrets.METRICS_TOKEN }}
@@ -74,7 +73,7 @@ jobs:
 
 The action runs the `metrics-action` binary inside the
 `ghcr.io/mjun0812/github-metrics` Docker image. Pin to a semver tag
-(`@v0.6.0`) for reproducibility; the `@latest` tag is also published
+(`@v1.0.0`) for reproducibility; the `@latest` tag is also published
 for convenience.
 
 ## Usage as a CLI
@@ -82,11 +81,11 @@ for convenience.
 ```sh
 # Install from a GitHub Release (linux/darwin × amd64/arm64).
 curl -L -o metrics-action \
-  https://github.com/mjun0812/github-metrics/releases/download/v0.6.0/metrics-action_v0.6.0_darwin_arm64
+  https://github.com/mjun0812/github-metrics/releases/download/v1.0.0/metrics-action_v1.0.0_darwin_arm64
 chmod +x metrics-action
 
 # Or via go install (requires Go 1.26+).
-go install github.com/mjun0812/github-metrics/cmd/metrics-action@v0.6.0
+go install github.com/mjun0812/github-metrics/cmd/metrics-action@v1.0.0
 
 # Or via Docker (no install needed). The CLI's --filename is relative
 # to the binary's working directory; pass an absolute path so the file
@@ -95,7 +94,7 @@ docker run --rm \
   -v "$PWD/out:/renders" \
   -w /renders \
   -e GITHUB_TOKEN \
-  ghcr.io/mjun0812/github-metrics:v0.6.0 \
+  ghcr.io/mjun0812/github-metrics:v1.0.0 \
   --user octocat --token-env GITHUB_TOKEN --template classic \
   --output svg --filename github-metrics.svg
 
