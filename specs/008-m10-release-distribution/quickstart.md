@@ -64,8 +64,8 @@ git push origin main v1.0.0
 ```
 
 The release workflow auto-triggers on the tag push. The
-`docker-smoke` gate runs first; release-docker and release-binary
-fan out once smoke is green.
+`docker-smoke` gate runs first; release-docker, release-binary,
+and (post-009) `update-floating-tag` fan out once smoke is green.
 
 > **Note**: the lefthook `action-yml-drift` hook runs `make
 > gen-action-yml` *without* `VERSION` set, so the release commit
@@ -76,6 +76,38 @@ fan out once smoke is green.
 > regenerate without `VERSION` (`make gen-action-yml`) and commit
 > the revert as `chore(release): unpin action.yml after v1.0.0`
 > so `main` returns to the local-dev path.
+
+> **Note (009 onward)**: `release-binary` now auto-creates the
+> GitHub Release page if it does not exist; the prior manual
+> `gh release create vX.Y.Z` step (needed for v1.0.0) is no longer
+> required. The `update-floating-tag` job advances `v<MAJOR>` to
+> the new commit for stable releases (skipped on pre-release tags
+> and on back-port releases per FR-004 / FR-005). See
+> `specs/009-release-tag-automation/quickstart.md` for the full
+> post-009 procedure.
+
+## 2a. Back-fill the v1 floating tag (one-time)
+
+The v1.0.0 release predates the 009 floating-tag automation, so the
+`v1` ref must be created manually as a one-time maintainer action:
+
+```sh
+git tag -f v1 v1.0.0
+git push origin refs/tags/v1
+```
+
+Verify:
+
+```sh
+git ls-remote origin refs/tags/v1 refs/tags/v1.0.0
+# Both should return the same SHA (b3bd975).
+```
+
+Future releases (v1.0.1 onward) auto-advance `v1` via the
+`update-floating-tag` workflow job — no further manual backfill
+needed. See
+[`specs/009-release-tag-automation/contracts/floating-tag-policy.md`](../009-release-tag-automation/contracts/floating-tag-policy.md)
+§5.
 
 ## 3. Monitor the release run
 

@@ -163,7 +163,7 @@ constitution 原則 I より:
 下記の workflow は **そのまま** Go 移植版で動作します:
 
 ```yaml
-- uses: mjun0812/github-metrics@v1.0.0
+- uses: mjun0812/github-metrics@v1
   with:
     user: octocat
     plugin_languages: yes              # 採用 → 出力に反映
@@ -181,8 +181,12 @@ constitution 原則 I より:
 
 ```diff
 - uses: lowlighter/metrics@v3.34
-+ uses: mjun0812/github-metrics@v1.0.0
++ uses: mjun0812/github-metrics@v1
 ```
+
+`@v1` は最新の v1.x.y リリースに自動追従する floating tag です
+(patch / minor 更新が出ても workflow の変更不要)。バイト単位で
+ピン留めしたい場合は `@v1.0.0` 等の exact `vX.Y.Z` 形式を使えます。
 
 ### Step 2: (任意) 未対応 input を削除
 
@@ -211,7 +215,7 @@ scheduled run を待ちます。`output_action: commit` 等の出力ア
 は drop-in 互換のため、設定ファイル側の調整は不要です):
 
 ```diff
-- uses: mjun0812/github-metrics@v1.0.0
+- uses: mjun0812/github-metrics@v1
 + uses: lowlighter/metrics@v3.34
 ```
 
