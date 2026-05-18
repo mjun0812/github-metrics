@@ -72,11 +72,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Extract semver tag
+      - name: Extract semver tag (or dry-run placeholder)
         id: tag
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
           short_sha="${GITHUB_SHA::7}"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            tag="${GITHUB_REF#refs/tags/}"
+          else
+            # workflow_dispatch from a branch — emit a placeholder
+            # that is valid as a Docker image tag and as a filename
+            # suffix. Real GHCR push is gated on dry_run='false' so
+            # this placeholder never leaves the workflow run.
+            tag="dryrun-${short_sha}"
+          fi
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
 
@@ -140,10 +148,15 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Extract semver tag
+      - name: Extract semver tag (or dry-run placeholder)
         id: tag
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
+          short_sha="${GITHUB_SHA::7}"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            tag="${GITHUB_REF#refs/tags/}"
+          else
+            tag="dryrun-${short_sha}"
+          fi
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
 
       - name: Cross-compile metrics-action (linux/darwin × amd64/arm64)
