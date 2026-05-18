@@ -866,8 +866,9 @@ outputs:
 
 runs:
   using: 'docker'
-  # Pinned to the published GHCR image so a
-  # `uses: mjun0812/github-metrics@v1.0.0` invocation always resolves
-  # to the exact image bytes built for the v1.0.0 release.
-  # Cosign keyless OIDC signatures (SC-004) prove provenance.
-  image: 'docker://ghcr.io/mjun0812/github-metrics:v1.0.0'
+  # Local-development fallback: build the M10 production image
+  # from source. The release pipeline rewrites this line to a
+  # docker:// reference pinned to the published vX.Y.Z tag when it
+  # runs `VERSION=vX.Y.Z make gen-action-yml`; see
+  # specs/008-m10-release-distribution/contracts/action-yml.md.
+  image: 'deploy/Dockerfile'
