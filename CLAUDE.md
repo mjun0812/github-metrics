@@ -2,7 +2,8 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Active plan: none (M10 published as v1.0.0 — see git tag and `docs/migration-to-go.md`)
+- Active plan: [specs/009-release-tag-automation/plan.md](specs/009-release-tag-automation/plan.md)
+- Feature spec: [specs/009-release-tag-automation/spec.md](specs/009-release-tag-automation/spec.md)
 - M10 baseline (completed): [specs/008-m10-release-distribution/plan.md](specs/008-m10-release-distribution/plan.md)
 - M9 baseline (completed): [specs/007-m9-test-infrastructure/plan.md](specs/007-m9-test-infrastructure/plan.md)
 - M7 baseline (completed): [specs/006-m7-repository-template/plan.md](specs/006-m7-repository-template/plan.md)

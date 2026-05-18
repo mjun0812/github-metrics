@@ -50,7 +50,7 @@ jobs:
   github-metrics:
     runs-on: ubuntu-latest
     steps:
-      - uses: mjun0812/github-metrics@v1.0.0
+      - uses: mjun0812/github-metrics@v1
         with:
           user: octocat
           token: ${{ secrets.METRICS_TOKEN }}
@@ -62,9 +62,11 @@ jobs:
           output_condition: data-changed
 ```
 
-Pin to a semver tag (`@v1.0.0`) for reproducibility; the workflow resolves
-to the matching multi-arch image on GHCR. `@latest` is also published for
-convenience but is not recommended for production workflows.
+`@v1` is the recommended pin — it resolves to the latest `v1.x.y`
+release so consumers automatically receive bug-fix and feature
+patches without edits. For immutable bytes pin to `@v1.0.0` (or any
+exact `vX.Y.Z` form). `@latest` is also published for convenience but
+is not recommended for production workflows.
 
 ### Repository template
 
@@ -72,7 +74,7 @@ convenience but is not recommended for production workflows.
 instead of a user profile:
 
 ```yaml
-- uses: mjun0812/github-metrics@v1.0.0
+- uses: mjun0812/github-metrics@v1
   with:
     user: ${{ github.repository_owner }}
     repo: ${{ github.event.repository.name }}
@@ -171,8 +173,12 @@ attribute / class structure matches upstream, but dynamic strings
 
    ```diff
    - uses: lowlighter/metrics@v3.34
-   + uses: mjun0812/github-metrics@v1.0.0
+   + uses: mjun0812/github-metrics@v1
    ```
+
+   `@v1` automatically resolves to the latest `v1.x.y` release; use
+   `@v1.0.0` (or any exact `vX.Y.Z`) if you prefer to pin immutable
+   bytes.
 
 2. Re-run the workflow. Unported plugin gates remain in your `with:`
    block silently; remove them at your leisure.

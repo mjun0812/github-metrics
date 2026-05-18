@@ -211,7 +211,7 @@ jobs:
           path: dist/
           retention-days: 7
 
-      - name: Upload to GitHub Release (production)
+      - name: Publish to GitHub Release (production)
         if: ${{ github.event.inputs.dry_run != 'true' }}
         working-directory: dist
         env:
@@ -219,6 +219,98 @@ jobs:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
           set -euo pipefail
-          # Upload every artifact in dist/: 4 binaries + SHA256SUMS +
-          # per-artifact .sig / .cert / .cosign.bundle (when signed).
-          gh release upload "${TAG}" * --clobber
+          # Auto-create the Release page if it does not exist yet.
+          # This collapses the previous M10 two-step procedure
+          # (manual `gh release create` + automated `gh release upload`)
+          # into a single workflow-driven path:
+          #
+          #   - existing release  → `gh release upload --clobber` (idempotent
+          #     re-runs after a CI flake; preserves any manual release-notes
+          #     edits the maintainer may have made)
+          #   - missing release   → `gh release create … --generate-notes` with
+          #     all 20 artifacts attached in one shot (4 binaries + SHA256SUMS +
+          #     per-artifact .sig / .cert / .cosign.bundle)
+          #
+          # See specs/009-release-tag-automation/contracts/release-workflow-delta.md §1.
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists — uploading via --clobber"
+            gh release upload "${TAG}" * --clobber
+          else
+            echo "Release ${TAG} does not exist yet — creating with assets in one shot"
+            gh release create "${TAG}" * \
+              --generate-notes \
+              --title "${TAG}"
+          fi
+
+  update-floating-tag:
+    name: Advance vMAJOR floating tag (stable releases only)
+    needs: [release-docker, release-binary]
+    runs-on: ubuntu-latest
+    # Only run on tag pushes (not workflow_dispatch from a branch) and
+    # only when not in dry-run mode. The decision step below also
+    # filters pre-releases (FR-004) and back-port releases (FR-005).
+    if: |
+      github.event_name == 'push' &&
+      startsWith(github.ref, 'refs/tags/v') &&
+      github.event.inputs.dry_run != 'true'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute major version + advance decision
+        id: decide
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF#refs/tags/}"
+          # Skip pre-releases per SemVer 2.0.0 (FR-004).
+          # Pre-release tags are vX.Y.Z-<identifier>...; the regex below
+          # detects a hyphen-prefixed prerelease suffix at the tail.
+          if [[ "${TAG}" =~ -[0-9A-Za-z.-]+$ ]]; then
+            echo "skip=prerelease" >> "${GITHUB_OUTPUT}"
+            echo "Pre-release ${TAG} — vMAJOR floating tag NOT updated"
+            exit 0
+          fi
+          # Extract MAJOR from a stable vX.Y.Z (the +build suffix is also
+          # permitted by SemVer 2.0.0 and treated as stable).
+          if [[ ! "${TAG}" =~ ^v([0-9]+)\.[0-9]+\.[0-9]+(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "skip=non-semver" >> "${GITHUB_OUTPUT}"
+            echo "Tag ${TAG} does not match v<MAJOR>.<MINOR>.<PATCH>; skipping"
+            exit 0
+          fi
+          MAJOR="${BASH_REMATCH[1]}"
+          FLOATING="v${MAJOR}"
+
+          # Back-port guard (FR-005): if vMAJOR already exists on origin
+          # and points at a NEWER vX.Y.Z than the just-pushed tag, skip.
+          if git ls-remote --exit-code origin "refs/tags/${FLOATING}" >/dev/null 2>&1; then
+            CURRENT_SHA="$(git ls-remote origin "refs/tags/${FLOATING}" | awk '{print $1}')"
+            # Look for any vMAJOR.MINOR.PATCH tag pointing at the current
+            # vMAJOR target. If multiple, pick the largest by sort -V.
+            CURRENT_TAG="$(git tag --points-at "${CURRENT_SHA}" "v${MAJOR}.*.*" 2>/dev/null | sort -V | tail -1 || true)"
+            if [[ -n "${CURRENT_TAG}" ]]; then
+              NEWER="$(printf '%s\n%s\n' "${TAG}" "${CURRENT_TAG}" | sort -V | tail -1)"
+              if [[ "${NEWER}" != "${TAG}" ]]; then
+                echo "skip=backport" >> "${GITHUB_OUTPUT}"
+                echo "Back-port: ${TAG} is older than ${CURRENT_TAG} — vMAJOR NOT updated"
+                exit 0
+              fi
+            fi
+          fi
+
+          echo "floating=${FLOATING}" >> "${GITHUB_OUTPUT}"
+          echo "Will advance ${FLOATING} → $(git rev-parse HEAD) (= ${TAG})"
+
+      - name: Force-update floating tag
+        if: steps.decide.outputs.floating != ''
+        env:
+          FLOATING: ${{ steps.decide.outputs.floating }}
+          TARGET_SHA: ${{ github.sha }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git tag -f "${FLOATING}" "${TARGET_SHA}"
+          git push origin --force "refs/tags/${FLOATING}"
+          echo "Advanced ${FLOATING} → ${TARGET_SHA} (= ${TAG})"
