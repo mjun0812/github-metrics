@@ -58,7 +58,7 @@ const (
 //   - image builds cleanly
 //   - `metrics-action --help` exits 0
 //   - help output contains either "Usage:" or "metrics-action"
-//   - image size is ≤ 600 MB
+//   - image size is ≤ 900 MB (per FR-006 escalation — see contracts/dockerfile.md §1 Note)
 func TestDockerfile_BuildRunHelp(t *testing.T) {
 	if _, err := exec.LookPath("docker"); err != nil {
 		t.Skip("docker not on PATH; skipping docker_smoke test")

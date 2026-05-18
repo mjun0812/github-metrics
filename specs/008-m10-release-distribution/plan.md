@@ -15,7 +15,9 @@ binaries without checksums or signatures. M10 ships:
 
 - A production-grade `deploy/Dockerfile` — multi-arch buildable
   (linux/amd64 + linux/arm64), non-root runtime user (uid 10001),
-  image-size budget ≤ 600 MB per platform verified in CI.
+  image-size budget ≤ 900 MB per platform verified in CI (raised from
+  the original 600 MB target during implementation — see
+  `contracts/dockerfile.md` §1 Note and `research.md` R-003 "Plan-phase risk").
 - An extended `release.yml` — `docker buildx` multi-arch push +
   `SHA256SUMS` checksum file + cosign keyless OIDC signing for image
   manifest and every binary; `dry_run=true` mode for pre-tag
@@ -79,7 +81,7 @@ amd64/arm64 (4 variants; Windows out-of-scope per spec assumption).
 
 **Constraints**:
 
-- Image size per platform MUST stay ≤ 600 MB (FR-006); release
+- Image size per platform MUST stay ≤ 900 MB (FR-006 v1.0); release
   workflow asserts this and fails the release on overrun.
 - `action.yml` input matrix is frozen — M10 only updates the
   `docker://` image reference line.

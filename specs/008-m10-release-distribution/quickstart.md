@@ -89,7 +89,7 @@ Expected outcome:
   + `:latest` + `:sha-<short>` (multi-arch manifest list).
 - `release-binary` job uploads 4 binaries + `SHA256SUMS` +
   cosign bundle files as a GitHub Release.
-- Size-budget assertion passes (≤ 600 MB per platform).
+- Size-budget assertion passes (≤ 900 MB per platform — per FR-006 escalation, see `contracts/dockerfile.md` §1 Note).
 - Cosign signs the image manifest + each binary; signatures land
   in Rekor.
 

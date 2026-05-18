@@ -59,7 +59,7 @@ plan-phase shape is captured before tasks generation.
   - ENTRYPOINT: `["/usr/local/bin/metrics-action"]`.
   - HEALTHCHECK: NONE (Action container is short-lived per
     invocation; healthchecks have no consumer).
-- **Size budget**: ≤ 600 MB per platform after build (asserted by
+- **Size budget**: ≤ 900 MB per platform after build (asserted by
   release.yml — see R-003).
 - **Multi-arch posture**: Builds cleanly under `docker buildx
   build --platform linux/amd64,linux/arm64`. No platform-specific

@@ -99,37 +99,111 @@ fi
 echo
 
 # -------------------------------------------------------------------
-# 2. SHA256SUMS — download SHA256SUMS + binaries and verify
+# 2. SHA256SUMS provenance + binary integrity (SC-003)
+#
+# Two-layer defence:
+#   (a) Filename allowlist regex — every filename field in SHA256SUMS
+#       MUST match the canonical metrics-action binary shape. Rejects
+#       crafted filenames containing '/', '..', or any characters
+#       that could be passed to `curl -o` to traverse paths.
+#       Always active, no cosign dependency.
+#   (b) Cosign keyless OIDC verification of SHA256SUMS itself via
+#       sign-blob bundle. Establishes provenance: SHA256SUMS was
+#       produced by this repo's release.yml workflow, not by an
+#       attacker. Active when cosign is on PATH; if cosign is
+#       missing, a WARN is emitted but the section still runs the
+#       layer-(a) defence + binary checksum match.
 # -------------------------------------------------------------------
-echo "==> [2/4] sha256sum -c SHA256SUMS (SC-003)"
+echo "==> [2/4] SHA256SUMS provenance + binary integrity (SC-003)"
+
+# Canonical binary-name shape — see contracts/release-workflow.md §2.2
+# (matrix: linux|darwin × amd64|arm64; semver tag including optional
+# prerelease suffix). Update if the matrix expands in a future release.
+FILENAME_RE='^metrics-action_v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?_(linux|darwin)_(amd64|arm64)$'
+
 if ! command -v curl >/dev/null 2>&1 || ! command -v sha256sum >/dev/null 2>&1; then
   echo "    SKIP: curl or sha256sum not on PATH"
   RC_SHA256=2
 else
   cd "${WORKDIR}"
   base_url="https://github.com/${ORG_REPO}/releases/download/${TAG}"
+
   if ! curl -sSfL -o SHA256SUMS "${base_url}/SHA256SUMS"; then
     echo "    FAIL: cannot download SHA256SUMS from ${base_url}/SHA256SUMS"
     RC_SHA256=1
   else
-    download_ok=1
-    while read -r _hash filename; do
-      [[ -z "${filename}" ]] && continue
-      if ! curl -sSfL -o "${filename}" "${base_url}/${filename}"; then
-        echo "    FAIL: cannot download binary ${filename}"
-        download_ok=0
-      fi
-    done < SHA256SUMS
-    if [[ "${download_ok}" -eq 1 ]]; then
-      if sha256sum -c SHA256SUMS >/dev/null 2>&1; then
-        echo "    OK: all SHA256SUMS entries match"
-      else
-        echo "    FAIL: sha256sum -c reported mismatches"
-        sha256sum -c SHA256SUMS || true
+    # 2a. Verify SHA256SUMS provenance via cosign keyless OIDC. Without
+    # this, an attacker who can tamper with one Release asset could
+    # publish crafted SHA256SUMS lines and recompute the hashes to
+    # match attacker-controlled binaries.
+    if command -v cosign >/dev/null 2>&1; then
+      if ! curl -sSfL -o SHA256SUMS.cosign.bundle \
+            "${base_url}/SHA256SUMS.cosign.bundle"; then
+        echo "    FAIL: cannot download SHA256SUMS.cosign.bundle — release artifact missing"
         RC_SHA256=1
+      elif ! verify_blob_out="$(cosign verify-blob \
+            --bundle SHA256SUMS.cosign.bundle \
+            --certificate-identity-regexp "${CERT_IDENTITY_RE}" \
+            --certificate-oidc-issuer "${OIDC_ISSUER}" \
+            SHA256SUMS 2>&1)"; then
+        echo "    FAIL: cosign verify-blob on SHA256SUMS failed — file may be tampered"
+        echo "    ${verify_blob_out}"
+        RC_SHA256=1
+      else
+        echo "    OK: SHA256SUMS cosign signature verified (provenance established)"
       fi
     else
-      RC_SHA256=1
+      echo "    WARN: cosign not on PATH — SHA256SUMS provenance NOT verified."
+      echo "          Filename allowlist + sha256sum -c will still run; install cosign for full provenance."
+    fi
+
+    # 2b. Filename allowlist + binary download + sha256sum -c.
+    # Only proceed if SHA256SUMS provenance is OK or cosign was absent.
+    if [[ "${RC_SHA256}" -ne 1 ]]; then
+      download_ok=1
+      # Use the trailing-newline-tolerant form: `read` returns
+      # non-zero on EOF without a final newline, which under
+      # `set -e` would silently drop the last entry. The
+      # `|| [[ -n "${line}" ]]` clause catches that record.
+      while IFS= read -r line || [[ -n "${line}" ]]; do
+        [[ -z "${line}" ]] && continue
+        # SHA256SUMS canonical line: "<64-hex><sp><sp>?<filename>".
+        # awk extracts the last whitespace-separated field; sha256sum
+        # emits 2-space separation but binary mode prepends a `*`.
+        # We accept both via the regex match below.
+        sha_field="$(printf '%s' "${line}" | awk '{print $1}')"
+        filename="$(printf '%s' "${line}" | awk '{print $NF}')"
+        # Strip a leading '*' (sha256sum binary-mode marker).
+        filename="${filename#\*}"
+
+        if [[ ! "${sha_field}" =~ ^[0-9a-f]{64}$ ]]; then
+          echo "    FAIL: SHA256SUMS entry has malformed hash field — refusing to proceed"
+          download_ok=0
+          continue
+        fi
+        # Path-traversal guard: only canonical filenames pass.
+        if [[ ! "${filename}" =~ ${FILENAME_RE} ]]; then
+          printf "    FAIL: SHA256SUMS entry contains non-canonical filename %q — refusing (path-traversal guard)\n" "${filename}"
+          download_ok=0
+          continue
+        fi
+        if ! curl -sSfL -o "${filename}" "${base_url}/${filename}"; then
+          echo "    FAIL: cannot download binary ${filename}"
+          download_ok=0
+        fi
+      done < SHA256SUMS
+
+      if [[ "${download_ok}" -eq 1 ]]; then
+        if sha256sum -c SHA256SUMS >/dev/null 2>&1; then
+          echo "    OK: all SHA256SUMS entries match"
+        else
+          echo "    FAIL: sha256sum -c reported mismatches"
+          sha256sum -c SHA256SUMS || true
+          RC_SHA256=1
+        fi
+      else
+        RC_SHA256=1
+      fi
     fi
   fi
   cd - >/dev/null

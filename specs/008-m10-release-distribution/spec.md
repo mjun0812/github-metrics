@@ -163,7 +163,7 @@ existing `with:` inputs still recognized?".
   partial release is created.
 - **arm64 buildx step on x86 runner** → buildx auto-uses QEMU
   emulation; build is slower but completes (verified in dry-run).
-- **Image size exceeds 600 MB budget** → release workflow asserts the
+- **Image size exceeds 900 MB budget** → docker-smoke gate job asserts the
   per-platform size after build and fails with an actionable error
   citing the actual size (so the maintainer can decide to bump the
   budget or shrink the image).

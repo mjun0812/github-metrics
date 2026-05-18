@@ -60,7 +60,7 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Run M10 docker-smoke (build + --help + ≤600MB assertion)
+      - name: Run M10 docker-smoke (build + --help + ≤900MB assertion)
         run: make docker-smoke
 
   release-docker:

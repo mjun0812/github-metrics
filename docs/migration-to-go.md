@@ -114,7 +114,6 @@
 | --------------- | -------- | ---------- |
 | anilist         | S        | 外部 API   |
 | chess           | -        | community  |
-| chessdotcom     | -        | community  |
 | crypto          | -        | community  |
 | fortune         | -        | community  |
 | leetcode        | S        | 外部 API   |
@@ -133,8 +132,7 @@
 | wakatime        | M        | 外部 API   |
 | 16personalities | -        | community  |
 
-(注: 上記には `chessdotcom` も含めて 19 slug を網羅。実際の `chess`
-パッケージ名差異は upstream の plugin ディレクトリに準拠)
+(注: 上記 19 slug は `tests/compliance/compliance_test.go::unadoptedPluginNames` で gating されている canonical set と一致する。Drift 検知は CI 経由で自動。)
 
 ### 3.6 出力形式
 

@@ -53,7 +53,7 @@ Replaces the M3-placeholder Dockerfile per T-126.
 | `fonts-noto-cjk` | CJK glyph support (escalation lever — see R-003) | ~80 MB |
 | `fonts-liberation` | sans/serif/mono Latin fallback | ~5 MB |
 
-**Total runtime image floor**: ~575 MB amd64 / ~600 MB arm64.
+**Total runtime image floor (measured on GitHub-hosted ubuntu-latest, 2026-05-18)**: ~834 MB amd64. arm64 build under QEMU emulation yields a comparable size. The per-package estimates above sum to ~575 MB but the actual chromium + transitive apt dependencies (libgtk-3, libnss3, libcups2, etc.) bloat the runtime considerably on x86_64 Debian bookworm; the 900 MB budget per §1 leaves ~66 MB headroom on this measurement.
 
 ## 4. Size budget enforcement
 
@@ -81,7 +81,7 @@ $IMAGE metrics-action --help`, and asserts:
 
 - exit code 0
 - stdout contains `Usage:` or `metrics-action` prefix
-- `docker image inspect` size ≤ 600 MB per platform
+- `docker image inspect` size ≤ 900 MB per platform (per FR-006 escalation — see §1 Note)
 
 The local helper `make docker-smoke` wraps the test for
 developer self-service. The release workflow `release-docker`

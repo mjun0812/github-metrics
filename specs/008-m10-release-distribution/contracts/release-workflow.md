@@ -26,7 +26,7 @@ keyless signing.
 | Set up Buildx | `docker/setup-buildx-action@v3` |
 | Log in to GHCR | `docker/login-action@v3` (skipped under dry-run) |
 | Build + push (multi-arch) | `docker/build-push-action@v5` with `platforms: linux/amd64,linux/arm64`, `tags: vX.Y.Z + latest + sha-<short>`, `push: ${{ inputs.dry_run != 'true' }}` |
-| Size budget assertion | shell: `docker image inspect` → fail if > 600 MB per platform |
+| (Size budget assertion lives in the **docker-smoke gate job** — see §2.0 below — not in release-docker. The gate runs before release-docker via `needs: docker-smoke`, so an oversized image never reaches the buildx push step.) | |
 | Install cosign | `sigstore/cosign-installer@v3` |
 | Sign manifest list | `cosign sign --yes ghcr.io/.../...:vX.Y.Z` (skipped under dry-run) |
 

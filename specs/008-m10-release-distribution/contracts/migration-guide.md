@@ -64,12 +64,22 @@ Mirror table format:
 | Output | markdown | community plugin と一体 | `docs/design/15-selection-answer.md` §4 |
 | Feature | insights HTML | M5 web 一体 | `docs/design/15-selection-answer.md` §1 |
 
-All 19 M8 social plugins must be listed (`anilist`, `chess`, `chessdotcom`,
-`code`, `codeforces`, `discussions`, `followup`, `gists`,
-`introduction`, `leetcode`, `lichess`, `music`, `nightscout`,
-`pagespeed`, `posts`, `screenshot`, `splatoon`, `stackoverflow`,
-`steam`, `tweets`, `wakatime` — verify count against the
-selection-answer doc).
+All 19 M8 social / external-API plugins must be listed. The canonical
+list is the social subset of `tests/compliance/compliance_test.go::unadoptedPluginNames`:
+`anilist`, `chess`, `crypto`, `fortune`, `leetcode`, `music`,
+`nightscout`, `pagespeed`, `poopmap`, `posts`, `rss`, `screenshot`,
+`splatoon`, `stackoverflow`, `steam`, `stock`, `tweets`, `wakatime`,
+`16personalities`.
+
+The GitHub-data plugins (`lines`, `gists`, `followup`, `discussions`,
+`skyline`, `support` — 6) belong in §2.3.3 separately, NOT in this
+social list. Community-extension plugins (`code`, `introduction`,
+`licenses` — 3) belong in §2.3.4.
+
+The migration-guide implementation MUST cross-reference
+`compliance_test.go::unadoptedPluginNames` so any future drift in the
+unadopted set surfaces in `tests/compliance/...` CI rather than in
+documentation review.
 
 ### 2.4 入力互換性 (Input compatibility)
 
