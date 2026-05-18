@@ -43,9 +43,12 @@ on:
         default: 'true'
 
 permissions:
-  contents: write   # GitHub Releases asset upload
+  contents: write   # GitHub Releases asset upload + floating-tag advance
   packages: write   # GHCR push
   id-token: write   # cosign keyless OIDC (M10)
+
+env:
+  REGISTRY_IMAGE: ghcr.io/mjun0812/github-metrics
 
 jobs:
   docker-smoke:
@@ -63,10 +66,34 @@ jobs:
       - name: Run M10 docker-smoke (build + --help + ≤900MB assertion)
         run: make docker-smoke
 
-  release-docker:
-    name: Publish Docker image to GHCR (multi-arch + cosign)
+  # Per-arch image build on a NATIVE runner (no QEMU emulation).
+  #
+  # Replaces the prior single buildx job that built both architectures
+  # in one place via QEMU. QEMU arm64 emulation was the dominant ~19m
+  # cost of every release; native arm64 runners (ubuntu-24.04-arm, GA
+  # since 2025-01) bring that down to ~3-5 min per arch in parallel.
+  #
+  # Each matrix entry pushes the image **by digest only** (no tag).
+  # The merge-manifest job below assembles the per-arch digests into
+  # a single multi-arch manifest list and assigns the three release
+  # tags (vX.Y.Z + latest + sha-<short>) in one shot.
+  #
+  # Reference pattern:
+  #   https://docs.docker.com/build/ci/github-actions/multi-platform/#distribute-build-across-multiple-runners
+  build-image:
+    name: Build image (${{ matrix.platform }})
     needs: docker-smoke
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
     steps:
       - uses: actions/checkout@v4
         with:
@@ -79,10 +106,6 @@ jobs:
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             tag="${GITHUB_REF#refs/tags/}"
           else
-            # workflow_dispatch from a branch — emit a placeholder
-            # that is valid as a Docker image tag and as a filename
-            # suffix. Real GHCR push is gated on dry_run='false' so
-            # this placeholder never leaves the workflow run.
             tag="dryrun-${short_sha}"
           fi
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
@@ -96,58 +119,114 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU (multi-arch emulation)
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push multi-arch image (linux/amd64,linux/arm64)
-        id: build_push
+      - name: Build and push image by digest (${{ matrix.platform }})
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./deploy/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.event.inputs.dry_run != 'true' }}
+          platforms: ${{ matrix.platform }}
           build-args: |
             VERSION=${{ steps.tag.outputs.tag }}
-          tags: |
-            ghcr.io/mjun0812/github-metrics:${{ steps.tag.outputs.tag }}
-            ghcr.io/mjun0812/github-metrics:latest
-            ghcr.io/mjun0812/github-metrics:sha-${{ steps.tag.outputs.short_sha }}
-          # GitHub Actions cache (type=gha) is the canonical buildx
-          # cache backend for GH-hosted runners. mode=max stores all
-          # intermediate layers — important because the apt-get install
-          # of chromium + Noto fonts is the dominant cost (~5-10 min
-          # under QEMU arm64 emulation). With this cache, subsequent
-          # releases that don't change the Dockerfile or go.sum hit
-          # near-zero rebuild cost on the runtime stage.
-          #
-          # Quota: GitHub Actions cache has a 10 GB per-repo ceiling;
-          # this workflow keeps cache under ~2 GB per platform so two
-          # releases can coexist comfortably. GitHub evicts oldest
-          # entries automatically when over quota.
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # push-by-digest=true: push the per-arch image manifest to
+          # GHCR but DO NOT create / update any tag. The merge-manifest
+          # job below uses these digests to assemble the multi-arch
+          # manifest list and attach the three release tags atomically.
+          outputs: |
+            type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=${{ github.event.inputs.dry_run != 'true' }}
+          # GitHub Actions cache, scoped per architecture so amd64 and
+          # arm64 don't collide. mode=max keeps every intermediate
+          # layer — the apt-get install of chromium + Noto fonts is
+          # the dominant cost (~3-5 min on native runners, still worth
+          # caching).
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
 
-      - name: Inspect multi-arch manifest (informational)
+      - name: Export digest
         if: ${{ github.event.inputs.dry_run != 'true' }}
         run: |
-          docker manifest inspect "ghcr.io/mjun0812/github-metrics:${{ steps.tag.outputs.tag }}" || true
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest artifact
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # Combine the per-arch digests into a single multi-arch manifest
+  # list, tag it, and sign the result with cosign keyless OIDC.
+  #
+  # Skipped in dry-run mode (build-image's `push=false` produces no
+  # digest to merge).
+  merge-manifest:
+    name: Merge multi-arch manifest + cosign sign
+    needs: build-image
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.dry_run != 'true' }}
+    steps:
+      - name: Extract semver tag
+        id: tag
+        run: |
+          short_sha="${GITHUB_SHA::7}"
+          tag="${GITHUB_REF#refs/tags/}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create manifest list + tag + push
+        working-directory: /tmp/digests
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          SHORT_SHA: ${{ steps.tag.outputs.short_sha }}
+        run: |
+          set -euo pipefail
+          # Each file in /tmp/digests/ is named after a per-arch
+          # digest (the sha256:... prefix is stripped by `touch
+          # ${digest#sha256:}` in the build-image job).
+          docker buildx imagetools create \
+            -t "${REGISTRY_IMAGE}:${TAG}" \
+            -t "${REGISTRY_IMAGE}:latest" \
+            -t "${REGISTRY_IMAGE}:sha-${SHORT_SHA}" \
+            $(printf "${REGISTRY_IMAGE}@sha256:%s " *)
+
+      - name: Inspect multi-arch manifest (informational)
+        run: |
+          docker buildx imagetools inspect "${REGISTRY_IMAGE}:${{ steps.tag.outputs.tag }}" || true
 
       - name: Install cosign
-        if: ${{ github.event.inputs.dry_run != 'true' }}
         uses: sigstore/cosign-installer@v3
 
-      - name: Sign multi-arch image manifest (cosign keyless OIDC)
-        if: ${{ github.event.inputs.dry_run != 'true' }}
+      - name: Sign multi-arch manifest (cosign keyless OIDC)
         env:
           COSIGN_EXPERIMENTAL: '1'
         run: |
-          cosign sign --yes "ghcr.io/mjun0812/github-metrics:${{ steps.tag.outputs.tag }}"
-          cosign sign --yes "ghcr.io/mjun0812/github-metrics:latest"
-          cosign sign --yes "ghcr.io/mjun0812/github-metrics:sha-${{ steps.tag.outputs.short_sha }}"
+          cosign sign --yes "${REGISTRY_IMAGE}:${{ steps.tag.outputs.tag }}"
+          cosign sign --yes "${REGISTRY_IMAGE}:latest"
+          cosign sign --yes "${REGISTRY_IMAGE}:sha-${{ steps.tag.outputs.short_sha }}"
 
   release-binary:
     name: Cross-compile + sign + publish CLI binaries
@@ -258,7 +337,7 @@ jobs:
 
   update-floating-tag:
     name: Advance vMAJOR floating tag (stable releases only)
-    needs: [release-docker, release-binary]
+    needs: [merge-manifest, release-binary]
     runs-on: ubuntu-latest
     # Only run on tag pushes (not workflow_dispatch from a branch) and
     # only when not in dry-run mode. The decision step below also
