@@ -287,6 +287,39 @@ func TestCompliance_M4_AdoptedPlugins(t *testing.T) {
 	}
 }
 
+// TestCompliance_M9_TestInfraInvariant asserts that
+// `internal/testutil/` contains exactly the documented sub-packages
+// (mocks, golden). Guards constitution III erosion via testutil
+// growth — any new subpackage requires an explicit M9 amendment.
+func TestCompliance_M9_TestInfraInvariant(t *testing.T) {
+	root := mustRepoRoot(t)
+	entries, err := os.ReadDir(filepath.Join(root, "internal", "testutil"))
+	if err != nil {
+		t.Fatalf("read internal/testutil/: %v", err)
+	}
+	want := map[string]struct{}{
+		"mocks":  {},
+		"golden": {},
+	}
+	have := map[string]struct{}{}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		have[e.Name()] = struct{}{}
+	}
+	for name := range want {
+		if _, ok := have[name]; !ok {
+			t.Errorf("adopted testutil sub-package missing: internal/testutil/%s/", name)
+		}
+	}
+	for name := range have {
+		if _, ok := want[name]; !ok {
+			t.Errorf("unadopted testutil sub-package landed: internal/testutil/%s/ — constitution III violation", name)
+		}
+	}
+}
+
 // TestCompliance_M7_NonAffectedPluginsAreInvariantOnRepo verifies the
 // contract from `contracts/repo-mode-plugin.md §6`: only the 7 listed
 // plugins (activity, contributors, languages, people, projects,

@@ -249,6 +249,7 @@ cmd/metrics-cli/      Standalone CLI entry point
 internal/             All non-public packages (logger, errors, ctxutil,
                       format, config, httpx, githubapi, plugins,
                       templates, plugins/core, ...)
+internal/testutil/    Shared mocks + golden file helpers (M9; test-only)
 assets/               Embedded plugin/template metadata (vendored from
                       ./org_repo via scripts/sync-assets.sh)
 tests/                Fixtures, golden files, and integration tests
