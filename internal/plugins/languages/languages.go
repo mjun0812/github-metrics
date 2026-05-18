@@ -50,6 +50,11 @@ type Result struct {
 	Sections      []string               `json:"sections"`
 	Mostly        plugins.LanguageStat   `json:"mostly"`
 	Colors        map[string]string      `json:"colors"`
+	// Details mirrors upstream `plugins.languages.details` — a list of
+	// per-language detail columns to render. Subset of
+	// {"lines", "bytes-size", "percentage"}. mjun0812 uses all three.
+	// (011 v2 additive extension per Principle II.)
+	Details []string `json:"details,omitempty"`
 }
 
 // IsSkipped lets the classic dispatcher (and any duck-typed consumer)
@@ -67,6 +72,7 @@ type inputs struct {
 	aliases   map[string]string
 	colors    map[string]string
 	sections  []string
+	details   []string
 }
 
 // Run aggregates language bytes across base.Computed.RepositoryList.
@@ -208,6 +214,7 @@ func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any
 		Sections:  in.sections,
 		Mostly:    mostly,
 		Colors:    colors,
+		Details:   in.details,
 	}, nil
 }
 
@@ -275,6 +282,11 @@ func parseInputs(in map[string]any) inputs {
 		if len(out.sections) == 0 {
 			out.sections = []string{"most-used"}
 		}
+	}
+	// 011 v2: plugin_languages_details — mjun0812 uses
+	// "bytes-size, percentage, lines".
+	if v, ok := in["plugin_languages_details"]; ok {
+		out.details = readCSVValue(v)
 	}
 	return out
 }

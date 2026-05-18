@@ -272,13 +272,18 @@ func TestComputeSVG_P1AllPlugins(t *testing.T) {
 		`data-plugin="repositories"`,
 		`data-plugin="isocalendar"`,
 		// Per-plugin DOM markers (contract §5).
+		// 011 v2: languages-progress / language-bar remain inside the
+		// new <svg class="bar"> wrapper. activity-event / achievement /
+		// repository markers unchanged. The flat isocalendar markers
+		// (calendar / calendar-day) were replaced with the upstream-
+		// equivalent 3D isometric heatmap inside <svg class="isocalendar-grid">.
 		`class="languages-progress"`,
 		`class="language-bar"`,
 		`class="activity-event"`,
 		`class="achievement"`,
 		`class="repository"`,
-		`class="calendar"`,
-		`class="calendar-day"`,
+		`class="isocalendar-grid"`,
+		`<filter id="brightness1">`,
 	}
 	for _, m := range wantMarkers {
 		if !strings.Contains(out, m) {

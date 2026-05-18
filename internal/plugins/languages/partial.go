@@ -175,19 +175,27 @@ func writeMostUsedSection(b *strings.Builder, pc *templates.PartialContext, bars
 		}
 		b.WriteString(`</g></svg>`)
 
-		// Per-language color-dot + name list (upstream EJS lines 73-80
-		// — default-details branch).
-		b.WriteString(`<div class="field center horizontal-wrap fill-width">`)
-		for _, lang := range bars {
-			fmt.Fprintf(
-				b,
-				`<div class="field center no-wrap language" data-language="%s">%s%s</div>`,
-				partials.EscapeXML(lang.Name),
-				colorDotOcticon(lang.Color),
-				partials.EscapeXML(lang.Name),
-			)
+		// Per-language render: upstream EJS lines 52-80.
+		// When `details` is non-empty (mjun0812: bytes-size, percentage,
+		// lines) emit per-language detail rows with the requested
+		// columns. Otherwise fall back to the simple color-dot + name
+		// list.
+		r := mustResult(pc)
+		if len(r.Details) > 0 {
+			writeDetailsRows(b, bars, r.Details, pc)
+		} else {
+			b.WriteString(`<div class="field center horizontal-wrap fill-width">`)
+			for _, lang := range bars {
+				fmt.Fprintf(
+					b,
+					`<div class="field center no-wrap language" data-language="%s">%s%s</div>`,
+					partials.EscapeXML(lang.Name),
+					colorDotOcticon(lang.Color),
+					partials.EscapeXML(lang.Name),
+				)
+			}
+			b.WriteString(`</div>`)
 		}
-		b.WriteString(`</div>`)
 
 		// Legacy <ul class="languages-list"> retained as a compat shim
 		// per parity-checklist deviation — keeps downstream CSS hooks
@@ -438,3 +446,128 @@ func colorOrDefault(c string) string {
 	}
 	return c
 }
+
+// mustResult re-fetches the languages Result from PartialContext for
+// helper functions that need access to the typed Result (e.g.,
+// Details mode rendering). Returns an empty Result if missing — the
+// caller's bars slice is already valid.
+func mustResult(pc *templates.PartialContext) *Result {
+	if pc == nil || pc.Data == nil {
+		return &Result{}
+	}
+	raw, ok := pc.Data.GetPlugin(Name)
+	if !ok || raw == nil {
+		return &Result{}
+	}
+	r, ok := raw.(*Result)
+	if !ok || r == nil {
+		return &Result{}
+	}
+	return r
+}
+
+// detailIncludes reports whether `details` contains the named column.
+func detailIncludes(details []string, name string) bool {
+	for _, d := range details {
+		if d == name {
+			return true
+		}
+	}
+	return false
+}
+
+// formatPercent mirrors upstream's `f.percentage(value)` — value is in
+// 0..1 range; output is "12.3%".
+func formatPercent(value float64) string {
+	return fmt.Sprintf("%.1f%%", value*100)
+}
+
+// writeDetailsRows emits the upstream-equivalent per-language detail
+// blocks (EJS lines 52-71): each language as `<div class="field
+// language details">` containing the color-dot + name + a `<small>`
+// with the requested detail columns (lines, bytes-size, percentage).
+//
+// Upstream computes `rows` by:
+//
+//	const rows = large ? [0, 1, 2, 3]
+//	  : (plugins.languages.details.length > 2) ? [0]
+//	  : [0, 1]
+//
+// We render `large=false` (Action default), so rows = [0] when details
+// has > 2 entries (single column), else [0, 1] (two columns).
+func writeDetailsRows(b *strings.Builder, bars []plugins.LanguageStat, details []string, pc *templates.PartialContext) {
+	rows := []int{0, 1}
+	if len(details) > 2 {
+		rows = []int{0}
+	}
+	showLines := detailIncludes(details, "lines")
+	showBytes := detailIncludes(details, "bytes-size")
+	showPct := detailIncludes(details, "percentage")
+
+	// Lookup table from language name → indepth bytes (best estimate of
+	// "size" upstream uses). Falls back to bars[i].Size (the in-favorites
+	// byte count) when indepth isn't wired.
+	indepthBytes := indepthBytesByLanguage(pc)
+
+	b.WriteString(`<div class="row fill-width">`)
+	for _, row := range rows {
+		b.WriteString(`<section>`)
+		for i, lang := range bars {
+			if i%len(rows) != row {
+				continue
+			}
+			size := int64(lang.Size)
+			if v, ok := indepthBytes[lang.Name]; ok && v > 0 {
+				size = v
+			}
+			fmt.Fprintf(b, `<div class="field language details" data-language="%s">`, partials.EscapeXML(lang.Name))
+			fmt.Fprintf(
+				b, `<div class="field">%s%s</div>`,
+				colorDotOcticon(lang.Color),
+				partials.EscapeXML(lang.Name),
+			)
+			b.WriteString(`<small>`)
+			if showLines {
+				// We don't have per-language line counts; emit 0 to keep
+				// the column present (matches upstream EJS structure).
+				b.WriteString(`<div>0 lines</div>`)
+			}
+			if showBytes {
+				fmt.Fprintf(b, `<div>%s</div>`, formatBytes(size))
+			}
+			if showPct {
+				fmt.Fprintf(b, `<div>%s</div>`, formatPercent(lang.Value))
+			}
+			b.WriteString(`</small>`)
+			b.WriteString(`</div>`)
+		}
+		b.WriteString(`</section>`)
+	}
+	b.WriteString(`</div>`)
+}
+
+// indepthBytesByLanguage extracts the per-language total bytes from
+// the indepth result if present. Used to populate the "bytes-size"
+// column in details mode.
+func indepthBytesByLanguage(pc *templates.PartialContext) map[string]int64 {
+	out := map[string]int64{}
+	if pc == nil || pc.Data == nil {
+		return out
+	}
+	raw, ok := pc.Data.GetPlugin(IndepthName)
+	if !ok || raw == nil {
+		return out
+	}
+	r, ok := raw.(*IndepthResult)
+	if !ok || r == nil || r.Skipped {
+		return out
+	}
+	for name, n := range r.Total.Bytes {
+		out[name] = n
+	}
+	return out
+}
+
+// pluginSizeStat exists to silence go-vet if we ever need to coerce a
+// LanguageStat.Size field; currently unused but reserved.
+var _ = plugins.LanguageStat{}

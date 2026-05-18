@@ -181,7 +181,11 @@ func TestPartial_Topics_Golden(t *testing.T) {
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
-	for _, marker := range []string{`<g class="topic"`, `<text class="topic-name">`} {
+	// 011 v2: upstream-equivalent emission. Topics partial now mirrors
+	// upstream EJS — h2 header + per-mode rendering (img tags for icons,
+	// div.label for labels). The legacy <g class="topic"> + <text> shape
+	// is replaced.
+	for _, marker := range []string{`<h2 class="field">`, `Starred topics`, `<div class="topics fill-width">`, `<img src="https://github.githubassets.com/topics/go.png"`} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("partial missing marker %q in:\n%s", marker, got)
 		}

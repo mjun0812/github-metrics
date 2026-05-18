@@ -174,9 +174,17 @@ func TestPartial_Isocalendar_Golden(t *testing.T) {
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
+	// 011 v2: replaced the flat <g class="calendar"> + <rect class="calendar-day">
+	// emission with the upstream-equivalent 3D isometric heatmap inside
+	// <svg class="isocalendar-grid"> per upstream index.mjs lines 38-69.
+	// New markers reflect the stats panel + isometric wrapper.
 	for _, marker := range []string{
-		`class="calendar"`,
-		`class="calendar-day"`,
+		`<h2 class="field">`,
+		`Contributions calendar`,
+		`class="isocalendar-grid"`,
+		`<filter id="brightness1">`,
+		`Best streak`,
+		`Highest in a day at`,
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("partial missing marker %q in:\n%s", marker, got)
