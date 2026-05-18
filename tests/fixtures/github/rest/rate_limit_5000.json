@@ -1,0 +1,7 @@
+{
+  "resources": {
+    "core":    {"remaining": 5000, "limit": 5000, "reset": 0},
+    "graphql": {"remaining": 5000, "limit": 5000, "reset": 0},
+    "search":  {"remaining":   30, "limit":   30, "reset": 0}
+  }
+}

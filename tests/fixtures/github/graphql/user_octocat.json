@@ -1,0 +1,18 @@
+{
+  "data": {
+    "user": {
+      "databaseId": 12345,
+      "id": "MDQ6VXNlcjEyMzQ1",
+      "login": "octocat",
+      "name": "The Octocat",
+      "location": "San Francisco",
+      "createdAt": "2008-01-14T04:33:35Z",
+      "avatarUrl": "https://avatars.githubusercontent.com/u/12345?v=4",
+      "websiteUrl": "https://github.com",
+      "twitterUsername": null,
+      "email": "",
+      "bio": "Mascot",
+      "company": "@github"
+    }
+  }
+}

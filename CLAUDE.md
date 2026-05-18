@@ -2,8 +2,9 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Active plan: [specs/006-m7-repository-template/plan.md](specs/006-m7-repository-template/plan.md)
-- Feature spec: [specs/006-m7-repository-template/spec.md](specs/006-m7-repository-template/spec.md)
+- Active plan: [specs/007-m9-test-infrastructure/plan.md](specs/007-m9-test-infrastructure/plan.md)
+- Feature spec: [specs/007-m9-test-infrastructure/spec.md](specs/007-m9-test-infrastructure/spec.md)
+- M7 baseline (completed): [specs/006-m7-repository-template/plan.md](specs/006-m7-repository-template/plan.md)
 - M6 baseline (completed): [specs/005-m6-action-cli/plan.md](specs/005-m6-action-cli/plan.md)
 - M4 baseline (completed): [specs/004-m4-github-plugins/plan.md](specs/004-m4-github-plugins/plan.md)
 - M3 baseline (completed): [specs/003-chromedp-rendering-pipeline/plan.md](specs/003-chromedp-rendering-pipeline/plan.md)

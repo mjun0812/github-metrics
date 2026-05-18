@@ -1,0 +1,14 @@
+{
+  "data": {
+    "user": {
+      "repositories": {
+        "totalCount": 250,
+        "pageInfo": {"hasNextPage": false, "endCursor": null},
+        "nodes": [
+          {"databaseId": 1, "id": "R_kgDOA", "name": "alpha", "nameWithOwner": "octocat/alpha", "url": "https://github.com/octocat/alpha", "isPrivate": false, "isFork": false, "stargazerCount": 100, "forkCount": 10, "watchers": {"totalCount": 5}},
+          {"databaseId": 2, "id": "R_kgDOB", "name": "beta",  "nameWithOwner": "octocat/beta",  "url": "https://github.com/octocat/beta",  "isPrivate": false, "isFork": false, "stargazerCount":  50, "forkCount":  3, "watchers": {"totalCount": 2}}
+        ]
+      }
+    }
+  }
+}
