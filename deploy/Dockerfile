@@ -15,8 +15,13 @@
 # internal/render/browser.go which is required when running as a
 # non-root user without seccomp profiles.
 #
-# Image size budget: ≤ 600 MB per platform (asserted in release.yml
-# before push). See specs/008-m10-release-distribution/contracts/dockerfile.md.
+# Image size budget: ≤ 900 MB per platform (asserted in CI by the
+# docker_smoke gate). The v1.0 escalation from 600 MB → 900 MB is
+# documented in research.md R-003 §"Plan-phase risk": the
+# bookworm-slim + chromium + Noto CJK fonts combination measures
+# ~830 MB on GitHub-hosted ubuntu-latest runners. CJK fonts cost
+# ~80 MB but breaking CJK repo-name rendering was rejected for v1.0.
+# See specs/008-m10-release-distribution/contracts/dockerfile.md.
 #
 # Build (local):  docker build -f deploy/Dockerfile -t github-metrics:dev .
 # Run   (local):  docker run --rm github-metrics:dev metrics-action --help

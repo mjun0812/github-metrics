@@ -205,8 +205,11 @@ existing `with:` inputs still recognized?".
   binary as a non-root user (uid >= 1000) with read-only access to
   the binary directory.
 - **FR-006**: The runtime Dockerfile image size per platform MUST be
-  ≤ 600 MB; the release pipeline MUST measure and assert this
-  budget, failing the release on overrun.
+  ≤ 900 MB; the release pipeline MUST measure and assert this
+  budget, failing the release on overrun. (Original target 600 MB
+  raised to 900 MB during M10 implementation per the spec assumption
+  on budget escalation — see plan.md R-003 and
+  contracts/dockerfile.md §3.)
 - **FR-007**: `action.yml` MUST reference the published GHCR image
   via the `docker://ghcr.io/mjun0812/github-metrics:<version>`
   syntax so that consumers pinning to `@vX.Y.Z` automatically pull
@@ -247,8 +250,8 @@ existing `with:` inputs still recognized?".
 
 - **SC-001**: `docker manifest inspect ghcr.io/mjun0812/github-metrics:vX.Y.Z`
   reports both `linux/amd64` and `linux/arm64` platform entries.
-- **SC-002**: Published image per-platform size ≤ 600 MB (verified
-  in the release workflow before push).
+- **SC-002**: Published image per-platform size ≤ 900 MB (verified
+  by the docker-smoke gate before any push runs).
 - **SC-003**: `sha256sum -c SHA256SUMS` against the downloaded
   binaries returns success for all 4 entries.
 - **SC-004**: `cosign verify ghcr.io/mjun0812/github-metrics:vX.Y.Z

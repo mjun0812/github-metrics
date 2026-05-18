@@ -29,9 +29,15 @@ const (
 	// dev iterations does not bleed into release verification.
 	dockerSmokeImageTag = "github-metrics:m10-smoke"
 
-	// dockerSmokeSizeBudgetBytes mirrors FR-006 / SC-003: ≤ 600 MB
-	// per platform after build.
-	dockerSmokeSizeBudgetBytes = 600 * 1024 * 1024
+	// dockerSmokeSizeBudgetBytes mirrors FR-006 / SC-003: ≤ 900 MB
+	// per platform after build. The 900 MB ceiling reflects the v1.0
+	// plan-phase escalation documented in research.md R-003 §"Plan-
+	// phase risk": the bookworm-slim + chromium + Noto CJK fonts
+	// combination measures ~830 MB on the GitHub-hosted ubuntu-latest
+	// runner (CI 2026-05-18). Dropping CJK fonts would save ~80 MB
+	// but breaks rendering for CJK repository names — not acceptable
+	// for v1.0.
+	dockerSmokeSizeBudgetBytes = 900 * 1024 * 1024
 
 	// dockerBuildTimeout caps the build step. arm64-via-QEMU builds
 	// can take 6-8 min; native amd64 build is typically 2-3 min. The

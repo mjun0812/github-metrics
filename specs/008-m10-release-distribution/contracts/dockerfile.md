@@ -17,6 +17,20 @@ Replaces the M3-placeholder Dockerfile per T-126.
 | go build flags | `-trimpath -ldflags="-s -w -X main.version=${VERSION}"` | per constitution Technical Constraints |
 | Multi-arch | `linux/amd64` + `linux/arm64` via buildx | required by FR-001 |
 | `apt-get clean` + `rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*.deb` | mandatory in the same RUN as install | shrinks layers per R-003 |
+| Size budget | ≤ 900 MB per platform | v1.0 escalation from the original 600 MB target — see Note below |
+
+> **Note on size budget**: The original 600 MB target (specs FR-006 v1)
+> was based on lowlighter/metrics's Node + Puppeteer image size. CI
+> measurement on GitHub-hosted `ubuntu-latest` (2026-05-18) showed the
+> bookworm-slim + chromium + Noto CJK + Noto Emoji + Liberation
+> combination at ~834 MB amd64. Per spec assumption "If the chromium +
+> fonts combination cannot fit within 600 MB at build time, the plan
+> phase will surface this as an explicit trade-off", the budget is
+> raised to 900 MB for v1.0. Dropping `fonts-noto-cjk` (~80 MB savings)
+> was rejected because it breaks CJK repo-name / display-name
+> rendering. Post-v1.0 optimization candidates: switch runtime base to
+> `chromedp/headless-shell` (~250 MB), or split CJK fonts into an
+> opt-in variant tag.
 
 ## 2. Runtime environment
 
@@ -43,21 +57,21 @@ Replaces the M3-placeholder Dockerfile per T-126.
 
 ## 4. Size budget enforcement
 
-Release workflow asserts post-build:
+The `docker-smoke` job in `.github/workflows/release.yml` runs the
+`docker_smoke`-tagged test which performs the size assertion:
 
-```bash
-size_bytes=$(docker image inspect "${IMAGE_REF}" --format '{{.Size}}')
-size_mb=$((size_bytes / 1024 / 1024))
-if [ "$size_mb" -gt 600 ]; then
-  echo "::error::Image size ${size_mb} MB exceeds 600 MB budget"
-  exit 1
-fi
+```go
+if sizeBytes > dockerSmokeSizeBudgetBytes /* = 900 MB */ {
+    t.Errorf("image size %d bytes (%d MB) exceeds budget 900 MB (FR-006)", ...)
+}
 ```
 
-If size exceeds budget, the release fails and no `docker push`
-runs. Recovery options (in priority order): (1) drop
-`fonts-noto-cjk` to save ~80 MB; (2) escalate the budget via
-plan-phase decision.
+If size exceeds budget, `docker-smoke` fails; `release-docker` and
+`release-binary` have `needs: docker-smoke` so they do not start and
+no `docker push` runs. Recovery options (in priority order): (1)
+drop `fonts-noto-cjk` to save ~80 MB; (2) switch runtime base to
+`chromedp/headless-shell` (~600 MB savings, but loses CJK fonts);
+(3) further raise the budget via plan-phase decision.
 
 ## 5. Verification
 
