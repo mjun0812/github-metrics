@@ -116,6 +116,20 @@ jobs:
             ghcr.io/mjun0812/github-metrics:${{ steps.tag.outputs.tag }}
             ghcr.io/mjun0812/github-metrics:latest
             ghcr.io/mjun0812/github-metrics:sha-${{ steps.tag.outputs.short_sha }}
+          # GitHub Actions cache (type=gha) is the canonical buildx
+          # cache backend for GH-hosted runners. mode=max stores all
+          # intermediate layers — important because the apt-get install
+          # of chromium + Noto fonts is the dominant cost (~5-10 min
+          # under QEMU arm64 emulation). With this cache, subsequent
+          # releases that don't change the Dockerfile or go.sum hit
+          # near-zero rebuild cost on the runtime stage.
+          #
+          # Quota: GitHub Actions cache has a 10 GB per-repo ceiling;
+          # this workflow keeps cache under ~2 GB per platform so two
+          # releases can coexist comfortably. GitHub evicts oldest
+          # entries automatically when over quota.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Inspect multi-arch manifest (informational)
         if: ${{ github.event.inputs.dry_run != 'true' }}
