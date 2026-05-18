@@ -157,18 +157,20 @@ func loadFixture(relativePath string) ([]byte, error) {
 }
 
 // repoRoot walks up from the current working directory until it
-// finds the go.mod marker. Cached after first lookup.
+// finds the go.mod marker. Cached after first lookup; both the path
+// and the error are package-scoped so callers after the first one
+// observe the same outcome instead of a silent ("", nil) tuple.
 var (
 	repoRootCache string
+	repoRootErr   error
 	repoRootOnce  sync.Once
 )
 
 func repoRoot() (string, error) {
-	var initErr error
 	repoRootOnce.Do(func() {
 		dir, err := os.Getwd()
 		if err != nil {
-			initErr = err
+			repoRootErr = err
 			return
 		}
 		for {
@@ -178,11 +180,11 @@ func repoRoot() (string, error) {
 			}
 			parent := filepath.Dir(dir)
 			if parent == dir {
-				initErr = os.ErrNotExist
+				repoRootErr = os.ErrNotExist
 				return
 			}
 			dir = parent
 		}
 	})
-	return repoRootCache, initErr
+	return repoRootCache, repoRootErr
 }

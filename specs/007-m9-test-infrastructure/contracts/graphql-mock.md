@@ -2,10 +2,10 @@
 
 **Date**: 2026-05-18 | **Plan**: [../plan.md](../plan.md) | **Related**: [../data-model.md](../data-model.md) E-002
 
-The shared GraphQL mock for tests. Implements the genqlient
-`github.com/Khan/genqlient/graphql.Doer` interface so it plugs into
-the project's `internal/githubapi.NewGraphQL(...)` constructor via
-`httpx.Options.Transport`.
+The shared GraphQL mock for tests. Implements `net/http.RoundTripper`
+so it plugs into the project's `internal/githubapi.NewGraphQL(...)`
+constructor via `httpx.Options.Transport`. The mock dispatches on the
+operationName extracted from the request body's JSON payload.
 
 ## 1. Public API
 
@@ -30,17 +30,18 @@ func (*GraphQLMux) OnBody(opName string, status int, body string)
 func (*GraphQLMux) OnFunc(opName string,
     fn func(vars map[string]any) (status int, body string))
 
-// Calls returns the number of times MakeRequest dispatched to
+// Calls returns the number of times RoundTrip dispatched to
 // `opName`.
 func (*GraphQLMux) Calls(opName string) int
 
-// MakeRequest satisfies graphql.Doer.
-func (*GraphQLMux) MakeRequest(ctx context.Context,
-    req *graphql.Request, resp *graphql.Response) error
+// RoundTrip satisfies net/http.RoundTripper. The genqlient
+// `graphql.Doer` interface is satisfied indirectly: `httpx.Client`
+// wraps this RoundTripper into an `http.Client` (its `Do(req)` then
+// satisfies `Doer.Do`).
+func (*GraphQLMux) RoundTrip(req *http.Request) (*http.Response, error)
 ```
 
-But — the actual genqlient `Doer` interface (per the v0.8.x release)
-is:
+**Notes** — the genqlient `Doer` interface (v0.8.x) is:
 
 ```go
 type Doer interface {
@@ -48,9 +49,10 @@ type Doer interface {
 }
 ```
 
-So `GraphQLMux` actually implements `http.RoundTripper` (which the
-project wraps into a Doer via `httpx.Client`). The mock dispatches on
-the operationName extracted from the request body's JSON payload.
+`GraphQLMux` is wired through `httpx.Options.Transport`, so its
+RoundTripper surface is wrapped by `httpx.Client` (an `*http.Client`)
+to satisfy `Doer.Do`. There is no `MakeRequest` method on the mux —
+genqlient v0.8.x does not require one.
 
 ## 2. Dispatch rules
 

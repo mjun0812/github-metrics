@@ -121,18 +121,20 @@ func resolveGoldenPath(t *testing.T, goldenPath string) string {
 }
 
 // goldenRoot walks up from the working directory until it finds
-// go.mod. Cached after first call.
+// go.mod. Cached after first call; both the path and the error are
+// package-scoped so callers after the first one observe the same
+// outcome instead of a silent ("", nil) tuple.
 var (
 	goldenRootCache string
+	goldenRootErr   error
 	goldenRootOnce  sync.Once
 )
 
 func goldenRoot() (string, error) {
-	var initErr error
 	goldenRootOnce.Do(func() {
 		dir, err := os.Getwd()
 		if err != nil {
-			initErr = err
+			goldenRootErr = err
 			return
 		}
 		for {
@@ -142,13 +144,13 @@ func goldenRoot() (string, error) {
 			}
 			parent := filepath.Dir(dir)
 			if parent == dir {
-				initErr = os.ErrNotExist
+				goldenRootErr = os.ErrNotExist
 				return
 			}
 			dir = parent
 		}
 	})
-	return goldenRootCache, initErr
+	return goldenRootCache, goldenRootErr
 }
 
 func writeGolden(t *testing.T, abs string, got []byte) {

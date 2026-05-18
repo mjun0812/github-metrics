@@ -2,8 +2,6 @@ package golden_test
 
 import (
 	"flag"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -21,26 +19,14 @@ func init() {
 	}
 }
 
+// TestCompare_HappyPath_SameBytes invokes golden.Compare against a
+// seeded byte-exact fixture under tests/golden/_testutil_selftest/.
+// Without this self-exercise, Compare's path-resolution + read +
+// byte-diff happy path would only be covered transitively via the
+// integration suite.
 func TestCompare_HappyPath_SameBytes(t *testing.T) {
 	t.Parallel()
-	dir := t.TempDir()
-	relName := "testutil-golden-self-" + t.Name() + ".txt"
-	abs := filepath.Join(dir, relName)
-	if err := os.WriteFile(abs, []byte("hello"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	// Compare uses tests/golden/<rel> path resolution — we can't
-	// inject a temp dir directly. Cover the happy-path via the
-	// equality assertion only (no file path).
-	got := []byte("hello")
-	want := []byte("hello")
-	// Use the internal helper via the API surface: if got==want and
-	// the file exists, Compare passes silently. We use the package's
-	// build-message API at this level since the file resolution is
-	// internal.
-	if !bytesEqual(got, want) {
-		t.Errorf("equality precondition failed; got=%q want=%q", got, want)
-	}
+	golden.Compare(t, []byte("hello"), "_testutil_selftest/happy.txt")
 }
 
 func TestNormalizeSVG_AttrSortAndWhitespaceCollapse(t *testing.T) {
@@ -79,24 +65,12 @@ func TestNormalizeSVG_MasksDynamicFooter(t *testing.T) {
 }
 
 // TestCompareJSON_KeyOrderingTolerant verifies CompareJSON survives
-// JSON encoders that emit keys in different orders. We can't drive
-// the file-resolution path here without seeding a real golden
-// (covered by integration tests), so we exercise reformatJSON via
-// NormalizeSVG's sibling exported surface — the same package + same
-// behavior pattern.
+// JSON encoders that emit keys in different orders. The seed file at
+// _testutil_selftest/keyordering.json is `{"a":1,"b":2}` (a-first).
+// We pass a b-first input — CompareJSON must reformat both sides
+// through MarshalIndent (which sorts map keys alphabetically) so the
+// comparison passes despite the divergent input ordering.
 func TestCompareJSON_KeyOrderingTolerant(t *testing.T) {
 	t.Parallel()
-	t.Skip("file-backed CompareJSON tested by integration suite migration (T013/T016)")
-}
-
-func bytesEqual(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
+	golden.CompareJSON(t, []byte(`{"b":2,"a":1}`), "_testutil_selftest/keyordering.json")
 }

@@ -34,7 +34,10 @@ files. No production-code entity changes.
 
 - **Source package**: `internal/testutil/mocks`
 - **Source file**: `graphql.go`
-- **Type**: implements `github.com/Khan/genqlient/graphql.Doer`
+- **Type**: implements `net/http.RoundTripper` (the genqlient
+  `graphql.Doer` interface is satisfied indirectly — `httpx.Client`
+  wraps the RoundTripper into an `*http.Client` whose `Do(req)`
+  satisfies `Doer.Do`)
 - **Public methods**:
   - `NewGraphQLMux(t *testing.T) *GraphQLMux` — constructor with
     `t.Cleanup`-registered handler reset
@@ -45,8 +48,8 @@ files. No production-code entity changes.
   - `(*GraphQLMux).OnFunc(opName string, fn func(vars map[string]any) (status int, body string))` —
     variables-aware dynamic handler
   - `(*GraphQLMux).Calls(opName string) int` — count invocations
-  - `(*GraphQLMux).MakeRequest(ctx context.Context, req *graphql.Request, resp *graphql.Response) error` —
-    Doer interface satisfaction
+  - `(*GraphQLMux).RoundTrip(req *http.Request) (*http.Response, error)` —
+    interface satisfaction
 - **Lookup**: parse the request body's `operationName`, look up the
   registered handler, return the canned response. Unknown
   operationName → `t.Fatalf("graphql mock: no handler for opName %q", opName)`
