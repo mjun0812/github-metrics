@@ -2,8 +2,9 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Active plan: [specs/007-m9-test-infrastructure/plan.md](specs/007-m9-test-infrastructure/plan.md)
-- Feature spec: [specs/007-m9-test-infrastructure/spec.md](specs/007-m9-test-infrastructure/spec.md)
+- Active plan: [specs/008-m10-release-distribution/plan.md](specs/008-m10-release-distribution/plan.md)
+- Feature spec: [specs/008-m10-release-distribution/spec.md](specs/008-m10-release-distribution/spec.md)
+- M9 baseline (completed): [specs/007-m9-test-infrastructure/plan.md](specs/007-m9-test-infrastructure/plan.md)
 - M7 baseline (completed): [specs/006-m7-repository-template/plan.md](specs/006-m7-repository-template/plan.md)
 - M6 baseline (completed): [specs/005-m6-action-cli/plan.md](specs/005-m6-action-cli/plan.md)
 - M4 baseline (completed): [specs/004-m4-github-plugins/plan.md](specs/004-m4-github-plugins/plan.md)
@@ -28,7 +29,7 @@ shell commands, and other important information, read the current plan:
 
 `M1 → M2 → M3 → M4 → M6 → M7 → M9 → M10`
 
-(M1-M4 完了済、現在は M6 spec/plan 段階)
+(M1-M4 + M6 + M7 + M9 完了済、現在は M10 spec/plan 段階)
 
 ### Skipped phases (実装禁止)
 
