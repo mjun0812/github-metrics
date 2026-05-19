@@ -55,6 +55,10 @@ type Result struct {
 	// {"lines", "bytes-size", "percentage"}. mjun0812 uses all three.
 	// (011 v2 additive extension per Principle II.)
 	Details []string `json:"details,omitempty"`
+	// Unique is the distinct-language count surfaced in the count
+	// header — mirrors upstream `plugins.languages.unique`. Computed
+	// across all analyzed repositories before favorites truncation.
+	Unique int `json:"unique,omitempty"`
 }
 
 // IsSkipped lets the classic dispatcher (and any duck-typed consumer)
@@ -207,6 +211,21 @@ func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any
 		colors[other.Name] = other.Color
 	}
 
+	// Upstream index.mjs:33-34 — when indepth mode is disabled, "lines"
+	// is filtered out of details. The EJS template then doesn't render
+	// the lines column (which would otherwise show "0 lines" since no
+	// linguist line counts exist outside indepth mode).
+	details := append([]string(nil), in.details...)
+	if !truthy(pc.Inputs["plugin_languages_indepth"]) {
+		filtered := details[:0]
+		for _, d := range details {
+			if d != "lines" {
+				filtered = append(filtered, d)
+			}
+		}
+		details = filtered
+	}
+
 	return &Result{
 		Mode:      plugins.AggregationMode(pc.Data),
 		Favorites: favorites,
@@ -214,7 +233,8 @@ func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any
 		Sections:  in.sections,
 		Mostly:    mostly,
 		Colors:    colors,
-		Details:   in.details,
+		Details:   details,
+		Unique:    len(totals),
 	}, nil
 }
 

@@ -99,14 +99,15 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		sections = []string{"most-used"}
 	}
 
-	// Distinct-language count for the header. Counts the favorites
-	// (+1 for Other when present). NOTE: upstream's
-	// `plugins.languages.unique` may be a larger number derived from
-	// the full unique-language set across all analyzed repos; ours is
-	// the truncated favorites-row count. Parity is approximate here
-	// (deviation documented in plugins/languages.md "Notable
-	// deviations" section).
-	uniqueCount := len(bars)
+	// Distinct-language count for the header — mirrors upstream's
+	// `plugins.languages.unique` (count of all distinct languages
+	// across analyzed repositories, before favorites truncation).
+	// Falls back to len(bars) when Run hasn't populated Unique
+	// (older fixtures / tests).
+	uniqueCount := r.Unique
+	if uniqueCount == 0 {
+		uniqueCount = len(bars)
+	}
 
 	var b strings.Builder
 	b.WriteString(`<section data-section="languages">`)
@@ -153,33 +154,17 @@ func writeMostUsedSection(b *strings.Builder, pc *templates.PartialContext, bars
 	}
 
 	if len(bars) > 0 {
-		// Progress bar wrapped in <svg class="bar"> per upstream EJS
-		// lines 42-50 — fixes the v1.0.0 bare-<g> invisible-render bug.
-		fmt.Fprintf(
-			b,
-			`<svg class="bar" xmlns="http://www.w3.org/2000/svg" width="%d" height="8" role="img" aria-label="Languages distribution"><title>Languages distribution</title><g class="languages-progress">`,
-			partialBarWidth,
-		)
-		offset := 0.0
-		for _, lang := range bars {
-			width := lang.Value * partialBarWidth
-			if width <= 0 {
-				continue
-			}
-			fmt.Fprintf(
-				b,
-				`<rect class="language-bar" x="%.2f" y="0" width="%.2f" height="8" fill="%s" data-language="%s"></rect>`,
-				offset, width, partials.EscapeXML(colorOrDefault(lang.Color)), partials.EscapeXML(lang.Name),
-			)
-			offset += width
-		}
-		b.WriteString(`</g></svg>`)
+		// Progress bar wrapped in <svg class="bar"> with <mask
+		// id="languages-bar"> for rounded corners per upstream EJS
+		// lines 42-50. Also fixes the v1.0.0 bare-<g> invisible-render
+		// bug. The leading `<rect fill="#d1d5da">` is a 0-width
+		// placeholder (upstream parity).
+		writeLanguageBar(b, bars, "languages-progress", "Languages distribution", "language-bar")
 
 		// Per-language render: upstream EJS lines 52-80.
-		// When `details` is non-empty (mjun0812: bytes-size, percentage,
-		// lines) emit per-language detail rows with the requested
-		// columns. Otherwise fall back to the simple color-dot + name
-		// list.
+		// When `details` is non-empty (mjun0812: bytes-size, percentage
+		// after lines-strip) emit per-language detail rows split into
+		// 2 columns. Otherwise fall back to the simple color-dot list.
 		r := mustResult(pc)
 		if len(r.Details) > 0 {
 			writeDetailsRows(b, bars, r.Details, pc)
@@ -196,24 +181,47 @@ func writeMostUsedSection(b *strings.Builder, pc *templates.PartialContext, bars
 			}
 			b.WriteString(`</div>`)
 		}
-
-		// Legacy <ul class="languages-list"> retained as a compat shim
-		// per parity-checklist deviation — keeps downstream CSS hooks
-		// stable while the new per-language div grid carries the
-		// upstream-parity rendering.
-		b.WriteString(`<ul class="languages-list">`)
-		for _, lang := range bars {
-			fmt.Fprintf(
-				b,
-				`<li class="language-entry" data-language="%s"><span class="language-name">%s</span> <span class="language-value">%.1f%%</span></li>`,
-				partials.EscapeXML(lang.Name),
-				partials.EscapeXML(lang.Name),
-				lang.Value*100,
-			)
-		}
-		b.WriteString(`</ul>`)
 	}
 	b.WriteString(`</section>`)
+}
+
+// writeLanguageBar emits the upstream EJS lines 42-50 `<svg class="bar">`
+// block: a <mask id="languages-bar"> for rounded corners, a 0-width
+// `#d1d5da` placeholder, then per-language rects with `mask="url(...)"`.
+// gClass is the <g> class (e.g., "languages-progress", "languages-recent")
+// and rectClass is the per-language rect class. titleText is the a11y
+// title rendered inside the bar.
+func writeLanguageBar(b *strings.Builder, bars []plugins.LanguageStat, gClass, titleText, rectClass string) {
+	fmt.Fprintf(
+		b,
+		`<svg class="bar" xmlns="http://www.w3.org/2000/svg" width="%d" height="8" role="img" aria-label="%s"><title>%s</title>`,
+		partialBarWidth, partials.EscapeXML(titleText), partials.EscapeXML(titleText),
+	)
+	fmt.Fprintf(
+		b,
+		`<mask id="languages-bar"><rect x="0" y="0" width="%d" height="8" fill="white" rx="5"/></mask>`,
+		partialBarWidth,
+	)
+	fmt.Fprintf(
+		b,
+		`<rect mask="url(#languages-bar)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>`,
+	)
+	fmt.Fprintf(b, `<g class="%s">`, partials.EscapeXML(gClass))
+	offset := 0.0
+	for _, lang := range bars {
+		width := lang.Value * partialBarWidth
+		if width <= 0 {
+			continue
+		}
+		fmt.Fprintf(
+			b,
+			`<rect class="%s" mask="url(#languages-bar)" x="%.2f" y="0" width="%.2f" height="8" fill="%s" data-language="%s"></rect>`,
+			partials.EscapeXML(rectClass),
+			offset, width, partials.EscapeXML(colorOrDefault(lang.Color)), partials.EscapeXML(lang.Name),
+		)
+		offset += width
+	}
+	b.WriteString(`</g></svg>`)
 }
 
 // writeRecentlyUsedSection emits the "Recently used languages" column
@@ -268,40 +276,28 @@ func writeRecentlyUsedSection(b *strings.Builder, pc *templates.PartialContext) 
 		)
 	}
 
-	// Progress bar wrapped in <svg class="bar"> per upstream EJS
-	// lines 42-50 — fixes the v1.0.0 bare-<g> invisible-render bug.
-	fmt.Fprintf(
-		b,
-		`<svg class="bar" xmlns="http://www.w3.org/2000/svg" width="%d" height="8" role="img" aria-label="Recently used languages distribution"><title>Recently used languages distribution</title><g class="languages-recent" data-days="%d">`,
-		partialBarWidth, r.Days,
-	)
-	offset := 0.0
-	for _, lang := range bars {
-		width := lang.Value * partialBarWidth
-		if width <= 0 {
-			continue
-		}
-		fmt.Fprintf(
-			b,
-			`<rect class="language-bar-recent" x="%.2f" y="0" width="%.2f" height="8" fill="%s" data-language="%s"></rect>`,
-			offset, width, partials.EscapeXML(colorOrDefault(lang.Color)), partials.EscapeXML(lang.Name),
-		)
-		offset += width
-	}
-	b.WriteString(`</g></svg>`)
+	// Progress bar — shared mask helper (upstream EJS lines 42-50).
+	writeLanguageBar(b, bars, "languages-recent", "Recently used languages distribution", "language-bar-recent")
 
-	// Per-language color-dot + name list for the recent section.
-	b.WriteString(`<div class="field center horizontal-wrap fill-width">`)
-	for _, lang := range bars {
-		fmt.Fprintf(
-			b,
-			`<div class="field center no-wrap language" data-language="%s">%s%s</div>`,
-			partials.EscapeXML(lang.Name),
-			colorDotOcticon(lang.Color),
-			partials.EscapeXML(lang.Name),
-		)
+	// Per-language render: prefer the details/2-column block when the
+	// parent languages plugin requested details columns (upstream EJS
+	// reuses the same block across both sections).
+	parent := mustResult(pc)
+	if len(parent.Details) > 0 {
+		writeDetailsRows(b, bars, parent.Details, pc)
+	} else {
+		b.WriteString(`<div class="field center horizontal-wrap fill-width">`)
+		for _, lang := range bars {
+			fmt.Fprintf(
+				b,
+				`<div class="field center no-wrap language" data-language="%s">%s%s</div>`,
+				partials.EscapeXML(lang.Name),
+				colorDotOcticon(lang.Color),
+				partials.EscapeXML(lang.Name),
+			)
+		}
+		b.WriteString(`</div>`)
 	}
-	b.WriteString(`</div>`)
 
 	b.WriteString(`</section>`)
 }
@@ -528,8 +524,11 @@ func writeDetailsRows(b *strings.Builder, bars []plugins.LanguageStat, details [
 			)
 			b.WriteString(`<small>`)
 			if showLines {
-				// We don't have per-language line counts; emit 0 to keep
-				// the column present (matches upstream EJS structure).
+				// Reached only when indepth is enabled (Run strips
+				// "lines" from details otherwise). Indepth's per-
+				// language line count would feed in via a future
+				// `LinesByLanguage` field; for now emit 0 to keep
+				// the column present.
 				b.WriteString(`<div>0 lines</div>`)
 			}
 			if showBytes {
