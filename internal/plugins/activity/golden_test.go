@@ -75,9 +75,15 @@ func TestPartial_Activity_Golden(t *testing.T) {
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
+	// Tier 3 (011) rewrite: each event row is now
+	// `<section class="activity" data-type=... data-repo=...>` containing
+	// an inline octicon `<svg>` and a `<div class="content">` verb +
+	// repo span. The old `class="activity-event"` + `class="octicon"`
+	// markers no longer match.
 	for _, marker := range []string{
-		`class="activity-event"`,
-		`class="octicon"`,
+		`class="activity"`,
+		`data-type="`,
+		`<span class="repo">`,
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("partial missing marker %q in:\n%s", marker, got)

@@ -272,15 +272,19 @@ func TestComputeSVG_P1AllPlugins(t *testing.T) {
 		`data-plugin="repositories"`,
 		`data-plugin="isocalendar"`,
 		// Per-plugin DOM markers (contract §5).
-		// 011 v2: languages-progress / language-bar remain inside the
-		// new <svg class="bar"> wrapper. activity-event / achievement /
-		// repository markers unchanged. The flat isocalendar markers
-		// (calendar / calendar-day) were replaced with the upstream-
-		// equivalent 3D isometric heatmap inside <svg class="isocalendar-grid">.
+		// 011 (Tier 2/3 sweep): activity-event was retired when the
+		// activity partial dropped its bare <text> elements in favour
+		// of upstream-parity HTML rows wrapped in <section class="activity">.
+		// languages-progress / language-bar remain inside the <svg class="bar">
+		// wrapper. achievement / repository markers unchanged (still emitted
+		// by their respective partials).
 		`class="languages-progress"`,
 		`class="language-bar"`,
-		`class="activity-event"`,
-		`class="achievement"`,
+		`class="activity"`,
+		// achievement entries land in `<div class="achievement <rank> largeable-width-half">`
+		// so the literal `class="achievement"` (closing quote) no longer
+		// matches. Anchor on the multi-class prefix instead.
+		`class="achievement `,
 		`class="repository"`,
 		`class="isocalendar-grid"`,
 		`<filter id="brightness1">`,
