@@ -127,7 +127,7 @@ jobs:
 
   compliance:
     name: compliance
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
