@@ -46,11 +46,14 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	b.WriteString(`<section>`)
 
 	// Heatmap SVG — viewBox 0,0 795,130*Y where Y = years count.
-	// Per upstream EJS line 15.
+	// Per upstream EJS line 15. width="100%" makes the inner SVG scale
+	// down to the parent foreignObject's available width (otherwise it
+	// renders at its intrinsic 795px width and overflows the 480px outer
+	// SVG, leaving a clipped/whitespace appearance below).
 	viewboxHeight := 130 * len(r.Years)
 	fmt.Fprintf(
 		&b,
-		`<svg class="calendar" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0,0 795,%d" role="img" aria-label="Multi-year contribution heatmap"><title>Multi-year contribution heatmap</title>`,
+		`<svg class="calendar" version="1.1" xmlns="http://www.w3.org/2000/svg" width="100%%" viewBox="0,0 795,%d" preserveAspectRatio="xMidYMin meet" role="img" aria-label="Multi-year contribution heatmap"><title>Multi-year contribution heatmap</title>`,
 		viewboxHeight,
 	)
 
