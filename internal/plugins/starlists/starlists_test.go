@@ -222,7 +222,10 @@ func TestPartial_Starlists_Golden(t *testing.T) {
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
-	for _, marker := range []string{`<g class="starlist"`, `<text class="starlist-name">`} {
+	// Markers asserted against the upstream-parity DOM shape (post 011).
+	// Each starlist is a <div class="starlist"> with a header <h2>, a
+	// <div class="count"> repo count, and an optional <div class="description">.
+	for _, marker := range []string{`<div class="starlist">`, `class="count"`, `<h2 class="field">`} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("partial missing marker %q in:\n%s", marker, got)
 		}
