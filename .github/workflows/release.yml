@@ -53,7 +53,9 @@ env:
 jobs:
   docker-smoke:
     name: Smoke-test the production Docker image
-    runs-on: ubuntu-latest
+    # github-hosted (restore when quota recovers):
+    # runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -89,11 +91,16 @@ jobs:
       matrix:
         include:
           - platform: linux/amd64
-            runner: ubuntu-latest
+            # github-hosted (restore when quota recovers):
+            # runner: ubuntu-latest
+            runner: [self-hosted, Linux, X64]
             arch: amd64
-          - platform: linux/arm64
-            runner: ubuntu-24.04-arm
-            arch: arm64
+          # arm64 native runner unavailable on current self-hosted infra;
+          # restore when GHA quota recovers and ubuntu-24.04-arm comes
+          # back online.
+          # - platform: linux/arm64
+          #   runner: ubuntu-24.04-arm
+          #   arch: arm64
     steps:
       - uses: actions/checkout@v4
         with:
@@ -169,7 +176,9 @@ jobs:
   merge-manifest:
     name: Merge multi-arch manifest + cosign sign
     needs: build-image
-    runs-on: ubuntu-latest
+    # github-hosted (restore when quota recovers):
+    # runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     if: ${{ github.event.inputs.dry_run != 'true' }}
     steps:
       - name: Extract semver tag
@@ -231,7 +240,9 @@ jobs:
   release-binary:
     name: Cross-compile + sign + publish CLI binaries
     needs: docker-smoke
-    runs-on: ubuntu-latest
+    # github-hosted (restore when quota recovers):
+    # runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -338,7 +349,9 @@ jobs:
   update-floating-tag:
     name: Advance vMAJOR floating tag (stable releases only)
     needs: [merge-manifest, release-binary]
-    runs-on: ubuntu-latest
+    # github-hosted (restore when quota recovers):
+    # runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     # Only run on tag pushes (not workflow_dispatch from a branch) and
     # only when not in dry-run mode. The decision step below also
     # filters pre-releases (FR-004) and back-port releases (FR-005).
