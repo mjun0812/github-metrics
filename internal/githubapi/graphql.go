@@ -139,6 +139,43 @@ func (g *GraphQL) UserFollowers(ctx context.Context, login string, first int) (*
 	return UserFollowers(ctx, g.client, login, first)
 }
 
+// ViewerSponsors fetches sponsorshipsAsMaintainer (active + past) and
+// sponsorsListing.activeGoal. Consumed by the "sponsors" plugin (spec 013).
+func (g *GraphQL) ViewerSponsors(ctx context.Context, activeFirst, pastFirst int) (*ViewerSponsorsResponse, error) {
+	return ViewerSponsors(ctx, g.client, activeFirst, pastFirst)
+}
+
+// ViewerSponsorships fetches sponsorshipsAsSponsor (the maintainers
+// the viewer is currently sponsoring). Consumed by the "sponsorships"
+// plugin (spec 013).
+func (g *GraphQL) ViewerSponsorships(ctx context.Context, first int) (*ViewerSponsorshipsResponse, error) {
+	return ViewerSponsorships(ctx, g.client, first)
+}
+
+// ViewerProjects fetches viewer.projectsV2 (open + closed) for the
+// "projects" plugin (spec 013).
+func (g *GraphQL) ViewerProjects(ctx context.Context, first int) (*ViewerProjectsResponse, error) {
+	return ViewerProjects(ctx, g.client, first)
+}
+
+// ViewerNotable fetches the viewer's most-starred owned repositories
+// for the "notable" plugin (spec 013, basic mode).
+func (g *GraphQL) ViewerNotable(ctx context.Context, first int) (*ViewerNotableResponse, error) {
+	return ViewerNotable(ctx, g.client, first)
+}
+
+// ViewerStargazersRepos fetches the viewer's top repos and their
+// stargazers (latest N) for the "stargazers" plugin (spec 013).
+func (g *GraphQL) ViewerStargazersRepos(ctx context.Context, repoFirst, starFirst int) (*ViewerStargazersReposResponse, error) {
+	return ViewerStargazersRepos(ctx, g.client, repoFirst, starFirst)
+}
+
+// ViewerPinnedItems fetches the viewer's pinned repositories for the
+// "repositories" plugin's Pinned slot (spec 013).
+func (g *GraphQL) ViewerPinnedItems(ctx context.Context, first int) (*ViewerPinnedItemsResponse, error) {
+	return ViewerPinnedItems(ctx, g.client, first)
+}
+
 // graphqlAuthTransport adds the Authorization and Accept headers that
 // every GitHub GraphQL request needs. inner may be nil, in which case
 // http.DefaultTransport is used.

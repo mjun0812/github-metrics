@@ -1,0 +1,57 @@
+query ViewerSponsors($activeFirst: Int!, $pastFirst: Int!) {
+  viewer {
+    sponsorsListing {
+      shortDescription
+      activeGoal {
+        title
+        description
+        kind
+        percentComplete
+      }
+    }
+    active: sponsorshipsAsMaintainer(
+      first: $activeFirst
+      activeOnly: true
+      orderBy: { field: CREATED_AT, direction: DESC }
+    ) {
+      totalCount
+      nodes {
+        createdAt
+        isActive
+        sponsorEntity {
+          __typename
+          ... on User {
+            login
+            avatarUrl
+          }
+          ... on Organization {
+            login
+            avatarUrl
+          }
+        }
+      }
+    }
+    past: sponsorshipsAsMaintainer(
+      first: $pastFirst
+      activeOnly: false
+      orderBy: { field: CREATED_AT, direction: DESC }
+    ) {
+      totalCount
+      nodes {
+        createdAt
+        isActive
+        sponsorEntity {
+          __typename
+          ... on User {
+            login
+            avatarUrl
+          }
+          ... on Organization {
+            login
+            avatarUrl
+          }
+        }
+      }
+    }
+  }
+}

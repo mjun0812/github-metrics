@@ -47,6 +47,19 @@ type User implements RepositoryOwner {
   following(first: Int): UserConnection
   issues(first: Int): IssueConnectionWithReactions
   issueComments(first: Int): IssueCommentConnection
+  # 013: sponsors / sponsorships / projects / pinned items (viewer-mode)
+  sponsorsListing: SponsorsListing
+  sponsorshipsAsMaintainer(
+    first: Int
+    activeOnly: Boolean
+    orderBy: SponsorshipOrder
+  ): SponsorshipConnection
+  sponsorshipsAsSponsor(
+    first: Int
+    orderBy: SponsorshipOrder
+  ): SponsorshipConnection
+  projectsV2(first: Int, orderBy: ProjectV2Order): ProjectV2Connection
+  pinnedItems(first: Int, types: [PinnableItemType!]): PinnableItemConnection
 }
 
 type UserConnection {
@@ -147,6 +160,8 @@ type Repository {
   owner: RepositoryOwner!
   issues(states: [IssueState!]): IssueConnection
   pullRequests(states: [PullRequestState!]): PullRequestConnection
+  # 013: stargazers chart input
+  stargazers(first: Int, orderBy: StarOrder): StargazerConnection
 }
 
 interface RepositoryOwner {
@@ -282,4 +297,105 @@ type RateLimit {
   cost: Int!
   used: Int!
   nodeCount: Int!
+}
+
+# ===== 013: sponsors / sponsorships / projects / pinned / stargazers =====
+
+type SponsorsListing {
+  shortDescription: String!
+  activeGoal: SponsorsGoal
+}
+
+type SponsorsGoal {
+  title: String
+  description: String
+  kind: SponsorsGoalKind!
+  percentComplete: Int!
+}
+
+enum SponsorsGoalKind {
+  TOTAL_SPONSORS_COUNT
+  MONTHLY_SPONSORSHIP_AMOUNT
+}
+
+input SponsorshipOrder {
+  field: SponsorshipOrderField!
+  direction: OrderDirection!
+}
+
+enum SponsorshipOrderField {
+  CREATED_AT
+}
+
+type SponsorshipConnection {
+  totalCount: Int!
+  nodes: [Sponsorship!]
+}
+
+type Sponsorship {
+  createdAt: DateTime!
+  isActive: Boolean!
+  # The maintainer being sponsored (used by sponsorshipsAsSponsor).
+  sponsorable: Sponsorable
+  # The party providing the sponsorship (used by sponsorshipsAsMaintainer).
+  sponsorEntity: Sponsor
+}
+
+# Union-like — we project __typename so genqlient can route to the right
+# fragment in our queries (User vs Organization).
+union Sponsorable = User | Organization
+union Sponsor = User | Organization
+
+input ProjectV2Order {
+  field: ProjectV2OrderField!
+  direction: OrderDirection!
+}
+
+enum ProjectV2OrderField {
+  UPDATED_AT
+  CREATED_AT
+  TITLE
+  NUMBER
+}
+
+type ProjectV2Connection {
+  totalCount: Int!
+  nodes: [ProjectV2!]
+}
+
+type ProjectV2 {
+  title: String!
+  shortDescription: String
+  updatedAt: DateTime!
+  url: URI!
+  closed: Boolean!
+  number: Int!
+}
+
+enum PinnableItemType {
+  REPOSITORY
+  GIST
+}
+
+type PinnableItemConnection {
+  totalCount: Int!
+  nodes: [PinnableItem!]
+}
+
+# Pinnable items are a union of Repository | Gist. We only fetch
+# Repository fragments — Gist nodes are skipped.
+union PinnableItem = Repository | Gist
+
+type Gist {
+  name: String!
+}
+
+type StargazerConnection {
+  totalCount: Int!
+  edges: [StargazerEdge!]
+}
+
+type StargazerEdge {
+  starredAt: DateTime!
+  node: User!
 }

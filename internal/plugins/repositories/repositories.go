@@ -124,11 +124,20 @@ func (p *repositoriesPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 		res.Random = randomSubset(featured, in.limit, in.randomSeed)
 	}
 	if in.pinned {
-		// MVP: the pinnedItems GraphQL fragment lands with US2 when
-		// stargazers / starred Repositories share the same connection
-		// shape. Until then we reuse Featured's top entries so the
-		// classic SVG still has data to render.
-		res.Pinned = featured
+		// Spec 013: real viewer.pinnedItems GraphQL fetch. When the
+		// GraphQL client is unavailable (test paths / dryrun-no-token CLI)
+		// fall back to the Featured copy for M4 baseline compatibility.
+		if pc.GraphQL == nil {
+			res.Pinned = featured
+		} else {
+			pinned, perr := fetchPinned(ctx, pc)
+			if perr != nil {
+				pc.Data.AppendError(xerrors.NewRetryableError(perr))
+				res.Pinned = nil
+			} else {
+				res.Pinned = pinned
+			}
+		}
 	}
 	if in.starred {
 		res.Starred = resolveStarred(ctx, pc, featured, in.limit)
@@ -403,4 +412,63 @@ func trimEmpty(in []string) []string {
 		}
 	}
 	return out
+}
+
+// fetchPinned executes the spec-013 viewer.pinnedItems GraphQL query
+// and maps each Repository node to a plugins.Repository. Gist nodes
+// (the other PinnableItem variant) are skipped — the union path is
+// covered by the schema for exhaustiveness but the projection only
+// emits repository fields.
+func fetchPinned(ctx context.Context, pc *plugins.PluginContext) ([]plugins.Repository, error) {
+	resp, err := pc.GraphQL.ViewerPinnedItems(ctx, 6)
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil || resp.Viewer == nil || resp.Viewer.PinnedItems == nil {
+		return []plugins.Repository{}, nil
+	}
+	out := make([]plugins.Repository, 0, len(resp.Viewer.PinnedItems.Nodes))
+	for _, n := range resp.Viewer.PinnedItems.Nodes {
+		if n == nil {
+			continue
+		}
+		repo, ok := pinnableToRepository(n)
+		if !ok {
+			continue
+		}
+		out = append(out, repo)
+	}
+	return out, nil
+}
+
+func pinnableToRepository(node githubapi.ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem) (plugins.Repository, bool) {
+	r, ok := node.(*githubapi.ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository)
+	if !ok {
+		return plugins.Repository{}, false
+	}
+	desc := ""
+	if r.Description != nil {
+		desc = *r.Description
+	}
+	repo := plugins.Repository{
+		NameWithOwner: r.NameWithOwner,
+		Description:   desc,
+		URL:           r.Url,
+		IsFork:        r.IsFork,
+		Stars:         r.StargazerCount,
+		Forks:         r.ForkCount,
+	}
+	if r.IsPrivate {
+		repo.Visibility = "PRIVATE"
+	} else {
+		repo.Visibility = "PUBLIC"
+	}
+	if r.PrimaryLanguage != nil {
+		color := ""
+		if r.PrimaryLanguage.Color != nil {
+			color = *r.PrimaryLanguage.Color
+		}
+		repo.Language = &plugins.LanguageStat{Name: r.PrimaryLanguage.Name, Color: color}
+	}
+	return repo, true
 }

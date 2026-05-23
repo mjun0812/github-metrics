@@ -1,0 +1,18 @@
+query ViewerProjects($first: Int!) {
+  viewer {
+    projectsV2(
+      first: $first
+      orderBy: { field: UPDATED_AT, direction: DESC }
+    ) {
+      totalCount
+      nodes {
+        title
+        shortDescription
+        updatedAt
+        url
+        closed
+        number
+      }
+    }
+  }
+}

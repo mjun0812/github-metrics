@@ -11,10 +11,13 @@ package stargazers
 import (
 	"context"
 	"log/slog"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
+	xerrors "github.com/mjun0812/github-metrics/internal/errors"
+	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
@@ -70,9 +73,11 @@ type ChartPoint struct {
 // in M4 per R-012.
 type StargazersWorldmap struct{}
 
-// Run always returns Skipped in M4. Worldmap input is observed and a
-// WARN log is emitted to make the deferred state explicit.
-func (p *stargazersPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any, error) {
+// Run wires viewer-mode stargazers chart (spec 013). Worldmap input is
+// observed and a WARN log is emitted to make the deferred state explicit.
+// Repo-mode returns the existing M7 stub. User-mode aggregates each
+// owned repo's stargazers (latest 100) into month buckets.
+func (p *stargazersPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
@@ -94,13 +99,74 @@ func (p *stargazersPlugin) Run(_ context.Context, pc *plugins.PluginContext) (an
 			Charts: StargazersCharts{Type: "classic", Series: []ChartPoint{}},
 		}, nil
 	}
-	return &Result{
-		Skipped:       true,
-		SkippedReason: "stargazers requires repository account kind (M7 territory)",
-		Mode:          plugins.ModeUser,
-		List:          []Stargazer{},
-		Charts:        StargazersCharts{Type: "classic", Series: []ChartPoint{}},
-	}, nil
+	// Spec 013: user-mode chart from viewer.repositories(owner).stargazers
+	base := &Result{
+		Mode:   plugins.ModeUser,
+		List:   []Stargazer{},
+		Charts: StargazersCharts{Type: "classic", Series: []ChartPoint{}},
+	}
+	if pc.GraphQL == nil || !isTruthy(pc.Inputs["plugin_stargazers"]) {
+		base.Skipped = true
+		base.SkippedReason = "GraphQL client unavailable"
+		return base, nil
+	}
+	resp, err := pc.GraphQL.ViewerStargazersRepos(ctx, 10, 100)
+	if err != nil {
+		base.Skipped = true
+		base.SkippedReason = "GraphQL fetch failed"
+		pc.Data.AppendError(xerrors.NewRetryableError(err))
+		return base, nil
+	}
+	series, latestHint := buildSeries(resp)
+	base.Charts.Series = series
+	if latestHint {
+		base.Charts.Type = "classic-latest100"
+	}
+	return base, nil
+}
+
+// buildSeries flattens stargazers across all owned repos into month
+// buckets and accumulates into a cumulative count series. Returns the
+// chart series and a "latestHint" flag set when any repo exceeded the
+// 100-edge fetch cap (used downstream to add a "Latest 100" suffix).
+func buildSeries(resp *githubapi.ViewerStargazersReposResponse) ([]ChartPoint, bool) {
+	if resp == nil || resp.Viewer == nil || resp.Viewer.Repositories == nil {
+		return []ChartPoint{}, false
+	}
+	monthly := map[string]int{}
+	latestHint := false
+	for _, repo := range resp.Viewer.Repositories.Nodes {
+		if repo == nil || repo.Stargazers == nil {
+			continue
+		}
+		if repo.Stargazers.TotalCount > 100 {
+			latestHint = true
+		}
+		for _, edge := range repo.Stargazers.Edges {
+			if edge == nil {
+				continue
+			}
+			key := monthKey(edge.StarredAt)
+			monthly[key]++
+		}
+	}
+	keys := make([]string, 0, len(monthly))
+	for k := range monthly {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	out := make([]ChartPoint, 0, len(keys))
+	cum := 0
+	for _, k := range keys {
+		cum += monthly[k]
+		t, _ := time.Parse("2006-01", k)
+		out = append(out, ChartPoint{Date: t, Count: cum})
+	}
+	return out, latestHint
+}
+
+func monthKey(t time.Time) string {
+	return t.UTC().Format("2006-01")
 }
 
 func isTruthy(v any) bool {
