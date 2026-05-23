@@ -1,1 +1,3 @@
-{"feature_directory":"specs/011-plugin-rendering-parity"}
+{
+  "feature_directory": "specs/012-rest-data-fetch"
+}

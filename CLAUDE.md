@@ -2,9 +2,10 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Active plan: [specs/011-plugin-rendering-parity/plan.md](specs/011-plugin-rendering-parity/plan.md)
-- Feature spec: [specs/011-plugin-rendering-parity/spec.md](specs/011-plugin-rendering-parity/spec.md)
-- 010 (paused, blocker for 011): [specs/010-docs-plugin-gallery/BLOCKED.md](specs/010-docs-plugin-gallery/BLOCKED.md) — resume after 011 lands
+- Active plan: [specs/012-rest-data-fetch/plan.md](specs/012-rest-data-fetch/plan.md)
+- Feature spec: [specs/012-rest-data-fetch/spec.md](specs/012-rest-data-fetch/spec.md)
+- 011 baseline (merged #383): [specs/011-plugin-rendering-parity/plan.md](specs/011-plugin-rendering-parity/plan.md)
+- 010 (paused, blocker resolved by 011): [specs/010-docs-plugin-gallery/BLOCKED.md](specs/010-docs-plugin-gallery/BLOCKED.md)
 - 009 baseline (completed): [specs/009-release-tag-automation/plan.md](specs/009-release-tag-automation/plan.md)
 - M10 baseline (completed): [specs/008-m10-release-distribution/plan.md](specs/008-m10-release-distribution/plan.md)
 - M9 baseline (completed): [specs/007-m9-test-infrastructure/plan.md](specs/007-m9-test-infrastructure/plan.md)
