@@ -435,8 +435,36 @@ repository はリポジトリ向けの需要があると考え採用します。
 
 選定確定後の動きを明示します。
 
-- [ ] 採用タスク (§6) を [12-tasks.md](./12-tasks.md) と突き合わせて issue 化
-- [ ] 不採用タスク (§7) を backlog ラベルで一括起票 (またはこの回答書で参照とする)
+- [x] 採用タスク (§6) を [12-tasks.md](./12-tasks.md) と突き合わせて issue 化 → M1〜M10 phase に分割して順次完了
+- [x] 不採用タスク (§7) を backlog として参照 (不採用 plugin の混入は `tests/compliance/compliance_test.go::TestNoUnadoptedPluginReference` で gating 済)
+
+### 9.1 採用機能実装ステータス (2026-05-23 時点)
+
+| Phase | 内容 | 状態 |
+|---|---|---|
+| M1 (001) | プロジェクト基盤 (logger / errors / settings / HTTP client / GitHub client / Engine / Plugin I/F) | ✅ merged |
+| M2 (002) | classic skeleton + JSON 出力 + 5 base partial | ✅ merged |
+| M3 (003) | chromedp rendering pipeline (SVG/PNG/JPEG) | ✅ merged |
+| M4 (004) | 19 plugin scaffold (全採用 plugin の Result + partial + skeleton Run) | ✅ merged |
+| M6 (005) | Action entrypoint + CLI flags + commit/PR/data-changed | ✅ merged |
+| M7 (006) | repository template | ✅ merged |
+| M9 (007) | test infrastructure consolidation | ✅ merged |
+| M10 (008) | release / Docker distribution | ✅ merged |
+| 009 | release tag automation | ✅ merged |
+| 011 (#383) | 19 plugin partial DOM upstream parity | ✅ merged |
+| 012 (#384) | repositories.Starred の REST data fetch | ✅ merged |
+| 013 (#385) | 残り 6 plugin (sponsors / sponsorships / projects / notable / stargazers / repositories.Pinned) の GraphQL data fetch | ✅ merged on CI green |
+
+採用機能 §4.2 で `[x]` を付けた **21 plugin** のうち、`base` / `core` (土台) + 011 で partial parity 確定 + 012 で Starred wiring + 013 で残り GraphQL plugin の wiring がすべて main に取り込まれた時点で、**採用機能の core wiring は完成**。`topics` / `starlists` (chromedp scrape 系) は spec 011 で chromedp Navigator interface 経由で wired 済みで、chromedp が利用可能なランタイムでは動作。
+
+### 9.2 backlog (将来 spec)
+
+採用機能完全実装後、優先度に応じて検討:
+
+- **organization mode**: sponsors / sponsorships / projects / notable / stargazers の org 展開 (013 では user-mode のみ実装)
+- **notable indepth**: pinned discussion / 最新 release / readme TLDR
+- **stargazers worldmap** (R-012, §4.2 でも N-task に該当): Google Maps API 連携、現状 Skipped path
+- **stargazers chart pagination**: latest 100 stars 超過の repo を全件 paginate
 
 ---
 
