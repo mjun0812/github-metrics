@@ -6,6 +6,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -228,6 +229,56 @@ func TestPartial_Starlists_Golden(t *testing.T) {
 	for _, marker := range []string{`<div class="starlist">`, `class="count"`, `<h2 class="field">`} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("partial missing marker %q in:\n%s", marker, got)
+		}
+	}
+}
+
+// TestPartial_Starlists_NoDuplicateMaskID guards against the regression
+// where multiple starlists with language bars all emitted the same
+// `<mask id="languages-bar">`, which made every list inherit the first
+// list's clip rectangle (invalid SVG, broken render).
+func TestPartial_Starlists_NoDuplicateMaskID(t *testing.T) {
+	t.Parallel()
+	r := &starlists.Result{
+		List: []starlists.Starlist{
+			{
+				Name:  "AI",
+				Count: 2,
+				Languages: []plugins.LanguageStat{
+					{Name: "Go", Color: "#00ADD8", Size: 5000},
+				},
+			},
+			{
+				Name:  "Backend",
+				Count: 2,
+				Languages: []plugins.LanguageStat{
+					{Name: "Rust", Color: "#dea584", Size: 3000},
+				},
+			},
+		},
+	}
+	data := plugins.NewData()
+	data.SetPlugin(starlists.Name, r)
+	pc := &templates.PartialContext{Data: data}
+	got, err := starlists.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	idRe := regexp.MustCompile(`<mask id="([^"]+)"`)
+	matches := idRe.FindAllStringSubmatch(got, -1)
+	seen := map[string]int{}
+	for _, m := range matches {
+		seen[m[1]]++
+	}
+	if len(seen) != 2 {
+		t.Errorf("expected 2 distinct mask ids (one per starlist), got %d: %v\n%s", len(seen), seen, got)
+	}
+	for id, n := range seen {
+		if n > 1 {
+			t.Errorf("mask id %q appears %d times in single SVG (duplicate ids are invalid):\n%s", id, n, got)
+		}
+		if !strings.HasPrefix(id, "starlists-bar-") {
+			t.Errorf("mask id %q should be prefixed with starlists-bar- to avoid colliding with languages plugin", id)
 		}
 	}
 }

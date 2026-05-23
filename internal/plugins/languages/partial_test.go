@@ -159,6 +159,49 @@ func TestPartial_Languages_Recent(t *testing.T) {
 	}
 }
 
+// TestPartial_Languages_NoDuplicateMaskID guards against the regression
+// where both most-used and recently-used bars emitted the same
+// `<mask id="languages-bar">`, which made the second bar inherit the
+// first one's clip on standards-compliant renderers (invalid SVG).
+func TestPartial_Languages_NoDuplicateMaskID(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.SetPlugin(languages.Name, &languages.Result{
+		Favorites: []plugins.LanguageStat{{Name: "Go", Color: "#00ADD8", Size: 100, Value: 1}},
+		Sections:  []string{"most-used", "recently-used"},
+		Mostly:    plugins.LanguageStat{Name: "Go", Color: "#00ADD8", Size: 100, Value: 1},
+		Colors:    map[string]string{"Go": "#00ADD8"},
+	})
+	data.SetPlugin(languages.RecentName, &languages.RecentResult{
+		Favorites: []plugins.LanguageStat{{Name: "Python", Color: "#3572A5", Size: 200, Value: 1}},
+		Days:      7,
+		Load:      50,
+		Repos:     []string{"octocat/py"},
+	})
+	pc := &templates.PartialContext{Data: data}
+	got, err := languages.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	idRe := regexp.MustCompile(`<mask id="([^"]+)"`)
+	matches := idRe.FindAllStringSubmatch(got, -1)
+	seen := map[string]int{}
+	for _, m := range matches {
+		seen[m[1]]++
+	}
+	for id, n := range seen {
+		if n > 1 {
+			t.Errorf("mask id %q appears %d times in single SVG (duplicate ids are invalid):\n%s", id, n, got)
+		}
+	}
+	if seen["languages-bar-most"] != 1 {
+		t.Errorf("expected exactly one languages-bar-most mask, got %d", seen["languages-bar-most"])
+	}
+	if seen["languages-bar-recent"] != 1 {
+		t.Errorf("expected exactly one languages-bar-recent mask, got %d", seen["languages-bar-recent"])
+	}
+}
+
 // TestPartial_Languages_Indepth verifies the indepth section is emitted
 // as a <g class="languages-indepth"> when languages.indepth has totals.
 func TestPartial_Languages_Indepth(t *testing.T) {

@@ -92,7 +92,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		listOcticon, len(r.List), pluralS(len(r.List)),
 	)
 	b.WriteString(`<div class="row"><section>`)
-	for _, s := range r.List {
+	for i, s := range r.List {
 		b.WriteString(`<div class="starlist">`)
 		// Per-list header.
 		fmt.Fprintf(
@@ -113,7 +113,10 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 			)
 		}
 		if len(s.Languages) > 0 {
-			writeStarlistLanguages(&b, s.Languages, s.Count)
+			// Per-list mask id so concurrent starlists (and the
+			// languages plugin) don't collide on the same SVG id.
+			maskID := fmt.Sprintf("starlists-bar-%d", i)
+			writeStarlistLanguages(&b, s.Languages, s.Count, maskID)
 		}
 		b.WriteString(`</div>`)
 	}
@@ -126,11 +129,15 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 // details block matching upstream EJS lines 30-54. total is the
 // starlist's repository count (passed through so the per-language
 // `value/count` percentage is computed against the list size, not the
-// total bytes).
-func writeStarlistLanguages(b *strings.Builder, langs []plugins.LanguageStat, total int) {
+// total bytes). maskID must be unique within the SVG document — each
+// starlist gets its own bar so the id is suffixed with the list index
+// to prevent collisions with sibling starlists and with the languages
+// plugin's own mask.
+func writeStarlistLanguages(b *strings.Builder, langs []plugins.LanguageStat, total int, maskID string) {
 	if total <= 0 {
 		total = 1
 	}
+	maskRef := partials.EscapeXML(maskID)
 	b.WriteString(`<div class="languages">`)
 	// Bar with mask.
 	b.WriteString(`<div class="row">`)
@@ -141,12 +148,13 @@ func writeStarlistLanguages(b *strings.Builder, langs []plugins.LanguageStat, to
 	)
 	fmt.Fprintf(
 		b,
-		`<mask id="languages-bar"><rect x="0" y="0" width="%d" height="8" fill="white" rx="5"/></mask>`,
-		starlistBarWidth,
+		`<mask id="%s"><rect x="0" y="0" width="%d" height="8" fill="white" rx="5"/></mask>`,
+		maskRef, starlistBarWidth,
 	)
 	fmt.Fprintf(
 		b,
-		`<rect mask="url(#languages-bar)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>`,
+		`<rect mask="url(#%s)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>`,
+		maskRef,
 	)
 	offset := 0.0
 	for _, l := range langs {
@@ -161,8 +169,8 @@ func writeStarlistLanguages(b *strings.Builder, langs []plugins.LanguageStat, to
 		}
 		fmt.Fprintf(
 			b,
-			`<rect mask="url(#languages-bar)" x="%.2f" y="0" width="%.2f" height="8" fill="%s" data-language="%s"></rect>`,
-			offset, width, partials.EscapeXML(color), partials.EscapeXML(l.Name),
+			`<rect mask="url(#%s)" x="%.2f" y="0" width="%.2f" height="8" fill="%s" data-language="%s"></rect>`,
+			maskRef, offset, width, partials.EscapeXML(color), partials.EscapeXML(l.Name),
 		)
 		offset += width
 	}

@@ -155,11 +155,14 @@ func writeMostUsedSection(b *strings.Builder, pc *templates.PartialContext, bars
 
 	if len(bars) > 0 {
 		// Progress bar wrapped in <svg class="bar"> with <mask
-		// id="languages-bar"> for rounded corners per upstream EJS
+		// id="languages-bar-most"> for rounded corners per upstream EJS
 		// lines 42-50. Also fixes the v1.0.0 bare-<g> invisible-render
 		// bug. The leading `<rect fill="#d1d5da">` is a 0-width
-		// placeholder (upstream parity).
-		writeLanguageBar(b, bars, "languages-progress", "Languages distribution", "language-bar")
+		// placeholder (upstream parity). Mask id is unique per section
+		// because the same partial can emit both "most-used" and
+		// "recently-used" bars in one SVG (duplicate ids would break
+		// the second bar's clip on most renderers).
+		writeLanguageBar(b, bars, "languages-bar-most", "languages-progress", "Languages distribution", "language-bar")
 
 		// Per-language render: upstream EJS lines 52-80.
 		// When `details` is non-empty (mjun0812: bytes-size, percentage
@@ -186,12 +189,14 @@ func writeMostUsedSection(b *strings.Builder, pc *templates.PartialContext, bars
 }
 
 // writeLanguageBar emits the upstream EJS lines 42-50 `<svg class="bar">`
-// block: a <mask id="languages-bar"> for rounded corners, a 0-width
-// `#d1d5da` placeholder, then per-language rects with `mask="url(...)"`.
-// gClass is the <g> class (e.g., "languages-progress", "languages-recent")
-// and rectClass is the per-language rect class. titleText is the a11y
-// title rendered inside the bar.
-func writeLanguageBar(b *strings.Builder, bars []plugins.LanguageStat, gClass, titleText, rectClass string) {
+// block: a <mask id="..."> for rounded corners, a 0-width `#d1d5da`
+// placeholder, then per-language rects with `mask="url(...)"`. maskID
+// must be unique within the rendered SVG document (most-used vs
+// recently-used use distinct ids); gClass is the <g> class (e.g.,
+// "languages-progress", "languages-recent") and rectClass is the
+// per-language rect class. titleText is the a11y title.
+func writeLanguageBar(b *strings.Builder, bars []plugins.LanguageStat, maskID, gClass, titleText, rectClass string) {
+	maskRef := partials.EscapeXML(maskID)
 	fmt.Fprintf(
 		b,
 		`<svg class="bar" xmlns="http://www.w3.org/2000/svg" width="%d" height="8" role="img" aria-label="%s"><title>%s</title>`,
@@ -199,12 +204,13 @@ func writeLanguageBar(b *strings.Builder, bars []plugins.LanguageStat, gClass, t
 	)
 	fmt.Fprintf(
 		b,
-		`<mask id="languages-bar"><rect x="0" y="0" width="%d" height="8" fill="white" rx="5"/></mask>`,
-		partialBarWidth,
+		`<mask id="%s"><rect x="0" y="0" width="%d" height="8" fill="white" rx="5"/></mask>`,
+		maskRef, partialBarWidth,
 	)
 	fmt.Fprintf(
 		b,
-		`<rect mask="url(#languages-bar)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>`,
+		`<rect mask="url(#%s)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>`,
+		maskRef,
 	)
 	fmt.Fprintf(b, `<g class="%s">`, partials.EscapeXML(gClass))
 	offset := 0.0
@@ -215,8 +221,9 @@ func writeLanguageBar(b *strings.Builder, bars []plugins.LanguageStat, gClass, t
 		}
 		fmt.Fprintf(
 			b,
-			`<rect class="%s" mask="url(#languages-bar)" x="%.2f" y="0" width="%.2f" height="8" fill="%s" data-language="%s"></rect>`,
+			`<rect class="%s" mask="url(#%s)" x="%.2f" y="0" width="%.2f" height="8" fill="%s" data-language="%s"></rect>`,
 			partials.EscapeXML(rectClass),
+			maskRef,
 			offset, width, partials.EscapeXML(colorOrDefault(lang.Color)), partials.EscapeXML(lang.Name),
 		)
 		offset += width
@@ -277,7 +284,9 @@ func writeRecentlyUsedSection(b *strings.Builder, pc *templates.PartialContext) 
 	}
 
 	// Progress bar — shared mask helper (upstream EJS lines 42-50).
-	writeLanguageBar(b, bars, "languages-recent", "Recently used languages distribution", "language-bar-recent")
+	// Mask id is distinct from the most-used section so both bars can
+	// coexist in the same SVG without id collisions.
+	writeLanguageBar(b, bars, "languages-bar-recent", "languages-recent", "Recently used languages distribution", "language-bar-recent")
 
 	// Per-language render: prefer the details/2-column block when the
 	// parent languages plugin requested details columns (upstream EJS
