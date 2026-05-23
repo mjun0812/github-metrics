@@ -176,9 +176,14 @@ func TestPartial_Achievements_Golden(t *testing.T) {
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
+	// Tier 3 (011) rewrite: each entry is now
+	// `<div class="achievement <rank> largeable-width-half" data-rank=...>`
+	// so the literal `class="achievement"` (closing quote) and the old
+	// `data-achievement=` attribute no longer match. Anchor on the
+	// multi-class prefix + the new `data-rank=` attribute instead.
 	for _, marker := range []string{
-		`class="achievement"`,
-		`data-achievement="`,
+		`class="achievement `,
+		`data-rank="`,
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("missing marker %q in:\n%s", marker, got)

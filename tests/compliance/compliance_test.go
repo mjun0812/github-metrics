@@ -85,6 +85,16 @@ var allowedFiles = map[string]struct{}{
 	// uniqueness; the "crypto" substring is a standard-library import,
 	// not the unadopted "crypto" plugin slug.
 	"internal/action/outputs.go": {},
+	// 011 v2 languages partial emits "N lines" as part of the upstream
+	// `details: lines` column (EJS line 63). The word "lines" overlaps
+	// the unadopted upstream "lines" plugin name; this allow-list entry
+	// preserves the upstream-equivalent column rendering.
+	"internal/plugins/languages/partial.go": {},
+	// languages.go filters the "lines" detail column out when indepth
+	// is not enabled (upstream index.mjs:33-34). Same false-positive
+	// shape as partial.go above — "lines" is the upstream details
+	// column name, not the unadopted upstream plugin slug.
+	"internal/plugins/languages/languages.go": {},
 }
 
 // TestNoUnadoptedPluginReference walks scanRoots and asserts that no

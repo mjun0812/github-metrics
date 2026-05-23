@@ -42,11 +42,32 @@ type Result struct {
 // IsSkipped lets the classic dispatcher detect the skipped path.
 func (r *Result) IsSkipped() bool { return r != nil && r.Skipped }
 
-// YearCalendar carries one calendar year's contribution histogram.
+// YearCalendar carries one calendar year's contribution histogram +
+// per-week per-day cells for the upstream-equivalent heatmap render.
+// Months[12] is preserved for backward compat with the v1 JSON shape
+// (Principle II additive extension).
 type YearCalendar struct {
-	Year   int     `json:"year"`
-	Total  int     `json:"total"`
-	Months [12]int `json:"months"`
+	Year   int            `json:"year"`
+	Total  int            `json:"total"`
+	Months [12]int        `json:"months"`
+	Weeks  []CalendarWeek `json:"weeks"`
+}
+
+// CalendarWeek mirrors upstream `week.contributionDays`. May have 1-7
+// entries; a year-boundary week is short (1-6 days) and the partial
+// offsets it so the cells align with the right weekday rows.
+type CalendarWeek struct {
+	ContributionDays []ContributionCell `json:"contributionDays"`
+}
+
+// ContributionCell mirrors one cell in the heatmap — `{date, color}`
+// per upstream EJS line 21. Count is included as additional metadata
+// (upstream's GraphQL exposes it; the EJS doesn't render it, but
+// downstream consumers may use it).
+type ContributionCell struct {
+	Date  string `json:"date"`
+	Color string `json:"color"`
+	Count int    `json:"count"`
 }
 
 // Run aggregates ContributionCalendar.Weeks into per-year × per-month
@@ -69,6 +90,12 @@ func (p *calendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any,
 	byYear := map[int]*YearCalendar{}
 	yearsOrder := []int{}
 	for _, w := range cal.Weeks {
+		// A week may span 2 years at year boundaries. Group its days by
+		// year so a Dec/Jan boundary week appears in BOTH years' weeks
+		// list — each year gets the days that fall within it. This is
+		// equivalent to upstream's per-year column layout where a
+		// partial first week is offset down per EJS line 22.
+		dayByYear := map[int][]plugins.ContributionDay{}
 		for _, d := range w.Days {
 			year, month, ok := parseDate(d.Date)
 			if !ok {
@@ -84,6 +111,25 @@ func (p *calendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any,
 			if month >= 1 && month <= 12 {
 				yc.Months[month-1] += d.ContributionCount
 			}
+			dayByYear[year] = append(dayByYear[year], d)
+		}
+		// Emit a single CalendarWeek per year (containing only the days
+		// that fall within that year) so the upstream-equivalent partial
+		// can render the boundary offset correctly.
+		for year, days := range dayByYear {
+			cells := make([]ContributionCell, 0, len(days))
+			for _, d := range days {
+				color := d.Color
+				if color == "" {
+					color = colorForCount(d.ContributionCount)
+				}
+				cells = append(cells, ContributionCell{
+					Date:  d.Date,
+					Color: color,
+					Count: d.ContributionCount,
+				})
+			}
+			byYear[year].Weeks = append(byYear[year].Weeks, CalendarWeek{ContributionDays: cells})
 		}
 	}
 
@@ -98,6 +144,24 @@ func (p *calendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any,
 		years = years[len(years)-limit:]
 	}
 	return &Result{Years: years, Limit: limit}, nil
+}
+
+// colorForCount maps a contribution-count int to GitHub's standard
+// 5-level heatmap color palette. Used as a fallback when the upstream
+// GraphQL ContributionDay.Color isn't populated.
+func colorForCount(n int) string {
+	switch {
+	case n <= 0:
+		return "#ebedf0"
+	case n < 5:
+		return "#9be9a8"
+	case n < 10:
+		return "#40c463"
+	case n < 20:
+		return "#30a14e"
+	default:
+		return "#216e39"
+	}
 }
 
 // parseDate decodes a "YYYY-MM-DD" date into year + month. Returns

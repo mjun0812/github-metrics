@@ -94,9 +94,19 @@ func dispatchOutput(
 			defer closeBrowser()
 		}
 
+		// Apply upstream's `config_padding` default ("0, 8 + 11%") when
+		// the caller did not override — width:0 absolute (no padding),
+		// height:8 absolute + 11% relative (absorbs minor measurement
+		// errors from foreignObject layout so the bottom of plugin
+		// content does not clip).
+		// org_repo/source/plugins/core/metadata.yml line 347.
+		padding := stringSliceInput(req.Inputs, "config.padding")
+		if len(padding) == 0 {
+			padding = []string{"0, 8 + 11%"}
+		}
 		out, err := renderer.Resize(ctx, decorated, render.ResizeOpts{
 			Convert: format,
-			Padding: stringSliceInput(req.Inputs, "config.padding"),
+			Padding: padding,
 			Scripts: stringSliceInput(req.Inputs, "extras.js"),
 		})
 		if err != nil {

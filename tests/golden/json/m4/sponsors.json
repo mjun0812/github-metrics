@@ -1,5 +1,13 @@
 {
   "skipped": true,
   "sections": null,
-  "sponsors": []
+  "sponsors": [],
+  "count": {
+    "active": {
+      "total": 0
+    },
+    "past": {
+      "total": 0
+    }
+  }
 }

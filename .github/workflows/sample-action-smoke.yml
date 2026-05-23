@@ -28,8 +28,10 @@ on:
 
 jobs:
   smoke-x86:
-    name: x86_64 smoke (ubuntu-latest)
-    runs-on: ubuntu-latest
+    name: x86_64 smoke (self-hosted Linux X64)
+    # github-hosted (restore when quota recovers):
+    # runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 5
     steps:
       - uses: mjun0812/github-metrics@v1.0.0
@@ -40,15 +42,18 @@ jobs:
           output: svg
           dryrun: 'yes'
 
-  smoke-arm:
-    name: arm64 smoke (ubuntu-24.04-arm)
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 5
-    steps:
-      - uses: mjun0812/github-metrics@v1.0.0
-        with:
-          user: octocat
-          token: ${{ secrets.METRICS_TOKEN }}
-          template: classic
-          output: svg
-          dryrun: 'yes'
+  # smoke-arm disabled while GHA quota is exhausted — the self-hosted
+  # runner is Linux/X64 only, so the arm64 leg has no place to land.
+  # Restore in full when quota recovers and ubuntu-24.04-arm is back.
+  # smoke-arm:
+  #   name: arm64 smoke (ubuntu-24.04-arm)
+  #   runs-on: ubuntu-24.04-arm
+  #   timeout-minutes: 5
+  #   steps:
+  #     - uses: mjun0812/github-metrics@v1.0.0
+  #       with:
+  #         user: octocat
+  #         token: ${{ secrets.METRICS_TOKEN }}
+  #         template: classic
+  #         output: svg
+  #         dryrun: 'yes'
