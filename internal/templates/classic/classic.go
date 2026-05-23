@@ -129,7 +129,18 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 	b.WriteString(`<foreignObject x="0" y="0" width="100%" height="100%">`)
 	b.WriteString(`<div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper">`)
 
+	// Resolve which base.* partials are enabled. Per upstream
+	// behaviour, the `base` input is a CSV of section names
+	// ("header, activity, community, repositories, metadata"). When the
+	// input is absent we render all sections (preserves v1 behaviour).
+	// When the input is the empty string we render NONE (used by
+	// per-plugin renders like mjun0812's metrics_languages.svg etc.).
+	baseSections := resolveBaseSections(pc.Inputs)
+
 	for _, name := range t.partials {
+		if !partialEnabledByBase(name, baseSections) {
+			continue
+		}
 		fn, ok := partials.Lookup(name)
 		if !ok {
 			// Partial declared in _.json but no implementation registered:
@@ -258,6 +269,97 @@ func metadataFooter(pc *templates.PartialContext) string {
 	}
 	b.WriteString(`</footer>`)
 	return b.String()
+}
+
+// resolveBaseSections reads the `base` input and returns a set of
+// enabled base section names. Mirrors upstream behaviour:
+//
+//   - input absent → default to all sections (preserves backwards
+//     compatibility with v1.0.0 pipelines that don't set `base`).
+//   - input present but empty string → no base sections (used by
+//     per-plugin renders to strip the base header / repo counts).
+//   - input is a CSV → split, trim, lowercase each entry.
+//
+// Returned map keys are the canonical section names that
+// partialEnabledByBase below checks against.
+func resolveBaseSections(in map[string]any) map[string]struct{} {
+	const allSections = "header, activity, community, repositories, metadata"
+	raw, present := readBaseInput(in)
+	if !present {
+		raw = allSections
+	}
+	out := map[string]struct{}{}
+	for _, part := range strings.Split(raw, ",") {
+		s := strings.ToLower(strings.TrimSpace(part))
+		if s == "" {
+			continue
+		}
+		out[s] = struct{}{}
+	}
+	return out
+}
+
+// readBaseInput extracts the `base` input from the inputs map. Returns
+// (value, true) when the key is present even if the value is "" — this
+// distinguishes "user set base to empty" from "user did not set base".
+func readBaseInput(in map[string]any) (string, bool) {
+	if in == nil {
+		return "", false
+	}
+	v, ok := in["base"]
+	if !ok {
+		return "", false
+	}
+	switch x := v.(type) {
+	case string:
+		return x, true
+	case []string:
+		return strings.Join(x, ","), true
+	case []any:
+		parts := make([]string, 0, len(x))
+		for _, p := range x {
+			if s, ok := p.(string); ok {
+				parts = append(parts, s)
+			}
+		}
+		return strings.Join(parts, ","), true
+	}
+	return "", false
+}
+
+// partialEnabledByBase reports whether the named partial should be
+// rendered given the resolved baseSections set. Only partials whose
+// name starts with "base." (plus "introduction") are gated by this
+// check; other partials (plugin.*) pass through unaffected.
+//
+// Mapping mirrors upstream's classic template:
+//
+//	base.header            → "header"
+//	introduction           → "introduction"
+//	base.activity+community → "activity" OR "community" (either flips it on)
+//	base.repositories      → "repositories"
+//
+// `metadata` is gated separately by metadataFooter via base.metadata
+// input.
+func partialEnabledByBase(name string, sections map[string]struct{}) bool {
+	switch name {
+	case "base.header":
+		_, ok := sections["header"]
+		return ok
+	case "introduction":
+		_, ok := sections["introduction"]
+		return ok
+	case "base.activity+community":
+		_, a := sections["activity"]
+		_, c := sections["community"]
+		return a || c
+	case "base.repositories":
+		_, ok := sections["repositories"]
+		return ok
+	}
+	// Non-base partials (anything else listed in _.json) render
+	// unconditionally — they don't have a `base` gate semantic.
+	return true
 }
 
 func truthyInput(in map[string]any, key string) bool {

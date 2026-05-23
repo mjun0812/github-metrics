@@ -50,6 +50,15 @@ type Result struct {
 	Sections      []string               `json:"sections"`
 	Mostly        plugins.LanguageStat   `json:"mostly"`
 	Colors        map[string]string      `json:"colors"`
+	// Details mirrors upstream `plugins.languages.details` — a list of
+	// per-language detail columns to render. Subset of
+	// {"lines", "bytes-size", "percentage"}. mjun0812 uses all three.
+	// (011 v2 additive extension per Principle II.)
+	Details []string `json:"details,omitempty"`
+	// Unique is the distinct-language count surfaced in the count
+	// header — mirrors upstream `plugins.languages.unique`. Computed
+	// across all analyzed repositories before favorites truncation.
+	Unique int `json:"unique,omitempty"`
 }
 
 // IsSkipped lets the classic dispatcher (and any duck-typed consumer)
@@ -67,6 +76,7 @@ type inputs struct {
 	aliases   map[string]string
 	colors    map[string]string
 	sections  []string
+	details   []string
 }
 
 // Run aggregates language bytes across base.Computed.RepositoryList.
@@ -97,9 +107,21 @@ func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any
 		count int
 		color string
 	}
+	// Upstream `repositories_forks: no` is the default (org_repo/source/
+	// plugins/base/metadata.yml line 88). Without this filter, language
+	// stats from forked repos (e.g. a fork of a large EJS codebase)
+	// pollute the user's distribution with code they didn't write.
+	// Mirror upstream's default by skipping forks unless the caller
+	// explicitly opts in via `plugin_repositories_forks` / `repositories_forks`.
+	includeForks := truthy(pc.Inputs["plugin_repositories_forks"]) ||
+		truthy(pc.Inputs["repositories_forks"])
+
 	totals := map[string]*acc{}
 	for _, repo := range repos {
 		if _, drop := in.skipped[repo.NameWithOwner]; drop {
+			continue
+		}
+		if repo.IsFork && !includeForks {
 			continue
 		}
 		seen := map[string]struct{}{}
@@ -201,6 +223,21 @@ func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any
 		colors[other.Name] = other.Color
 	}
 
+	// Upstream index.mjs:33-34 — when indepth mode is disabled, "lines"
+	// is filtered out of details. The EJS template then doesn't render
+	// the lines column (which would otherwise show "0 lines" since no
+	// linguist line counts exist outside indepth mode).
+	details := append([]string(nil), in.details...)
+	if !truthy(pc.Inputs["plugin_languages_indepth"]) {
+		filtered := details[:0]
+		for _, d := range details {
+			if d != "lines" {
+				filtered = append(filtered, d)
+			}
+		}
+		details = filtered
+	}
+
 	return &Result{
 		Mode:      plugins.AggregationMode(pc.Data),
 		Favorites: favorites,
@@ -208,6 +245,8 @@ func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any
 		Sections:  in.sections,
 		Mostly:    mostly,
 		Colors:    colors,
+		Details:   details,
+		Unique:    len(totals),
 	}, nil
 }
 
@@ -275,6 +314,11 @@ func parseInputs(in map[string]any) inputs {
 		if len(out.sections) == 0 {
 			out.sections = []string{"most-used"}
 		}
+	}
+	// 011 v2: plugin_languages_details — mjun0812 uses
+	// "bytes-size, percentage, lines".
+	if v, ok := in["plugin_languages_details"]; ok {
+		out.details = readCSVValue(v)
 	}
 	return out
 }

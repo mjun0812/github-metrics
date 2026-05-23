@@ -119,6 +119,7 @@
     "isocalendar": {
       "average": 0,
       "duration": "half-year",
+      "max": 0,
       "skipped": true,
       "streak": {
         "current": 0,
@@ -132,6 +133,7 @@
         "Go": "#00ADD8",
         "Other": "#cccccc"
       },
+      "details": null,
       "favorites": [
         {
           "color": "#00ADD8",
@@ -159,7 +161,8 @@
       "sections": [
         "most-used"
       ],
-      "skipped": false
+      "skipped": false,
+      "unique": 1
     },
     "languages.indepth": {
       "analyzed": [],
@@ -243,11 +246,25 @@
       "starred": null
     },
     "sponsors": {
+      "about": "",
+      "count": {
+        "active": {
+          "total": 0
+        },
+        "past": {
+          "total": 0
+        }
+      },
+      "goal": null,
       "mode": "",
       "past": null,
+      "pastIncluded": false,
       "sections": null,
+      "size": 0,
       "skipped": true,
-      "sponsors": []
+      "sponsors": [],
+      "title": "",
+      "user": ""
     },
     "sponsorships": {
       "active": [],

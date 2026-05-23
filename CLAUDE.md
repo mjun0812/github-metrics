@@ -2,8 +2,10 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Active plan: [specs/009-release-tag-automation/plan.md](specs/009-release-tag-automation/plan.md)
-- Feature spec: [specs/009-release-tag-automation/spec.md](specs/009-release-tag-automation/spec.md)
+- Active plan: [specs/011-plugin-rendering-parity/plan.md](specs/011-plugin-rendering-parity/plan.md)
+- Feature spec: [specs/011-plugin-rendering-parity/spec.md](specs/011-plugin-rendering-parity/spec.md)
+- 010 (paused, blocker for 011): [specs/010-docs-plugin-gallery/BLOCKED.md](specs/010-docs-plugin-gallery/BLOCKED.md) — resume after 011 lands
+- 009 baseline (completed): [specs/009-release-tag-automation/plan.md](specs/009-release-tag-automation/plan.md)
 - M10 baseline (completed): [specs/008-m10-release-distribution/plan.md](specs/008-m10-release-distribution/plan.md)
 - M9 baseline (completed): [specs/007-m9-test-infrastructure/plan.md](specs/007-m9-test-infrastructure/plan.md)
 - M7 baseline (completed): [specs/006-m7-repository-template/plan.md](specs/006-m7-repository-template/plan.md)

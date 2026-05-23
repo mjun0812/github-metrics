@@ -13,8 +13,33 @@ func init() {
 	partials.Register("plugin."+Name, Partial)
 }
 
-// Partial renders the sponsorships fragment. DOM contract: <g
-// class="sponsored"> per active entry.
+// heartOcticon is the upstream `<%- octicon "heart" %>`-style 16x16
+// path used in the sponsorships section header (EJS line 4).
+const heartOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.586 1C12.268 1 13.5 2.37 13.5 4.25c0 1.745-.996 3.359-2.622 4.831-.166.15-.336.297-.509.438l1.116 5.584a.75.75 0 0 1-.991.852l-2.409-.876a.25.25 0 0 0-.17 0l-2.409.876a.75.75 0 0 1-.991-.852L5.63 9.519a13.78 13.78 0 0 1-.51-.438C3.497 7.609 2.5 5.995 2.5 4.25 2.5 2.37 3.732 1 5.414 1c.963 0 1.843.403 2.474 1.073L8 2.198l.112-.125a3.385 3.385 0 0 1 2.283-1.068L10.586 1Zm-3.621 9.495-.718 3.594 1.155-.42a1.75 1.75 0 0 1 1.028-.051l.168.051 1.154.42-.718-3.592c-.199.13-.37.235-.505.314l-.169.097a.75.75 0 0 1-.72 0 9.54 9.54 0 0 1-.515-.308l-.16-.105ZM10.586 2.5c-.863 0-1.611.58-1.866 1.459-.209.721-1.231.721-1.44 0C7.025 3.08 6.277 2.5 5.414 2.5 4.598 2.5 4 3.165 4 4.25c0 1.23.786 2.504 2.128 3.719.49.443 1.018.846 1.546 1.198l.325.21.076-.047.251-.163a13.341 13.341 0 0 0 1.546-1.198C11.214 6.754 12 5.479 12 4.25c0-1.085-.598-1.75-1.414-1.75Z"></path></svg>`
+
+// Partial renders the classic SVG fragment for the sponsorships plugin.
+// Mirrors upstream org_repo/source/templates/classic/partials/sponsorships.ejs
+// for the "sponsorships" section (Active + Past avatar grid). The
+// upstream "amount" section is omitted because our data model does not
+// yet carry the currency / image fields (added as a follow-up when the
+// GraphQL fragment lands).
+//
+// Output structure:
+//
+//	<section data-section="sponsorships">
+//	  <h2 class="field"><svg heart/>Sponsorships</h2>
+//	  <div class="row fill-width">
+//	    <section class="sponsors goal">
+//	      <div class="goal-text">
+//	        <span>${user} helped funding the work of N user(s)</span>
+//	      </div>
+//	      <div class="row">
+//	        <img class="avatar" .../>...
+//	        [if past]: <img class="avatar past" .../>...
+//	      </div>
+//	    </section>
+//	  </div>
+//	</section>
 func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil {
 		return "", nil
@@ -24,16 +49,86 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		return "", nil
 	}
 	r, ok := raw.(*Result)
-	if !ok || r == nil || r.Skipped || len(r.Active) == 0 {
+	if !ok || r == nil || r.Skipped {
 		return "", nil
 	}
-	var b strings.Builder
-	b.WriteString(`<section data-section="sponsorships"><ul class="sponsorships-list">`)
-	for _, s := range r.Active {
-		fmt.Fprintf(&b,
-			`<li class="sponsorship-entry"><g class="sponsored"><span>%s</span></g></li>`,
-			partials.EscapeXML(s.Login))
+	if len(r.Active) == 0 && len(r.Past) == 0 {
+		return "", nil
 	}
-	b.WriteString(`</ul></section>`)
+
+	const (
+		size     = 64 // upstream `plugins.sponsorships.size` default
+		pastSize = 51 // 0.8 * size, per upstream EJS line 27
+	)
+
+	user := userLogin(pc)
+
+	var b strings.Builder
+	b.WriteString(`<section data-section="sponsorships">`)
+	fmt.Fprintf(&b, `<h2 class="field">%sSponsorships</h2>`, heartOcticon)
+	b.WriteString(`<div class="row fill-width">`)
+	b.WriteString(`<section class="sponsors goal">`)
+
+	// Goal-text line — upstream EJS line 24-28.
+	totalFunded := len(r.Active) + len(r.Past)
+	fmt.Fprintf(
+		&b,
+		`<div class="goal-text"><span>%s helped funding the work of %d user%s and organizations.</span></div>`,
+		partials.EscapeXML(user), totalFunded, plural(totalFunded),
+	)
+
+	// Avatar grid — active first, then past with "past" class.
+	b.WriteString(`<div class="row">`)
+	for _, s := range r.Active {
+		fmt.Fprintf(
+			&b,
+			`<img class="avatar" src="%s" width="%d" height="%d" alt=""/>`,
+			partials.EscapeXML(avatarURL(s.Login)), size, size,
+		)
+	}
+	for _, s := range r.Past {
+		fmt.Fprintf(
+			&b,
+			`<img class="avatar past" src="%s" width="%d" height="%d" alt=""/>`,
+			partials.EscapeXML(avatarURL(s.Login)), pastSize, pastSize,
+		)
+	}
+	b.WriteString(`</div>`)
+
+	b.WriteString(`</section>`)
+	b.WriteString(`</div>`)
+	b.WriteString(`</section>`)
 	return b.String(), nil
+}
+
+// plural returns "s" when n != 1, else "".
+func plural(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
+}
+
+// avatarURL produces the canonical github.com avatar URL for a login.
+// Our Sponsored struct does not yet carry the avatar field upstream
+// exposes via `viewer.sponsorshipsAsSponsor` — fall back to the
+// stable `/login.png?size=N` redirect.
+func avatarURL(login string) string {
+	if login == "" {
+		return ""
+	}
+	return "https://github.com/" + login + ".png?size=64"
+}
+
+// userLogin extracts the rendered user's login from PluginContext.Data
+// — falls back to "this user" when unavailable (mirrors people/sponsors
+// helper for the same reason).
+func userLogin(pc *templates.PartialContext) string {
+	if pc == nil || pc.Data == nil {
+		return "this user"
+	}
+	if pc.Data.User.Login != "" {
+		return pc.Data.User.Login
+	}
+	return "this user"
 }

@@ -38,6 +38,7 @@ type Result struct {
 	Streak        Streak    `json:"streak"`
 	Average       float64   `json:"average"`
 	Sum           int       `json:"sum"`
+	Max           int       `json:"max"`
 	Duration      string    `json:"duration"`
 }
 
@@ -46,9 +47,15 @@ type Result struct {
 func (r *Result) IsSkipped() bool { return r != nil && r.Skipped }
 
 // ISOWeek holds 7 daily contribution counts for one ISO week.
+//
+// Days[i] is the raw contribution count for weekday i (0 = Sunday).
+// DayColors[i] is the GitHub heatmap color for the same day. Both
+// arrays are aligned and always 7 entries (zero-filled when the week
+// is partial at the start/end of the duration window).
 type ISOWeek struct {
-	FirstDay string `json:"firstDay"`
-	Days     [7]int `json:"days"`
+	FirstDay  string    `json:"firstDay"`
+	Days      [7]int    `json:"days"`
+	DayColors [7]string `json:"dayColors"`
 }
 
 // Streak tracks contribution-day streaks (max ever, currently active).
@@ -88,8 +95,10 @@ func (p *isocalendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (a
 	iso := make([]ISOWeek, 0, len(weeks))
 	flat := make([]int, 0, len(weeks)*7)
 	sum := 0
+	maxDay := 0
 	for _, w := range weeks {
 		var row [7]int
+		var colors [7]string
 		for _, d := range w.Days {
 			idx := d.Weekday
 			if idx < 0 {
@@ -99,10 +108,24 @@ func (p *isocalendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (a
 				idx = 6
 			}
 			row[idx] = d.ContributionCount
+			colors[idx] = d.Color
+			if colors[idx] == "" {
+				colors[idx] = colorForCount(d.ContributionCount)
+			}
 			flat = append(flat, d.ContributionCount)
 			sum += d.ContributionCount
+			if d.ContributionCount > maxDay {
+				maxDay = d.ContributionCount
+			}
 		}
-		iso = append(iso, ISOWeek{FirstDay: w.FirstDay, Days: row})
+		// Fill any missing-day slots with the zero color so per-day
+		// rendering can rely on DayColors[i] being populated.
+		for i := 0; i < 7; i++ {
+			if colors[i] == "" {
+				colors[i] = colorForCount(0)
+			}
+		}
+		iso = append(iso, ISOWeek{FirstDay: w.FirstDay, Days: row, DayColors: colors})
 	}
 
 	streak := computeStreak(flat)
@@ -114,9 +137,28 @@ func (p *isocalendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (a
 		Weeks:    iso,
 		Streak:   streak,
 		Sum:      sum,
+		Max:      maxDay,
 		Average:  avg,
 		Duration: duration,
 	}, nil
+}
+
+// colorForCount maps a contribution-count int to GitHub's standard
+// 5-level heatmap color palette (fallback when upstream's
+// ContributionDay.Color isn't populated).
+func colorForCount(n int) string {
+	switch {
+	case n <= 0:
+		return "#ebedf0"
+	case n < 5:
+		return "#9be9a8"
+	case n < 10:
+		return "#40c463"
+	case n < 20:
+		return "#30a14e"
+	default:
+		return "#216e39"
+	}
 }
 
 // truncateWeeks keeps the most-recent `n` weeks from the right-hand

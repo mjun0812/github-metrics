@@ -272,13 +272,22 @@ func TestComputeSVG_P1AllPlugins(t *testing.T) {
 		`data-plugin="repositories"`,
 		`data-plugin="isocalendar"`,
 		// Per-plugin DOM markers (contract §5).
+		// 011 (Tier 2/3 sweep): activity-event was retired when the
+		// activity partial dropped its bare <text> elements in favour
+		// of upstream-parity HTML rows wrapped in <section class="activity">.
+		// languages-progress / language-bar remain inside the <svg class="bar">
+		// wrapper. achievement / repository markers unchanged (still emitted
+		// by their respective partials).
 		`class="languages-progress"`,
 		`class="language-bar"`,
-		`class="activity-event"`,
-		`class="achievement"`,
+		`class="activity"`,
+		// achievement entries land in `<div class="achievement <rank> largeable-width-half">`
+		// so the literal `class="achievement"` (closing quote) no longer
+		// matches. Anchor on the multi-class prefix instead.
+		`class="achievement `,
 		`class="repository"`,
-		`class="calendar"`,
-		`class="calendar-day"`,
+		`class="isocalendar-grid"`,
+		`<filter id="brightness1">`,
 	}
 	for _, m := range wantMarkers {
 		if !strings.Contains(out, m) {
