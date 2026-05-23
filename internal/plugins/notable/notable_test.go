@@ -76,11 +76,15 @@ func TestRun_EmptyList(t *testing.T) {
 	}
 }
 
+// Spec 013: with GraphQL client unavailable (the M4 test path), Run
+// returns Skipped + "GraphQL client unavailable". The original
+// "follow-up" message was M4 baseline language; 013 replaces it with
+// the precise gating reason.
 func TestRun_SkippedReasonExplainsDeferral(t *testing.T) {
 	t.Parallel()
 	r := runWith(t, nil)
-	if !strings.Contains(r.SkippedReason, "follow-up") {
-		t.Errorf("SkippedReason should mention follow-up; got %q", r.SkippedReason)
+	if !strings.Contains(r.SkippedReason, "GraphQL") {
+		t.Errorf("SkippedReason should mention GraphQL; got %q", r.SkippedReason)
 	}
 }
 

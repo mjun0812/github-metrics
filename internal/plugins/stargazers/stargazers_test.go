@@ -77,11 +77,15 @@ func TestRun_WorldmapWarnLogEmitted(t *testing.T) {
 	}
 }
 
+// Spec 013: user-mode is now wired, so the Skipped path only fires when
+// the GraphQL client is missing (test paths). The Skipped reason was
+// updated from the M4 "repository account kind" message to the precise
+// "GraphQL client unavailable" gating.
 func TestRun_SkippedReasonMentionsRepositoryAccount(t *testing.T) {
 	t.Parallel()
 	r := runWith(t, nil)
-	if !strings.Contains(r.SkippedReason, "repository") {
-		t.Errorf("SkippedReason should mention repository account; got %q", r.SkippedReason)
+	if !strings.Contains(r.SkippedReason, "GraphQL") {
+		t.Errorf("SkippedReason should mention GraphQL; got %q", r.SkippedReason)
 	}
 }
 

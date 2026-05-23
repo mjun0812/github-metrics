@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
+	xerrors "github.com/mjun0812/github-metrics/internal/errors"
+	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
@@ -50,6 +52,7 @@ type Project struct {
 	Description string    `json:"description"`
 	URL         string    `json:"url"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+	Closed      bool      `json:"closed,omitempty"`
 }
 
 // Run checks for the `read:project` scope via REST.Scopes() and
@@ -85,9 +88,51 @@ func (p *projectsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 			List:          []Project{},
 		}, nil
 	}
-	// MVP: scope is present but the GraphQL fetch lands in a follow-up.
-	// Return an empty Result so JSON shape stays stable.
-	return &Result{Mode: plugins.AggregationMode(pc.Data), List: []Project{}, Limit: 4}, nil
+	// Spec 013: GraphQL fetch wiring.
+	limit := 4
+	if v, ok := pc.Inputs["plugin_projects_limit"]; ok {
+		if n, ok := v.(int); ok && n > 0 {
+			limit = n
+		}
+	}
+	base := &Result{Mode: plugins.AggregationMode(pc.Data), List: []Project{}, Limit: limit}
+	if pc.GraphQL == nil || !truthy(pc.Inputs["plugin_projects"]) {
+		return base, nil
+	}
+	resp, err := pc.GraphQL.ViewerProjects(ctx, limit)
+	if err != nil {
+		base.Skipped = true
+		base.SkippedReason = "GraphQL fetch failed"
+		pc.Data.AppendError(xerrors.NewRetryableError(err))
+		return base, nil
+	}
+	base.List = collectProjects(resp)
+	return base, nil
+}
+
+func collectProjects(resp *githubapi.ViewerProjectsResponse) []Project {
+	if resp == nil || resp.Viewer == nil || resp.Viewer.ProjectsV2 == nil {
+		return []Project{}
+	}
+	nodes := resp.Viewer.ProjectsV2.Nodes
+	out := make([]Project, 0, len(nodes))
+	for _, n := range nodes {
+		if n == nil {
+			continue
+		}
+		desc := ""
+		if n.ShortDescription != nil {
+			desc = *n.ShortDescription
+		}
+		out = append(out, Project{
+			Name:        n.Title,
+			Description: desc,
+			URL:         n.Url,
+			UpdatedAt:   n.UpdatedAt,
+			Closed:      n.Closed,
+		})
+	}
+	return out
 }
 
 func hasScope(scopes []string, want string) bool {
@@ -95,6 +140,22 @@ func hasScope(scopes []string, want string) bool {
 		if s == want {
 			return true
 		}
+	}
+	return false
+}
+
+// truthy mirrors the shared helper across plugins; spec 013 uses it to
+// gate the GraphQL fetch on the `plugin_projects` input.
+func truthy(v any) bool {
+	switch x := v.(type) {
+	case bool:
+		return x
+	case string:
+		return x == "true" || x == "1" || x == "yes"
+	case int:
+		return x != 0
+	case float64:
+		return x != 0
 	}
 	return false
 }
