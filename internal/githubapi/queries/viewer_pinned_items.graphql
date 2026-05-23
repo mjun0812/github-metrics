@@ -1,0 +1,23 @@
+query ViewerPinnedItems($first: Int!) {
+  viewer {
+    pinnedItems(first: $first, types: [REPOSITORY]) {
+      totalCount
+      nodes {
+        __typename
+        ... on Repository {
+          nameWithOwner
+          description
+          url
+          isPrivate
+          isFork
+          stargazerCount
+          forkCount
+          primaryLanguage {
+            name
+            color
+          }
+        }
+      }
+    }
+  }
+}
