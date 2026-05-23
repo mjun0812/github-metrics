@@ -1,0 +1,20 @@
+query ViewerNotable($first: Int!) {
+  viewer {
+    repositories(
+      first: $first
+      ownerAffiliations: [OWNER]
+      orderBy: { field: STARGAZERS, direction: DESC }
+    ) {
+      totalCount
+      nodes {
+        nameWithOwner
+        description
+        url
+        stargazerCount
+        forkCount
+        isFork
+        isPrivate
+      }
+    }
+  }
+}

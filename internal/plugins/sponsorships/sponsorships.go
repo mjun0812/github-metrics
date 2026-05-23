@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
+	xerrors "github.com/mjun0812/github-metrics/internal/errors"
+	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
@@ -44,19 +46,68 @@ func (r *Result) IsSkipped() bool { return r != nil && r.Skipped }
 
 // Sponsored carries one entry from the upstream sponsorships list.
 type Sponsored struct {
-	Login string     `json:"login"`
-	Tier  string     `json:"tier"`
-	Since time.Time  `json:"since"`
-	Until *time.Time `json:"until,omitempty"`
+	Login  string     `json:"login"`
+	Tier   string     `json:"tier"`
+	Since  time.Time  `json:"since"`
+	Until  *time.Time `json:"until,omitempty"`
+	Avatar string     `json:"avatar,omitempty"`
+	Type   string     `json:"type,omitempty"`
 }
 
-// Run returns an empty (non-Skipped) Result in M4. The dedicated
-// `viewer.sponsorshipsAsSponsor` GraphQL fragment will land in a
-// follow-up; until then the plugin surfaces its type but emits no
-// rows so the SVG partial stays out.
-func (p *sponsorshipsPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any, error) {
+// Run wires viewer.sponsorshipsAsSponsor (spec 013). With a nil GraphQL
+// client the M4 baseline (empty, non-Skipped) is preserved.
+func (p *sponsorshipsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
-	return &Result{Active: []Sponsored{}}, nil
+	base := &Result{Active: []Sponsored{}}
+	if pc.GraphQL == nil || !truthy(pc.Inputs["plugin_sponsorships"]) {
+		return base, nil
+	}
+	resp, err := pc.GraphQL.ViewerSponsorships(ctx, 12)
+	if err != nil {
+		base.Skipped = true
+		base.SkippedReason = "GraphQL fetch failed"
+		pc.Data.AppendError(xerrors.NewRetryableError(err))
+		return base, nil
+	}
+	base.Active = collectViewerSponsorships(resp)
+	return base, nil
+}
+
+func collectViewerSponsorships(resp *githubapi.ViewerSponsorshipsResponse) []Sponsored {
+	if resp == nil || resp.Viewer == nil || resp.Viewer.SponsorshipsAsSponsor == nil {
+		return []Sponsored{}
+	}
+	nodes := resp.Viewer.SponsorshipsAsSponsor.Nodes
+	out := make([]Sponsored, 0, len(nodes))
+	for _, n := range nodes {
+		if n == nil || n.Sponsorable == nil {
+			continue
+		}
+		switch x := (*n.Sponsorable).(type) {
+		case *githubapi.ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser:
+			out = append(out, Sponsored{Login: x.Login, Avatar: x.AvatarUrl, Type: "user", Since: n.CreatedAt})
+		case *githubapi.ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization:
+			out = append(out, Sponsored{Login: x.Login, Avatar: x.AvatarUrl, Type: "organization", Since: n.CreatedAt})
+		}
+	}
+	return out
+}
+
+// truthy mirrors the shared helper across plugins; spec 013 wiring uses
+// it to gate the GraphQL fetch on the `plugin_sponsorships` input.
+func truthy(v any) bool {
+	switch x := v.(type) {
+	case bool:
+		return x
+	case string:
+		s := x
+		return s == "true" || s == "1" || s == "yes"
+	case int:
+		return x != 0
+	case float64:
+		return x != 0
+	}
+	return false
 }

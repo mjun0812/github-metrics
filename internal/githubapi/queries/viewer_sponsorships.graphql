@@ -1,0 +1,25 @@
+query ViewerSponsorships($first: Int!) {
+  viewer {
+    sponsorshipsAsSponsor(
+      first: $first
+      orderBy: { field: CREATED_AT, direction: DESC }
+    ) {
+      totalCount
+      nodes {
+        createdAt
+        isActive
+        sponsorable {
+          __typename
+          ... on User {
+            login
+            avatarUrl
+          }
+          ... on Organization {
+            login
+            avatarUrl
+          }
+        }
+      }
+    }
+  }
+}

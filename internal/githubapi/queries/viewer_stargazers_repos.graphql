@@ -1,0 +1,24 @@
+query ViewerStargazersRepos($repoFirst: Int!, $starFirst: Int!) {
+  viewer {
+    repositories(
+      first: $repoFirst
+      ownerAffiliations: [OWNER]
+      orderBy: { field: STARGAZERS, direction: DESC }
+    ) {
+      totalCount
+      nodes {
+        nameWithOwner
+        stargazerCount
+        stargazers(
+          first: $starFirst
+          orderBy: { field: STARRED_AT, direction: DESC }
+        ) {
+          totalCount
+          edges {
+            starredAt
+          }
+        }
+      }
+    }
+  }
+}

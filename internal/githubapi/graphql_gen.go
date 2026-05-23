@@ -711,6 +711,18 @@ type RepositoryResponse struct {
 // GetRepository returns RepositoryResponse.Repository, and is useful for accessing the field via an interface.
 func (v *RepositoryResponse) GetRepository() *RepositoryRepository { return v.Repository }
 
+type SponsorsGoalKind string
+
+const (
+	SponsorsGoalKindTotalSponsorsCount       SponsorsGoalKind = "TOTAL_SPONSORS_COUNT"
+	SponsorsGoalKindMonthlySponsorshipAmount SponsorsGoalKind = "MONTHLY_SPONSORSHIP_AMOUNT"
+)
+
+var AllSponsorsGoalKind = []SponsorsGoalKind{
+	SponsorsGoalKindTotalSponsorsCount,
+	SponsorsGoalKindMonthlySponsorshipAmount,
+}
+
 // UserFollowersResponse is returned by UserFollowers on success.
 type UserFollowersResponse struct {
 	User *UserFollowersUser `json:"user"`
@@ -1706,6 +1718,1308 @@ func (v *UserUser) GetBio() *string { return v.Bio }
 // GetCompany returns UserUser.Company, and is useful for accessing the field via an interface.
 func (v *UserUser) GetCompany() *string { return v.Company }
 
+// ViewerNotableResponse is returned by ViewerNotable on success.
+type ViewerNotableResponse struct {
+	Viewer *ViewerNotableViewerUser `json:"viewer"`
+}
+
+// GetViewer returns ViewerNotableResponse.Viewer, and is useful for accessing the field via an interface.
+func (v *ViewerNotableResponse) GetViewer() *ViewerNotableViewerUser { return v.Viewer }
+
+// ViewerNotableViewerUser includes the requested fields of the GraphQL type User.
+type ViewerNotableViewerUser struct {
+	Repositories *ViewerNotableViewerUserRepositoriesRepositoryConnection `json:"repositories"`
+}
+
+// GetRepositories returns ViewerNotableViewerUser.Repositories, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUser) GetRepositories() *ViewerNotableViewerUserRepositoriesRepositoryConnection {
+	return v.Repositories
+}
+
+// ViewerNotableViewerUserRepositoriesRepositoryConnection includes the requested fields of the GraphQL type RepositoryConnection.
+type ViewerNotableViewerUserRepositoriesRepositoryConnection struct {
+	TotalCount int                                                                       `json:"totalCount"`
+	Nodes      []*ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository `json:"nodes"`
+}
+
+// GetTotalCount returns ViewerNotableViewerUserRepositoriesRepositoryConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetNodes returns ViewerNotableViewerUserRepositoriesRepositoryConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnection) GetNodes() []*ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository {
+	return v.Nodes
+}
+
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository includes the requested fields of the GraphQL type Repository.
+type ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository struct {
+	NameWithOwner  string  `json:"nameWithOwner"`
+	Description    *string `json:"description"`
+	Url            string  `json:"url"`
+	StargazerCount int     `json:"stargazerCount"`
+	ForkCount      int     `json:"forkCount"`
+	IsFork         bool    `json:"isFork"`
+	IsPrivate      bool    `json:"isPrivate"`
+}
+
+// GetNameWithOwner returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.NameWithOwner, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) GetNameWithOwner() string {
+	return v.NameWithOwner
+}
+
+// GetDescription returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.Description, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) GetDescription() *string {
+	return v.Description
+}
+
+// GetUrl returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.Url, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) GetUrl() string {
+	return v.Url
+}
+
+// GetStargazerCount returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.StargazerCount, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) GetStargazerCount() int {
+	return v.StargazerCount
+}
+
+// GetForkCount returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.ForkCount, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) GetForkCount() int {
+	return v.ForkCount
+}
+
+// GetIsFork returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.IsFork, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) GetIsFork() bool {
+	return v.IsFork
+}
+
+// GetIsPrivate returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.IsPrivate, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) GetIsPrivate() bool {
+	return v.IsPrivate
+}
+
+// ViewerPinnedItemsResponse is returned by ViewerPinnedItems on success.
+type ViewerPinnedItemsResponse struct {
+	Viewer *ViewerPinnedItemsViewerUser `json:"viewer"`
+}
+
+// GetViewer returns ViewerPinnedItemsResponse.Viewer, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsResponse) GetViewer() *ViewerPinnedItemsViewerUser { return v.Viewer }
+
+// ViewerPinnedItemsViewerUser includes the requested fields of the GraphQL type User.
+type ViewerPinnedItemsViewerUser struct {
+	PinnedItems *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection `json:"pinnedItems"`
+}
+
+// GetPinnedItems returns ViewerPinnedItemsViewerUser.PinnedItems, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUser) GetPinnedItems() *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection {
+	return v.PinnedItems
+}
+
+// ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection includes the requested fields of the GraphQL type PinnableItemConnection.
+type ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection struct {
+	TotalCount int                                                                             `json:"totalCount"`
+	Nodes      []ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem `json:"-"`
+}
+
+// GetTotalCount returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetNodes returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection) GetNodes() []ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem {
+	return v.Nodes
+}
+
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection
+		Nodes []json.RawMessage `json:"nodes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Nodes
+		src := firstPass.Nodes
+		*dst = make(
+			[]ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem,
+			len(src),
+		)
+		for i, src := range src {
+			dst := &(*dst)[i]
+			if len(src) != 0 && string(src) != "null" {
+				err = __unmarshalViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem(
+					src, dst,
+				)
+				if err != nil {
+					return fmt.Errorf(
+						"unable to unmarshal ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection.Nodes: %w", err,
+					)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection struct {
+	TotalCount int `json:"totalCount"`
+
+	Nodes []json.RawMessage `json:"nodes"`
+}
+
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection) __premarshalJSON() (*__premarshalViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection, error) {
+	var retval __premarshalViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection
+
+	retval.TotalCount = v.TotalCount
+	{
+
+		dst := &retval.Nodes
+		src := v.Nodes
+		*dst = make(
+			[]json.RawMessage,
+			len(src),
+		)
+		for i, src := range src {
+			dst := &(*dst)[i]
+			var err error
+			*dst, err = __marshalViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem(
+				&src,
+			)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"unable to marshal ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection.Nodes: %w", err,
+				)
+			}
+		}
+	}
+	return &retval, nil
+}
+
+// ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesGist includes the requested fields of the GraphQL type Gist.
+type ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesGist struct {
+	Typename *string `json:"__typename"`
+}
+
+// GetTypename returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesGist.Typename, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesGist) GetTypename() *string {
+	return v.Typename
+}
+
+// ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem includes the requested fields of the GraphQL interface PinnableItem.
+//
+// ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem is implemented by the following types:
+// ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesGist
+// ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository
+type ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem interface {
+	implementsGraphQLInterfaceViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() *string
+}
+
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesGist) implementsGraphQLInterfaceViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem() {
+}
+
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) implementsGraphQLInterfaceViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem() {
+}
+
+func __unmarshalViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem(b []byte, v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "Gist":
+		*v = new(ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesGist)
+		return json.Unmarshal(b, *v)
+	case "Repository":
+		*v = new(ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing PinnableItem.__typename",
+		)
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem: "%v"`, tn.TypeName,
+		)
+	}
+}
+
+func __marshalViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem(v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem) ([]byte, error) {
+	var typename string
+	switch v := (*v).(type) {
+	case *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesGist:
+		typename = "Gist"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesGist
+		}{typename, v}
+		return json.Marshal(result)
+	case *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository:
+		typename = "Repository"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem: "%T"`, v,
+		)
+	}
+}
+
+// ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository includes the requested fields of the GraphQL type Repository.
+type ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository struct {
+	Typename        *string                                                                                     `json:"__typename"`
+	NameWithOwner   string                                                                                      `json:"nameWithOwner"`
+	Description     *string                                                                                     `json:"description"`
+	Url             string                                                                                      `json:"url"`
+	IsPrivate       bool                                                                                        `json:"isPrivate"`
+	IsFork          bool                                                                                        `json:"isFork"`
+	StargazerCount  int                                                                                         `json:"stargazerCount"`
+	ForkCount       int                                                                                         `json:"forkCount"`
+	PrimaryLanguage *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPrimaryLanguage `json:"primaryLanguage"`
+}
+
+// GetTypename returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.Typename, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetTypename() *string {
+	return v.Typename
+}
+
+// GetNameWithOwner returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.NameWithOwner, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetNameWithOwner() string {
+	return v.NameWithOwner
+}
+
+// GetDescription returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.Description, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetDescription() *string {
+	return v.Description
+}
+
+// GetUrl returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.Url, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetUrl() string {
+	return v.Url
+}
+
+// GetIsPrivate returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.IsPrivate, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetIsPrivate() bool {
+	return v.IsPrivate
+}
+
+// GetIsFork returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.IsFork, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetIsFork() bool {
+	return v.IsFork
+}
+
+// GetStargazerCount returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.StargazerCount, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetStargazerCount() int {
+	return v.StargazerCount
+}
+
+// GetForkCount returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.ForkCount, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetForkCount() int {
+	return v.ForkCount
+}
+
+// GetPrimaryLanguage returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.PrimaryLanguage, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetPrimaryLanguage() *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPrimaryLanguage {
+	return v.PrimaryLanguage
+}
+
+// ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPrimaryLanguage includes the requested fields of the GraphQL type Language.
+type ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPrimaryLanguage struct {
+	Name  string  `json:"name"`
+	Color *string `json:"color"`
+}
+
+// GetName returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPrimaryLanguage.Name, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPrimaryLanguage) GetName() string {
+	return v.Name
+}
+
+// GetColor returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPrimaryLanguage.Color, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPrimaryLanguage) GetColor() *string {
+	return v.Color
+}
+
+// ViewerProjectsResponse is returned by ViewerProjects on success.
+type ViewerProjectsResponse struct {
+	Viewer *ViewerProjectsViewerUser `json:"viewer"`
+}
+
+// GetViewer returns ViewerProjectsResponse.Viewer, and is useful for accessing the field via an interface.
+func (v *ViewerProjectsResponse) GetViewer() *ViewerProjectsViewerUser { return v.Viewer }
+
+// ViewerProjectsViewerUser includes the requested fields of the GraphQL type User.
+type ViewerProjectsViewerUser struct {
+	ProjectsV2 *ViewerProjectsViewerUserProjectsV2ProjectV2Connection `json:"projectsV2"`
+}
+
+// GetProjectsV2 returns ViewerProjectsViewerUser.ProjectsV2, and is useful for accessing the field via an interface.
+func (v *ViewerProjectsViewerUser) GetProjectsV2() *ViewerProjectsViewerUserProjectsV2ProjectV2Connection {
+	return v.ProjectsV2
+}
+
+// ViewerProjectsViewerUserProjectsV2ProjectV2Connection includes the requested fields of the GraphQL type ProjectV2Connection.
+type ViewerProjectsViewerUserProjectsV2ProjectV2Connection struct {
+	TotalCount int                                                                    `json:"totalCount"`
+	Nodes      []*ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2 `json:"nodes"`
+}
+
+// GetTotalCount returns ViewerProjectsViewerUserProjectsV2ProjectV2Connection.TotalCount, and is useful for accessing the field via an interface.
+func (v *ViewerProjectsViewerUserProjectsV2ProjectV2Connection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetNodes returns ViewerProjectsViewerUserProjectsV2ProjectV2Connection.Nodes, and is useful for accessing the field via an interface.
+func (v *ViewerProjectsViewerUserProjectsV2ProjectV2Connection) GetNodes() []*ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2 {
+	return v.Nodes
+}
+
+// ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2 includes the requested fields of the GraphQL type ProjectV2.
+type ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2 struct {
+	Title            string    `json:"title"`
+	ShortDescription *string   `json:"shortDescription"`
+	UpdatedAt        time.Time `json:"updatedAt"`
+	Url              string    `json:"url"`
+	Closed           bool      `json:"closed"`
+	Number           int       `json:"number"`
+}
+
+// GetTitle returns ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2.Title, and is useful for accessing the field via an interface.
+func (v *ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2) GetTitle() string {
+	return v.Title
+}
+
+// GetShortDescription returns ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2.ShortDescription, and is useful for accessing the field via an interface.
+func (v *ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2) GetShortDescription() *string {
+	return v.ShortDescription
+}
+
+// GetUpdatedAt returns ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// GetUrl returns ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2.Url, and is useful for accessing the field via an interface.
+func (v *ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2) GetUrl() string {
+	return v.Url
+}
+
+// GetClosed returns ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2.Closed, and is useful for accessing the field via an interface.
+func (v *ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2) GetClosed() bool {
+	return v.Closed
+}
+
+// GetNumber returns ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2.Number, and is useful for accessing the field via an interface.
+func (v *ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2) GetNumber() int {
+	return v.Number
+}
+
+// ViewerSponsorsResponse is returned by ViewerSponsors on success.
+type ViewerSponsorsResponse struct {
+	Viewer *ViewerSponsorsViewerUser `json:"viewer"`
+}
+
+// GetViewer returns ViewerSponsorsResponse.Viewer, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsResponse) GetViewer() *ViewerSponsorsViewerUser { return v.Viewer }
+
+// ViewerSponsorsViewerUser includes the requested fields of the GraphQL type User.
+type ViewerSponsorsViewerUser struct {
+	SponsorsListing *ViewerSponsorsViewerUserSponsorsListing             `json:"sponsorsListing"`
+	Active          *ViewerSponsorsViewerUserActiveSponsorshipConnection `json:"active"`
+	Past            *ViewerSponsorsViewerUserPastSponsorshipConnection   `json:"past"`
+}
+
+// GetSponsorsListing returns ViewerSponsorsViewerUser.SponsorsListing, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUser) GetSponsorsListing() *ViewerSponsorsViewerUserSponsorsListing {
+	return v.SponsorsListing
+}
+
+// GetActive returns ViewerSponsorsViewerUser.Active, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUser) GetActive() *ViewerSponsorsViewerUserActiveSponsorshipConnection {
+	return v.Active
+}
+
+// GetPast returns ViewerSponsorsViewerUser.Past, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUser) GetPast() *ViewerSponsorsViewerUserPastSponsorshipConnection {
+	return v.Past
+}
+
+// ViewerSponsorsViewerUserActiveSponsorshipConnection includes the requested fields of the GraphQL type SponsorshipConnection.
+type ViewerSponsorsViewerUserActiveSponsorshipConnection struct {
+	TotalCount int                                                                    `json:"totalCount"`
+	Nodes      []*ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship `json:"nodes"`
+}
+
+// GetTotalCount returns ViewerSponsorsViewerUserActiveSponsorshipConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetNodes returns ViewerSponsorsViewerUserActiveSponsorshipConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnection) GetNodes() []*ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship {
+	return v.Nodes
+}
+
+// ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship includes the requested fields of the GraphQL type Sponsorship.
+type ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship struct {
+	CreatedAt     time.Time                                                                                `json:"createdAt"`
+	IsActive      bool                                                                                     `json:"isActive"`
+	SponsorEntity *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor `json:"-"`
+}
+
+// GetCreatedAt returns ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship.CreatedAt, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetIsActive returns ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship.IsActive, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship) GetIsActive() bool {
+	return v.IsActive
+}
+
+// GetSponsorEntity returns ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship.SponsorEntity, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship) GetSponsorEntity() *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor {
+	return v.SponsorEntity
+}
+
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship
+		SponsorEntity json.RawMessage `json:"sponsorEntity"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.SponsorEntity
+		src := firstPass.SponsorEntity
+		if len(src) != 0 && string(src) != "null" {
+			*dst = new(ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor)
+			err = __unmarshalViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor(
+				src, *dst,
+			)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship.SponsorEntity: %w", err,
+				)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship struct {
+	CreatedAt time.Time `json:"createdAt"`
+
+	IsActive bool `json:"isActive"`
+
+	SponsorEntity json.RawMessage `json:"sponsorEntity"`
+}
+
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship) __premarshalJSON() (*__premarshalViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship, error) {
+	var retval __premarshalViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship
+
+	retval.CreatedAt = v.CreatedAt
+	retval.IsActive = v.IsActive
+	{
+
+		dst := &retval.SponsorEntity
+		src := v.SponsorEntity
+		if src != nil {
+			var err error
+			*dst, err = __marshalViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor(
+				src,
+			)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"unable to marshal ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship.SponsorEntity: %w", err,
+				)
+			}
+		}
+	}
+	return &retval, nil
+}
+
+// ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization includes the requested fields of the GraphQL type Organization.
+type ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization struct {
+	Typename  *string `json:"__typename"`
+	Login     string  `json:"login"`
+	AvatarUrl string  `json:"avatarUrl"`
+}
+
+// GetTypename returns ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization.Typename, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization) GetTypename() *string {
+	return v.Typename
+}
+
+// GetLogin returns ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization.Login, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization) GetLogin() string {
+	return v.Login
+}
+
+// GetAvatarUrl returns ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization.AvatarUrl, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization) GetAvatarUrl() string {
+	return v.AvatarUrl
+}
+
+// ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor includes the requested fields of the GraphQL interface Sponsor.
+//
+// ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor is implemented by the following types:
+// ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization
+// ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser
+type ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor interface {
+	implementsGraphQLInterfaceViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() *string
+}
+
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization) implementsGraphQLInterfaceViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor() {
+}
+
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser) implementsGraphQLInterfaceViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor() {
+}
+
+func __unmarshalViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor(b []byte, v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "Organization":
+		*v = new(ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization)
+		return json.Unmarshal(b, *v)
+	case "User":
+		*v = new(ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing Sponsor.__typename",
+		)
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor: "%v"`, tn.TypeName,
+		)
+	}
+}
+
+func __marshalViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor(v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor) ([]byte, error) {
+	var typename string
+	switch v := (*v).(type) {
+	case *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization:
+		typename = "Organization"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser:
+		typename = "User"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor: "%T"`, v,
+		)
+	}
+}
+
+// ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser includes the requested fields of the GraphQL type User.
+type ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser struct {
+	Typename  *string `json:"__typename"`
+	Login     string  `json:"login"`
+	AvatarUrl string  `json:"avatarUrl"`
+}
+
+// GetTypename returns ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser.Typename, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser) GetTypename() *string {
+	return v.Typename
+}
+
+// GetLogin returns ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser.Login, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser) GetLogin() string {
+	return v.Login
+}
+
+// GetAvatarUrl returns ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser.AvatarUrl, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser) GetAvatarUrl() string {
+	return v.AvatarUrl
+}
+
+// ViewerSponsorsViewerUserPastSponsorshipConnection includes the requested fields of the GraphQL type SponsorshipConnection.
+type ViewerSponsorsViewerUserPastSponsorshipConnection struct {
+	TotalCount int                                                                  `json:"totalCount"`
+	Nodes      []*ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship `json:"nodes"`
+}
+
+// GetTotalCount returns ViewerSponsorsViewerUserPastSponsorshipConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnection) GetTotalCount() int { return v.TotalCount }
+
+// GetNodes returns ViewerSponsorsViewerUserPastSponsorshipConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnection) GetNodes() []*ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship {
+	return v.Nodes
+}
+
+// ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship includes the requested fields of the GraphQL type Sponsorship.
+type ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship struct {
+	CreatedAt     time.Time                                                                              `json:"createdAt"`
+	IsActive      bool                                                                                   `json:"isActive"`
+	SponsorEntity *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor `json:"-"`
+}
+
+// GetCreatedAt returns ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship.CreatedAt, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetIsActive returns ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship.IsActive, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship) GetIsActive() bool {
+	return v.IsActive
+}
+
+// GetSponsorEntity returns ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship.SponsorEntity, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship) GetSponsorEntity() *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor {
+	return v.SponsorEntity
+}
+
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship
+		SponsorEntity json.RawMessage `json:"sponsorEntity"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.SponsorEntity
+		src := firstPass.SponsorEntity
+		if len(src) != 0 && string(src) != "null" {
+			*dst = new(ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor)
+			err = __unmarshalViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor(
+				src, *dst,
+			)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship.SponsorEntity: %w", err,
+				)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship struct {
+	CreatedAt time.Time `json:"createdAt"`
+
+	IsActive bool `json:"isActive"`
+
+	SponsorEntity json.RawMessage `json:"sponsorEntity"`
+}
+
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship) __premarshalJSON() (*__premarshalViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship, error) {
+	var retval __premarshalViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship
+
+	retval.CreatedAt = v.CreatedAt
+	retval.IsActive = v.IsActive
+	{
+
+		dst := &retval.SponsorEntity
+		src := v.SponsorEntity
+		if src != nil {
+			var err error
+			*dst, err = __marshalViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor(
+				src,
+			)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"unable to marshal ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship.SponsorEntity: %w", err,
+				)
+			}
+		}
+	}
+	return &retval, nil
+}
+
+// ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization includes the requested fields of the GraphQL type Organization.
+type ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization struct {
+	Typename  *string `json:"__typename"`
+	Login     string  `json:"login"`
+	AvatarUrl string  `json:"avatarUrl"`
+}
+
+// GetTypename returns ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization.Typename, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization) GetTypename() *string {
+	return v.Typename
+}
+
+// GetLogin returns ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization.Login, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization) GetLogin() string {
+	return v.Login
+}
+
+// GetAvatarUrl returns ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization.AvatarUrl, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization) GetAvatarUrl() string {
+	return v.AvatarUrl
+}
+
+// ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor includes the requested fields of the GraphQL interface Sponsor.
+//
+// ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor is implemented by the following types:
+// ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization
+// ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser
+type ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor interface {
+	implementsGraphQLInterfaceViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() *string
+}
+
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization) implementsGraphQLInterfaceViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor() {
+}
+
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser) implementsGraphQLInterfaceViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor() {
+}
+
+func __unmarshalViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor(b []byte, v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "Organization":
+		*v = new(ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization)
+		return json.Unmarshal(b, *v)
+	case "User":
+		*v = new(ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing Sponsor.__typename",
+		)
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor: "%v"`, tn.TypeName,
+		)
+	}
+}
+
+func __marshalViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor(v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor) ([]byte, error) {
+	var typename string
+	switch v := (*v).(type) {
+	case *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization:
+		typename = "Organization"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser:
+		typename = "User"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor: "%T"`, v,
+		)
+	}
+}
+
+// ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser includes the requested fields of the GraphQL type User.
+type ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser struct {
+	Typename  *string `json:"__typename"`
+	Login     string  `json:"login"`
+	AvatarUrl string  `json:"avatarUrl"`
+}
+
+// GetTypename returns ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser.Typename, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser) GetTypename() *string {
+	return v.Typename
+}
+
+// GetLogin returns ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser.Login, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser) GetLogin() string {
+	return v.Login
+}
+
+// GetAvatarUrl returns ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser.AvatarUrl, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser) GetAvatarUrl() string {
+	return v.AvatarUrl
+}
+
+// ViewerSponsorsViewerUserSponsorsListing includes the requested fields of the GraphQL type SponsorsListing.
+type ViewerSponsorsViewerUserSponsorsListing struct {
+	ShortDescription string                                                         `json:"shortDescription"`
+	ActiveGoal       *ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal `json:"activeGoal"`
+}
+
+// GetShortDescription returns ViewerSponsorsViewerUserSponsorsListing.ShortDescription, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserSponsorsListing) GetShortDescription() string {
+	return v.ShortDescription
+}
+
+// GetActiveGoal returns ViewerSponsorsViewerUserSponsorsListing.ActiveGoal, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserSponsorsListing) GetActiveGoal() *ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal {
+	return v.ActiveGoal
+}
+
+// ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal includes the requested fields of the GraphQL type SponsorsGoal.
+type ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal struct {
+	Title           *string          `json:"title"`
+	Description     *string          `json:"description"`
+	Kind            SponsorsGoalKind `json:"kind"`
+	PercentComplete int              `json:"percentComplete"`
+}
+
+// GetTitle returns ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal.Title, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal) GetTitle() *string {
+	return v.Title
+}
+
+// GetDescription returns ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal.Description, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal) GetDescription() *string {
+	return v.Description
+}
+
+// GetKind returns ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal.Kind, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal) GetKind() SponsorsGoalKind {
+	return v.Kind
+}
+
+// GetPercentComplete returns ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal.PercentComplete, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal) GetPercentComplete() int {
+	return v.PercentComplete
+}
+
+// ViewerSponsorshipsResponse is returned by ViewerSponsorships on success.
+type ViewerSponsorshipsResponse struct {
+	Viewer *ViewerSponsorshipsViewerUser `json:"viewer"`
+}
+
+// GetViewer returns ViewerSponsorshipsResponse.Viewer, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorshipsResponse) GetViewer() *ViewerSponsorshipsViewerUser { return v.Viewer }
+
+// ViewerSponsorshipsViewerUser includes the requested fields of the GraphQL type User.
+type ViewerSponsorshipsViewerUser struct {
+	SponsorshipsAsSponsor *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnection `json:"sponsorshipsAsSponsor"`
+}
+
+// GetSponsorshipsAsSponsor returns ViewerSponsorshipsViewerUser.SponsorshipsAsSponsor, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorshipsViewerUser) GetSponsorshipsAsSponsor() *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnection {
+	return v.SponsorshipsAsSponsor
+}
+
+// ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnection includes the requested fields of the GraphQL type SponsorshipConnection.
+type ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnection struct {
+	TotalCount int                                                                                       `json:"totalCount"`
+	Nodes      []*ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship `json:"nodes"`
+}
+
+// GetTotalCount returns ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetNodes returns ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnection) GetNodes() []*ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship {
+	return v.Nodes
+}
+
+// ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship includes the requested fields of the GraphQL type Sponsorship.
+type ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship struct {
+	CreatedAt   time.Time                                                                                          `json:"createdAt"`
+	IsActive    bool                                                                                               `json:"isActive"`
+	Sponsorable *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable `json:"-"`
+}
+
+// GetCreatedAt returns ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship.CreatedAt, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetIsActive returns ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship.IsActive, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship) GetIsActive() bool {
+	return v.IsActive
+}
+
+// GetSponsorable returns ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship.Sponsorable, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship) GetSponsorable() *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable {
+	return v.Sponsorable
+}
+
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship
+		Sponsorable json.RawMessage `json:"sponsorable"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Sponsorable
+		src := firstPass.Sponsorable
+		if len(src) != 0 && string(src) != "null" {
+			*dst = new(ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable)
+			err = __unmarshalViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable(
+				src, *dst,
+			)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship.Sponsorable: %w", err,
+				)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship struct {
+	CreatedAt time.Time `json:"createdAt"`
+
+	IsActive bool `json:"isActive"`
+
+	Sponsorable json.RawMessage `json:"sponsorable"`
+}
+
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship) __premarshalJSON() (*__premarshalViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship, error) {
+	var retval __premarshalViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship
+
+	retval.CreatedAt = v.CreatedAt
+	retval.IsActive = v.IsActive
+	{
+
+		dst := &retval.Sponsorable
+		src := v.Sponsorable
+		if src != nil {
+			var err error
+			*dst, err = __marshalViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable(
+				src,
+			)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"unable to marshal ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship.Sponsorable: %w", err,
+				)
+			}
+		}
+	}
+	return &retval, nil
+}
+
+// ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable includes the requested fields of the GraphQL interface Sponsorable.
+//
+// ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable is implemented by the following types:
+// ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization
+// ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser
+type ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable interface {
+	implementsGraphQLInterfaceViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() *string
+}
+
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization) implementsGraphQLInterfaceViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable() {
+}
+
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser) implementsGraphQLInterfaceViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable() {
+}
+
+func __unmarshalViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable(b []byte, v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "Organization":
+		*v = new(ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization)
+		return json.Unmarshal(b, *v)
+	case "User":
+		*v = new(ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing Sponsorable.__typename",
+		)
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable: "%v"`, tn.TypeName,
+		)
+	}
+}
+
+func __marshalViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable(v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable) ([]byte, error) {
+	var typename string
+	switch v := (*v).(type) {
+	case *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization:
+		typename = "Organization"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser:
+		typename = "User"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable: "%T"`, v,
+		)
+	}
+}
+
+// ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization includes the requested fields of the GraphQL type Organization.
+type ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization struct {
+	Typename  *string `json:"__typename"`
+	Login     string  `json:"login"`
+	AvatarUrl string  `json:"avatarUrl"`
+}
+
+// GetTypename returns ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization.Typename, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization) GetTypename() *string {
+	return v.Typename
+}
+
+// GetLogin returns ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization.Login, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization) GetLogin() string {
+	return v.Login
+}
+
+// GetAvatarUrl returns ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization.AvatarUrl, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization) GetAvatarUrl() string {
+	return v.AvatarUrl
+}
+
+// ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser includes the requested fields of the GraphQL type User.
+type ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser struct {
+	Typename  *string `json:"__typename"`
+	Login     string  `json:"login"`
+	AvatarUrl string  `json:"avatarUrl"`
+}
+
+// GetTypename returns ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser.Typename, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser) GetTypename() *string {
+	return v.Typename
+}
+
+// GetLogin returns ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser.Login, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser) GetLogin() string {
+	return v.Login
+}
+
+// GetAvatarUrl returns ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser.AvatarUrl, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser) GetAvatarUrl() string {
+	return v.AvatarUrl
+}
+
+// ViewerStargazersReposResponse is returned by ViewerStargazersRepos on success.
+type ViewerStargazersReposResponse struct {
+	Viewer *ViewerStargazersReposViewerUser `json:"viewer"`
+}
+
+// GetViewer returns ViewerStargazersReposResponse.Viewer, and is useful for accessing the field via an interface.
+func (v *ViewerStargazersReposResponse) GetViewer() *ViewerStargazersReposViewerUser { return v.Viewer }
+
+// ViewerStargazersReposViewerUser includes the requested fields of the GraphQL type User.
+type ViewerStargazersReposViewerUser struct {
+	Repositories *ViewerStargazersReposViewerUserRepositoriesRepositoryConnection `json:"repositories"`
+}
+
+// GetRepositories returns ViewerStargazersReposViewerUser.Repositories, and is useful for accessing the field via an interface.
+func (v *ViewerStargazersReposViewerUser) GetRepositories() *ViewerStargazersReposViewerUserRepositoriesRepositoryConnection {
+	return v.Repositories
+}
+
+// ViewerStargazersReposViewerUserRepositoriesRepositoryConnection includes the requested fields of the GraphQL type RepositoryConnection.
+type ViewerStargazersReposViewerUserRepositoriesRepositoryConnection struct {
+	TotalCount int                                                                               `json:"totalCount"`
+	Nodes      []*ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepository `json:"nodes"`
+}
+
+// GetTotalCount returns ViewerStargazersReposViewerUserRepositoriesRepositoryConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *ViewerStargazersReposViewerUserRepositoriesRepositoryConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetNodes returns ViewerStargazersReposViewerUserRepositoriesRepositoryConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *ViewerStargazersReposViewerUserRepositoriesRepositoryConnection) GetNodes() []*ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepository {
+	return v.Nodes
+}
+
+// ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepository includes the requested fields of the GraphQL type Repository.
+type ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepository struct {
+	NameWithOwner  string                                                                                                       `json:"nameWithOwner"`
+	StargazerCount int                                                                                                          `json:"stargazerCount"`
+	Stargazers     *ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepositoryStargazersStargazerConnection `json:"stargazers"`
+}
+
+// GetNameWithOwner returns ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepository.NameWithOwner, and is useful for accessing the field via an interface.
+func (v *ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepository) GetNameWithOwner() string {
+	return v.NameWithOwner
+}
+
+// GetStargazerCount returns ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepository.StargazerCount, and is useful for accessing the field via an interface.
+func (v *ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepository) GetStargazerCount() int {
+	return v.StargazerCount
+}
+
+// GetStargazers returns ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepository.Stargazers, and is useful for accessing the field via an interface.
+func (v *ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepository) GetStargazers() *ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepositoryStargazersStargazerConnection {
+	return v.Stargazers
+}
+
+// ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepositoryStargazersStargazerConnection includes the requested fields of the GraphQL type StargazerConnection.
+type ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepositoryStargazersStargazerConnection struct {
+	TotalCount int                                                                                                                              `json:"totalCount"`
+	Edges      []*ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepositoryStargazersStargazerConnectionEdgesStargazerEdge `json:"edges"`
+}
+
+// GetTotalCount returns ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepositoryStargazersStargazerConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepositoryStargazersStargazerConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetEdges returns ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepositoryStargazersStargazerConnection.Edges, and is useful for accessing the field via an interface.
+func (v *ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepositoryStargazersStargazerConnection) GetEdges() []*ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepositoryStargazersStargazerConnectionEdgesStargazerEdge {
+	return v.Edges
+}
+
+// ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepositoryStargazersStargazerConnectionEdgesStargazerEdge includes the requested fields of the GraphQL type StargazerEdge.
+type ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepositoryStargazersStargazerConnectionEdgesStargazerEdge struct {
+	StarredAt time.Time `json:"starredAt"`
+}
+
+// GetStarredAt returns ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepositoryStargazersStargazerConnectionEdgesStargazerEdge.StarredAt, and is useful for accessing the field via an interface.
+func (v *ViewerStargazersReposViewerUserRepositoriesRepositoryConnectionNodesRepositoryStargazersStargazerConnectionEdgesStargazerEdge) GetStarredAt() time.Time {
+	return v.StarredAt
+}
+
 // __OrganizationInput is used internally by genqlient
 type __OrganizationInput struct {
 	Login string `json:"login"`
@@ -1845,6 +3159,62 @@ func (v *__UserStarredRepositoriesInput) GetLogin() string { return v.Login }
 
 // GetFirst returns __UserStarredRepositoriesInput.First, and is useful for accessing the field via an interface.
 func (v *__UserStarredRepositoriesInput) GetFirst() int { return v.First }
+
+// __ViewerNotableInput is used internally by genqlient
+type __ViewerNotableInput struct {
+	First int `json:"first"`
+}
+
+// GetFirst returns __ViewerNotableInput.First, and is useful for accessing the field via an interface.
+func (v *__ViewerNotableInput) GetFirst() int { return v.First }
+
+// __ViewerPinnedItemsInput is used internally by genqlient
+type __ViewerPinnedItemsInput struct {
+	First int `json:"first"`
+}
+
+// GetFirst returns __ViewerPinnedItemsInput.First, and is useful for accessing the field via an interface.
+func (v *__ViewerPinnedItemsInput) GetFirst() int { return v.First }
+
+// __ViewerProjectsInput is used internally by genqlient
+type __ViewerProjectsInput struct {
+	First int `json:"first"`
+}
+
+// GetFirst returns __ViewerProjectsInput.First, and is useful for accessing the field via an interface.
+func (v *__ViewerProjectsInput) GetFirst() int { return v.First }
+
+// __ViewerSponsorsInput is used internally by genqlient
+type __ViewerSponsorsInput struct {
+	ActiveFirst int `json:"activeFirst"`
+	PastFirst   int `json:"pastFirst"`
+}
+
+// GetActiveFirst returns __ViewerSponsorsInput.ActiveFirst, and is useful for accessing the field via an interface.
+func (v *__ViewerSponsorsInput) GetActiveFirst() int { return v.ActiveFirst }
+
+// GetPastFirst returns __ViewerSponsorsInput.PastFirst, and is useful for accessing the field via an interface.
+func (v *__ViewerSponsorsInput) GetPastFirst() int { return v.PastFirst }
+
+// __ViewerSponsorshipsInput is used internally by genqlient
+type __ViewerSponsorshipsInput struct {
+	First int `json:"first"`
+}
+
+// GetFirst returns __ViewerSponsorshipsInput.First, and is useful for accessing the field via an interface.
+func (v *__ViewerSponsorshipsInput) GetFirst() int { return v.First }
+
+// __ViewerStargazersReposInput is used internally by genqlient
+type __ViewerStargazersReposInput struct {
+	RepoFirst int `json:"repoFirst"`
+	StarFirst int `json:"starFirst"`
+}
+
+// GetRepoFirst returns __ViewerStargazersReposInput.RepoFirst, and is useful for accessing the field via an interface.
+func (v *__ViewerStargazersReposInput) GetRepoFirst() int { return v.RepoFirst }
+
+// GetStarFirst returns __ViewerStargazersReposInput.StarFirst, and is useful for accessing the field via an interface.
+func (v *__ViewerStargazersReposInput) GetStarFirst() int { return v.StarFirst }
 
 // The query executed by Organization.
 const Organization_Operation = `
@@ -2433,6 +3803,326 @@ func UserStarredRepositories(
 	}
 
 	data_ = &UserStarredRepositoriesResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by ViewerNotable.
+const ViewerNotable_Operation = `
+query ViewerNotable ($first: Int!) {
+	viewer {
+		repositories(first: $first, ownerAffiliations: [OWNER], orderBy: {field:STARGAZERS,direction:DESC}) {
+			totalCount
+			nodes {
+				nameWithOwner
+				description
+				url
+				stargazerCount
+				forkCount
+				isFork
+				isPrivate
+			}
+		}
+	}
+}
+`
+
+func ViewerNotable(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	first int,
+) (data_ *ViewerNotableResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "ViewerNotable",
+		Query:  ViewerNotable_Operation,
+		Variables: &__ViewerNotableInput{
+			First: first,
+		},
+	}
+
+	data_ = &ViewerNotableResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by ViewerPinnedItems.
+const ViewerPinnedItems_Operation = `
+query ViewerPinnedItems ($first: Int!) {
+	viewer {
+		pinnedItems(first: $first, types: [REPOSITORY]) {
+			totalCount
+			nodes {
+				__typename
+				... on Repository {
+					nameWithOwner
+					description
+					url
+					isPrivate
+					isFork
+					stargazerCount
+					forkCount
+					primaryLanguage {
+						name
+						color
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func ViewerPinnedItems(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	first int,
+) (data_ *ViewerPinnedItemsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "ViewerPinnedItems",
+		Query:  ViewerPinnedItems_Operation,
+		Variables: &__ViewerPinnedItemsInput{
+			First: first,
+		},
+	}
+
+	data_ = &ViewerPinnedItemsResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by ViewerProjects.
+const ViewerProjects_Operation = `
+query ViewerProjects ($first: Int!) {
+	viewer {
+		projectsV2(first: $first, orderBy: {field:UPDATED_AT,direction:DESC}) {
+			totalCount
+			nodes {
+				title
+				shortDescription
+				updatedAt
+				url
+				closed
+				number
+			}
+		}
+	}
+}
+`
+
+func ViewerProjects(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	first int,
+) (data_ *ViewerProjectsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "ViewerProjects",
+		Query:  ViewerProjects_Operation,
+		Variables: &__ViewerProjectsInput{
+			First: first,
+		},
+	}
+
+	data_ = &ViewerProjectsResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by ViewerSponsors.
+const ViewerSponsors_Operation = `
+query ViewerSponsors ($activeFirst: Int!, $pastFirst: Int!) {
+	viewer {
+		sponsorsListing {
+			shortDescription
+			activeGoal {
+				title
+				description
+				kind
+				percentComplete
+			}
+		}
+		active: sponsorshipsAsMaintainer(first: $activeFirst, activeOnly: true, orderBy: {field:CREATED_AT,direction:DESC}) {
+			totalCount
+			nodes {
+				createdAt
+				isActive
+				sponsorEntity {
+					__typename
+					... on User {
+						login
+						avatarUrl
+					}
+					... on Organization {
+						login
+						avatarUrl
+					}
+				}
+			}
+		}
+		past: sponsorshipsAsMaintainer(first: $pastFirst, activeOnly: false, orderBy: {field:CREATED_AT,direction:DESC}) {
+			totalCount
+			nodes {
+				createdAt
+				isActive
+				sponsorEntity {
+					__typename
+					... on User {
+						login
+						avatarUrl
+					}
+					... on Organization {
+						login
+						avatarUrl
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func ViewerSponsors(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	activeFirst int,
+	pastFirst int,
+) (data_ *ViewerSponsorsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "ViewerSponsors",
+		Query:  ViewerSponsors_Operation,
+		Variables: &__ViewerSponsorsInput{
+			ActiveFirst: activeFirst,
+			PastFirst:   pastFirst,
+		},
+	}
+
+	data_ = &ViewerSponsorsResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by ViewerSponsorships.
+const ViewerSponsorships_Operation = `
+query ViewerSponsorships ($first: Int!) {
+	viewer {
+		sponsorshipsAsSponsor(first: $first, orderBy: {field:CREATED_AT,direction:DESC}) {
+			totalCount
+			nodes {
+				createdAt
+				isActive
+				sponsorable {
+					__typename
+					... on User {
+						login
+						avatarUrl
+					}
+					... on Organization {
+						login
+						avatarUrl
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func ViewerSponsorships(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	first int,
+) (data_ *ViewerSponsorshipsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "ViewerSponsorships",
+		Query:  ViewerSponsorships_Operation,
+		Variables: &__ViewerSponsorshipsInput{
+			First: first,
+		},
+	}
+
+	data_ = &ViewerSponsorshipsResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by ViewerStargazersRepos.
+const ViewerStargazersRepos_Operation = `
+query ViewerStargazersRepos ($repoFirst: Int!, $starFirst: Int!) {
+	viewer {
+		repositories(first: $repoFirst, ownerAffiliations: [OWNER], orderBy: {field:STARGAZERS,direction:DESC}) {
+			totalCount
+			nodes {
+				nameWithOwner
+				stargazerCount
+				stargazers(first: $starFirst, orderBy: {field:STARRED_AT,direction:DESC}) {
+					totalCount
+					edges {
+						starredAt
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func ViewerStargazersRepos(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	repoFirst int,
+	starFirst int,
+) (data_ *ViewerStargazersReposResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "ViewerStargazersRepos",
+		Query:  ViewerStargazersRepos_Operation,
+		Variables: &__ViewerStargazersReposInput{
+			RepoFirst: repoFirst,
+			StarFirst: starFirst,
+		},
+	}
+
+	data_ = &ViewerStargazersReposResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

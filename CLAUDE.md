@@ -2,8 +2,9 @@
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
 
-- Active plan: [specs/012-rest-data-fetch/plan.md](specs/012-rest-data-fetch/plan.md)
-- Feature spec: [specs/012-rest-data-fetch/spec.md](specs/012-rest-data-fetch/spec.md)
+- Active plan: [specs/013-unwired-graphql-data/plan.md](specs/013-unwired-graphql-data/plan.md)
+- Feature spec: [specs/013-unwired-graphql-data/spec.md](specs/013-unwired-graphql-data/spec.md)
+- 012 baseline (merged #384): [specs/012-rest-data-fetch/spec.md](specs/012-rest-data-fetch/spec.md)
 - 011 baseline (merged #383): [specs/011-plugin-rendering-parity/plan.md](specs/011-plugin-rendering-parity/plan.md)
 - 010 (paused, blocker resolved by 011): [specs/010-docs-plugin-gallery/BLOCKED.md](specs/010-docs-plugin-gallery/BLOCKED.md)
 - 009 baseline (completed): [specs/009-release-tag-automation/plan.md](specs/009-release-tag-automation/plan.md)

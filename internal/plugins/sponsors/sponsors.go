@@ -10,10 +10,13 @@ package sponsors
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
+	xerrors "github.com/mjun0812/github-metrics/internal/errors"
+	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
@@ -157,16 +160,109 @@ func (p *sponsorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 		}
 	}
 
-	return &Result{
+	base := &Result{
 		Mode:         plugins.AggregationMode(pc.Data),
 		Sections:     sections,
 		Sponsors:     []Sponsor{},
+		Past:         []Sponsor{},
 		Title:        title,
 		User:         user,
 		PastIncluded: past,
 		Size:         size,
 		Count:        Count{Active: CountBucket{Total: 0}, Past: CountBucket{Total: 0}},
-	}, nil
+	}
+
+	// GraphQL data fetch (spec 013). On nil client OR when the plugin
+	// is not enabled via `plugin_sponsors=yes` we return the M4 baseline
+	// (empty, non-Skipped) so dependent test suites that don't enable
+	// the plugin stay green and don't accumulate Data.Errors entries.
+	if pc.GraphQL == nil || !pluginEnabled(pc.Inputs, "plugin_sponsors") {
+		return base, nil
+	}
+	activeFirst := 12
+	pastFirst := 0
+	if past {
+		pastFirst = 12
+	}
+	resp, err := pc.GraphQL.ViewerSponsors(ctx, activeFirst, pastFirst)
+	if err != nil {
+		base.Skipped = true
+		base.SkippedReason = fmt.Sprintf("GraphQL fetch failed: %v", err)
+		if pc.Data != nil {
+			pc.Data.AppendError(xerrors.NewRetryableError(err))
+		}
+		return base, nil
+	}
+	populateFromGraphQL(base, resp)
+	return base, nil
+}
+
+// populateFromGraphQL maps the ViewerSponsors GraphQL response onto the
+// pre-built base Result. It mutates `out` in place.
+func populateFromGraphQL(out *Result, resp *githubapi.ViewerSponsorsResponse) {
+	if resp == nil || resp.Viewer == nil {
+		return
+	}
+	v := resp.Viewer
+	if v.SponsorsListing != nil {
+		out.About = v.SponsorsListing.ShortDescription
+		if g := v.SponsorsListing.ActiveGoal; g != nil {
+			goalTitle := ""
+			if g.Title != nil {
+				goalTitle = *g.Title
+			}
+			goalDesc := ""
+			if g.Description != nil {
+				goalDesc = *g.Description
+			}
+			out.Goal = &Goal{
+				Title:       goalTitle,
+				Description: goalDesc,
+				Progress:    g.PercentComplete,
+			}
+		}
+	}
+	if v.Active != nil {
+		out.Count.Active.Total = v.Active.TotalCount
+		out.Sponsors = collectActive(v.Active.Nodes)
+	}
+	if v.Past != nil {
+		pastOnly := collectPast(v.Past.Nodes)
+		out.Past = pastOnly
+		out.Count.Past.Total = len(pastOnly)
+	}
+}
+
+func collectActive(nodes []*githubapi.ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship) []Sponsor {
+	out := make([]Sponsor, 0, len(nodes))
+	for _, n := range nodes {
+		if n == nil || n.SponsorEntity == nil {
+			continue
+		}
+		switch x := (*n.SponsorEntity).(type) {
+		case *githubapi.ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser:
+			out = append(out, Sponsor{Login: x.Login, Avatar: x.AvatarUrl, Type: "user", Since: n.CreatedAt})
+		case *githubapi.ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization:
+			out = append(out, Sponsor{Login: x.Login, Avatar: x.AvatarUrl, Type: "organization", Since: n.CreatedAt})
+		}
+	}
+	return out
+}
+
+func collectPast(nodes []*githubapi.ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship) []Sponsor {
+	out := make([]Sponsor, 0, len(nodes))
+	for _, n := range nodes {
+		if n == nil || n.SponsorEntity == nil || n.IsActive {
+			continue
+		}
+		switch x := (*n.SponsorEntity).(type) {
+		case *githubapi.ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser:
+			out = append(out, Sponsor{Login: x.Login, Avatar: x.AvatarUrl, Type: "user", Since: n.CreatedAt})
+		case *githubapi.ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization:
+			out = append(out, Sponsor{Login: x.Login, Avatar: x.AvatarUrl, Type: "organization", Since: n.CreatedAt})
+		}
+	}
+	return out
 }
 
 // splitCSV splits a comma-separated input value into a trimmed slice.
@@ -195,6 +291,17 @@ func truthy(v any) bool {
 		return x != 0
 	}
 	return false
+}
+
+// pluginEnabled returns true when the named input is truthy. Used by
+// spec-013 wiring to short-circuit GraphQL fetches when the consuming
+// workflow has not opted into the plugin (test paths + dryrun CLI).
+func pluginEnabled(in map[string]any, key string) bool {
+	v, ok := in[key]
+	if !ok {
+		return false
+	}
+	return truthy(v)
 }
 
 func hasScope(scopes []string, want string) bool {
