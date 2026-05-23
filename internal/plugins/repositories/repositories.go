@@ -8,30 +8,37 @@
 //     (stars / forks / watchers).
 //   - Random: deterministic Fisher-Yates over Featured when
 //     `_random=true` (seed via `_random_seed`).
+//   - Starred (012): fetched from `/users/<login>/starred` when
+//     `_starred=true`. Falls back to the Featured-copy placeholder
+//     when REST is unavailable (test paths / no token).
 //
 // Inputs accepted for upstream-compat but NOT yet wired in this MVP:
 //   - `plugin_repositories_affiliations`: parsed but ignored. Base
 //     surfaces OWNER repositories regardless. Future US2 work will
 //     route this through a dedicated GraphQL query.
-//   - `plugin_repositories_pinned` / `_starred`: when set, the
-//     corresponding Result section is populated by reusing Featured as
-//     a placeholder. Dedicated `user.pinnedItems` /
-//     `user.starredRepositories` GraphQL fragments land alongside the
-//     P2 `stars` plugin in US2.
+//   - `plugin_repositories_pinned`: when set, the corresponding Result
+//     section is populated by reusing Featured as a placeholder. The
+//     dedicated `user.pinnedItems` GraphQL fragment lands in the 013 PR.
 //
 // Contracts: specs/004-m4-github-plugins/contracts/plugin-p1-mvp.md §4
 // Data model: specs/004-m4-github-plugins/data-model.md E-015
+// 012 wiring: specs/012-rest-data-fetch/contracts/plugin-repositories-starred.md
 package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
+	xerrors "github.com/mjun0812/github-metrics/internal/errors"
+	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
@@ -76,7 +83,7 @@ type inputs struct {
 	randomSeed   int64
 }
 
-func (p *repositoriesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any, error) {
+func (p *repositoriesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
@@ -124,9 +131,123 @@ func (p *repositoriesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (
 		res.Pinned = featured
 	}
 	if in.starred {
-		res.Starred = featured
+		res.Starred = resolveStarred(ctx, pc, featured, in.limit)
 	}
 	return res, nil
+}
+
+// starredFetchTimeout caps the single REST request to `/users/<login>/starred`.
+// Mirrors the per-request timeout used by `languages.indepth` and the
+// pattern documented in `specs/012-rest-data-fetch/research.md#R-005`.
+const starredFetchTimeout = 30 * time.Second
+
+// resolveStarred returns the value to assign to Result.Starred when the
+// `plugin_repositories_starred` input is truthy. Three paths:
+//
+//  1. REST + login available → live fetch from `/users/<login>/starred`.
+//     On HTTP failure: log via *RetryableError on Data.Errors and return
+//     nil (the section is suppressed in the JSON via omitempty).
+//  2. REST nil but login present → fall back to the M4 baseline placeholder
+//     (Featured copy) for test paths and no-token CLI invocations.
+//  3. Login empty → return an empty slice (no network call).
+func resolveStarred(ctx context.Context, pc *plugins.PluginContext, featured []plugins.Repository, limit int) []plugins.Repository {
+	login := ""
+	if pc.Data != nil && pc.Data.User != nil {
+		login = pc.Data.User.Login
+	}
+	if login == "" {
+		return []plugins.Repository{}
+	}
+	if pc.REST == nil {
+		// FR-006: keep the M4 baseline placeholder for non-REST paths
+		// (unit tests that don't construct a REST client, dryrun-no-token
+		// flows, etc.) so the partial still renders something.
+		return featured
+	}
+
+	reqCtx, cancel := context.WithTimeout(ctx, starredFetchTimeout)
+	defer cancel()
+	starred, err := fetchStarred(reqCtx, pc.REST, login, limit)
+	if err != nil {
+		pc.Data.AppendError(xerrors.NewRetryableError(fmt.Errorf("repositories.starred: %w", err)))
+		return nil
+	}
+	return starred
+}
+
+// starredREST is the subset of *githubapi.REST that fetchStarred needs.
+// Defining the interface here (instead of taking *REST directly) keeps
+// the helper unit-testable without spinning up a mock transport — see
+// the table-test cases that supply an in-memory stub.
+type starredREST interface {
+	Get(ctx context.Context, path string, extra http.Header) ([]byte, *http.Response, error)
+}
+
+// Compile-time assertion: *githubapi.REST satisfies starredREST.
+var _ starredREST = (*githubapi.REST)(nil)
+
+// rawStarredRepo mirrors the subset of the GitHub REST repository payload
+// (`GET /users/{login}/starred`) that maps onto plugins.Repository.
+// Fields not on this list (license, homepage, default_branch, etc.) are
+// deliberately ignored — the partial doesn't render them.
+type rawStarredRepo struct {
+	NameWithOwner string `json:"full_name"`
+	Description   string `json:"description"`
+	HTMLURL       string `json:"html_url"`
+	Private       bool   `json:"private"`
+	Fork          bool   `json:"fork"`
+	Stars         int    `json:"stargazers_count"`
+	Forks         int    `json:"forks_count"`
+	Watchers      int    `json:"watchers_count"`
+	Language      string `json:"language"`
+}
+
+// fetchStarred calls the REST starred endpoint and returns the mapped
+// repository slice, truncated to limit. Returns an error when the
+// transport fails or the response status is non-2xx; the caller wraps
+// it in a *RetryableError before recording.
+func fetchStarred(ctx context.Context, rest starredREST, login string, limit int) ([]plugins.Repository, error) {
+	const perPage = 100
+	path := fmt.Sprintf("/users/%s/starred?per_page=%d&sort=created&direction=desc", login, perPage)
+	body, resp, err := rest.Get(ctx, path, nil)
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil {
+		return nil, fmt.Errorf("nil response for %s", path)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("%s: status %d", path, resp.StatusCode)
+	}
+	var raw []rawStarredRepo
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("decode %s: %w", path, err)
+	}
+	if limit > 0 && len(raw) > limit {
+		raw = raw[:limit]
+	}
+	out := make([]plugins.Repository, 0, len(raw))
+	for _, r := range raw {
+		vis := "public"
+		if r.Private {
+			vis = "private"
+		}
+		entry := plugins.Repository{
+			NameWithOwner: r.NameWithOwner,
+			Description:   r.Description,
+			URL:           r.HTMLURL,
+			Visibility:    vis,
+			IsFork:        r.Fork,
+			Stars:         r.Stars,
+			Forks:         r.Forks,
+			Watchers:      r.Watchers,
+		}
+		if r.Language != "" {
+			entry.Language = &plugins.LanguageStat{Name: r.Language}
+		}
+		out = append(out, entry)
+	}
+	return out, nil
 }
 
 func sortRepositories(s []plugins.Repository, order string) {
