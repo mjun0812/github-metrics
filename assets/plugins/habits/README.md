@@ -109,7 +109,7 @@ Recent language activity may also displayed (it requires extras features to be e
 </ul>
 <b>type:</b> <code>boolean</code>
 <br>
-<b>default:</b> no<br></td>
+<b>default:</b> yes<br></td>
   </tr>
   <tr>
     <td nowrap="nowrap"><h4><code>plugin_habits_charts_type</code></h4></td>

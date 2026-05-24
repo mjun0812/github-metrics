@@ -26,6 +26,7 @@
   "errors": [],
   "plugins": {
     "achievements": {
+      "display": "detailed",
       "list": [
         {
           "description": "Public repositories owned",
@@ -67,6 +68,7 @@
     },
     "contributors": {
       "base": "",
+      "contributions": false,
       "head": "",
       "list": [],
       "mode": "user",
@@ -111,6 +113,7 @@
           0
         ]
       },
+      "chartsEnabled": true,
       "days": 0,
       "facts": {
         "charsPerLine": 0,
@@ -118,6 +121,7 @@
         "indentStyle": "",
         "linesPerCommit": 0
       },
+      "factsEnabled": true,
       "from": 0,
       "skipped": true,
       "trim": false

@@ -39,6 +39,8 @@ type Result struct {
 	Skipped       bool        `json:"skipped,omitempty"`
 	SkippedReason string      `json:"-"`
 	Days          int         `json:"days"`
+	FactsEnabled  bool        `json:"factsEnabled"`
+	ChartsEnabled bool        `json:"chartsEnabled"`
 	Facts         HabitFacts  `json:"facts"`
 	Charts        HabitCharts `json:"charts"`
 	From          int         `json:"from"`
@@ -75,12 +77,22 @@ func (p *habitsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
+	factsEnabled := readBoolDefault(pc.Inputs, "plugin_habits_facts", true)
+	chartsEnabled := readBoolDefault(pc.Inputs, "plugin_habits_charts", true)
+	skipped := func(reason string) *Result {
+		return &Result{
+			Skipped:       true,
+			SkippedReason: reason,
+			FactsEnabled:  factsEnabled,
+			ChartsEnabled: chartsEnabled,
+		}
+	}
 	if pc.REST == nil {
-		return &Result{Skipped: true, SkippedReason: "REST client unavailable"}, nil
+		return skipped("REST client unavailable"), nil
 	}
 	login := loginFromInputs(pc.Inputs)
 	if login == "" {
-		return &Result{Skipped: true, SkippedReason: "no login"}, nil
+		return skipped("no login"), nil
 	}
 	from := readIntDefault(pc.Inputs, "plugin_habits_from", 200)
 	days := readIntDefault(pc.Inputs, "plugin_habits_days", 14)
@@ -93,10 +105,10 @@ func (p *habitsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		// for any absence of usable input. Engine still surfaces
 		// transport errors via Data.Errors plumbing if needed.
 		//nolint:nilerr // intentional: REST failure maps to Skipped
-		return &Result{Skipped: true, SkippedReason: "events fetch failed"}, nil
+		return skipped("events fetch failed"), nil
 	}
 	if len(events) == 0 {
-		return &Result{Skipped: true, SkippedReason: "no recent commits"}, nil
+		return skipped("no recent commits"), nil
 	}
 
 	cutoff := time.Now().UTC().AddDate(0, 0, -days)
@@ -125,11 +137,13 @@ func (p *habitsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	}
 
 	return &Result{
-		Days:   days,
-		Facts:  facts,
-		Charts: charts,
-		From:   from,
-		Trim:   trim,
+		Days:          days,
+		FactsEnabled:  factsEnabled,
+		ChartsEnabled: chartsEnabled,
+		Facts:         facts,
+		Charts:        charts,
+		From:          from,
+		Trim:          trim,
 	}, nil
 }
 
@@ -214,6 +228,21 @@ func readBool(in map[string]any, key string) bool {
 	v, ok := in[key]
 	if !ok {
 		return false
+	}
+	switch x := v.(type) {
+	case bool:
+		return x
+	case string:
+		s := strings.ToLower(strings.TrimSpace(x))
+		return s == "true" || s == "1" || s == "yes"
+	}
+	return false
+}
+
+func readBoolDefault(in map[string]any, key string, def bool) bool {
+	v, ok := in[key]
+	if !ok {
+		return def
 	}
 	switch x := v.(type) {
 	case bool:

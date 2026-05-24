@@ -70,6 +70,9 @@ func TestRun_Normal_ThresholdC(t *testing.T) {
 	if r.Skipped {
 		t.Fatalf("unexpected Skipped: %+v", r)
 	}
+	if r.Display != "detailed" {
+		t.Errorf("Display = %q, want detailed", r.Display)
+	}
 	if len(r.List) < 5 {
 		t.Errorf("List len = %d, want >= 5; %+v", len(r.List), r.List)
 	}
@@ -77,6 +80,16 @@ func TestRun_Normal_ThresholdC(t *testing.T) {
 		if a.Rank == "X" {
 			t.Errorf("X-rank should not appear with threshold C: %+v", a)
 		}
+	}
+}
+
+func TestRun_DisplayCompact(t *testing.T) {
+	t.Parallel()
+	r := run(t, octocatComputed(), map[string]any{
+		"plugin_achievements_display": " compact ",
+	})
+	if r.Display != "compact" {
+		t.Errorf("Display = %q, want compact", r.Display)
 	}
 }
 
@@ -138,6 +151,7 @@ func TestRun_BaseUnavailable(t *testing.T) {
 // Golden tests.
 func TestPartial_Achievements_Golden(t *testing.T) {
 	r := &achievements.Result{
+		Display: "detailed",
 		List: []achievements.Achievement{
 			{ID: "commits", Rank: "S", Title: "Worker", Description: "Total commits", Icon: "git-commit", Value: 6000},
 			{ID: "pull-requests", Rank: "A", Title: "Engineer", Description: "Pull requests", Icon: "git-pull-request", Value: 600},
@@ -191,8 +205,63 @@ func TestPartial_Achievements_Golden(t *testing.T) {
 	}
 }
 
+func TestPartial_AchievementsCompact_Golden(t *testing.T) {
+	r := &achievements.Result{
+		Display: "compact",
+		List: []achievements.Achievement{
+			{ID: "commits", Rank: "S", Title: "Worker", Description: "Total commits", Icon: "git-commit", Value: 6000},
+			{ID: "pull-requests", Rank: "A", Title: "Engineer", Description: "Pull requests", Icon: "git-pull-request", Value: 600},
+			{ID: "repositories", Rank: "A", Title: "Member", Description: "Public repositories", Icon: "repo", Value: 80},
+		},
+		Ranks: map[string]string{
+			"commits":       "S",
+			"pull-requests": "A",
+			"repositories":  "A",
+			"stars":         "B",
+			"issues":        "B",
+			"followers":     "X",
+		},
+	}
+	data := plugins.NewData()
+	data.SetPlugin(achievements.Name, r)
+	pc := &templates.PartialContext{Data: data}
+	got, err := achievements.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	gp := filepath.Join(repoRoot(t), "tests", "golden", "classic", "m4", "achievements_compact.svg")
+	if *updateGolden {
+		if werr := os.MkdirAll(filepath.Dir(gp), 0o755); werr != nil {
+			t.Fatalf("MkdirAll: %v", werr)
+		}
+		if werr := os.WriteFile(gp, []byte(got), 0o644); werr != nil {
+			t.Fatalf("WriteFile: %v", werr)
+		}
+		return
+	}
+	want, err := os.ReadFile(gp)
+	if err != nil {
+		t.Fatalf("ReadFile: %v (run with -update)", err)
+	}
+	if string(want) != got {
+		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
+	}
+	for _, marker := range []string{
+		`class="achievements compact largeable-flex-wrap"`,
+		`class="value-wrapper"`,
+	} {
+		if !strings.Contains(got, marker) {
+			t.Errorf("missing marker %q in:\n%s", marker, got)
+		}
+	}
+	if strings.Contains(got, `class="text"`) || strings.Contains(got, "Total commits") {
+		t.Errorf("compact output should not render descriptions:\n%s", got)
+	}
+}
+
 func TestRun_GoldenShape_Achievements(t *testing.T) {
 	r := &achievements.Result{
+		Display: "detailed",
 		List: []achievements.Achievement{
 			{ID: "commits", Rank: "S", Title: "Worker", Description: "Total commits", Icon: "git-commit", Value: 6000},
 		},
