@@ -16,18 +16,6 @@ swapping one `uses:` line. See
 [`docs/migration-to-go.md`](docs/migration-to-go.md) for the full migration
 guide and unported-feature list.
 
-<!-- AUTOGEN_START: hero -->
-### Example output
-
-`classic` template (user profile metrics):
-
-![classic template sample](docs/examples/hero-classic.svg)
-
-`repository` template (single-repo focus):
-
-![repository template sample](docs/examples/hero-repository.svg)
-<!-- AUTOGEN_END: hero -->
-
 ---
 
 ## Highlights

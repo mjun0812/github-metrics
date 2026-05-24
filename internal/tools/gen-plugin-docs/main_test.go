@@ -178,23 +178,6 @@ func TestRenderPluginPage_EmitsTODOOnFirstGen(t *testing.T) {
 	}
 }
 
-// TestRenderHero_BothImagesReferenced — README hero block carries the
-// two canonical examples.
-func TestRenderHero_BothImagesReferenced(t *testing.T) {
-	t.Parallel()
-	got := renderHero()
-	for _, want := range []string{
-		"docs/examples/hero-classic.svg",
-		"docs/examples/hero-repository.svg",
-		"<!-- AUTOGEN_START: hero -->",
-		"<!-- AUTOGEN_END: hero -->",
-	} {
-		if !strings.Contains(got, want) {
-			t.Errorf("hero missing %q in:\n%s", want, got)
-		}
-	}
-}
-
 // TestRenderGallery_AllSlugsLinkedAlphabetically — the gallery table
 // references every adopted slug exactly once, in alphabetical order.
 func TestRenderGallery_AllSlugsLinkedAlphabetically(t *testing.T) {
@@ -214,9 +197,9 @@ func TestRenderGallery_AllSlugsLinkedAlphabetically(t *testing.T) {
 	}
 }
 
-// TestMergeReadme_InsertsHeroAndGalleryFromScratch — first-time
-// generation injects both blocks at the documented anchors.
-func TestMergeReadme_InsertsHeroAndGalleryFromScratch(t *testing.T) {
+// TestMergeReadme_InsertsGalleryFromScratch — first-time generation
+// injects the plugins-gallery block at the documented anchor.
+func TestMergeReadme_InsertsGalleryFromScratch(t *testing.T) {
 	t.Parallel()
 	readme := `# github-metrics
 
@@ -234,18 +217,12 @@ Some intro paragraph.
 
 ## Output formats
 `
-	got, err := mergeReadme(readme, renderHero(), renderGallery())
+	got, err := mergeReadme(readme, renderGallery())
 	if err != nil {
 		t.Fatalf("mergeReadme: %v", err)
 	}
-	if !strings.Contains(got, heroMarkerStart) || !strings.Contains(got, heroMarkerEnd) {
-		t.Errorf("hero markers missing after merge:\n%s", got)
-	}
 	if !strings.Contains(got, galleryMarkerStart) || !strings.Contains(got, galleryMarkerEnd) {
 		t.Errorf("gallery markers missing after merge:\n%s", got)
-	}
-	if strings.Index(got, heroMarkerStart) > strings.Index(got, galleryMarkerStart) {
-		t.Errorf("hero block should appear before gallery in README:\n%s", got)
 	}
 }
 
@@ -268,11 +245,11 @@ table
 
 ## Output formats
 `
-	once, err := mergeReadme(readme, renderHero(), renderGallery())
+	once, err := mergeReadme(readme, renderGallery())
 	if err != nil {
 		t.Fatalf("first merge: %v", err)
 	}
-	twice, err := mergeReadme(once, renderHero(), renderGallery())
+	twice, err := mergeReadme(once, renderGallery())
 	if err != nil {
 		t.Fatalf("second merge: %v", err)
 	}

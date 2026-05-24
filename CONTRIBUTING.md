@@ -176,7 +176,7 @@ gracefully when the fixture is absent, so a fresh checkout without
 
 ### Regenerating plugin docs + example SVGs
 
-`docs/plugins/*.md` and the README's hero / plugins-gallery blocks are
+`docs/plugins/*.md` and the README's plugins-gallery block are
 auto-generated from `assets/plugins/<slug>/metadata.yml`. Example SVGs
 under `docs/examples/` ship as placeholders in the repo; a maintainer
 with a token + headless Chromium overwrites them with real rendered
@@ -203,7 +203,7 @@ make docs
 ```
 
 Refreshes `docs/plugins/*.md` from each plugin's `metadata.yml` and
-updates the README hero + plugins-gallery AUTOGEN blocks. Human-authored
+updates the README plugins-gallery AUTOGEN block. Human-authored
 zones between `<!-- AUTOGEN_START: ... -->` markers are preserved
 byte-identically across re-runs.
 
@@ -213,10 +213,8 @@ byte-identically across re-runs.
 make docs-samples
 ```
 
-Renders 23 SVGs into `docs/examples/`:
+Renders 21 SVGs into `docs/examples/`:
 
-- `hero-classic.svg` + `hero-repository.svg` — the two template heroes
-  shown in the README hero block.
 - `plugin-<slug>.svg` for each of the 19 user-facing plugins.
 - `plugin-languages-recent.svg` + `plugin-languages-indepth.svg` for
   the two `languages` sub-modes.

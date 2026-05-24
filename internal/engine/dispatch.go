@@ -69,7 +69,7 @@ func dispatchOutput(
 		// Stage 2-4: decoration pipeline. US3 wires the actual
 		// stages; here we keep an empty slice so the chain is
 		// observable but a no-op.
-		decorated, stageErrs := render.Apply(buildPipelineStages(req.Inputs), rendered)
+		decorated, stageErrs := render.Apply(buildPipelineStages(ctx, req.Inputs, imageFetcher(deps)), rendered)
 		for _, e := range stageErrs {
 			deps.Logger.Warn("engine: pipeline stage error", "err", e)
 			if res != nil {
@@ -143,19 +143,26 @@ func obtainRenderer(deps Deps) (render.Renderer, func(), error) {
 // Template.Run and Renderer.Resize. The chain is fixed-order per
 // contracts/render-pipeline.md §1:
 //
-//  1. octicon — always enabled. Replaces `:octicon-<name>(-<size>)?:`
+//  1. octicon       — always enabled. Replaces `:octicon-<name>(-<size>)?:`
 //     placeholders with the embedded SVG fragment.
-//  2. css     — only when inputs["svg.optimize.css"] == true. Purges
+//  2. image-inline  — only when an ImageFetcher is available (i.e. an
+//     HTTP client is wired). Rewrites remote `<img src="http(s)://...">`
+//     avatars / icons into self-contained `data:` URIs so the SVG
+//     renders on GitHub's camo proxy and offline.
+//  3. css           — only when inputs["svg.optimize.css"] == true. Purges
 //     unused selectors and minifies the surviving rules.
-//  3. xml     — only when inputs["svg.optimize.xml"] == true.
+//  4. xml           — only when inputs["svg.optimize.xml"] == true.
 //     Re-indents the document with two-space indentation.
 //
 // Each stage is best-effort: errors land in res.Errors (via Apply)
 // and the input is forwarded unchanged to the next stage so a
 // localized failure does not break the SVG (FR-018).
-func buildPipelineStages(inputs map[string]any) []render.PipelineStage {
+func buildPipelineStages(ctx context.Context, inputs map[string]any, fetcher render.ImageFetcher) []render.PipelineStage {
 	stages := []render.PipelineStage{
 		{Name: "octicon", Run: render.ReplaceOcticons},
+	}
+	if fetcher != nil {
+		stages = append(stages, render.InlineImagesStage(ctx, fetcher))
 	}
 	if asBool(inputs, "svg.optimize.css") {
 		stages = append(stages, render.PipelineStage{Name: "css", Run: render.OptimizeCSS})
@@ -164,6 +171,19 @@ func buildPipelineStages(inputs map[string]any) []render.PipelineStage {
 		stages = append(stages, render.PipelineStage{Name: "xml", Run: render.FormatXML})
 	}
 	return stages
+}
+
+// imageFetcher adapts deps.HTTPClient to the render.ImageFetcher
+// interface the inline stage consumes. It returns a nil interface when
+// no HTTP client is wired (e.g. the mocked-data path), which the
+// pipeline reads as "skip image inlining" — guarding against the
+// typed-nil interface trap that a direct *httpx.Client assignment would
+// hit.
+func imageFetcher(deps Deps) render.ImageFetcher {
+	if deps.HTTPClient == nil {
+		return nil
+	}
+	return deps.HTTPClient
 }
 
 // asBool inspects the normalized Inputs map for a boolean-shaped
