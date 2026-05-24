@@ -26,6 +26,7 @@
   "errors": [],
   "plugins": {
     "achievements": {
+      "display": "detailed",
       "list": [
         {
           "description": "Total stars received across owned repositories",
