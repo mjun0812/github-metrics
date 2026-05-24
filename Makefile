@@ -24,7 +24,8 @@ LEFTHOOK_VERSION      := latest
         gen-octicons verify-octicons gen-action-yml docker docker-build docker-run-cli \
         docker-smoke release-dry-run \
         tools hooks-install hooks-run hooks-uninstall \
-        check-compat sync-assets clean help
+        check-compat sync-assets clean help \
+        docs docs-samples docs-examples docs-lint
 
 all: build
 
@@ -179,6 +180,34 @@ hooks-uninstall:
 	else \
 		echo "lefthook not on PATH; nothing to uninstall."; \
 	fi
+
+# Documentation generation targets.
+#
+# `docs`           — regenerates docs/plugins/*.md and the README hero +
+#                    plugins-gallery AUTOGEN blocks from
+#                    assets/plugins/*/metadata.yml. No token needed.
+# `docs-samples`   — renders the 21 plugin sample SVGs + 2 hero SVGs
+#                    via scripts/gen-doc-samples.sh. Requires
+#                    GITHUB_TOKEN, METRICS_CHROME_PATH, and the docker
+#                    image github-metrics:local.
+# `docs-examples`  — convenience target: run docs-samples then docs in
+#                    the correct order.
+# `docs-lint`      — reports how many docs/plugins/*.md pages still
+#                    contain `<!-- TODO:` placeholders. Loose gating —
+#                    always exits 0.
+docs:
+	$(GO) run ./internal/tools/gen-plugin-docs
+
+docs-samples:
+	bash scripts/gen-doc-samples.sh
+
+docs-examples: docs-samples docs
+
+docs-lint:
+	@count=$$(grep -l '<!-- TODO:' docs/plugins/*.md 2>/dev/null | wc -l | tr -d ' '); \
+	total=$$(ls docs/plugins/*.md 2>/dev/null | wc -l | tr -d ' '); \
+	echo "docs-lint: $${count}/$${total} plugin docs still contain TODO placeholders"; \
+	exit 0
 
 check-compat:
 	$(GO) run ./internal/tools/check-compat
