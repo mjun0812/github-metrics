@@ -137,7 +137,7 @@ echo "== other upstream-parity sub-mode variants =="
 #       plugin for this sample user's data.
 #   - topics.icons, starlists.languages, sponsors.full
 #       sample user has no data, so the card renders empty.
-#   - habits.facts/charts, notable.indepth, contributors.contributions,
+#   - habits.facts/charts, contributors.contributions,
 #     stargazers.worldmap/chartist, people.repository
 #       not yet supported by the Go implementation (needs plugin work).
 render_one "plugin-achievements-compact" \
@@ -145,6 +145,13 @@ render_one "plugin-achievements-compact" \
   --plugin "base=" \
   --plugin "plugin_achievements=yes" \
   --plugin "plugin_achievements_display=compact"
+
+render_one "plugin-notable-indepth" \
+  --template classic \
+  --plugin "base=" \
+  --plugin "plugin_notable=yes" \
+  --plugin "plugin_notable_indepth=yes" \
+  --plugin "plugin_notable_repositories=yes"
 
 render_one "plugin-languages-details" \
   --template classic \
@@ -167,10 +174,10 @@ render_one "plugin-stargazers-graph" \
 echo
 echo "== Summary =="
 # 2 formats (svg + png) per logical sample.
-# +2 languages sub-modes (recent, indepth) +4 parity variants
-# (achievements.compact, languages.details, isocalendar.fullyear,
-#  stargazers.graph).
-TOTAL=$(( (${#PLUGINS[@]} + 2 + 4) * 2 ))
+# +2 languages sub-modes (recent, indepth) +5 parity variants
+# (achievements.compact, notable.indepth, languages.details,
+#  isocalendar.fullyear, stargazers.graph).
+TOTAL=$(( (${#PLUGINS[@]} + 2 + 5) * 2 ))
 OK=$((TOTAL - ${#FAILURES[@]}))
 echo "  OK:   ${OK}/${TOTAL}"
 if (( ${#FAILURES[@]} > 0 )); then
