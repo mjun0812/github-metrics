@@ -10,6 +10,8 @@ coverage.out
 /metrics-action
 /metrics-cli
 /gen-action-yml
+/gen-plugin-docs
+/normalize-svg-stream
 # M6 cross-compile output
 /dist/
 

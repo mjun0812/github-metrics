@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="160" viewBox="0 0 480 160" role="img" aria-label="classic template hero placeholder">
+  <rect width="480" height="160" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1" rx="8"/>
+  <text x="240" y="68" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, sans-serif" font-size="20" font-weight="600" fill="#1f2328">classic template hero</text>
+  <text x="240" y="98" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, sans-serif" font-size="13" fill="#656d76">Placeholder — overwritten by 'make docs-samples'</text>
+  <text x="240" y="120" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, sans-serif" font-size="11" fill="#8c959f">(requires GITHUB_TOKEN + chromedp runtime)</text>
+</svg>
