@@ -1,8 +1,7 @@
 // Package core hosts the special "core" plugin. Unlike data-source
 // plugins, core is responsible for translating user-supplied
 // configuration into the Computed-side fields of plugins.Data, and it
-// also owns the parallel runner that drives every other plugin. See
-// specs/001-project-foundation/contracts/plugin-interface.md §4.
+// also owns the parallel runner that drives every other plugin.
 package core
 
 import (

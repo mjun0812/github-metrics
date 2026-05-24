@@ -3,9 +3,6 @@
 // does not support yet. Worldmap (`_worldmap=true`) is explicitly
 // deferred per research note R-012 — the M4 implementation always
 // returns Skipped=true with an explanatory reason.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p2-graphql.md §11
-// Data model: specs/004-m4-github-plugins/data-model.md E-032
 package stargazers
 
 import (

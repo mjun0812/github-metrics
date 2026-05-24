@@ -21,7 +21,6 @@
 # bookworm-slim + chromium + Noto CJK fonts combination measures
 # ~830 MB on GitHub-hosted ubuntu-latest runners. CJK fonts cost
 # ~80 MB but breaking CJK repo-name rendering was rejected for v1.0.
-# See specs/008-m10-release-distribution/contracts/dockerfile.md.
 #
 # Build (local):  docker build -f deploy/Dockerfile -t github-metrics:dev .
 # Run   (local):  docker run --rm github-metrics:dev metrics-action --help

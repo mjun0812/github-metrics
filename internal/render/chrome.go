@@ -18,8 +18,7 @@ import (
 //
 // Upstream-compatible defaults:
 //   - --no-sandbox, --disable-extensions, --disable-dev-shm-usage,
-//     --disable-gpu, --single-process (see contracts/svg-resize.md
-//     §1 / FR-002).
+//     --disable-gpu, --single-process.
 //   - METRICS_CHROME_PATH env var resolves the chromium executable
 //     when BrowserOpts.ExecPath is empty.
 //   - Recycle counter trips at BrowserOpts.RecycleEvery (defaults to
@@ -121,7 +120,7 @@ func (b *Browser) spawnAllocator() {
 		chromedp.Flag("disable-dev-shm-usage", true),
 		chromedp.Flag("disable-gpu", true),
 		// --single-process is documented as required for Docker/ARM
-		// stability (research R-003) but breaks the CDP Network
+		// stability but breaks the CDP Network
 		// domain enable step on modern desktop Chrome (137+). Callers
 		// that need it MUST pass it via BrowserOpts.ExtraFlags; the
 		// default set leaves it off so local dev / CI without the

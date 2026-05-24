@@ -8,7 +8,7 @@ import (
 // TestFullFlag_TogglesPluginInputs verifies the --full flag plumbing:
 // when full=true, METRICS_FIXTURE_FULL=1 is appended to the upstream
 // npm subprocess's environment so the YAML loader can opt into the
-// M4 adopted plugin set. See specs/004-m4-github-plugins/research.md R-010.
+// M4 adopted plugin set.
 func TestFullFlag_TogglesPluginInputs(t *testing.T) {
 	cases := []struct {
 		name        string

@@ -2,9 +2,6 @@
 // user's starred-lists landing page + each list's detail page via
 // chromedp because the GitHub API does not expose starlists.
 //
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p3-heavy.md §4
-// Data model: specs/004-m4-github-plugins/data-model.md E-024
-//
 // Same Navigator-based test seam as the topics plugin: production
 // chromedp scraping is isolated behind the Navigator interface so non-
 // chromedp tests can exercise the skipped/short-circuit paths.

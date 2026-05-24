@@ -79,7 +79,7 @@ func TestHash_DOMDifference(t *testing.T) {
 }
 
 // TestHash_MultipleFooters verifies the "only the first <footer> is
-// stripped" rule documented in contracts/svg-hash.md §1.
+// stripped" rule.
 func TestHash_MultipleFooters(t *testing.T) {
 	t.Parallel()
 	a := `<svg xmlns="http://www.w3.org/2000/svg"><footer>first-A</footer><footer>second</footer></svg>`
@@ -106,9 +106,8 @@ func TestHash_MultipleFooters(t *testing.T) {
 // run `go test -run TestHash_GoldenOctocat -update ./internal/render`
 // to regenerate after intentional changes.
 //
-// Note: this golden is coupled to tests/golden/classic/octocat.svg
-// (M2). The Phase 6 task T055 regenerates that file and MUST also
-// regenerate octocat_svg_hash.txt (tasks.md C1 follow-up).
+// Note: this golden is coupled to tests/golden/classic/octocat.svg.
+// Regenerating that file MUST also regenerate octocat_svg_hash.txt.
 func TestHash_GoldenOctocat(t *testing.T) {
 	t.Parallel()
 	classicPath := repoRel(t, "tests/golden/classic/octocat.svg")

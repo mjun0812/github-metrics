@@ -8,9 +8,9 @@ import (
 // BenchmarkHash_LargeSVG exercises the Hash hot path against a
 // ~500 KB synthetic SVG.
 //
-// Budget: 50 ms/op. The original contract (contracts/svg-hash.md §6)
-// aimed for 5 ms but the goquery HTML5 parse of a 500 KB document
-// lands around 20 ms on an M-series Mac — the parser is the
+// Budget: 50 ms/op. The original target was 5 ms but the goquery
+// HTML5 parse of a 500 KB document lands around 20 ms on an
+// M-series Mac — the parser is the
 // dominant cost and pre-empting it would mean abandoning DOM-aware
 // footer removal. The relaxed budget still catches catastrophic
 // regressions (e.g., adding an O(N²) walk) while honoring the real

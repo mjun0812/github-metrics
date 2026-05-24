@@ -3,9 +3,6 @@
 // scaffolded; the underlying `viewer.sponsorshipsAsSponsor` GraphQL
 // call lands as a follow-up once the schema covers it. The MVP wires
 // the type surface so downstream consumers see the slot.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p2-graphql.md §10
-// Data model: specs/004-m4-github-plugins/data-model.md E-031
 package sponsorships
 
 import (

@@ -1,7 +1,7 @@
 package render
 
 import (
-	"crypto/md5" //nolint:gosec // MD5 is a non-security comparison key (upstream metrics.utils.svg.hash compatibility); see contracts/svg-hash.md
+	"crypto/md5" //nolint:gosec // MD5 is a non-security comparison key (upstream metrics.utils.svg.hash compatibility)
 	"encoding/hex"
 	"errors"
 	"strings"
@@ -17,7 +17,7 @@ import (
 // (M6 T-114): two SVGs whose DOM differs only in the footer
 // (timezone / version / generated time) MUST hash identically.
 //
-// Contract (specs/003-chromedp-rendering-pipeline/contracts/svg-hash.md):
+// Edge cases:
 //
 //   - Whitespace-only or empty input → ("", nil)
 //   - Document without an <svg> root → ("", *xerrors.InputError)

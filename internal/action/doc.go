@@ -15,6 +15,4 @@
 //
 // The package is internal because there is no expectation of external
 // programmatic use — the metrics-action binary is the only consumer.
-// See specs/005-m6-action-cli/ for the full design corpus (plan.md /
-// data-model.md / contracts/*).
 package action

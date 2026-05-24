@@ -4,9 +4,6 @@
 // MVP wires followers + following only; the remaining types are
 // recorded with an empty list so consumers can see the slot, and a
 // WARN log fires for unknown types per contract §4.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p2-graphql.md §4
-// Data model: specs/004-m4-github-plugins/data-model.md E-025
 package people
 
 import (

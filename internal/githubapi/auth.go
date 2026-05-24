@@ -1,7 +1,5 @@
 // Package githubapi wraps GitHub REST and GraphQL access, the rate
-// tracker, and the MOCKED_TOKEN safety guard. See
-// specs/001-project-foundation/contracts/github-api.md for the
-// authoritative shape of each exported type.
+// tracker, and the MOCKED_TOKEN safety guard.
 package githubapi
 
 import (
@@ -11,7 +9,6 @@ import (
 )
 
 // TokenKind enumerates the credential shapes the project recognizes.
-// See contracts/github-api.md §2.1 for the mapping rules.
 type TokenKind int
 
 const (

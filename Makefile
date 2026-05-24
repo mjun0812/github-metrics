@@ -1,7 +1,6 @@
 # github-metrics Makefile
 #
-# Targets are referenced by the project plan
-# (specs/001-project-foundation/plan.md) and CI workflow
+# Targets are referenced by the CI workflow
 # (.github/workflows/go-ci.yml).
 
 SHELL := /bin/bash
@@ -104,7 +103,7 @@ test-chromedp:
 # These tests depend on go-enry's embedded language DB and go-git's
 # pure-Go shallow clone, both of which add wall time / I/O overhead.
 # Default `make test` skips them; CI runs them as a separate parallel
-# job. See specs/004-m4-github-plugins/quickstart.md §3.
+# job.
 test-heavy:
 	$(GO) test -tags=heavy ./...
 

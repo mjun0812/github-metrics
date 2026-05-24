@@ -6,9 +6,7 @@ package plugins
 // single-repository data populated by base.runRepository (M7).
 //
 // Plugins call this helper from their Run() to keep the per-plugin
-// branching contract documented at
-// `specs/006-m7-repository-template/contracts/repo-mode-plugin.md` in
-// one place. Each of the 7 reused plugins (activity, contributors,
+// branching contract in one place. Each of the 7 reused plugins (activity, contributors,
 // languages, people, projects, sponsors, stargazers) imports plugins
 // already; this constant + helper costs zero extra import edges.
 const (

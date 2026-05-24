@@ -2,9 +2,6 @@
 // per-day contribution data already populated by base.runIndepth
 // (Computed.ContributionCalendar) into a per-year × per-month
 // histogram.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p2-graphql.md §1
-// Data model: specs/004-m4-github-plugins/data-model.md E-020
 package calendar
 
 import (

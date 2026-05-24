@@ -93,8 +93,7 @@ func TestPartial_Languages_Golden(t *testing.T) {
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
-	// DOM contract spot-checks (partial-classic-m4.md §5 +
-	// 011 parity additions per plugins/languages.md):
+	// DOM contract spot-checks (base markers + parity additions):
 	for _, marker := range []string{
 		// v1.0.0 byte-frozen markers (preserved for backward compat)
 		`<g class="languages-progress">`,

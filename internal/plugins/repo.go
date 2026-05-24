@@ -7,8 +7,7 @@ package plugins
 // before plugin dispatch fans out so downstream consumers can read it
 // lock-free (the M7 contract guarantees no writes after population).
 //
-// Spec / data-model: specs/006-m7-repository-template/data-model.md
-// E-003. Field names mirror upstream `template.mjs:13-21` semantics.
+// Field names mirror upstream `template.mjs:13-21` semantics.
 type Repo struct {
 	// Owner is the repository owner's login (the part before `/` in
 	// `<owner>/<name>`).

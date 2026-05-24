@@ -11,8 +11,7 @@ import (
 
 // runOrganization fetches the organization base profile, drives the
 // member-paging loop, and then folds the paged repository totals via
-// populateRepositories. Mirrors specs/004-m4-github-plugins/contracts/
-// plugin-base-extension.md §1.
+// populateRepositories.
 //
 // The accumulator semantics are deliberately defensive: a transient
 // member-paging failure records a *RetryableError on Data.Errors and

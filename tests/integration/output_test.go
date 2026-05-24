@@ -16,8 +16,7 @@ import (
 	_ "github.com/mjun0812/github-metrics/internal/templates/classic"
 )
 
-// TestComputeJSON_DefaultFromTemplate covers the truth-table row from
-// contracts/result-dispatch.md §4:
+// TestComputeJSON_DefaultFromTemplate covers the truth-table row:
 //
 //	Format="", Template="" → JSON because no template means no defaulted
 //	format and engine falls back to application/json.

@@ -40,8 +40,7 @@ type pagingState struct {
 // returns (acc, nil) on full completion; on persistent failure at
 // batch=1 it records a *RetryableError on pc.Data.Errors and returns
 // the partial accumulator with a nil error so the caller can still
-// surface useful data (degraded path documented in
-// specs/004-m4-github-plugins/contracts/plugin-base-extension.md §3.3).
+// surface useful data (degraded path).
 //
 // initialBatch <= 0 falls back to 100 to match upstream defaults.
 func fetchRepositories(ctx context.Context, pc *plugins.PluginContext, login string, isUser bool, initialBatch int) (*pagingState, error) {
