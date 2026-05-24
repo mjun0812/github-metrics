@@ -60,7 +60,8 @@
     },
     "contributors": {
       "base": "master",
-      "head": "HEAD",
+      "contributions": false,
+      "head": "master",
       "list": [],
       "mode": "repo",
       "sections": [
