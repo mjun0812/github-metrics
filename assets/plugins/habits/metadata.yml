@@ -63,7 +63,7 @@ inputs:
       It includes commit activity per hour of day and commit activity per day of week
       Recent language activity may also displayed (it requires extras features to be enabled for web instances) for historical reasons
     type: boolean
-    default: no
+    default: yes
     extras:
       - metrics.api.github.overuse
       - metrics.run.tempdir
