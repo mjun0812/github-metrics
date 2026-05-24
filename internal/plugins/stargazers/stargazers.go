@@ -22,8 +22,9 @@ import (
 const Name = "stargazers"
 
 const (
-	chartsTypeClassic = "classic"
-	chartsTypeGraph   = "graph"
+	chartsTypeClassic  = "classic"
+	chartsTypeGraph    = "graph"
+	chartsTypeChartist = "chartist"
 )
 
 // Plugin is the singleton registered with the global plugin registry.
@@ -178,9 +179,12 @@ func isTruthy(v any) bool {
 // `plugin_stargazers_charts_type` input into a canonical chart type.
 //
 // The resolution is a switch keyed on the lower-cased, trimmed input so
-// new aliases (e.g. #395 maps `chartist` onto `graph`) can be added with
-// a single extra case. Unknown or empty values fall back to the upstream
-// default `classic`.
+// new aliases can be added with a single extra case. Unknown or empty
+// values fall back to the upstream default `classic`.
+//
+// `chartist` is deprecated upstream and treated as an alias of `graph`
+// (see metadata.yml). Existing configs that still pass `chartist` will
+// continue to work without any change.
 func selectedChartsType(inputs map[string]any) string {
 	raw, ok := inputs["plugin_stargazers_charts_type"]
 	if !ok {
@@ -191,7 +195,7 @@ func selectedChartsType(inputs map[string]any) string {
 		return chartsTypeClassic
 	}
 	switch strings.ToLower(strings.TrimSpace(s)) {
-	case chartsTypeGraph:
+	case chartsTypeGraph, chartsTypeChartist:
 		return chartsTypeGraph
 	default:
 		return chartsTypeClassic
