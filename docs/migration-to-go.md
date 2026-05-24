@@ -1,73 +1,72 @@
 # lowlighter/metrics から github-metrics (Go 移植) への移行ガイド
 
 **対象バージョン**: `mjun0812/github-metrics` v1.0.0
-**最終更新**: 2026-05-18
+**最終更新**: 2026-05-24
 
 ## 1. 概要
 
 本プロジェクトは [`lowlighter/metrics`](https://github.com/lowlighter/metrics)
-を Go に移植したものです。upstream の全機能ではなく、
-[`docs/design/15-selection-answer.md`](./design/15-selection-answer.md)
-で採用判断した **21 plugin + 2 template + 4 出力形式** の subset
-のみを対象としています。
+を Go に移植したものです。upstream の全機能を網羅するのではなく、
+よく使われる **21 plugin + 2 template + 4 出力形式** に絞った subset
+を提供しています。
 
 **このガイドの対象読者**: 現在 upstream `lowlighter/metrics` を
-使用しており、Go 移植版 (採用 subset) への移行を検討している方。
+使用しており、Go 移植版への移行を検討している方。
 
-**移行コストの大前提** (constitution 原則 I / II):
+**移行コストの大前提**:
 
-- **入力互換性**: 採用機能の `with:` input 名・既定値・型は
-  upstream と完全互換 (`uses:` 行だけを差し替えれば動作)。
-- **出力互換性**: JSON は byte 互換、SVG は **DOM 構造単位**で
-  upstream と同等 (バージョン文字列・生成時刻の差分は許容)。
+- **入力互換性**: サポート対象の `with:` input 名・既定値・型は
+  upstream と完全互換 (`uses:` 行だけを差し替えれば動作します)。
+- **出力互換性**: JSON は upstream とバイト互換、SVG は **DOM 構造単位** で
+  upstream と同等です (バージョン文字列・生成時刻の差分は許容)。
 
-## 2. 採用機能一覧
+## 2. サポート対象機能
 
 ### 2.1 Plugin (21)
 
-| 種別     | 名前              | upstream slug    | 注記                                |
-| -------- | ----------------- | ---------------- | ----------------------------------- |
-| Core     | base              | base             | account-kind dispatcher (内部)      |
-| Core     | core              | core             | settings + parallel runner (内部)   |
-| MVP (P1) | languages         | languages        | `recent` / `indepth` サブモード対応 |
-| MVP (P1) | activity          | activity         |                                     |
-| MVP (P1) | achievements      | achievements     |                                     |
-| MVP (P1) | repositories      | repositories     |                                     |
-| MVP (P1) | isocalendar       | isocalendar      |                                     |
-| P2       | calendar          | calendar         |                                     |
-| P2       | habits            | habits           |                                     |
-| P2       | stars             | stars            |                                     |
-| P2       | people            | people           | followers / following               |
-| P2       | notable           | notable          |                                     |
-| P2       | contributors      | contributors     |                                     |
-| P2       | reactions         | reactions        |                                     |
-| P2       | projects          | projects         |                                     |
-| P2       | sponsors          | sponsors         |                                     |
-| P2       | sponsorships      | sponsorships     |                                     |
-| P2       | stargazers        | stargazers       |                                     |
-| P2       | traffic           | traffic          |                                     |
-| P3       | topics            | topics           | chromedp scrape                     |
-| P3       | starlists         | starlists        | chromedp scrape                     |
+ほとんどの plugin は GitHub の API トークンだけで動作します。
+`topics` / `starlists` のみ chromedp (Headless Chromium) が必要で、
+本プロジェクトの Docker image / GitHub Action はこれを同梱しています。
+
+| 名前              | upstream slug    | 注記                                |
+| ----------------- | ---------------- | ----------------------------------- |
+| base              | base             | プロファイル基本情報 (内部使用)     |
+| core              | core             | 設定注入 + 並列実行 (内部使用)      |
+| languages         | languages        | `recent` / `indepth` サブモード対応 |
+| activity          | activity         |                                     |
+| achievements      | achievements     |                                     |
+| repositories      | repositories     | Featured / Pinned / Starred / Random |
+| isocalendar       | isocalendar      | 3D 等尺カレンダー                   |
+| calendar          | calendar         | 多年カレンダー                      |
+| habits            | habits           | 曜日 / 時間帯傾向                   |
+| stars             | stars            | 最近スターしたリポジトリ            |
+| people            | people           | フォロワー / フォロイング           |
+| notable           | notable          |                                     |
+| contributors      | contributors     | repository テンプレート向け         |
+| reactions         | reactions        | リアクション集計                    |
+| projects          | projects         | GitHub Projects (`read:project` 必要) |
+| sponsors          | sponsors         | (`read:user` / `read:org` 必要)     |
+| sponsorships      | sponsorships     | (`read:user` / `read:org` 必要)     |
+| stargazers        | stargazers       | 累積 star チャート                  |
+| traffic           | traffic          | 閲覧数 (`repo` 必要)                |
+| topics            | topics           | chromedp scrape                     |
+| starlists         | starlists        | chromedp scrape                     |
 
 ### 2.2 Template (2)
 
-| 種別     | 名前       | 注記                                              |
-| -------- | ---------- | ------------------------------------------------- |
-| Template | classic    | M2 adopted, 21 plugin partials filtered to subset |
-| Template | repository | M7 adopted, `--user <owner> --repo <name>` 中心   |
+| 名前       | 注記                                              |
+| ---------- | ------------------------------------------------- |
+| classic    | ユーザー / 組織向けのデフォルトテンプレート       |
+| repository | リポジトリ単体メトリクス (`--user <owner> --repo <name>`) |
 
 ### 2.3 出力形式 (4)
 
-| 形式 | CLI flag        | wired in | 備考                          |
-| ---- | --------------- | -------- | ----------------------------- |
-| SVG  | `--output svg`  | M1       | デフォルト                    |
-| JSON | `--output json` | M2       | upstream byte 互換            |
-| PNG  | `--output png`  | M3       | chromedp `CaptureScreenshot`  |
-| JPEG | `--output jpeg` | M3       | chromedp `CaptureScreenshot`  |
-
-詳細根拠は
-[`docs/design/15-selection-answer.md`](./design/15-selection-answer.md)
-§2-§4 を参照。
+| 形式 | CLI flag        | 備考                          |
+| ---- | --------------- | ----------------------------- |
+| SVG  | `--output svg`  | デフォルト                    |
+| JSON | `--output json` | upstream とバイト互換         |
+| PNG  | `--output png`  | chromedp で `<svg>` をスクリーンショット |
+| JPEG | `--output jpeg` | 同上                          |
 
 ## 3. 未対応機能一覧
 
@@ -76,10 +75,10 @@
 
 ### 3.1 Runtime / Mode
 
-| 種別 | 名前              | 不採用理由                       | 参照                                       |
-| ---- | ----------------- | -------------------------------- | ------------------------------------------ |
-| Mode | Web インスタンス (M5) | 運用コスト過大                 | [15-selection-answer.md §1](./design/15-selection-answer.md) |
-| Mode | OAuth / Insights HTML | M5 web 一体・別途認証基盤必要 | 同上                                       |
+| 種別 | 名前                  | 不採用理由                                |
+| ---- | --------------------- | ----------------------------------------- |
+| Mode | Web インスタンス      | 運用コスト過大 (Action / CLI のみサポート) |
+| Mode | OAuth / Insights HTML | Web インスタンス前提 (上記とともに不採用) |
 
 ### 3.2 Template (community 系)
 
@@ -93,12 +92,12 @@
 
 | slug         | 不採用理由                        |
 | ------------ | --------------------------------- |
-| lines        | M、REST stats 多用 — 後続候補     |
-| gists        | S、優先度低                       |
-| followup     | S、優先度低                       |
-| discussions  | S、優先度低                       |
-| skyline      | L、重い・3D city/skyline          |
-| support      | S、upstream 終了済 (deprecated)   |
+| lines        | REST stats を多用するため負荷大   |
+| gists        | 優先度低                          |
+| followup     | 優先度低                          |
+| discussions  | 優先度低                          |
+| skyline      | 3D city / skyline — 重く優先度低  |
+| support      | upstream 終了済 (deprecated)      |
 
 ### 3.4 community 拡張 plugin (3)
 
@@ -108,7 +107,7 @@
 | introduction | community 拡張機構経由   |
 | licenses     | community 拡張機構経由   |
 
-### 3.5 ソーシャル / 外部 API 系 plugin (19, M8 全数不採用)
+### 3.5 ソーシャル / 外部 API 系 plugin (19)
 
 | slug            | サイズ感 | 不採用理由 |
 | --------------- | -------- | ---------- |
@@ -132,31 +131,22 @@
 | wakatime        | M        | 外部 API   |
 | 16personalities | -        | community  |
 
-(注: 上記 19 slug は `tests/compliance/compliance_test.go::unadoptedPluginNames` で gating されている canonical set と一致する。Drift 検知は CI 経由で自動。)
-
 ### 3.6 出力形式
 
 | 名前     | 不採用理由                                          |
 | -------- | --------------------------------------------------- |
-| pdf      | upstream は Puppeteer; chromedp 経由は複雑度割に合わず |
-| markdown | community template と一体                           |
-
-詳細根拠は
-[`docs/design/15-selection-answer.md`](./design/15-selection-answer.md)
-§3-§4 を参照。
+| pdf      | upstream は Puppeteer 経由 — chromedp 移植が複雑    |
+| markdown | community template と一体のため                    |
 
 ## 4. 入力互換性
 
-constitution 原則 I より:
-
-- **採用 input** (上表 2.x の plugin / template / output 関連入力)
-  は upstream と **完全互換**。key 名・既定値・型は同一。
-- **未対応 input** (上表 3.x に該当する plugin の `plugin_<slug>`
-  ゲート、および付帯入力) は **silently no-op**。ワークフロー
-  ファイルは変更不要のままで動作し、未対応 plugin の出力だけが
-  生成されません。
-- 不正な input 名や型の場合でも **ハードエラーにしない** (constitution
-  原則 I MUST NOT)。upstream と同じく未知 key は素通し。
+- **サポート対象 input** (上表 §2 の plugin / template / output 関連入力)
+  は upstream と **完全互換** です。key 名・既定値・型は同一。
+- **未対応 input** (§3 に該当する plugin の `plugin_<slug>` ゲートおよび
+  付帯入力) は **silently no-op** です。ワークフローファイルは変更不要
+  のままで動作し、未対応 plugin の出力だけが生成されません。
+- 不正な input 名や型でも **ハードエラーにしません**。upstream と同じく
+  未知 key は素通しします。
 
 ### 4.1 動作例
 
@@ -202,7 +192,7 @@ scheduled run を待ちます。`output_action: commit` 等の出力ア
 
 ### Step 4: 出力検証
 
-- **JSON 出力**: constitution 原則 II より byte 互換。
+- **JSON 出力**: upstream とバイト互換のため、
   `diff old.json new.json` が空であることを確認できます。
 - **SVG 出力**: DOM 構造単位での同等性。バージョン文字列
   (`github-metrics@vX.Y.Z`) や生成時刻 (`Last updated ...`)
@@ -211,7 +201,7 @@ scheduled run を待ちます。`output_action: commit` 等の出力ア
 
 ## 6. ロールバック
 
-`uses:` 行を 1 行戻すだけで完全ロールバックできます (採用 input
+`uses:` 行を 1 行戻すだけで完全ロールバックできます (サポート対象 input
 は drop-in 互換のため、設定ファイル側の調整は不要です):
 
 ```diff
@@ -220,12 +210,3 @@ scheduled run を待ちます。`output_action: commit` 等の出力ア
 ```
 
 commit / push で完了。upstream の挙動が完全に復元されます。
-
----
-
-**Source of truth**:
-
-- 採用判断: [`docs/design/15-selection-answer.md`](./design/15-selection-answer.md)
-- Input 互換性: [`.specify/memory/constitution.md`](../.specify/memory/constitution.md) 原則 I
-- 出力互換性: [`.specify/memory/constitution.md`](../.specify/memory/constitution.md) 原則 II
-- 採用 phase 順序: [`CLAUDE.md`](../CLAUDE.md) Adopted phase order
