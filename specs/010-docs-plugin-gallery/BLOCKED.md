@@ -1,8 +1,10 @@
-# 010 docs-plugin-gallery — BLOCKED
+# 010 docs-plugin-gallery — UNBLOCKED
 
-**Status**: blocked since 2026-05-19
-**Blocker**: M4 plugin rendering output is broken when viewed via GitHub's `<img src=...svg>` path.
-**Next step**: Land feature 011 (plugin-rendering-parity) which brings the 19 adopted plugins to upstream EJS-template visual parity, then resume 010.
+**Status**: unblocked on 2026-05-23 (was blocked since 2026-05-19)
+**Resolved blocker**: feature 011 (plugin-rendering-parity) merged via PR #383 on 2026-05-23, bringing the 19 adopted plugins to upstream EJS-template visual parity. Re-running `bash scripts/gen-doc-samples.sh` now produces visually-correct SVG/PNG samples.
+**Next step**: When/if 010 is picked back up, start from issue #365 (010-T001 — directory setup) and walk through the tasks.md sequence under `specs/010-docs-plugin-gallery/tasks.md`. The 18 GitHub issues (#365-#382) remain open as the per-task checklist.
+
+Note: 010 is **not** in the adoption scope of `docs/design/15-selection-answer.md §4.2` (the 21-plugin core). It is an independent documentation-automation feature that ships docs/plugins/* and docs/examples/* — useful for repo polish but not required for the migration goal. Resume decision is at maintainer discretion.
 
 ## What's committed (010 foundation, ships now)
 
