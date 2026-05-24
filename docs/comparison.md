@@ -17,27 +17,27 @@
 
 upstream に存在する各 plugin のサブモードについて、Go 実装の対応状況です。
 
-| upstream variant                 | Go 側                  | 備考                                                                                                                                                              |
-| -------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `languages.recent`               | ✅ 比較可              | `plugin-languages-recent.svg`                                                                                                                                     |
-| `languages.indepth`              | ✅ 比較可              | `plugin-languages-indepth.svg`                                                                                                                                    |
-| `languages.details`              | ✅ 比較可              | `plugin-languages-details.svg`（本対応で追加）                                                                                                                    |
-| `achievements.compact`           | ✅ 比較可              | `plugin-achievements-compact.svg`（本対応で追加）                                                                                                                 |
-| `isocalendar.fullyear`           | ✅ 比較可              | `plugin-isocalendar-fullyear.svg`（本対応で追加）                                                                                                                 |
-| `calendar.full`                  | ◐ 対応・差分なし       | `plugin_calendar_limit=0` を受け付けるが、このサンプルデータでは無印とバイト同一                                                                                  |
-| `repositories.pinned`            | ◐ 対応・差分なし       | `plugin_repositories_pinned` を受け付けるが、このサンプルデータでは無印とバイト同一                                                                               |
-| `topics.icons`                   | ○ データ無し           | `plugin_topics_mode=icons` 対応。サンプルユーザーに topics 無しで空                                                                                               |
-| `starlists.languages`            | ○ データ無し           | `plugin_starlists_languages` 対応。サンプルユーザーにデータ無しで空                                                                                               |
-| `sponsors.full`                  | ○ データ無し           | `plugin_sponsors_sections` 対応。サンプルユーザーにデータ無しで空                                                                                                 |
-| `habits.facts` / `habits.charts` | ✗ 区別なし             | facts/charts のフラグを読まず、常に両方表示                                                                                                                       |
-| `notable.indepth`                | ◐ 対応・サンプル未生成 | `plugin_notable_indepth` 対応。indepth は `@owner/repo` 粒度のチップ + 統計ゲージを描画（gen-doc-samples の `plugin-notable-indepth` で生成。実データ要トークン） |
-| `contributors.contributions`     | ✗ 未対応               | repository context（M7 領域）                                                                                                                                     |
-| `stargazers.graph`               | ✗ 未対応               | `charts_type` 未実装で `classic` 固定                                                                                                                             |
-| `stargazers.worldmap`            | ✗ 未対応               | backlog（Google Maps API、R-012 Skipped path）                                                                                                                    |
-| `stargazers.chartist`            | ✗ 未対応               | upstream で deprecated（`graph` に統合）                                                                                                                          |
-| `people.repository`              | ✗ 未対応               | repository context は M7 領域（user mode のみ実装）                                                                                                               |
+| upstream variant                 | Go 側                   | 備考                                                                                                                |
+| -------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `languages.recent`               | ✅ 比較可               | `plugin-languages-recent.svg`                                                                                       |
+| `languages.indepth`              | ✅ 比較可               | `plugin-languages-indepth.svg`                                                                                      |
+| `languages.details`              | ✅ 比較可               | `plugin-languages-details.svg`（本対応で追加）                                                                      |
+| `achievements.compact`           | ✅ 比較可               | `plugin-achievements-compact.svg`（本対応で追加）                                                                   |
+| `isocalendar.fullyear`           | ✅ 比較可               | `plugin-isocalendar-fullyear.svg`（本対応で追加）                                                                   |
+| `calendar.full`                  | ◐ 対応・差分なし        | `plugin_calendar_limit=0` を受け付けるが、このサンプルデータでは無印とバイト同一                                    |
+| `repositories.pinned`            | ◐ 対応・差分なし        | `plugin_repositories_pinned` を受け付けるが、このサンプルデータでは無印とバイト同一                                 |
+| `topics.icons`                   | ○ データ無し            | `plugin_topics_mode=icons` 対応。サンプルユーザーに topics 無しで空                                                 |
+| `starlists.languages`            | ○ データ無し            | `plugin_starlists_languages` 対応。サンプルユーザーにデータ無しで空                                                 |
+| `sponsors.full`                  | ○ データ無し            | `plugin_sponsors_sections` 対応。サンプルユーザーにデータ無しで空                                                   |
+| `habits.facts` / `habits.charts` | ✅ 比較可               | `plugin_habits_facts` / `plugin_habits_charts` で個別トグル。`plugin-habits-facts.svg` / `plugin-habits-charts.svg` |
+| `notable.indepth`                | ✅ 比較可               | `plugin_notable_indepth` 対応。`@owner/repo` 粒度チップ + 統計ゲージ。`plugin-notable-indepth.svg`                  |
+| `contributors.contributions`     | ◐ 実装済み（repo 専用） | `plugin_contributors_contributions` 対応。repository template 専用のため user サンプルなし                          |
+| `stargazers.graph`               | ✅ 比較可               | `plugin_stargazers_charts_type=graph` 対応。`plugin-stargazers-graph.svg`                                           |
+| `stargazers.worldmap`            | ✗ 未対応                | backlog（Google Maps API、R-012 Skipped path）                                                                      |
+| `stargazers.chartist`            | ◐ graph と同一          | `charts_type=chartist` は deprecated alias。`graph` とバイト同一出力                                                |
+| `people.repository`              | ◐ 実装済み（repo 専用） | contributors/stargazers/watchers 対応。repository template 専用のため user サンプルなし                             |
 
-✅ = 左右比較可 / ◐ = Go は対応するがサンプルデータで差分なし / ○ = Go は対応するがサンプルユーザーにデータ無し（空） / ✗ = Go 実装が未対応（要実装・backlog）
+✅ = 左右比較可 / ◐ = Go は対応するがサンプル差分なし・または repository 専用 / deprecated alias でサンプル省略 / ○ = Go は対応するがサンプルユーザーにデータ無し（空） / ✗ = Go 実装が未対応（要実装・backlog）
 
 ---
 
@@ -135,7 +135,7 @@ Go 実装側は plugin 単位のサンプルのみで、テンプレート総合
 
 他バリアント (upstream): <img src="original_examples/metrics.plugin.habits.facts.svg" width="420"> (facts)
 
-> ✗ Go 側は facts / charts を個別トグルせず常に両方表示（モード分離なし）。
+> ✅ Go 側は `plugin_habits_facts` / `plugin_habits_charts` で facts / charts を個別トグル。Go サンプル: `plugin-habits-facts.svg`（facts のみ）/ `plugin-habits-charts.svg`（charts のみ）。
 
 ### stars
 
@@ -173,7 +173,7 @@ Go 実装の `plugin-people.svg` は 5.8MB のため埋め込まずリンクに�
 
 他バリアント (upstream): 📁 [people.repository (4.0 MB)](original_examples/metrics.plugin.people.repository.svg)
 
-> ✗ Go 側は user mode (followers/following) のみ実装。repository context は M7 領域。
+> ◐ Go 側は user mode (followers/following) に加え repository context types (contributors/stargazers/watchers) を実装済み。repository template 専用のため user モードの plugin 単体サンプルは生成していない。
 
 ### notable
 
@@ -183,7 +183,7 @@ Go 実装の `plugin-people.svg` は 5.8MB のため埋め込まずリンクに�
 
 他バリアント (upstream): <img src="original_examples/metrics.plugin.notable.indepth.svg" width="420"> (indepth)
 
-> ◐ Go 側は `plugin_notable_indepth` 対応済み。indepth は基本モードの組織単位 (`@org`) ではなくリポジトリ単位 (`@org/repo`) のチップを描画し、commits / stars / issues / pulls の統計ゲージを付与する（upstream `notable.ejs` と同一 DOM）。実データのサンプル SVG は `scripts/gen-doc-samples.sh` の `plugin-notable-indepth`（要 GitHub トークン）で生成。
+> ✅ Go 側は `plugin_notable_indepth` 対応済み。indepth は基本モードの組織単位 (`@org`) ではなくリポジトリ単位 (`@org/repo`) のチップを描画し、commits / stars / issues / pulls の統計ゲージを付与する（upstream `notable.ejs` と同一 DOM）。Go サンプル: `plugin-notable-indepth.svg`。
 
 ### contributors
 
@@ -195,7 +195,7 @@ upstream の出力は両バリアントとも巨大 (9.9 / 8.7 MB) のためリ�
 
 他バリアント (upstream): 📁 [contributors.contributions (8.7 MB)](original_examples/metrics.plugin.contributors.contributions.svg)
 
-> ✗ Go 側の contributors は repository template 向け（M7 領域）。`contributions` 表示モード未対応。
+> ◐ Go 側は `plugin_contributors_contributions` 対応済み（per-contributor commits / additions / deletions）。repository template 専用のため user モードの plugin 単体サンプルは生成していない。
 
 ### reactions
 
@@ -233,7 +233,7 @@ upstream の出力は両バリアントとも巨大 (9.9 / 8.7 MB) のためリ�
 
 他バリアント (upstream): <img src="original_examples/metrics.plugin.stargazers.graph.svg" width="420"> (graph) / <img src="original_examples/metrics.plugin.stargazers.chartist.svg" width="420"> (chartist) / 📁 [stargazers.worldmap (1.5 MB)](original_examples/metrics.plugin.stargazers.worldmap.svg)
 
-> ✗ Go 側は `charts_type` 未実装で `classic` 固定（graph / chartist 未対応）。worldmap は Google Maps API 必須の backlog（Skipped path）。
+> ✅ Go 側は `plugin_stargazers_charts_type=graph` 対応（`chartist` は graph の deprecated alias でバイト同一）。Go サンプル: `plugin-stargazers-graph.svg`。worldmap は Google Maps API 必須の backlog（Skipped path、未対応）。
 
 ### traffic
 
