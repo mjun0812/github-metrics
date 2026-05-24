@@ -1754,13 +1754,17 @@ func (v *ViewerNotableViewerUserRepositoriesRepositoryConnection) GetNodes() []*
 
 // ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository includes the requested fields of the GraphQL type Repository.
 type ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository struct {
-	NameWithOwner  string  `json:"nameWithOwner"`
-	Description    *string `json:"description"`
-	Url            string  `json:"url"`
-	StargazerCount int     `json:"stargazerCount"`
-	ForkCount      int     `json:"forkCount"`
-	IsFork         bool    `json:"isFork"`
-	IsPrivate      bool    `json:"isPrivate"`
+	NameWithOwner    string                                                                                                   `json:"nameWithOwner"`
+	Description      *string                                                                                                  `json:"description"`
+	Url              string                                                                                                   `json:"url"`
+	Owner            ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner                              `json:"-"`
+	StargazerCount   int                                                                                                      `json:"stargazerCount"`
+	ForkCount        int                                                                                                      `json:"forkCount"`
+	IsFork           bool                                                                                                     `json:"isFork"`
+	IsPrivate        bool                                                                                                     `json:"isPrivate"`
+	DefaultBranchRef *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef                  `json:"defaultBranchRef"`
+	Issues           *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection             `json:"issues"`
+	PullRequests     *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryPullRequestsPullRequestConnection `json:"pullRequests"`
 }
 
 // GetNameWithOwner returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.NameWithOwner, and is useful for accessing the field via an interface.
@@ -1776,6 +1780,11 @@ func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository)
 // GetUrl returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.Url, and is useful for accessing the field via an interface.
 func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) GetUrl() string {
 	return v.Url
+}
+
+// GetOwner returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.Owner, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) GetOwner() ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner {
+	return v.Owner
 }
 
 // GetStargazerCount returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.StargazerCount, and is useful for accessing the field via an interface.
@@ -1796,6 +1805,502 @@ func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository)
 // GetIsPrivate returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.IsPrivate, and is useful for accessing the field via an interface.
 func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) GetIsPrivate() bool {
 	return v.IsPrivate
+}
+
+// GetDefaultBranchRef returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.DefaultBranchRef, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) GetDefaultBranchRef() *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef {
+	return v.DefaultBranchRef
+}
+
+// GetIssues returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.Issues, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) GetIssues() *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection {
+	return v.Issues
+}
+
+// GetPullRequests returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.PullRequests, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) GetPullRequests() *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryPullRequestsPullRequestConnection {
+	return v.PullRequests
+}
+
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository
+		Owner json.RawMessage `json:"owner"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Owner
+		src := firstPass.Owner
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner(
+				src, dst,
+			)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.Owner: %w", err,
+				)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository struct {
+	NameWithOwner string `json:"nameWithOwner"`
+
+	Description *string `json:"description"`
+
+	Url string `json:"url"`
+
+	Owner json.RawMessage `json:"owner"`
+
+	StargazerCount int `json:"stargazerCount"`
+
+	ForkCount int `json:"forkCount"`
+
+	IsFork bool `json:"isFork"`
+
+	IsPrivate bool `json:"isPrivate"`
+
+	DefaultBranchRef *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef `json:"defaultBranchRef"`
+
+	Issues *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection `json:"issues"`
+
+	PullRequests *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryPullRequestsPullRequestConnection `json:"pullRequests"`
+}
+
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) __premarshalJSON() (*__premarshalViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository, error) {
+	var retval __premarshalViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository
+
+	retval.NameWithOwner = v.NameWithOwner
+	retval.Description = v.Description
+	retval.Url = v.Url
+	{
+
+		dst := &retval.Owner
+		src := v.Owner
+		var err error
+		*dst, err = __marshalViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner(
+			&src,
+		)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository.Owner: %w", err,
+			)
+		}
+	}
+	retval.StargazerCount = v.StargazerCount
+	retval.ForkCount = v.ForkCount
+	retval.IsFork = v.IsFork
+	retval.IsPrivate = v.IsPrivate
+	retval.DefaultBranchRef = v.DefaultBranchRef
+	retval.Issues = v.Issues
+	retval.PullRequests = v.PullRequests
+	return &retval, nil
+}
+
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef includes the requested fields of the GraphQL type Ref.
+type ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef struct {
+	Target *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject `json:"-"`
+}
+
+// GetTarget returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef.Target, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef) GetTarget() *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject {
+	return v.Target
+}
+
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef
+		Target json.RawMessage `json:"target"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Target
+		src := firstPass.Target
+		if len(src) != 0 && string(src) != "null" {
+			*dst = new(ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject)
+			err = __unmarshalViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject(
+				src, *dst,
+			)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef.Target: %w", err,
+				)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef struct {
+	Target json.RawMessage `json:"target"`
+}
+
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef) __premarshalJSON() (*__premarshalViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef, error) {
+	var retval __premarshalViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef
+
+	{
+
+		dst := &retval.Target
+		src := v.Target
+		if src != nil {
+			var err error
+			*dst, err = __marshalViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject(
+				src,
+			)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"unable to marshal ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef.Target: %w", err,
+				)
+			}
+		}
+	}
+	return &retval, nil
+}
+
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob includes the requested fields of the GraphQL type Blob.
+type ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob struct {
+	Typename *string `json:"__typename"`
+}
+
+// GetTypename returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob.Typename, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob) GetTypename() *string {
+	return v.Typename
+}
+
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit includes the requested fields of the GraphQL type Commit.
+type ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit struct {
+	Typename *string                                                                                                                           `json:"__typename"`
+	History  *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommitHistoryCommitHistoryConnection `json:"history"`
+}
+
+// GetTypename returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit.Typename, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit) GetTypename() *string {
+	return v.Typename
+}
+
+// GetHistory returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit.History, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit) GetHistory() *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommitHistoryCommitHistoryConnection {
+	return v.History
+}
+
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommitHistoryCommitHistoryConnection includes the requested fields of the GraphQL type CommitHistoryConnection.
+type ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommitHistoryCommitHistoryConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommitHistoryCommitHistoryConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommitHistoryCommitHistoryConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject includes the requested fields of the GraphQL interface GitObject.
+//
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject is implemented by the following types:
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree
+type ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject interface {
+	implementsGraphQLInterfaceViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() *string
+}
+
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob) implementsGraphQLInterfaceViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
+}
+
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit) implementsGraphQLInterfaceViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
+}
+
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag) implementsGraphQLInterfaceViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
+}
+
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree) implementsGraphQLInterfaceViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
+}
+
+func __unmarshalViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject(b []byte, v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "Blob":
+		*v = new(ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob)
+		return json.Unmarshal(b, *v)
+	case "Commit":
+		*v = new(ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit)
+		return json.Unmarshal(b, *v)
+	case "Tag":
+		*v = new(ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag)
+		return json.Unmarshal(b, *v)
+	case "Tree":
+		*v = new(ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing GitObject.__typename",
+		)
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject: "%v"`, tn.TypeName,
+		)
+	}
+}
+
+func __marshalViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject(v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject) ([]byte, error) {
+	var typename string
+	switch v := (*v).(type) {
+	case *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob:
+		typename = "Blob"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob
+		}{typename, v}
+		return json.Marshal(result)
+	case *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit:
+		typename = "Commit"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit
+		}{typename, v}
+		return json.Marshal(result)
+	case *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag:
+		typename = "Tag"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag
+		}{typename, v}
+		return json.Marshal(result)
+	case *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree:
+		typename = "Tree"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject: "%T"`, v,
+		)
+	}
+}
+
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag includes the requested fields of the GraphQL type Tag.
+type ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag struct {
+	Typename *string `json:"__typename"`
+}
+
+// GetTypename returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag.Typename, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag) GetTypename() *string {
+	return v.Typename
+}
+
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree includes the requested fields of the GraphQL type Tree.
+type ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree struct {
+	Typename *string `json:"__typename"`
+}
+
+// GetTypename returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree.Typename, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree) GetTypename() *string {
+	return v.Typename
+}
+
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection includes the requested fields of the GraphQL type IssueConnection.
+type ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner includes the requested fields of the GraphQL interface RepositoryOwner.
+//
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner is implemented by the following types:
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerOrganization
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerUser
+type ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner interface {
+	implementsGraphQLInterfaceViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() *string
+	// GetLogin returns the interface-field "login" from its implementation.
+	GetLogin() string
+	// GetAvatarUrl returns the interface-field "avatarUrl" from its implementation.
+	GetAvatarUrl() string
+}
+
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerOrganization) implementsGraphQLInterfaceViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner() {
+}
+
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerUser) implementsGraphQLInterfaceViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner() {
+}
+
+func __unmarshalViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner(b []byte, v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "Organization":
+		*v = new(ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerOrganization)
+		return json.Unmarshal(b, *v)
+	case "User":
+		*v = new(ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerUser)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing RepositoryOwner.__typename",
+		)
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner: "%v"`, tn.TypeName,
+		)
+	}
+}
+
+func __marshalViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner(v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner) ([]byte, error) {
+	var typename string
+	switch v := (*v).(type) {
+	case *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerOrganization:
+		typename = "Organization"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerOrganization
+		}{typename, v}
+		return json.Marshal(result)
+	case *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerUser:
+		typename = "User"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerUser
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwner: "%T"`, v,
+		)
+	}
+}
+
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerOrganization includes the requested fields of the GraphQL type Organization.
+type ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerOrganization struct {
+	Typename  *string `json:"__typename"`
+	Login     string  `json:"login"`
+	AvatarUrl string  `json:"avatarUrl"`
+}
+
+// GetTypename returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerOrganization.Typename, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerOrganization) GetTypename() *string {
+	return v.Typename
+}
+
+// GetLogin returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerOrganization.Login, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerOrganization) GetLogin() string {
+	return v.Login
+}
+
+// GetAvatarUrl returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerOrganization.AvatarUrl, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerOrganization) GetAvatarUrl() string {
+	return v.AvatarUrl
+}
+
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerUser includes the requested fields of the GraphQL type User.
+type ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerUser struct {
+	Typename  *string `json:"__typename"`
+	Login     string  `json:"login"`
+	AvatarUrl string  `json:"avatarUrl"`
+}
+
+// GetTypename returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerUser.Typename, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerUser) GetTypename() *string {
+	return v.Typename
+}
+
+// GetLogin returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerUser.Login, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerUser) GetLogin() string {
+	return v.Login
+}
+
+// GetAvatarUrl returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerUser.AvatarUrl, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryOwnerUser) GetAvatarUrl() string {
+	return v.AvatarUrl
+}
+
+// ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryPullRequestsPullRequestConnection includes the requested fields of the GraphQL type PullRequestConnection.
+type ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryPullRequestsPullRequestConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryPullRequestsPullRequestConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepositoryPullRequestsPullRequestConnection) GetTotalCount() int {
+	return v.TotalCount
 }
 
 // ViewerPinnedItemsResponse is returned by ViewerPinnedItems on success.
@@ -3822,10 +4327,31 @@ query ViewerNotable ($first: Int!) {
 				nameWithOwner
 				description
 				url
+				owner {
+					__typename
+					login
+					avatarUrl(size: 64)
+				}
 				stargazerCount
 				forkCount
 				isFork
 				isPrivate
+				defaultBranchRef {
+					target {
+						__typename
+						... on Commit {
+							history(first: 0) {
+								totalCount
+							}
+						}
+					}
+				}
+				issues {
+					totalCount
+				}
+				pullRequests {
+					totalCount
+				}
 			}
 		}
 	}

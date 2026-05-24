@@ -136,10 +136,17 @@ echo "== other upstream-parity sub-mode variants =="
 #       plugin for this sample user's data.
 #   - topics.icons, starlists.languages, sponsors.full
 #       sample user has no data, so the card renders empty.
-#   - achievements.compact, habits.facts/charts, notable.indepth,
+#   - achievements.compact, habits.facts/charts,
 #     contributors.contributions, stargazers.graph/worldmap/chartist,
 #     people.repository
 #       not yet supported by the Go implementation (needs plugin work).
+render_one "plugin-notable-indepth" \
+  --template classic \
+  --plugin "base=" \
+  --plugin "plugin_notable=yes" \
+  --plugin "plugin_notable_indepth=yes" \
+  --plugin "plugin_notable_repositories=yes"
+
 render_one "plugin-languages-details" \
   --template classic \
   --plugin "base=" \
@@ -155,9 +162,9 @@ render_one "plugin-isocalendar-fullyear" \
 echo
 echo "== Summary =="
 # 2 formats (svg + png) per logical sample.
-# +2 languages sub-modes (recent, indepth) +2 parity variants
-# (languages.details, isocalendar.fullyear).
-TOTAL=$(( (${#PLUGINS[@]} + 2 + 2) * 2 ))
+# +2 languages sub-modes (recent, indepth) +3 parity variants
+# (notable.indepth, languages.details, isocalendar.fullyear).
+TOTAL=$(( (${#PLUGINS[@]} + 2 + 3) * 2 ))
 OK=$((TOTAL - ${#FAILURES[@]}))
 echo "  OK:   ${OK}/${TOTAL}"
 if (( ${#FAILURES[@]} > 0 )); then

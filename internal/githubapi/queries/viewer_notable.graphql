@@ -10,10 +10,30 @@ query ViewerNotable($first: Int!) {
         nameWithOwner
         description
         url
+        owner {
+          login
+          avatarUrl(size: 64)
+        }
         stargazerCount
         forkCount
         isFork
         isPrivate
+        defaultBranchRef {
+          target {
+            __typename
+            ... on Commit {
+              history(first: 0) {
+                totalCount
+              }
+            }
+          }
+        }
+        issues {
+          totalCount
+        }
+        pullRequests {
+          totalCount
+        }
       }
     }
   }

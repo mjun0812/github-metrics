@@ -1,0 +1,21 @@
+{
+  "list": [
+    {
+      "name": "octocat/hello-world",
+      "avatar": "https://avatars.githubusercontent.com/u/583231?v=4",
+      "login": "octocat",
+      "repo": "octocat/hello-world",
+      "title": "octocat/hello-world",
+      "type": "owner",
+      "indepth": true,
+      "description": "Demo repository",
+      "stargazerCount": 80,
+      "forkCount": 9,
+      "commits": 42,
+      "issues": 3,
+      "pulls": 2,
+      "maintainer": true,
+      "percentage": 1
+    }
+  ]
+}
