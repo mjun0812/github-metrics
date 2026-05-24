@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/habits"
+	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
 var updateGolden = flag.Bool("update", false, "update golden files")
@@ -123,6 +123,59 @@ func TestRun_CommitsPerDay(t *testing.T) {
 	}
 }
 
+func TestRun_DefaultSectionToggles(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 5, 15, 14, 30, 0, 0, time.UTC)
+	body := `[` + ev("PushEvent", now) + `]`
+	pc := pcWith(t, body, nil)
+	out, _ := habits.Plugin.Run(context.Background(), pc)
+	r := out.(*habits.Result)
+	if !r.FactsEnabled {
+		t.Errorf("FactsEnabled = false, want true")
+	}
+	if !r.ChartsEnabled {
+		t.Errorf("ChartsEnabled = false, want true")
+	}
+}
+
+func TestRun_SectionTogglesReadInputs(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 5, 15, 14, 30, 0, 0, time.UTC)
+	body := `[` + ev("PushEvent", now) + `]`
+	for _, tc := range []struct {
+		name       string
+		inputs     map[string]any
+		wantFacts  bool
+		wantCharts bool
+	}{
+		{
+			name:       "facts yes charts no",
+			inputs:     map[string]any{"plugin_habits_facts": "yes", "plugin_habits_charts": "no"},
+			wantFacts:  true,
+			wantCharts: false,
+		},
+		{
+			name:       "facts no charts yes",
+			inputs:     map[string]any{"plugin_habits_facts": "no", "plugin_habits_charts": "yes"},
+			wantFacts:  false,
+			wantCharts: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			pc := pcWith(t, body, tc.inputs)
+			out, _ := habits.Plugin.Run(context.Background(), pc)
+			r := out.(*habits.Result)
+			if r.FactsEnabled != tc.wantFacts {
+				t.Errorf("FactsEnabled = %v, want %v", r.FactsEnabled, tc.wantFacts)
+			}
+			if r.ChartsEnabled != tc.wantCharts {
+				t.Errorf("ChartsEnabled = %v, want %v", r.ChartsEnabled, tc.wantCharts)
+			}
+		})
+	}
+}
+
 func TestRun_NilREST_Skipped(t *testing.T) {
 	t.Parallel()
 	pc := &plugins.PluginContext{
@@ -134,14 +187,22 @@ func TestRun_NilREST_Skipped(t *testing.T) {
 	if !r.Skipped {
 		t.Errorf("nil REST should yield Skipped")
 	}
+	if !r.FactsEnabled {
+		t.Errorf("FactsEnabled = false, want true")
+	}
+	if !r.ChartsEnabled {
+		t.Errorf("ChartsEnabled = false, want true")
+	}
 }
 
 func TestRun_GoldenShape(t *testing.T) {
 	r := &habits.Result{
-		Days:   14,
-		Facts:  habits.HabitFacts{IndentStyle: "spaces", CommitsPerDay: 1.5},
-		Charts: habits.HabitCharts{Hours: [24]int{}, Days: [7]int{2, 1, 3, 1, 0, 4, 2}},
-		From:   200,
+		Days:          14,
+		FactsEnabled:  true,
+		ChartsEnabled: true,
+		Facts:         habits.HabitFacts{IndentStyle: "spaces", CommitsPerDay: 1.5},
+		Charts:        habits.HabitCharts{Hours: [24]int{}, Days: [7]int{2, 1, 3, 1, 0, 4, 2}},
+		From:          200,
 	}
 	got, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
@@ -163,6 +224,110 @@ func TestRun_GoldenShape(t *testing.T) {
 	if string(want) != string(got) {
 		t.Fatalf("golden mismatch\nwant:\n%s\ngot:\n%s", string(want), string(got))
 	}
-	_ = http.MethodGet
-	_ = strings.Contains
+}
+
+func fixedPartialResult() *habits.Result {
+	return &habits.Result{
+		Days:          14,
+		FactsEnabled:  true,
+		ChartsEnabled: true,
+		Facts: habits.HabitFacts{
+			IndentStyle:   "spaces",
+			CharsPerLine:  82.5,
+			CommitsPerDay: 1.5,
+		},
+		Charts: habits.HabitCharts{
+			Hours: [24]int{
+				0, 0, 0, 0, 0, 0,
+				1, 2, 4, 6, 3, 1,
+				0, 1, 3, 5, 2, 1,
+				0, 0, 0, 0, 0, 0,
+			},
+			Days: [7]int{2, 1, 3, 1, 0, 4, 2},
+		},
+		From: 200,
+	}
+}
+
+func renderPartial(t *testing.T, r *habits.Result) string {
+	t.Helper()
+	data := plugins.NewData()
+	data.SetPlugin(habits.Name, r)
+	got, err := habits.Partial(context.Background(), &templates.PartialContext{Data: data})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	return got
+}
+
+func assertPartialGolden(t *testing.T, name, got string) {
+	t.Helper()
+	gp := filepath.Join(repoRoot(t), "tests", "golden", "classic", "m4", name)
+	if *updateGolden {
+		if werr := os.MkdirAll(filepath.Dir(gp), 0o755); werr != nil {
+			t.Fatalf("MkdirAll: %v", werr)
+		}
+		if werr := os.WriteFile(gp, []byte(got), 0o644); werr != nil {
+			t.Fatalf("WriteFile: %v", werr)
+		}
+		return
+	}
+	want, err := os.ReadFile(gp)
+	if err != nil {
+		t.Fatalf("ReadFile %s: %v (run with -update)", gp, err)
+	}
+	if string(want) != got {
+		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
+	}
+}
+
+func TestPartial_Habits_FactsOnly_Golden(t *testing.T) {
+	r := fixedPartialResult()
+	r.FactsEnabled = true
+	r.ChartsEnabled = false
+	got := renderPartial(t, r)
+	assertPartialGolden(t, "habits_facts_only.svg", got)
+	for _, marker := range []string{
+		`Recent coding habits`,
+		`<ul class="facts">`,
+		`Mostly active on Fri`,
+	} {
+		if !strings.Contains(got, marker) {
+			t.Errorf("facts-only partial missing marker %q in:\n%s", marker, got)
+		}
+	}
+	for _, marker := range []string{
+		`Commit activity per hour of day`,
+		`Commit activity per day of week`,
+		`class="chart-bars"`,
+	} {
+		if strings.Contains(got, marker) {
+			t.Errorf("facts-only partial unexpectedly contains marker %q in:\n%s", marker, got)
+		}
+	}
+}
+
+func TestPartial_Habits_ChartsOnly_Golden(t *testing.T) {
+	r := fixedPartialResult()
+	r.FactsEnabled = false
+	r.ChartsEnabled = true
+	got := renderPartial(t, r)
+	assertPartialGolden(t, "habits_charts_only.svg", got)
+	for _, marker := range []string{
+		`Commit activity per hour of day`,
+		`Commit activity per day of week`,
+		`class="chart-bars"`,
+	} {
+		if !strings.Contains(got, marker) {
+			t.Errorf("charts-only partial missing marker %q in:\n%s", marker, got)
+		}
+	}
+	for _, marker := range []string{
+		`Recent coding habits`,
+		`<ul class="facts">`,
+	} {
+		if strings.Contains(got, marker) {
+			t.Errorf("charts-only partial unexpectedly contains marker %q in:\n%s", marker, got)
+		}
+	}
 }
