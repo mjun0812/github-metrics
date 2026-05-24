@@ -14,7 +14,7 @@ import (
 // dispatchOutput routes Request.Format through the right marshaller
 // and returns the (Output, MIME) pair Compute records in Result.
 //
-// Behavior (see specs/003-chromedp-rendering-pipeline/contracts/render-pipeline.md):
+// Behavior:
 //
 //   - empty Format: defaults to Template.Metadata().Formats[0] when a
 //     template is registered; "json" otherwise.

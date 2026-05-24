@@ -14,8 +14,6 @@ import (
 )
 
 // Plugin is the contract every github-metrics data source implements.
-// See specs/001-project-foundation/contracts/plugin-interface.md §1
-// for the authoritative description.
 type Plugin interface {
 	Name() string
 	Metadata() *config.PluginMetadata
@@ -38,8 +36,7 @@ type PluginContext struct {
 	// Render carries the engine's renderer. P3 chromedp-dependent
 	// plugins (topics / starlists) type-assert this to `*render.Browser`
 	// to obtain a navigation surface; the type assertion failing (nil
-	// or *render.FakeRenderer) is the documented skip path per
-	// specs/004-m4-github-plugins/contracts/plugin-p3-heavy.md §3.4.
+	// or *render.FakeRenderer) is the documented skip path.
 	Render render.Renderer
 }
 

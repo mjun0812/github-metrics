@@ -17,7 +17,7 @@ import (
 // (M6 T-114): two SVGs whose DOM differs only in the footer
 // (timezone / version / generated time) MUST hash identically.
 //
-// Contract (specs/003-chromedp-rendering-pipeline/contracts/svg-hash.md):
+// Edge cases:
 //
 //   - Whitespace-only or empty input → ("", nil)
 //   - Document without an <svg> root → ("", *xerrors.InputError)

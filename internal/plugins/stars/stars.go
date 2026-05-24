@@ -1,9 +1,6 @@
 // Package stars owns the M4 "stars" plugin. It fetches the user's
 // most-recently starred repositories via GraphQL
 // `user.starredRepositories(orderBy: STARRED_AT)`.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p2-graphql.md §3
-// Data model: specs/004-m4-github-plugins/data-model.md E-022
 package stars
 
 import (

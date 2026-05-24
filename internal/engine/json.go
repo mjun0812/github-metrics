@@ -12,8 +12,7 @@ import (
 )
 
 // Marshal serializes the populated Data structure into the upstream-
-// compatible JSON shape declared in
-// specs/002-output-classic-json/contracts/json-output.md.
+// compatible JSON shape.
 //
 // The wire format mirrors upstream lowlighter/metrics output keys
 // (account, user, config, computed, plugins, errors) while normalizing

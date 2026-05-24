@@ -4,9 +4,6 @@
 // GraphQL fetch is deferred — the scope-gate path is wired and tests
 // exercise it, but a real `user.projects` GraphQL query lands as a
 // follow-up.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p2-graphql.md §8
-// Data model: specs/004-m4-github-plugins/data-model.md E-029
 package projects
 
 import (

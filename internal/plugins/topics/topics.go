@@ -2,9 +2,6 @@
 // starred-topics page via chromedp because the GitHub API does not
 // expose the dataset directly.
 //
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p3-heavy.md §3
-// Data model: specs/004-m4-github-plugins/data-model.md E-023
-//
 // The runtime keeps the chromedp surface behind a small Navigator
 // interface so non-chromedp tests can exercise the skipped/short-circuit
 // paths without launching chromium. The chromedp-tagged tests substitute

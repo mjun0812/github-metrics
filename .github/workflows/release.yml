@@ -22,14 +22,8 @@ name: Release
 # and cosign signing. Artifacts are uploaded as workflow artifacts
 # with 7-day retention for manual inspection.
 #
-# Source of truth:
-#   - specs/008-m10-release-distribution/contracts/release-workflow.md
-#   - specs/008-m10-release-distribution/contracts/dockerfile.md
-#   - specs/008-m10-release-distribution/research.md R-001 (cosign)
-#     and R-002 (buildx + QEMU).
-# Originally configured per M6 spec clarifications Q1 (GHCR + semver)
-# and Q2 (GitHub Releases + go install); see
-# specs/005-m6-action-cli/spec.md.
+# Distribution targets: GHCR (semver tags) and GitHub Releases
+# (go install).
 
 on:
   push:
@@ -334,8 +328,6 @@ jobs:
           #   - missing release   → `gh release create … --generate-notes` with
           #     all 20 artifacts attached in one shot (4 binaries + SHA256SUMS +
           #     per-artifact .sig / .cert / .cosign.bundle)
-          #
-          # See specs/009-release-tag-automation/contracts/release-workflow-delta.md §1.
           if gh release view "${TAG}" >/dev/null 2>&1; then
             echo "Release ${TAG} already exists — uploading via --clobber"
             gh release upload "${TAG}" * --clobber

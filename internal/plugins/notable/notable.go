@@ -3,9 +3,6 @@
 // signals; that traversal requires a dedicated GraphQL query that
 // lands in a follow-up. The M4 MVP wires the Result type so consumers
 // see the slot but returns Skipped=true with a deferred-reason note.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p2-graphql.md §5
-// Data model: specs/004-m4-github-plugins/data-model.md E-026
 package notable
 
 import (

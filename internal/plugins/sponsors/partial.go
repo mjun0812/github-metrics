@@ -75,7 +75,6 @@ func containsString(slice []string, s string) bool {
 //	  </section>
 //	</section>
 //
-// Spec: specs/011-plugin-rendering-parity/PLAN_V2_MJUN0812_FOCUS.md §4 (sponsors)
 // Settings: mjun0812 uses plugin_sponsors_sections: goal, about, list +
 // plugin_sponsors_past: yes.
 func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {

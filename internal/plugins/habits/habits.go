@@ -4,9 +4,6 @@
 // chars per line) — the M4 MVP wires the day/hour histograms from
 // PushEvents only, and exposes the input surface for the diff-based
 // facts as a follow-up (commit-diff fetching lands alongside US3).
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p2-graphql.md §2
-// Data model: specs/004-m4-github-plugins/data-model.md E-021
 package habits
 
 import (

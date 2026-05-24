@@ -2,9 +2,6 @@
 // contract this plugin targets the repository-template account kind,
 // which M4 does not yet support (M7 territory). In M4 it always
 // returns Skipped=true with an explanatory reason.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p2-graphql.md §6
-// Data model: specs/004-m4-github-plugins/data-model.md E-027
 package contributors
 
 import (

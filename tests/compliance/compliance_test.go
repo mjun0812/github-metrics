@@ -211,8 +211,7 @@ func TestNoRemovedSentinelComments(t *testing.T) {
 	}
 }
 
-// adoptedM4Plugins is the canonical 21-plugin list M4 ships. Mirrors
-// FR-018 + specs/004-m4-github-plugins/contracts/plugin-*.md. Each
+// adoptedM4Plugins is the canonical 21-plugin list M4 ships. Each
 // entry corresponds to a subdirectory under internal/plugins/ that
 // MUST exist after M4. Two entries — `languages.recent` and
 // `languages.indepth` — are sub-modes of the `languages` plugin and
@@ -507,9 +506,6 @@ func TestCompliance_M6_NoNewPlugins(t *testing.T) {
 // per-phase M4 / M7 invariants into one explicit M10 epoch gate so a
 // silent regression (e.g. someone copies an M8 plugin into the tree
 // alongside a Dockerfile change) is surfaced as an M10 failure.
-//
-// Source: specs/008-m10-release-distribution/spec.md FR-010 +
-// plan.md Constitution Check III.
 func TestCompliance_M10_PluginTemplateInvariant(t *testing.T) {
 	root := mustRepoRoot(t)
 

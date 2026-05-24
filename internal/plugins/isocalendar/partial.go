@@ -70,7 +70,6 @@ func pluralS(n int) string {
 //	  </section>
 //	</section>
 //
-// Spec: specs/011-plugin-rendering-parity/PLAN_V2_MJUN0812_FOCUS.md §1 (isocalendar)
 // Settings: mjun0812 uses plugin_isocalendar: yes, plugin_isocalendar_duration: full-year.
 func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil {

@@ -18,8 +18,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
-// Template is the contract every renderer implements. See
-// specs/001-project-foundation/contracts/template-interface.md §1.
+// Template is the contract every renderer implements.
 type Template interface {
 	Name() string
 	Metadata() *config.TemplateMetadata

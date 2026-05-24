@@ -14,7 +14,6 @@
 //
 // The repository-account branch (templates that target a single
 // repository) is M7 territory and currently returns (nil, nil).
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-base-extension.md.
 package base
 
 import (
@@ -44,8 +43,7 @@ func (p *basePlugin) Metadata() *config.PluginMetadata { return nil }
 // data.Organization and data.Computed.{Repositories, RepositoryList,
 // ContributionCalendar, TotalCommits / Issues / PullRequests} from the
 // GraphQL client. The full upstream-compatible behavior (batch-halving
-// paging, organization branch, indepth augmentation) lands with M4 per
-// specs/004-m4-github-plugins/contracts/plugin-base-extension.md.
+// paging, organization branch, indepth augmentation) lands with M4.
 func (p *basePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, fmt.Errorf("base: nil PluginContext or Data")

@@ -1,8 +1,5 @@
 # golangci-lint configuration for github-metrics (v2 schema).
 #
-# Rationale for individual entries is in
-# specs/001-project-foundation/research.md §R-008.
-#
 # Run locally with `make lint` or via the pre-commit hook
 # (.pre-commit-config.yaml). Keep this file in sync with the
 # .github/workflows/go-ci.yml pin so local and CI verdicts match.

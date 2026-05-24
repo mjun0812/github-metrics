@@ -8,8 +8,6 @@
 // pass, breaking idempotency. The two regex masks below are
 // sufficient — the rendering pipeline (templates + chromedp resize)
 // is otherwise deterministic for a fixed input.
-//
-// Contract: specs/010-docs-plugin-gallery/contracts/sample-generation.md §5
 package main
 
 import (

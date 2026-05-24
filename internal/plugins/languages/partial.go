@@ -69,9 +69,6 @@ func pluralS(n int) string {
 //	  </section>]
 //	  [<g class="languages-indepth">...]                  ← wrapped in <svg> for visibility
 //	</section>
-//
-// Spec: specs/011-plugin-rendering-parity/spec.md FR-001..FR-003
-// Parity checklist: specs/011-plugin-rendering-parity/plugins/languages.md
 func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil {
 		return "", nil

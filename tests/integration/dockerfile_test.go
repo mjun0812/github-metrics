@@ -3,8 +3,7 @@
 // Package integration_test docker_smoke verifies the M10 production
 // Dockerfile at deploy/Dockerfile. The test builds the image,
 // invokes `metrics-action --help` inside a container, and asserts
-// the M10 image-size budget per
-// specs/008-m10-release-distribution/contracts/dockerfile.md §5.
+// the M10 image-size budget.
 //
 // Gated by the `docker_smoke` build tag so default `make test` skips
 // it (chromium + apt install is slow, and not every contributor has

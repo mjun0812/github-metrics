@@ -1,24 +1,3 @@
-<!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan:
-
-- Active plan: [specs/013-unwired-graphql-data/plan.md](specs/013-unwired-graphql-data/plan.md)
-- Feature spec: [specs/013-unwired-graphql-data/spec.md](specs/013-unwired-graphql-data/spec.md)
-- 012 baseline (merged #384): [specs/012-rest-data-fetch/spec.md](specs/012-rest-data-fetch/spec.md)
-- 011 baseline (merged #383): [specs/011-plugin-rendering-parity/plan.md](specs/011-plugin-rendering-parity/plan.md)
-- 010 (paused, blocker resolved by 011): [specs/010-docs-plugin-gallery/BLOCKED.md](specs/010-docs-plugin-gallery/BLOCKED.md)
-- 009 baseline (completed): [specs/009-release-tag-automation/plan.md](specs/009-release-tag-automation/plan.md)
-- M10 baseline (completed): [specs/008-m10-release-distribution/plan.md](specs/008-m10-release-distribution/plan.md)
-- M9 baseline (completed): [specs/007-m9-test-infrastructure/plan.md](specs/007-m9-test-infrastructure/plan.md)
-- M7 baseline (completed): [specs/006-m7-repository-template/plan.md](specs/006-m7-repository-template/plan.md)
-- M6 baseline (completed): [specs/005-m6-action-cli/plan.md](specs/005-m6-action-cli/plan.md)
-- M4 baseline (completed): [specs/004-m4-github-plugins/plan.md](specs/004-m4-github-plugins/plan.md)
-- M3 baseline (completed): [specs/003-chromedp-rendering-pipeline/plan.md](specs/003-chromedp-rendering-pipeline/plan.md)
-- M2 baseline (completed): [specs/002-output-classic-json/plan.md](specs/002-output-classic-json/plan.md)
-- M1 baseline (completed): [specs/001-project-foundation/plan.md](specs/001-project-foundation/plan.md)
-- Project constitution: [.specify/memory/constitution.md](.specify/memory/constitution.md)
-<!-- SPECKIT END -->
-
 ## Adopted MVP scope (DO NOT DEVIATE)
 
 本プロジェクトは upstream `lowlighter/metrics` の **subset** のみを採用しています。

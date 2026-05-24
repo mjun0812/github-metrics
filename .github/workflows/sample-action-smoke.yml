@@ -3,8 +3,7 @@ name: Sample (post-release smoke)
 # Post-release smoke verification for `uses: mjun0812/github-metrics@v1.0.0`.
 # Triggered manually by maintainers after publishing a release; not on a
 # schedule and not auto-triggered. Runs the published Action on both x86
-# and arm64 hosted runners and asserts both jobs complete within 90s
-# per specs/008-m10-release-distribution/spec.md SC-006.
+# and arm64 hosted runners and asserts both jobs complete within 90s.
 #
 # The two jobs use --dryrun so they do not need write access to anything;
 # they just exercise the metrics-action binary inside the published GHCR

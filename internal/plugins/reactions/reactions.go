@@ -3,9 +3,6 @@
 // Upstream also covers discussion comments — that arm lands as a
 // follow-up since GitHub's discussion API surface requires additional
 // scopes and a separate query.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p2-graphql.md §7
-// Data model: specs/004-m4-github-plugins/data-model.md E-028
 package reactions
 
 import (

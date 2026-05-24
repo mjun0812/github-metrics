@@ -157,11 +157,10 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 	}
 
 	// M4 plugin partial dispatcher
-	// Contract: specs/004-m4-github-plugins/contracts/partial-classic-m4.md §3
 	//
 	// Walks partials.PluginPartialOrder, applying the truthy gate, the
-	// Skipped check, and the Lookup miss tolerance described in the
-	// contract. Each non-empty fragment is wrapped in
+	// Skipped check, and the Lookup miss tolerance. Each non-empty
+	// fragment is wrapped in
 	//   <div class="plugin-<slug>" data-plugin="<slug>">...</div>
 	// so downstream DOM diffing (data-changed mode, M6) can locate each
 	// plugin's output unambiguously.

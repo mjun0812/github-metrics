@@ -84,9 +84,9 @@ func isPlainSlug(s string) bool {
 	return true
 }
 
-// TestRenderPluginPage_HasRequiredSections enforces the contract from
-// `specs/010-docs-plugin-gallery/contracts/plugin-doc-template.md` §4:
-// the 3 AUTOGEN sections + a `## サンプル出力` heading must appear.
+// TestRenderPluginPage_HasRequiredSections enforces that the rendered
+// plugin page contains the 3 AUTOGEN sections + a `## サンプル出力`
+// heading.
 func TestRenderPluginPage_HasRequiredSections(t *testing.T) {
 	t.Parallel()
 	meta := pluginMetadata{

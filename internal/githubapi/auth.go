@@ -1,7 +1,5 @@
 // Package githubapi wraps GitHub REST and GraphQL access, the rate
-// tracker, and the MOCKED_TOKEN safety guard. See
-// specs/001-project-foundation/contracts/github-api.md for the
-// authoritative shape of each exported type.
+// tracker, and the MOCKED_TOKEN safety guard.
 package githubapi
 
 import (

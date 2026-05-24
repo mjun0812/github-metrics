@@ -12,9 +12,7 @@
 // the golden, the visual test automatically picks up the new bytes —
 // no separate test fixture maintenance.
 //
-// Spec: specs/011-plugin-rendering-parity/spec.md FR-004 + FR-005
-// Contract: specs/011-plugin-rendering-parity/contracts/visual-test-shape.md
-// Clarifications: Q3 (3-retry flake absorption), Q5 (CI strict mode)
+// Behavior notes: 3-retry flake absorption and CI strict mode.
 package visual
 
 import (
