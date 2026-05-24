@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/people"
 	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
@@ -96,6 +97,44 @@ func TestRun_NilRepo_StillEmitsSkeleton(t *testing.T) {
 	// Partials are nil-safe; the SVG envelope still emits.
 	if !strings.HasPrefix(out, `<svg`) || !strings.HasSuffix(out, `</svg>`) {
 		t.Errorf("Run output not a valid SVG skeleton; got %s", truncate(out, 200))
+	}
+}
+
+func TestRun_RepositoryPeopleCard(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	d.Account = plugins.AccountRepository
+	d.Repo = &plugins.Repo{Owner: "octocat", Name: "hello-world"}
+	d.SetPlugin("people", &people.Result{
+		Mode: plugins.ModeRepo,
+		Types: map[string][]people.Person{
+			"contributors": {{Login: "alice", AvatarURL: "https://avatars.example/alice.png"}},
+			"stargazers":   {{Login: "bob", AvatarURL: "https://avatars.example/bob.png"}},
+			"watchers":     {{Login: "carol", AvatarURL: "https://avatars.example/carol.png"}},
+		},
+	})
+	pc := &templates.PartialContext{
+		Data:   d,
+		Inputs: map[string]any{"repo": "hello-world"},
+	}
+
+	out, err := Template.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, must := range []string{
+		`data-section="people"`,
+		`data-type="contributors"`,
+		`1 contributor`,
+		`1 stargazer`,
+		`1 watcher`,
+		`https://avatars.example/alice.png`,
+		`https://avatars.example/bob.png`,
+		`https://avatars.example/carol.png`,
+	} {
+		if !strings.Contains(out, must) {
+			t.Errorf("Run output missing %q\nfull (truncated): %s", must, truncate(out, 600))
+		}
 	}
 }
 
