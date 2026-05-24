@@ -1,6 +1,6 @@
 // Command gen-plugin-docs emits per-plugin markdown pages under
-// docs/plugins/ and refreshes the hero + plugins-gallery AUTOGEN
-// blocks inside README.md. Each page mixes auto-generated zones
+// docs/plugins/ and refreshes the plugins-gallery AUTOGEN block
+// inside README.md. Each page mixes auto-generated zones
 // (regenerated on every run) and human-authored zones (preserved
 // byte-identical when the markers are intact).
 //
@@ -334,20 +334,17 @@ func isTODOPlaceholder(s string) bool {
 	return strings.HasPrefix(s, "<!-- TODO:") && strings.HasSuffix(s, "-->")
 }
 
-// ---------- README hero + gallery ----------
+// ---------- README plugins-gallery ----------
 
 var (
-	heroMarkerStart    = "<!-- AUTOGEN_START: hero -->"
-	heroMarkerEnd      = "<!-- AUTOGEN_END: hero -->"
 	galleryMarkerStart = "<!-- AUTOGEN_START: plugins-gallery -->"
 	galleryMarkerEnd   = "<!-- AUTOGEN_END: plugins-gallery -->"
-	heroBlockRe        = regexp.MustCompile(`(?s)` + regexp.QuoteMeta(heroMarkerStart) + `.*?` + regexp.QuoteMeta(heroMarkerEnd))
 	galleryBlockRe     = regexp.MustCompile(`(?s)` + regexp.QuoteMeta(galleryMarkerStart) + `.*?` + regexp.QuoteMeta(galleryMarkerEnd))
 )
 
-// updateReadme rewrites the hero and gallery AUTOGEN blocks in the
-// repo's README.md. If a block is missing, it is inserted at the
-// canonical anchor.
+// updateReadme rewrites the plugins-gallery AUTOGEN block in the repo's
+// README.md. If the block is missing, it is inserted at the canonical
+// anchor.
 func updateReadme(root string) error {
 	path := filepath.Join(root, "README.md")
 	raw, err := os.ReadFile(path) //nolint:gosec // operator-controlled paths inside the project tree
@@ -355,10 +352,9 @@ func updateReadme(root string) error {
 		return fmt.Errorf("read README.md: %w", err)
 	}
 
-	hero := renderHero()
 	gallery := renderGallery()
 
-	updated, err := mergeReadme(string(raw), hero, gallery)
+	updated, err := mergeReadme(string(raw), gallery)
 	if err != nil {
 		return err
 	}
@@ -368,22 +364,7 @@ func updateReadme(root string) error {
 	return os.WriteFile(path, []byte(updated), 0o600) //nolint:gosec // operator-controlled README path
 }
 
-func mergeReadme(content, hero, gallery string) (string, error) {
-	// Hero block.
-	if heroBlockRe.MatchString(content) {
-		content = heroBlockRe.ReplaceAllStringFunc(content, func(_ string) string { return hero })
-	} else {
-		// Insert immediately after the project description (after the
-		// first paragraph that follows the badges block — anchored on
-		// the literal "---\n\n## Highlights" header).
-		anchor := "\n---\n\n## Highlights"
-		idx := strings.Index(content, anchor)
-		if idx < 0 {
-			return "", fmt.Errorf("README hero anchor (%q) not found", "---\\n\\n## Highlights")
-		}
-		content = content[:idx+1] + "\n" + hero + "\n" + content[idx+1:]
-	}
-
+func mergeReadme(content, gallery string) (string, error) {
 	// Gallery block.
 	if galleryBlockRe.MatchString(content) {
 		content = galleryBlockRe.ReplaceAllStringFunc(content, func(_ string) string { return gallery })
@@ -400,18 +381,6 @@ func mergeReadme(content, hero, gallery string) (string, error) {
 	}
 
 	return content, nil
-}
-
-func renderHero() string {
-	var b strings.Builder
-	b.WriteString(heroMarkerStart)
-	b.WriteString("\n### Example output\n\n")
-	b.WriteString("`classic` template (user profile metrics):\n\n")
-	b.WriteString("![classic template sample](docs/examples/hero-classic.svg)\n\n")
-	b.WriteString("`repository` template (single-repo focus):\n\n")
-	b.WriteString("![repository template sample](docs/examples/hero-repository.svg)\n")
-	b.WriteString(heroMarkerEnd)
-	return b.String()
 }
 
 func renderGallery() string {

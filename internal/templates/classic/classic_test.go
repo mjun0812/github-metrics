@@ -136,6 +136,63 @@ func TestClassic_Run_ZeroM4Plugins(t *testing.T) {
 	}
 }
 
+func TestClassic_Run_BaseInputEmptySuppressesBaseSections(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.User = &plugins.User{Login: "octocat", Name: "Octocat", AvatarURL: "https://example/avatar.png"}
+	data.Computed.Repositories.Count = 51
+	data.Computed.Repositories.Stargazers = 1500
+	data.Computed.Repositories.Forks = 81
+	pc := &templates.PartialContext{
+		Inputs: map[string]any{"base": ""},
+		Data:   data,
+	}
+	out, err := classic.Template.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, marker := range []string{
+		`data-section="header"`,
+		`51 repositories`,
+		`1.5k stargazers`,
+		`81 forks`,
+		`<footer>`,
+	} {
+		if strings.Contains(out, marker) {
+			t.Fatalf("base=%q should suppress %q\noutput:\n%s", "", marker, out)
+		}
+	}
+}
+
+func TestClassic_Run_BaseInputMetadataRendersFooter(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.Account = plugins.AccountUser
+	data.Config.Timezone.Name = "Asia/Tokyo"
+	pc := &templates.PartialContext{
+		Inputs: map[string]any{"base": "metadata"},
+		Data:   data,
+	}
+	out, err := classic.Template.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, marker := range []string{
+		`<footer>`,
+		`These metrics include private contributions`,
+		`Last updated `,
+		`timezone Asia/Tokyo`,
+		`mjun0812/github-metrics@`,
+	} {
+		if !strings.Contains(out, marker) {
+			t.Fatalf("base metadata output missing %q\noutput:\n%s", marker, out)
+		}
+	}
+	if strings.Contains(out, `data-section="header"`) {
+		t.Fatalf("base=metadata should not render header\noutput:\n%s", out)
+	}
+}
+
 // TestClassic_Run_PluginPartialWrapper asserts the M4 dispatcher
 // (1) gates on plugin_<slug> truthy input, (2) skips when the result
 // is Skipped, (3) emits the <div class="plugin-<slug>" data-plugin=

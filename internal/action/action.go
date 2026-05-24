@@ -559,11 +559,22 @@ func defaultBuildDeps(_ context.Context, inv *Invocation) (engine.Deps, error) {
 	if inv.UseMockedData {
 		renderer = render.NewFakeRenderer()
 	}
+
+	// HTTPClient feeds the render pipeline's image-inline stage, which
+	// fetches avatar / icon URLs (public CDN, no auth) and embeds them
+	// as base64 data URIs so the SVG renders on GitHub and offline. Left
+	// nil under mocked data so hermetic test runs never touch the
+	// network; the stage is then skipped.
+	var imgClient *httpx.Client
+	if !inv.UseMockedData {
+		imgClient = httpx.New(httpx.Options{})
+	}
 	return engine.Deps{
-		Settings: &config.Settings{Repositories: 100},
-		REST:     rest,
-		GraphQL:  gql,
-		Render:   renderer,
+		Settings:   &config.Settings{Repositories: 100},
+		REST:       rest,
+		GraphQL:    gql,
+		Render:     renderer,
+		HTTPClient: imgClient,
 	}, nil
 }
 

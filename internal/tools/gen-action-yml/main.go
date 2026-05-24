@@ -11,8 +11,9 @@
 // The generator walks `assets/plugins/<slug>/metadata.yml` for the
 // adopted plugin set (constitution 原則 III). `core` contributes the
 // shared inputs (token / user / repo / committer_* / filename /
-// output / etc.) without any `plugin_<slug>` gate. `base` is not
-// exposed as a user-facing plugin so its metadata is ignored.
+// output / etc.) without any `plugin_<slug>` gate. `base` contributes
+// its section selector and repository-fetching inputs without any
+// `plugin_base` gate.
 package main
 
 import (
@@ -31,12 +32,12 @@ import (
 // share the `languages` directory; we don't iterate the dotted forms
 // because their `inputs:` are already enumerated in `languages`.
 //
-// `base` is intentionally omitted: it is the internal account-kind
-// dispatcher, not a user-facing plugin slug.
-// `core` is included for its non-plugin core inputs (token / user /
-// committer_* / etc.).
+// `base` and `core` are included for their non-plugin inputs. They do
+// not expose `plugin_base` / `plugin_core` gates, but their metadata
+// still defines user-facing controls such as `base` and `repositories`.
 var adoptedSlugs = []string{
 	"core",
+	"base",
 	"achievements",
 	"activity",
 	"calendar",
