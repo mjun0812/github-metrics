@@ -183,10 +183,10 @@ hooks-uninstall:
 
 # Documentation generation targets.
 #
-# `docs`           — regenerates docs/plugins/*.md and the README hero +
-#                    plugins-gallery AUTOGEN blocks from
+# `docs`           — regenerates docs/plugins/*.md and the README
+#                    plugins-gallery AUTOGEN block from
 #                    assets/plugins/*/metadata.yml. No token needed.
-# `docs-samples`   — renders the 21 plugin sample SVGs + 2 hero SVGs
+# `docs-samples`   — renders the 21 plugin sample SVGs
 #                    via scripts/gen-doc-samples.sh. Requires
 #                    GITHUB_TOKEN, METRICS_CHROME_PATH, and the docker
 #                    image github-metrics:local.

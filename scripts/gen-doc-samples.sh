@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # scripts/gen-doc-samples.sh — generate the docs/examples/ sample SVG
-# set for README hero + per-plugin doc pages.
+# set for the README plugins gallery + per-plugin doc pages.
 #
 # Spec: specs/010-docs-plugin-gallery/contracts/sample-generation.md
 # Runs the 19 adopted plugins (mjun0812 user by default) + 2 sub-mode
-# variants for languages + 2 hero templates = 23 SVG files.
+# variants for languages = 21 SVG files.
 #
 # Pipeline per file:
 #   1. docker run github-metrics:local → writes /out/<file>.svg
@@ -18,14 +18,12 @@
 #
 # Env overrides:
 #   METRICS_DOC_USER   default: mjun0812
-#   METRICS_DOC_REPO   default: github-metrics  (for hero-repository)
 #   METRICS_DOC_IMAGE  default: github-metrics:local
 #   METRICS_DOC_OUTDIR default: docs/examples
 
 set -uo pipefail
 
 USER="${METRICS_DOC_USER:-mjun0812}"
-REPO="${METRICS_DOC_REPO:-github-metrics}"
 IMAGE="${METRICS_DOC_IMAGE:-github-metrics:local}"
 OUTDIR="${METRICS_DOC_OUTDIR:-docs/examples}"
 
@@ -126,29 +124,9 @@ render_one "plugin-languages-indepth" \
   --plugin "plugin_languages_analysis_timeout=30"
 
 echo
-echo "== 2 hero renders =="
-HERO_CLASSIC_ARGS=(--template classic)
-for slug in "${PLUGINS[@]}"; do
-  HERO_CLASSIC_ARGS+=(--plugin "plugin_${slug}=yes")
-done
-render_one "hero-classic" "${HERO_CLASSIC_ARGS[@]}"
-
-# Repository hero — M7 repo-mode-capable subset.
-render_one "hero-repository" \
-  --template repository \
-  --repo "$REPO" \
-  --plugin "plugin_languages=yes" \
-  --plugin "plugin_projects=yes" \
-  --plugin "plugin_stargazers=yes" \
-  --plugin "plugin_people=yes" \
-  --plugin "plugin_activity=yes" \
-  --plugin "plugin_contributors=yes" \
-  --plugin "plugin_sponsors=yes"
-
-echo
 echo "== Summary =="
 # 2 formats (svg + png) per logical sample.
-TOTAL=$(( (${#PLUGINS[@]} + 2 + 2) * 2 ))
+TOTAL=$(( (${#PLUGINS[@]} + 2) * 2 ))
 OK=$((TOTAL - ${#FAILURES[@]}))
 echo "  OK:   ${OK}/${TOTAL}"
 if (( ${#FAILURES[@]} > 0 )); then
