@@ -34,6 +34,9 @@ func pluralS(n int) string {
 //	sponsorshipsAsSponsor  → "N sponsored"
 //	sponsorshipsAsMaintainer → "N sponsor(s)"
 //	membersWithRole / members → "N member(s)"
+//	contributors            → "N contributor(s)"
+//	stargazers              → "N stargazer(s)"
+//	watchers                → "N watcher(s)"
 //	thanks                 → "Special thanks"
 //	(any other)            → "N <type>"
 func labelForType(t string, n int) string {
@@ -50,6 +53,12 @@ func labelForType(t string, n int) string {
 		return fmt.Sprintf("%d sponsor%s", n, pluralS(n))
 	case "membersWithRole", "members":
 		return fmt.Sprintf("%d member%s", n, pluralS(n))
+	case "contributors":
+		return fmt.Sprintf("%d contributor%s", n, pluralS(n))
+	case "stargazers":
+		return fmt.Sprintf("%d stargazer%s", n, pluralS(n))
+	case "watchers":
+		return fmt.Sprintf("%d watcher%s", n, pluralS(n))
 	}
 	return fmt.Sprintf("%d %s", n, t)
 }

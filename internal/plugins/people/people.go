@@ -1,16 +1,18 @@
-// Package people owns the M4 "people" plugin. It fetches followers /
-// following lists via GraphQL. Upstream supports additional types
-// (sponsors, contributors, stargazers, watchers, members) — the M4
-// MVP wires followers + following only; the remaining types are
-// recorded with an empty list so consumers can see the slot, and a
-// WARN log fires for unknown types per contract §4.
+// Package people owns the M4 "people" plugin. User mode fetches
+// followers / following lists via GraphQL. Repository mode fetches
+// contributors / stargazers / watchers through REST repository
+// endpoints so the repository template can reuse the same people
+// partial with real avatar data.
 package people
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"math/rand"
+	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -63,8 +65,9 @@ var knownTypes = map[string]bool{
 	"members":      true,
 }
 
-// Run dispatches per requested type. followers/following hit GraphQL;
-// other supported types return empty lists. Unknown types are logged
+// Run dispatches per requested type. User-mode followers/following hit
+// GraphQL. Repository-mode contributors/stargazers/watchers hit REST.
+// Other supported types return empty lists. Unknown types are logged
 // and skipped.
 func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
@@ -73,20 +76,19 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	if !truthyInput(pc.Inputs, "plugin_"+Name) {
 		return &Result{Skipped: true, SkippedReason: "plugin disabled", Types: map[string][]Person{}}, nil
 	}
-	if pc.GraphQL == nil {
-		return &Result{Skipped: true, SkippedReason: "GraphQL client unavailable", Types: map[string][]Person{}}, nil
+	repo := pc.Data.RepoRef()
+	defaultTypes := []string{"followers", "following"}
+	if repo != nil {
+		defaultTypes = []string{"stargazers", "watchers"}
 	}
-	login := loginFromInputs(pc.Inputs)
-	if login == "" {
-		return &Result{Skipped: true, SkippedReason: "no login", Types: map[string][]Person{}}, nil
-	}
-	types := readCSVDefault(pc.Inputs, "plugin_people_types", []string{"followers", "following"})
+	types := readCSVDefault(pc.Inputs, "plugin_people_types", defaultTypes)
 	limit := readIntDefault(pc.Inputs, "plugin_people_limit", 26)
 	shuffle := readBool(pc.Inputs, "plugin_people_shuffle")
 
 	out := make(map[string][]Person, len(types))
 	needFollowers := false
 	needFollowing := false
+	repoTypes := []string{}
 	for _, t := range types {
 		t = strings.ToLower(strings.TrimSpace(t))
 		if !knownTypes[t] {
@@ -101,10 +103,20 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		if t == "following" {
 			needFollowing = true
 		}
+		if repo != nil && isRepositoryPeopleType(t) {
+			repoTypes = append(repoTypes, t)
+		}
 		out[t] = []Person{}
 	}
 
 	if needFollowers || needFollowing {
+		if pc.GraphQL == nil {
+			return &Result{Skipped: true, SkippedReason: "GraphQL client unavailable", Types: map[string][]Person{}}, nil
+		}
+		login := loginFromInputs(pc.Inputs)
+		if login == "" {
+			return &Result{Skipped: true, SkippedReason: "no login", Types: map[string][]Person{}}, nil
+		}
 		resp, err := pc.GraphQL.UserFollowers(ctx, login, limit)
 		if err != nil {
 			return nil, xerrors.NewRetryableError(fmt.Errorf("people: %w", err))
@@ -116,6 +128,19 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 			if needFollowing && resp.User.Following != nil {
 				out["following"] = followingToPeople(resp.User.Following.Nodes)
 			}
+		}
+	}
+
+	if len(repoTypes) > 0 {
+		if pc.REST == nil {
+			return &Result{Skipped: true, SkippedReason: "REST client unavailable", Types: map[string][]Person{}}, nil
+		}
+		for _, typ := range repoTypes {
+			people, err := fetchRepositoryPeople(ctx, pc.REST, repo.Owner, repo.Name, typ, limit)
+			if err != nil {
+				return nil, xerrors.NewRetryableError(err)
+			}
+			out[typ] = people
 		}
 	}
 
@@ -133,6 +158,64 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	}
 
 	return &Result{Mode: plugins.AggregationMode(pc.Data), Types: out}, nil
+}
+
+func isRepositoryPeopleType(t string) bool {
+	return t == "contributors" || t == "stargazers" || t == "watchers"
+}
+
+func fetchRepositoryPeople(ctx context.Context, rest *githubapi.REST, owner, repo, typ string, limit int) ([]Person, error) {
+	endpoint, ok := map[string]string{
+		"contributors": "contributors",
+		"stargazers":   "stargazers",
+		"watchers":     "subscribers",
+	}[typ]
+	if !ok {
+		return nil, nil
+	}
+	perPage := limit
+	if perPage <= 0 || perPage > 100 {
+		perPage = 100
+	}
+	path := fmt.Sprintf(
+		"/repos/%s/%s/%s?per_page=%d",
+		url.PathEscape(owner),
+		url.PathEscape(repo),
+		endpoint,
+		perPage,
+	)
+	body, resp, err := rest.Get(ctx, path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("people: repository %s: %w", typ, err)
+	}
+	if resp == nil {
+		return nil, fmt.Errorf("people: repository %s: nil response", typ)
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return []Person{}, nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("people: repository %s: status %d: %s", typ, resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+	var nodes []struct {
+		Login     string `json:"login"`
+		Name      string `json:"name"`
+		AvatarURL string `json:"avatar_url"`
+	}
+	if err := json.Unmarshal(body, &nodes); err != nil {
+		return nil, fmt.Errorf("people: repository %s: decode: %w", typ, err)
+	}
+	out := make([]Person, 0, len(nodes))
+	for _, n := range nodes {
+		if n.Login == "" {
+			continue
+		}
+		out = append(out, Person{Login: n.Login, Name: n.Name, AvatarURL: n.AvatarURL})
+	}
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
 }
 
 func followersToPeople(nodes []*githubapi.UserFollowersUserFollowersUserConnectionNodesUser) []Person {

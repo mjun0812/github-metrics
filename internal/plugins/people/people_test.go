@@ -17,6 +17,8 @@ import (
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/people"
+	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 )
 
 var updateGolden = flag.Bool("update", false, "update golden files")
@@ -126,6 +128,59 @@ func TestRun_OtherKnownTypeEmpty(t *testing.T) {
 	}
 }
 
+func TestRun_RepositoryTypesFetchREST(t *testing.T) {
+	t.Parallel()
+	rest := mocks.NewRESTMux(t)
+	rest.OnBody("/repos/octocat/hello-world/contributors", http.StatusOK, `[
+		{"login":"alice","avatar_url":"https://avatars.example/alice.png"},
+		{"login":"bob","avatar_url":"https://avatars.example/bob.png"}
+	]`)
+	rest.OnBody("/repos/octocat/hello-world/stargazers", http.StatusOK, `[
+		{"login":"carol","avatar_url":"https://avatars.example/carol.png"}
+	]`)
+	rest.OnBody("/repos/octocat/hello-world/subscribers", http.StatusOK, `[
+		{"login":"dave","avatar_url":"https://avatars.example/dave.png"}
+	]`)
+	d := plugins.NewData()
+	d.SetRepo(&plugins.Repo{Owner: "octocat", Name: "hello-world"})
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithREST(rest),
+		mocks.WithData(d),
+		mocks.WithInputs(map[string]any{
+			"plugin_people":       true,
+			"plugin_people_types": "contributors,stargazers,watchers",
+		}),
+	)
+
+	out, err := people.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*people.Result)
+	if r.Mode != plugins.ModeRepo {
+		t.Errorf("Mode = %q, want %q", r.Mode, plugins.ModeRepo)
+	}
+	for typ, want := range map[string]string{
+		"contributors": "alice",
+		"stargazers":   "carol",
+		"watchers":     "dave",
+	} {
+		if got := loginAt(r, typ, 0); got != want {
+			t.Errorf("%s[0].Login = %q, want %q (all=%+v)", typ, got, want, r.Types[typ])
+		}
+	}
+	for _, path := range []string{
+		"/repos/octocat/hello-world/contributors",
+		"/repos/octocat/hello-world/stargazers",
+		"/repos/octocat/hello-world/subscribers",
+	} {
+		if got := rest.Calls(path); got != 1 {
+			t.Errorf("REST calls %s = %d, want 1", path, got)
+		}
+	}
+}
+
 func TestRun_ShuffleDeterministic(t *testing.T) {
 	t.Parallel()
 	in := map[string]any{
@@ -177,6 +232,73 @@ func TestRun_GoldenShape(t *testing.T) {
 	}
 	if string(want) != string(got) {
 		t.Fatalf("golden mismatch\nwant:\n%s\ngot:\n%s", string(want), string(got))
+	}
+}
+
+// TestPartial_RepositoryGolden renders the repository-context people
+// partial (contributors / stargazers / watchers) and compares it
+// against the golden SVG fragment. The DOM structure mirrors upstream
+// docs/original_examples/metrics.plugin.people.repository.svg
+// (per-type <section> with <h2 class="field"> header + avatar list);
+// concrete avatar URLs / counts differ from upstream by design.
+func TestPartial_RepositoryGolden(t *testing.T) {
+	r := &people.Result{
+		Mode: plugins.ModeRepo,
+		Types: map[string][]people.Person{
+			"contributors": {
+				{Login: "alice", Name: "Alice", AvatarURL: "https://avatars.example/alice.png"},
+				{Login: "bob", Name: "Bob", AvatarURL: "https://avatars.example/bob.png"},
+			},
+			"stargazers": {
+				{Login: "carol", Name: "Carol", AvatarURL: "https://avatars.example/carol.png"},
+			},
+			"watchers": {
+				{Login: "dave", Name: "Dave", AvatarURL: "https://avatars.example/dave.png"},
+			},
+		},
+	}
+	data := plugins.NewData()
+	data.SetRepo(&plugins.Repo{Owner: "octocat", Name: "hello-world"})
+	data.SetPlugin(people.Name, r)
+	pc := &templates.PartialContext{Data: data}
+
+	got, err := people.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+
+	gp := filepath.Join(repoRoot(t), "tests", "golden", "classic", "m4", "people_repository.svg")
+	if *updateGolden {
+		if werr := os.MkdirAll(filepath.Dir(gp), 0o755); werr != nil {
+			t.Fatalf("MkdirAll: %v", werr)
+		}
+		if werr := os.WriteFile(gp, []byte(got), 0o644); werr != nil {
+			t.Fatalf("WriteFile: %v", werr)
+		}
+		return
+	}
+	want, err := os.ReadFile(gp)
+	if err != nil {
+		t.Fatalf("ReadFile %s: %v (run with -update)", gp, err)
+	}
+	if string(want) != got {
+		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
+	}
+	// DOM contract spot-checks mirroring upstream people.repository.svg:
+	for _, marker := range []string{
+		`data-section="people"`,
+		`<h2 class="field">`,
+		`data-type="contributors"`,
+		`data-type="stargazers"`,
+		`data-type="watchers"`,
+		`2 contributors`,
+		`1 stargazer`,
+		`1 watcher`,
+		`https://avatars.example/alice.png`,
+	} {
+		if !strings.Contains(got, marker) {
+			t.Errorf("partial missing marker %q in:\n%s", marker, got)
+		}
 	}
 }
 
