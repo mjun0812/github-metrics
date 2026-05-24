@@ -174,6 +174,97 @@ clone `lowlighter/metrics` to `./org_repo` first
 gracefully when the fixture is absent, so a fresh checkout without
 `./org_repo` still passes CI.
 
+### Regenerating plugin docs + example SVGs
+
+`docs/plugins/*.md` and the README's hero / plugins-gallery blocks are
+auto-generated from `assets/plugins/<slug>/metadata.yml`. Example SVGs
+under `docs/examples/` ship as placeholders in the repo; a maintainer
+with a token + headless Chromium overwrites them with real rendered
+output for release.
+
+**Prerequisites**
+
+- `GITHUB_TOKEN` exported (classic PAT with `public_repo` minimum;
+  `read:user` / `read:org` / `read:project` if the corresponding
+  plugin is enabled for the sample render — see the per-plugin doc
+  pages for scope notes).
+- `METRICS_CHROME_PATH` pointing at a chromium / Google Chrome binary
+  (macOS: `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`,
+  Linux: `/usr/bin/chromium`).
+- Docker image `github-metrics:local` built from this checkout:
+  ```sh
+  docker build -f deploy/Dockerfile -t github-metrics:local .
+  ```
+
+**Markdown only (cheap, no token needed)**
+
+```sh
+make docs
+```
+
+Refreshes `docs/plugins/*.md` from each plugin's `metadata.yml` and
+updates the README hero + plugins-gallery AUTOGEN blocks. Human-authored
+zones between `<!-- AUTOGEN_START: ... -->` markers are preserved
+byte-identically across re-runs.
+
+**Sample SVGs (needs token + Chromium + docker)**
+
+```sh
+make docs-samples
+```
+
+Renders 23 SVGs into `docs/examples/`:
+
+- `hero-classic.svg` + `hero-repository.svg` — the two template heroes
+  shown in the README hero block.
+- `plugin-<slug>.svg` for each of the 19 user-facing plugins.
+- `plugin-languages-recent.svg` + `plugin-languages-indepth.svg` for
+  the two `languages` sub-modes.
+
+**One-shot regeneration**
+
+```sh
+make docs-examples
+```
+
+Convenience target that runs `docs-samples` then `docs` in the correct
+order (SVGs first so the gallery references valid files).
+
+**Lint**
+
+```sh
+make docs-lint
+```
+
+Reports how many `docs/plugins/*.md` pages still contain
+`<!-- TODO:` placeholders in the human-authored zones. Loose gating —
+always exits 0; intended as a status counter, not a build break.
+
+**Verification after a regeneration round**
+
+```sh
+git diff --stat docs/plugins/ docs/examples/ README.md
+make test
+make lint
+make hooks-run
+```
+
+The compliance test `TestCompliance_DocsPluginPagesMatchAdoptedSet`
+will fail if a generated `docs/plugins/<slug>.md` page is missing or
+if an unadopted slug snuck into the directory.
+
+**End-to-end verify from a clean checkout**
+
+```sh
+git clean -fdx        # destroys local edits — be careful
+make docs-examples
+git status            # expect: 23 SVGs + 19 docs + README + nothing else
+```
+
+Use this before tagging a release to confirm the generator output is
+reproducible from `metadata.yml` alone (no hand-edited files leaked
+into the gen path).
+
 ## Project layout
 
 ```
