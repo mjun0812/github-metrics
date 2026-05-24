@@ -16,6 +16,11 @@ import (
 // Name is the canonical plugin slug.
 const Name = "achievements"
 
+const (
+	displayDetailed = "detailed"
+	displayCompact  = "compact"
+)
+
 // Plugin is the singleton registered with the global plugin registry.
 var Plugin plugins.Plugin = &achievementsPlugin{}
 
@@ -32,6 +37,7 @@ func (p *achievementsPlugin) Metadata() *config.PluginMetadata { return nil }
 type Result struct {
 	Skipped       bool              `json:"skipped,omitempty"`
 	SkippedReason string            `json:"-"`
+	Display       string            `json:"display"`
 	List          []Achievement     `json:"list"`
 	Ranks         map[string]string `json:"ranks"`
 }
@@ -109,6 +115,7 @@ var rankTable = []rankSpec{
 var rankOrder = []string{"S", "A", "B", "C"}
 
 type inputs struct {
+	display   string
 	threshold string
 	only      map[string]struct{}
 	ignored   map[string]struct{}
@@ -126,6 +133,7 @@ func (p *achievementsPlugin) Run(_ context.Context, pc *plugins.PluginContext) (
 		return &Result{
 			Skipped:       true,
 			SkippedReason: "base data unavailable",
+			Display:       in.display,
 			List:          []Achievement{},
 			Ranks:         map[string]string{},
 		}, nil
@@ -171,7 +179,7 @@ func (p *achievementsPlugin) Run(_ context.Context, pc *plugins.PluginContext) (
 	if in.limit > 0 && len(list) > in.limit {
 		list = list[:in.limit]
 	}
-	return &Result{List: list, Ranks: ranks}, nil
+	return &Result{Display: in.display, List: list, Ranks: ranks}, nil
 }
 
 func shouldInclude(id string, in inputs) bool {
@@ -218,9 +226,15 @@ func rankWeight(r string) int {
 
 func parseInputs(in map[string]any) inputs {
 	out := inputs{
+		display:   displayDetailed,
 		threshold: "C",
 		only:      map[string]struct{}{},
 		ignored:   map[string]struct{}{},
+	}
+	if v, ok := in["plugin_achievements_display"]; ok {
+		if s, ok := v.(string); ok && s != "" {
+			out.display = normalizeDisplay(s)
+		}
 	}
 	if v, ok := in["plugin_achievements_threshold"]; ok {
 		if s, ok := v.(string); ok && s != "" {
@@ -237,6 +251,15 @@ func parseInputs(in map[string]any) inputs {
 		out.limit = v
 	}
 	return out
+}
+
+func normalizeDisplay(display string) string {
+	switch strings.ToLower(strings.TrimSpace(display)) {
+	case displayCompact:
+		return displayCompact
+	default:
+		return displayDetailed
+	}
 }
 
 func readInt(in map[string]any, key string) (int, bool) {
