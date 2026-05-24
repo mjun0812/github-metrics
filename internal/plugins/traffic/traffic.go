@@ -4,9 +4,6 @@
 // requires the `repo` OAuth scope; without it the plugin returns
 // Skipped=true. Repositories that return 403 (owner-only endpoint) are
 // dropped silently and aggregation continues.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p2-graphql.md §12
-// Data model: specs/004-m4-github-plugins/data-model.md E-033
 package traffic
 
 import (

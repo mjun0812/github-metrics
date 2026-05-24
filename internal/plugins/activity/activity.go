@@ -1,9 +1,6 @@
 // Package activity owns the M4 "activity" plugin. It walks the user's
 // public events feed (REST /users/<login>/events) and surfaces a typed
 // timeline of recent activity for the classic SVG.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p1-mvp.md §2
-// Data model: specs/004-m4-github-plugins/data-model.md E-013
 package activity
 
 import (

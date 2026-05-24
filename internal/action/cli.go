@@ -15,12 +15,11 @@ import (
 )
 
 // CLIFlags is the parsed result of `metrics-action <flags>` when the
-// binary runs outside GitHub Actions. Spec data-model E-004 +
-// contracts/cli-flags.md.
+// binary runs outside GitHub Actions.
 //
 // The fields map 1:1 onto action.yml inputs so the merged
 // *Invocation produced by ToInvocation is interchangeable with the
-// Action-mode pipeline (FR-019).
+// Action-mode pipeline.
 type CLIFlags struct {
 	Config   string            // --config <path>.yaml
 	User     string            // --user <login>
@@ -150,7 +149,7 @@ func LoadYAMLConfig(path string) (map[string]any, error) {
 
 // ToInvocation merges CLI flags (highest priority), YAML config, env,
 // and metadata defaults into a flat `map[string]any` suitable for
-// newInvocation. Spec contracts/cli-flags.md §3.
+// newInvocation.
 //
 // Priority (highest first):
 //  1. CLI flag (--user, --plugin key=val, ...)
@@ -219,7 +218,7 @@ func (c *CLIFlags) ToInvocation(env map[string]string) (map[string]any, error) {
 	return inputs, nil
 }
 
-// ResolveToken applies the CLI token priority rules (contracts §4):
+// ResolveToken applies the CLI token priority rules:
 //
 //	--token-env > --token (with warning) > INPUT_TOKEN > error
 //

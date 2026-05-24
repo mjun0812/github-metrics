@@ -251,8 +251,8 @@ func errorsIs(err, target error) bool {
 }
 
 // allowedInputTypes mirrors the set the inputs parser knows how to
-// normalize (see contracts/cli.md §1.3). Unknown types are warn-logged
-// and dropped so forward-compatible upstream changes do not block load.
+// normalize. Unknown types are warn-logged and dropped so
+// forward-compatible upstream changes do not block load.
 var allowedInputTypes = map[string]struct{}{
 	"string":  {},
 	"number":  {},

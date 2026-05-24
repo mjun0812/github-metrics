@@ -2,9 +2,6 @@
 // the contributionsCollection.contributionCalendar payload (already
 // fetched by base.runIndepth when isocalendar's input is enabled) into
 // a week×day matrix and computes streaks.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p1-mvp.md §5
-// Data model: specs/004-m4-github-plugins/data-model.md E-016
 package isocalendar
 
 import (

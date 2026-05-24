@@ -12,8 +12,7 @@ import (
 // TestRun_StarAndChevronDown drives the tool against a tiny synthetic
 // build/data.json (covering one single-size icon and one two-size icon
 // with hyphenated name) and asserts the materialized fragments match
-// the documented shape in
-// specs/003-chromedp-rendering-pipeline/contracts/octicon.md §4.
+// the expected octicon fragment shape.
 func TestRun_StarAndChevronDown(t *testing.T) {
 	t.Parallel()
 

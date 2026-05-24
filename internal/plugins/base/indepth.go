@@ -10,8 +10,7 @@ import (
 )
 
 // indepthInputKeys lists the plugin-input flags whose presence triggers
-// base.runIndepth. The list mirrors specs/004-m4-github-plugins/
-// contracts/plugin-base-extension.md §2.1.
+// base.runIndepth.
 var indepthInputKeys = []string{
 	"plugin_repositories_pinned",
 	"plugin_isocalendar",

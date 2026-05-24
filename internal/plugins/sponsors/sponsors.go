@@ -3,9 +3,6 @@
 // the scope-gate path and returns an empty (but non-Skipped) Result
 // when both scopes are present. The full GraphQL fetch lands as a
 // follow-up.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p2-graphql.md §9
-// Data model: specs/004-m4-github-plugins/data-model.md E-030
 package sponsors
 
 import (

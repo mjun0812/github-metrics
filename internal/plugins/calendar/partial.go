@@ -20,7 +20,6 @@ const calendarOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16
 // Multi-year heatmap matching upstream
 // org_repo/source/templates/classic/partials/calendar.ejs.
 //
-// Spec: specs/011-plugin-rendering-parity/PLAN_V2_MJUN0812_FOCUS.md §2 (calendar)
 // Settings: mjun0812 uses plugin_calendar: yes, plugin_calendar_limit: 3.
 func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil {

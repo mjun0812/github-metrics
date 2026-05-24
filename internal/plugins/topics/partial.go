@@ -63,7 +63,6 @@ func renderType(mode string) string {
 //	  </section>
 //	</section>
 //
-// Spec: specs/011-plugin-rendering-parity/PLAN_V2_MJUN0812_FOCUS.md §3 (topics)
 // Settings: mjun0812 uses plugin_topics: yes, plugin_topics_limit: 15,
 // plugin_topics_mode: starred (default) and a variant with mode: icons.
 func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {

@@ -19,10 +19,6 @@
 //   - `plugin_repositories_pinned`: when set, the corresponding Result
 //     section is populated by reusing Featured as a placeholder. The
 //     dedicated `user.pinnedItems` GraphQL fragment lands in the 013 PR.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p1-mvp.md §4
-// Data model: specs/004-m4-github-plugins/data-model.md E-015
-// 012 wiring: specs/012-rest-data-fetch/contracts/plugin-repositories-starred.md
 package repositories
 
 import (
@@ -146,8 +142,7 @@ func (p *repositoriesPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 }
 
 // starredFetchTimeout caps the single REST request to `/users/<login>/starred`.
-// Mirrors the per-request timeout used by `languages.indepth` and the
-// pattern documented in `specs/012-rest-data-fetch/research.md#R-005`.
+// Mirrors the per-request timeout used by `languages.indepth`.
 const starredFetchTimeout = 30 * time.Second
 
 // resolveStarred returns the value to assign to Result.Starred when the

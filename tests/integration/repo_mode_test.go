@@ -1,5 +1,5 @@
-// Package integration_test covers M7 contracts/repo-mode-plugin.md §5
-// — the per-plugin Mode-tag contract. We exercise the 7 reused plugins
+// Package integration_test covers the M7 per-plugin Mode-tag contract.
+// We exercise the 7 reused plugins
 // via the engine pipeline in both user-mode (Account=User, no
 // Data.Repo) and repo-mode (Account=Repository, Data.Repo populated)
 // and assert the `mode` field lands on each plugin's Result.

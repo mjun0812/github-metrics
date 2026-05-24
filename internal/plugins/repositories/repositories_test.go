@@ -204,8 +204,6 @@ func nameList(rs []plugins.Repository) []string {
 }
 
 // === 012 starred fetch tests =========================================
-//
-// Contract: specs/012-rest-data-fetch/contracts/plugin-repositories-starred.md
 
 // runWithStarred is like run() but injects a *githubapi.REST built from
 // MockTransport so the live fetchStarred path is exercised. Returns

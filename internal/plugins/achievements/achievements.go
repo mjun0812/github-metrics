@@ -1,9 +1,6 @@
 // Package achievements owns the M4 "achievements" plugin. It converts
 // base-aggregated statistics into rank-graded badges per upstream's
 // metrics achievements panel.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p1-mvp.md §3
-// Data model: specs/004-m4-github-plugins/data-model.md E-014
 package achievements
 
 import (

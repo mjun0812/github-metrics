@@ -5,9 +5,6 @@
 // go-enry, and aggregates byte counts per language using the same
 // favorites/other split as standard mode.
 //
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p3-heavy.md §1
-// Data model: specs/004-m4-github-plugins/data-model.md E-011
-//
 // The runtime is unconditionally compiled (no build tag) so the plugin
 // registry sees a "languages.recent" entry on every build. The heavy
 // test fixtures sit behind //go:build heavy in recent_heavy_test.go.

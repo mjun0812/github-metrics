@@ -19,7 +19,7 @@ import (
 //     Actions runner for each `with:` key in the workflow.
 //
 // Keys are normalized to lowercase + underscores (matching the
-// metadata.yml convention). Spec FR-001.
+// metadata.yml convention).
 func ParseInputs(env map[string]string) (map[string]any, error) {
 	out := map[string]any{}
 
@@ -48,7 +48,7 @@ func ParseInputs(env map[string]string) (map[string]any, error) {
 }
 
 // WildcardFilename resolves the `*` placeholder in a filename like
-// `github-metrics.*` using the configured output format. Spec FR-008.
+// `github-metrics.*` using the configured output format.
 //
 // Examples:
 //
@@ -89,7 +89,7 @@ func normalizeExtension(format string) string {
 }
 
 // PresetBundle holds the inputs overlay loaded from a preset YAML
-// file referenced via the `config_presets` input. Spec FR-006.
+// file referenced via the `config_presets` input.
 type PresetBundle struct {
 	Path string         // source file path
 	Q    map[string]any // input overrides
@@ -123,7 +123,7 @@ func LoadPreset(path string) (*PresetBundle, error) {
 // MergeInto overlays the preset's q: entries onto the inputs map.
 // Keys already present in inputs are NOT overwritten — preset values
 // rank below CLI flag / INPUT_<UPPER> / INPUTS JSON in the priority
-// chain (see contracts/cli-flags.md §3).
+// chain.
 func (p *PresetBundle) MergeInto(inputs map[string]any) {
 	if p == nil {
 		return

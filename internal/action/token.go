@@ -65,8 +65,7 @@ type TokenValidator struct {
 	UseMockedData  bool
 }
 
-// Validate runs the 3 token-validation stages per
-// contracts/token-validation.md.
+// Validate runs the 3 token-validation stages:
 //
 //  1. Format reject: github_pat_* + empty-no-mock paths.
 //  2. Scope check: HEAD / → X-OAuth-Scopes vs RequiredScopes.

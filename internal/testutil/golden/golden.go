@@ -213,8 +213,8 @@ func equalBytes(a, b []byte) bool {
 // signature.
 func diffMessage(_, _ []byte) {}
 
-// buildDriftMessage assembles the user-facing failure message per
-// contracts/golden-compare.md §3. Returns a multi-line string.
+// buildDriftMessage assembles the user-facing failure message.
+// Returns a multi-line string.
 func buildDriftMessage(goldenPath string, got, want []byte) string {
 	offset := firstDivergentOffset(got, want)
 	var b strings.Builder

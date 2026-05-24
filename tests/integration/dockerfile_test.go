@@ -3,8 +3,7 @@
 // Package integration_test docker_smoke verifies the M10 production
 // Dockerfile at deploy/Dockerfile. The test builds the image,
 // invokes `metrics-action --help` inside a container, and asserts
-// the M10 image-size budget per
-// specs/008-m10-release-distribution/contracts/dockerfile.md §5.
+// the M10 image-size budget.
 //
 // Gated by the `docker_smoke` build tag so default `make test` skips
 // it (chromium + apt install is slow, and not every contributor has
@@ -31,8 +30,7 @@ const (
 
 	// dockerSmokeSizeBudgetBytes mirrors FR-006 / SC-003: ≤ 900 MB
 	// per platform after build. The 900 MB ceiling reflects the v1.0
-	// plan-phase escalation documented in research.md R-003 §"Plan-
-	// phase risk": the bookworm-slim + chromium + Noto CJK fonts
+	// plan-phase escalation: the bookworm-slim + chromium + Noto CJK fonts
 	// combination measures ~830 MB on the GitHub-hosted ubuntu-latest
 	// runner (CI 2026-05-18). Dropping CJK fonts would save ~80 MB
 	// but breaks rendering for CJK repository names — not acceptable
@@ -53,12 +51,11 @@ const (
 // TestDockerfile_BuildRunHelp builds the deploy/Dockerfile image and
 // runs `metrics-action --help` inside it.
 //
-// Verifies M10 acceptance criteria from
-// contracts/dockerfile.md §5:
+// Verifies M10 acceptance criteria:
 //   - image builds cleanly
 //   - `metrics-action --help` exits 0
 //   - help output contains either "Usage:" or "metrics-action"
-//   - image size is ≤ 900 MB (per FR-006 escalation — see contracts/dockerfile.md §1 Note)
+//   - image size is ≤ 900 MB (per FR-006 escalation)
 func TestDockerfile_BuildRunHelp(t *testing.T) {
 	if _, err := exec.LookPath("docker"); err != nil {
 		t.Skip("docker not on PATH; skipping docker_smoke test")

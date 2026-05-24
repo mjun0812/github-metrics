@@ -2,9 +2,9 @@
 # scripts/gen-doc-samples.sh — generate the docs/examples/ sample SVG
 # set for the README plugins gallery + per-plugin doc pages.
 #
-# Spec: specs/010-docs-plugin-gallery/contracts/sample-generation.md
-# Runs the 19 adopted plugins (mjun0812 user by default) + 2 sub-mode
-# variants for languages = 21 SVG files.
+# Runs the 19 adopted plugins (mjun0812 user by default) + 4 sub-mode
+# variants (languages recent/indepth/details + isocalendar full-year)
+# = 23 logical samples (svg + png each).
 #
 # Pipeline per file:
 #   1. docker run github-metrics:local → writes /out/<file>.svg
@@ -127,9 +127,37 @@ render_one "plugin-languages-indepth" \
   --plugin "plugin_languages_analysis_timeout=30"
 
 echo
+echo "== other upstream-parity sub-mode variants =="
+# Only variants where the Go implementation produces output that visibly
+# differs from the plain plugin (for the sample user) are kept here.
+# Intentionally omitted:
+#   - calendar.full (plugin_calendar_limit=0), repositories.pinned
+#       Go accepts the option but the output is byte-identical to the plain
+#       plugin for this sample user's data.
+#   - topics.icons, starlists.languages, sponsors.full
+#       sample user has no data, so the card renders empty.
+#   - achievements.compact, habits.facts/charts, notable.indepth,
+#     contributors.contributions, stargazers.graph/worldmap/chartist,
+#     people.repository
+#       not yet supported by the Go implementation (needs plugin work).
+render_one "plugin-languages-details" \
+  --template classic \
+  --plugin "base=" \
+  --plugin "plugin_languages=yes" \
+  --plugin "plugin_languages_details=bytes-size,percentage,lines"
+
+render_one "plugin-isocalendar-fullyear" \
+  --template classic \
+  --plugin "base=" \
+  --plugin "plugin_isocalendar=yes" \
+  --plugin "plugin_isocalendar_duration=full-year"
+
+echo
 echo "== Summary =="
 # 2 formats (svg + png) per logical sample.
-TOTAL=$(( (${#PLUGINS[@]} + 2) * 2 ))
+# +2 languages sub-modes (recent, indepth) +2 parity variants
+# (languages.details, isocalendar.fullyear).
+TOTAL=$(( (${#PLUGINS[@]} + 2 + 2) * 2 ))
 OK=$((TOTAL - ${#FAILURES[@]}))
 echo "  OK:   ${OK}/${TOTAL}"
 if (( ${#FAILURES[@]} > 0 )); then

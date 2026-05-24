@@ -23,8 +23,7 @@ import (
 //
 // On HTTP-level failure (transport error, 5xx, or any other non-{2xx,
 // 401} status), the error is surfaced verbatim and nothing is cached so
-// callers can retry on the next request. Data-model contract anchor:
-// specs/004-m4-github-plugins/data-model.md#E-050.
+// callers can retry on the next request.
 func (r *REST) Scopes(ctx context.Context) ([]string, error) {
 	r.scopesMu.Lock()
 	defer r.scopesMu.Unlock()

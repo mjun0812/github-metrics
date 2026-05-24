@@ -103,8 +103,7 @@ func (t *classicTemplate) Check(_ map[string]any, account, format string) error 
 	return templates.CheckFormat(t.meta, format)
 }
 
-// Run renders the classic SVG envelope. The pipeline follows
-// contracts/classic-template.md §1:
+// Run renders the classic SVG envelope. The pipeline is:
 //
 //  1. Open <svg width="480" height="99999" class="">
 //  2. <defs><style><!-- fonts.css --></style></defs>
@@ -157,11 +156,10 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 	}
 
 	// M4 plugin partial dispatcher
-	// Contract: specs/004-m4-github-plugins/contracts/partial-classic-m4.md §3
 	//
 	// Walks partials.PluginPartialOrder, applying the truthy gate, the
-	// Skipped check, and the Lookup miss tolerance described in the
-	// contract. Each non-empty fragment is wrapped in
+	// Skipped check, and the Lookup miss tolerance. Each non-empty
+	// fragment is wrapped in
 	//   <div class="plugin-<slug>" data-plugin="<slug>">...</div>
 	// so downstream DOM diffing (data-changed mode, M6) can locate each
 	// plugin's output unambiguously.
@@ -243,7 +241,7 @@ func (t *classicTemplate) loadStyles() error {
 
 // metadataFooter renders the optional metadata <footer> when the
 // `metadata` base section is enabled, or when the legacy expanded
-// `base.metadata` input is truthy. Contract: contracts/classic-template.md §4.
+// `base.metadata` input is truthy.
 func metadataFooter(pc *templates.PartialContext, sections map[string]struct{}) string {
 	_, enabledByBase := sections["metadata"]
 	if !enabledByBase && (pc == nil || pc.Inputs == nil || !truthyInput(pc.Inputs, "base.metadata")) {

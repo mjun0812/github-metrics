@@ -11,10 +11,10 @@ import (
 
 // NormalizeInput converts raw (typically a string from env or YAML
 // decoding) into the Go value implied by def.Type. The supported types
-// are the set declared in [allowedInputTypes] (data-model E-002 and
-// contracts/cli.md §1.3). Unsupported types return an InputError-style
-// error; type-coercion failures likewise return an error so callers can
-// surface them on the upstream-compatible warning path.
+// are the set declared in [allowedInputTypes]. Unsupported types return
+// an InputError-style error; type-coercion failures likewise return an
+// error so callers can surface them on the upstream-compatible warning
+// path.
 //
 // Empty / nil raw plus a non-empty Default node falls back to the
 // default value rendered through the same normalization.
@@ -44,7 +44,7 @@ func NormalizeInput(def InputDef, raw any) (any, error) {
 }
 
 // Inputs is the per-scope normalized view of inputs keyed by metadata
-// input name (data-model E-004).
+// input name.
 type Inputs struct {
 	defs    map[string]InputDef
 	loaded  map[string]any
@@ -74,7 +74,7 @@ func NewInputs(defs map[string]InputDef) *Inputs {
 //  3. preset overrides
 //  4. metadata default
 //
-// Per FR-011 the function leaves placeholders (`.user.login`,
+// The function leaves placeholders (`.user.login`,
 // `.repository.name`, ...) intact unless an explicit data context has
 // been wired in via [Inputs.WithData]; the engine resolves them later.
 func (i *Inputs) ForAction(env map[string]string, preset map[string]any) (map[string]any, error) {

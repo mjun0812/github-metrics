@@ -7,7 +7,7 @@ import (
 
 // ConfigError flags a user-supplied input value that fails validation
 // at startup. It is intentionally separate from xerrors.RetryableError
-// (this error class is never retried — see contracts/retry-policy.md).
+// (this error class is never retried).
 // Callers should print the message verbatim + exit 1.
 type ConfigError struct {
 	Key   string
@@ -34,7 +34,6 @@ type OutputActionRegistry struct {
 //
 // Unsupported migration: gist + markdown-* + mixed forms get an
 // explicit error message pointing at the adopted alternative.
-// Spec FR-015b + contracts/output-actions.md.
 func DefaultRegistry() *OutputActionRegistry {
 	supported := []string{
 		"none",
@@ -71,7 +70,7 @@ func DefaultRegistry() *OutputActionRegistry {
 
 // Validate returns nil iff value is one of the Supported entries.
 // Otherwise it returns a *ConfigError suitable for fail-fast exit 1
-// with a migration-friendly message (FR-015b).
+// with a migration-friendly message.
 func (r *OutputActionRegistry) Validate(value string) error {
 	for _, s := range r.Supported {
 		if value == s {

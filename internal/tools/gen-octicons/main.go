@@ -17,7 +17,7 @@
 //     baked in; the runtime injects it during the replacement to keep
 //     this asset reusable.
 //
-// Output schema (see specs/003-chromedp-rendering-pipeline/data-model.md E-006):
+// Output schema:
 //
 //	{
 //	  "_meta": {"source": "primer/octicons@<version>", "generated_at": "<rfc3339>"},

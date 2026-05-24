@@ -923,6 +923,5 @@ runs:
   # Local-development fallback: build the M10 production image
   # from source. The release pipeline rewrites this line to a
   # docker:// reference pinned to the published vX.Y.Z tag when it
-  # runs `VERSION=vX.Y.Z make gen-action-yml`; see
-  # specs/008-m10-release-distribution/contracts/action-yml.md.
+  # runs `VERSION=vX.Y.Z make gen-action-yml`.
   image: 'deploy/Dockerfile'

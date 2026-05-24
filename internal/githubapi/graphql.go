@@ -84,7 +84,7 @@ func (g *GraphQL) Organization(ctx context.Context, login string) (*Organization
 
 // Repository fetches the typed [RepositoryRepository] payload for a
 // single owner/name pair. Used by the M7 base plugin's repository
-// fetch path. See specs/006-m7-repository-template/contracts/base-repository-query.md.
+// fetch path.
 func (g *GraphQL) Repository(ctx context.Context, login, repo string) (*RepositoryResponse, error) {
 	return Repository(ctx, g.client, login, repo)
 }
@@ -115,8 +115,7 @@ func (g *GraphQL) OrganizationMembers(ctx context.Context, login string, first i
 // UserIndepth issues the "indepth" GraphQL query that augments the base
 // payload with per-repository commit/issue/PR totals and the user's
 // contribution calendar. Triggered only when at least one indepth-
-// dependent plugin is enabled (see specs/004-m4-github-plugins/
-// contracts/plugin-base-extension.md §2.1).
+// dependent plugin is enabled.
 func (g *GraphQL) UserIndepth(ctx context.Context, login string, from, to *time.Time, reposFirst int, reposAfter *string) (*UserIndepthResponse, error) {
 	return UserIndepth(ctx, g.client, login, from, to, reposFirst, reposAfter)
 }

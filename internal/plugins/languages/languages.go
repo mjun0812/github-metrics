@@ -7,9 +7,6 @@
 // Recent-mode and indepth-mode (P3, build tag heavy) ship in separate
 // files (recent.go / indepth.go). Standard mode never issues additional
 // API calls — it relies entirely on the data base already collected.
-//
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p1-mvp.md §1
-// Data model: specs/004-m4-github-plugins/data-model.md E-010
 package languages
 
 import (

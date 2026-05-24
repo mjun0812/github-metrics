@@ -3427,8 +3427,6 @@ query Repository ($login: String!, $repo: String!) {
 // the "repo identity + community + activity" panes. REST fallback
 // fields (contributors count, recent commits) live in
 // `internal/plugins/base/repository.go` and are NOT fetched here.
-//
-// Spec: specs/006-m7-repository-template/contracts/base-repository-query.md
 func Repository(
 	ctx_ context.Context,
 	client_ graphql.Client,

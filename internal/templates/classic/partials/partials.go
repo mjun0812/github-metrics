@@ -1,7 +1,6 @@
 // Package partials hosts the partial functions assembled by the classic
 // template. Each partial is a templates.PartialFunc that takes a
-// PartialContext and returns the SVG fragment it owns. The contract is
-// documented in specs/002-output-classic-json/contracts/classic-template.md.
+// PartialContext and returns the SVG fragment it owns.
 //
 // Partials follow three rules:
 //

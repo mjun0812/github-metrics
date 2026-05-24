@@ -1,9 +1,5 @@
 // Package mocks hosts the M9 shared mock RoundTrippers + PluginContext
 // builder consumed by `*_test.go` files across the project.
-//
-// Contracts:
-//   - specs/007-m9-test-infrastructure/contracts/rest-mock.md
-//   - specs/007-m9-test-infrastructure/contracts/graphql-mock.md
 package mocks
 
 import (

@@ -190,8 +190,7 @@ type ComputedRepositories struct {
 }
 
 // Repository is the per-node entry produced by the base plugin's
-// paging loop. Field set mirrors specs/004-m4-github-plugins/
-// data-model.md E-015.
+// paging loop. Field set mirrors the M4 plugin data model.
 type Repository struct {
 	NameWithOwner string
 	Description   string

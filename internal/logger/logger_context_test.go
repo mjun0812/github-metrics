@@ -12,11 +12,11 @@ import (
 	"github.com/mjun0812/github-metrics/internal/logger"
 )
 
-// US1 AS4 (specs/001-project-foundation/spec.md): when a context carries a
-// login via ctxutil.WithLogin and a record is emitted through slog.Default
-// (or any logger built by New), the record MUST include the "login"
-// attribute. This file isolates that contract from the broader logger
-// behavior tests so the AS4 link is obvious at a glance.
+// When a context carries a login via ctxutil.WithLogin and a record is
+// emitted through slog.Default (or any logger built by New), the record
+// MUST include the "login" attribute. This file isolates that contract
+// from the broader logger behavior tests so the login-propagation
+// behavior is obvious at a glance.
 
 // installDefaultMu serializes access to slog.SetDefault across the cases
 // below; the global default is process-wide state.

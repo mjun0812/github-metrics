@@ -3,8 +3,7 @@ package visual
 import "testing"
 
 // TestLanguages_Visual exercises the languages plugin's rendered SVG
-// against R-002's DOM assertion menu, per the per-plugin parity
-// checklist at specs/011-plugin-rendering-parity/plugins/languages.md.
+// against the per-plugin parity DOM assertion menu.
 //
 // Input is the existing M4 byte golden at
 // tests/golden/classic/m4/languages.svg, wrapped in a minimal SVG

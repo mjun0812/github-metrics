@@ -1,8 +1,6 @@
 // Package golden hosts the M9 unified golden-file workflow:
 // Compare / CompareSVG / CompareJSON sharing the `-update` flag
 // declared in tests/integration/output_json_test.go.
-//
-// Contract: specs/007-m9-test-infrastructure/contracts/golden-compare.md
 package golden
 
 import (

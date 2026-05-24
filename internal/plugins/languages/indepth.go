@@ -4,9 +4,6 @@
 // runs go-enry against every blob in HEAD's tree, and aggregates byte
 // counts per language across all repos.
 //
-// Contracts: specs/004-m4-github-plugins/contracts/plugin-p3-heavy.md §2
-// Data model: specs/004-m4-github-plugins/data-model.md E-012
-//
 // Like recent.go, the runtime is unconditionally compiled — only the
 // fixture-heavy tests sit behind //go:build heavy.
 package languages
