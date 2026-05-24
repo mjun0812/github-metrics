@@ -1,7 +1,7 @@
 package render
 
 import (
-	"crypto/md5" //nolint:gosec // MD5 is a non-security comparison key (upstream metrics.utils.svg.hash compatibility); see contracts/svg-hash.md
+	"crypto/md5" //nolint:gosec // MD5 is a non-security comparison key (upstream metrics.utils.svg.hash compatibility)
 	"encoding/hex"
 	"errors"
 	"strings"

@@ -15,9 +15,6 @@ coverage.out
 # embeds the pre-generated assets/octicons/data.json instead).
 node_modules/
 
-# Local spec/plan working tree — not needed at runtime.
-specs/
-
 # Editor / OS
 .DS_Store
 *.swp

@@ -58,9 +58,9 @@ func TestREST_Scopes_HTTPErrorReturnsError(t *testing.T) {
 	}
 }
 
-// TestREST_Scopes_401ReturnsEmptyNotError covers the contract documented
-// in data-model.md E-050: GitHub returns HTTP 401 for a missing /
-// rejected token, which is semantically "no scopes" rather than a
+// TestREST_Scopes_401ReturnsEmptyNotError covers the contract that
+// GitHub returns HTTP 401 for a missing / rejected token, which is
+// semantically "no scopes" rather than a
 // transport failure. The helper MUST surface that as ([]string{}, nil)
 // and cache it so subsequent callers do not re-probe.
 func TestREST_Scopes_401ReturnsEmptyNotError(t *testing.T) {

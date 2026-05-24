@@ -33,8 +33,7 @@ func TestGenerate_HasRequiredSections(t *testing.T) {
 }
 
 // TestGenerate_VersionedImageRef confirms a semver VERSION env value
-// emits the docker:// reference pinned to the published GHCR tag
-// per M10 contracts/action-yml.md.
+// emits the docker:// reference pinned to the published GHCR tag.
 func TestGenerate_VersionedImageRef(t *testing.T) {
 	t.Parallel()
 	body, err := generate("../../../assets", "v1.0.0")

@@ -9,7 +9,6 @@ import (
 )
 
 // TokenKind enumerates the credential shapes the project recognizes.
-// See contracts/github-api.md §2.1 for the mapping rules.
 type TokenKind int
 
 const (

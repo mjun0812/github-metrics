@@ -105,7 +105,7 @@ type inputDef struct {
 }
 
 // generate walks the adopted plugin metadata + emits action.yml.
-// `version` toggles the `runs.image:` line per M10 contracts/action-yml.md:
+// `version` toggles the `runs.image:` line:
 //   - empty / "dev" → relative path to deploy/Dockerfile
 //   - vX.Y.Z (semver tag) → docker://ghcr.io/.../...:<version>
 func generate(assetsRoot, version string) (string, error) {
@@ -184,7 +184,7 @@ runs:
 }
 
 // imageDirective emits the `runs.image:` line + its supply-chain
-// comment per M10 contracts/action-yml.md.
+// comment.
 //
 // Pre-release (VERSION empty or "dev"): build from the local
 // deploy/Dockerfile so `uses: ./` works against the source tree.

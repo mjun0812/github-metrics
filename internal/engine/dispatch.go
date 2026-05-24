@@ -25,8 +25,8 @@ import (
 //   - anything else: *UnsupportedFormatError.
 //
 // Stage-level errors (decoration, chromedp) are appended to
-// res.Errors and the call falls through to a best-effort response per
-// FR-018: SVG path returns the un-resized SVG, PNG/JPEG path returns
+// res.Errors and the call falls through to a best-effort response:
+// SVG path returns the un-resized SVG, PNG/JPEG path returns
 // (nil, "") so the caller can detect the failure via the empty
 // Output.
 func dispatchOutput(
@@ -140,8 +140,7 @@ func obtainRenderer(deps Deps) (render.Renderer, func(), error) {
 }
 
 // buildPipelineStages assembles the decoration stages applied between
-// Template.Run and Renderer.Resize. The chain is fixed-order per
-// contracts/render-pipeline.md §1:
+// Template.Run and Renderer.Resize. The chain is fixed-order:
 //
 //  1. octicon       — always enabled. Replaces `:octicon-<name>(-<size>)?:`
 //     placeholders with the embedded SVG fragment.
@@ -156,7 +155,7 @@ func obtainRenderer(deps Deps) (render.Renderer, func(), error) {
 //
 // Each stage is best-effort: errors land in res.Errors (via Apply)
 // and the input is forwarded unchanged to the next stage so a
-// localized failure does not break the SVG (FR-018).
+// localized failure does not break the SVG.
 func buildPipelineStages(ctx context.Context, inputs map[string]any, fetcher render.ImageFetcher) []render.PipelineStage {
 	stages := []render.PipelineStage{
 		{Name: "octicon", Run: render.ReplaceOcticons},

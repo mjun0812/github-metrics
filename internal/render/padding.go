@@ -35,7 +35,7 @@ var leadingAbsoluteRe = regexp.MustCompile(`^\s*([+-]?[\d.]+)`)
 //
 // Malformed numeric tokens are logged at debug level and treated as
 // zero so a typo in one input does not break rendering for the rest
-// of the run (see contracts/svg-resize.md §3 / FR-007 / Edge Cases).
+// of the run.
 func parsePadding(in []string, log *slog.Logger) padding {
 	if log == nil {
 		log = slog.Default()

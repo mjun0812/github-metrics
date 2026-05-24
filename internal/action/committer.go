@@ -18,7 +18,7 @@ import (
 // *Invocation; Run executes the configured action.
 //
 // Phase 3 ships only the `commit` path. The `pull-request*` variants
-// land in Phase 4 (T029-T031); for now the Committer rejects them
+// land in Phase 4; for now the Committer rejects them
 // with a clear error so the integration boundary is explicit.
 type Committer struct {
 	REST   *githubapi.REST
@@ -34,7 +34,7 @@ type Committer struct {
 
 	// Condition controls the data-changed gate. "always" (default)
 	// commits unconditionally; "data-changed" runs HashComparator
-	// and skips when bytes are equivalent. Spec FR-012 / FR-013.
+	// and skips when bytes are equivalent.
 	Condition string
 
 	// RunID is the GitHub Actions run id used to scope the
@@ -116,7 +116,7 @@ func (c *Committer) Run(ctx context.Context) error {
 	}
 }
 
-// runCommit implements contracts/committer.md §2 commit path:
+// runCommit implements the commit path:
 // ensureBranch → (optional data-changed check) → previous-sha lookup →
 // PUT /contents. All API calls are wrapped by RetryPolicy.
 func (c *Committer) runCommit(ctx context.Context) error {
@@ -258,7 +258,7 @@ func (c *Committer) putContents(ctx context.Context, branch, prevSHA string) err
 	return nil
 }
 
-// runPullRequest implements contracts/committer.md §3 / §4.
+// runPullRequest implements the pull-request path.
 // mergeMethod is "" for plain pull-request (no auto-merge), or one
 // of "merge" / "squash" / "rebase" for the auto-merge variants.
 func (c *Committer) runPullRequest(ctx context.Context, mergeMethod string) error {

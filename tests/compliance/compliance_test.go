@@ -40,8 +40,8 @@ var unadoptedPluginNames = []string{
 }
 
 // scanRoots is the set of directory prefixes to walk. We focus on
-// production Go code; tests / specs / docs are allowed to mention
-// unadopted plugin names freely (e.g. spec.md, tasks.md document the
+// production Go code; tests and docs are allowed to mention
+// unadopted plugin names freely (e.g. docs may document the
 // full backlog).
 var scanRoots = []string{
 	"cmd",
@@ -69,8 +69,8 @@ var allowedFiles = map[string]struct{}{
 	"internal/render/svg_hash.go":         {},
 	"internal/render/svg_resize.go":       {},
 	// reactions plugin exposes `Discussions int json:"discussions"` as
-	// part of the upstream data.plugins.reactions JSON shape per
-	// data-model.md E-028 (constitution 原則 II output contract). The
+	// part of the upstream data.plugins.reactions JSON shape
+	// (constitution 原則 II output contract). The
 	// word "discussions" overlaps the unadopted upstream "discussions"
 	// plugin name; this allow-list entry preserves the JSON-shape
 	// requirement.
@@ -384,7 +384,7 @@ func TestCompliance_M9_TestInfraInvariant(t *testing.T) {
 }
 
 // TestCompliance_M7_NonAffectedPluginsAreInvariantOnRepo verifies the
-// contract from `contracts/repo-mode-plugin.md §6`: only the 7 listed
+// repo-mode contract: only the 7 listed
 // plugins (activity, contributors, languages, people, projects,
 // sponsors, stargazers) gain a Mode field in JSON output. The other
 // 14 adopted plugins MUST remain untouched. We inspect the plugin

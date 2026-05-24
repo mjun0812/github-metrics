@@ -34,7 +34,7 @@ type ResizeOpts struct {
 	Padding []string
 	// Scripts is the list of user JS bodies to evaluate before
 	// measuring. Each entry is wrapped into `(async () => { ... })()`
-	// by the resize JS template (see contracts/svg-resize.md §2.1).
+	// by the resize JS template.
 	Scripts []string
 	// ViewportWidth / ViewportHeight default to 980/980 when zero.
 	ViewportWidth, ViewportHeight int

@@ -72,8 +72,8 @@ const trivialRepositoryPage = `{
 	}
 }`
 
-// TestIndepth_TriggerMatrix asserts the trigger conditions documented
-// in contracts/plugin-base-extension.md §2.1.
+// TestIndepth_TriggerMatrix asserts the trigger conditions for the
+// in-depth analysis extension.
 func TestIndepth_TriggerMatrix(t *testing.T) {
 	t.Parallel()
 
