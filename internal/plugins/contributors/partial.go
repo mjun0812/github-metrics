@@ -28,8 +28,9 @@ func pluralS(n int) string {
 // Partial renders the classic SVG fragment for the contributors plugin.
 // Upstream classic does not ship a contributors.ejs — contributors is
 // rendered only in the repository template — so we emit a self-contained
-// section with header + per-contributor row (avatar + login + commit
-// count + ++/-- diff line counts) using HTML inside <section>.
+// section with header + per-contributor row (avatar + login, plus
+// commit count and ++/-- diff line counts when contributions mode is
+// enabled) using HTML inside <section>.
 //
 // Returns "" until contributors.go's Run wires up data (M7 repo-mode
 // is the only path that currently populates List; user/org modes stay
@@ -41,12 +42,14 @@ func pluralS(n int) string {
 //	  <h2 class="field"><svg/>N Contributor(s)</h2>
 //	  <div class="row"><section>
 //	    [for each contributor]:
-//	      <div class="field contributor" data-login="...">
+//	      <div class="field contributor[ contributor-contributions]" data-login="...">
 //	        <img class="avatar" src="..."/>
 //	        <span class="login">${login}</span>
-//	        <span class="commits">${commits} commit(s)</span>
-//	        [if additions/deletions]:
-//	          <span class="diff">++${additions} --${deletions}</span>
+//	        [if contributions enabled]:
+//	          <span class="contributions">
+//	            <span class="commits">${commits} commit(s)</span>
+//	            <span class="diff">++${additions} --${deletions}</span>
+//	          </span>
 //	      </div>
 //	  </section></div>
 //	</section>
@@ -76,8 +79,8 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	for _, c := range r.List {
 		fmt.Fprintf(
 			&b,
-			`<div class="field contributor" data-login="%s">`,
-			partials.EscapeXML(c.Login),
+			`<div class="field contributor%s" data-login="%s">`,
+			contributionsClass(r.Contributions), partials.EscapeXML(c.Login),
 		)
 		if c.AvatarURL != "" {
 			fmt.Fprintf(
@@ -87,21 +90,29 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 			)
 		}
 		fmt.Fprintf(&b, `<span class="login">%s</span>`, partials.EscapeXML(c.Login))
-		fmt.Fprintf(
-			&b,
-			` <span class="commits">%d commit%s</span>`,
-			c.Commits, pluralS(c.Commits),
-		)
-		if c.Additions != 0 || c.Deletions != 0 {
+		if r.Contributions {
+			fmt.Fprintf(
+				&b,
+				` <span class="contributions"><span class="commits">%d commit%s</span>`,
+				c.Commits, pluralS(c.Commits),
+			)
 			fmt.Fprintf(
 				&b,
 				` <span class="diff"><span class="code">++%d --%d</span></span>`,
 				c.Additions, c.Deletions,
 			)
+			b.WriteString(`</span>`)
 		}
 		b.WriteString(`</div>`)
 	}
 	b.WriteString(`</section></div>`)
 	b.WriteString(`</section>`)
 	return b.String(), nil
+}
+
+func contributionsClass(enabled bool) string {
+	if !enabled {
+		return ""
+	}
+	return " contributor-contributions"
 }

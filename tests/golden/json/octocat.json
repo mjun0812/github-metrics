@@ -67,6 +67,7 @@
     },
     "contributors": {
       "base": "",
+      "contributions": false,
       "head": "",
       "list": [],
       "mode": "user",
