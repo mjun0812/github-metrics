@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 )
 
 // ImageFetcher fetches a remote image and returns a
@@ -22,6 +23,14 @@ type ImageFetcher interface {
 // reference dozens of CDN URLs; fetching a few at a time keeps the
 // render fast without hammering the CDN.
 const inlineWorkers = 8
+
+// inlineFetchTimeout bounds each individual image fetch so a single hung
+// CDN connection cannot stall the whole render. The httpx client has no
+// deadline of its own (transport Timeout is 0 and retries are enabled),
+// so this per-fetch context caps the underlying retry/backoff loop —
+// mirroring the per-call deadlines other outbound fetches already use
+// (internal/plugins/repositories, internal/plugins/languages/indepth).
+const inlineFetchTimeout = 10 * time.Second
 
 // imgSrcRe captures the URL inside `<img ... src="URL" ...>`. The src
 // value is XML-escaped in the rendered SVG (EscapeXML turns `&` into
@@ -113,7 +122,9 @@ func fetchAll(ctx context.Context, fetcher ImageFetcher, targets map[string]stru
 		go func() {
 			defer wg.Done()
 			defer func() { <-sem }()
-			dataURI, err := fetcher.ImgB64(ctx, target)
+			fetchCtx, cancel := context.WithTimeout(ctx, inlineFetchTimeout)
+			defer cancel()
+			dataURI, err := fetcher.ImgB64(fetchCtx, target)
 			mu.Lock()
 			defer mu.Unlock()
 			if err != nil {
