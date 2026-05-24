@@ -22,13 +22,13 @@ upstream に存在する各 plugin のサブモードについて、Go 実装の
 | `languages.recent`               | ✅ 比較可              | `plugin-languages-recent.svg`                                                                                                                                     |
 | `languages.indepth`              | ✅ 比較可              | `plugin-languages-indepth.svg`                                                                                                                                    |
 | `languages.details`              | ✅ 比較可              | `plugin-languages-details.svg`（本対応で追加）                                                                                                                    |
+| `achievements.compact`           | ✅ 比較可              | `plugin-achievements-compact.svg`（本対応で追加）                                                                                                                 |
 | `isocalendar.fullyear`           | ✅ 比較可              | `plugin-isocalendar-fullyear.svg`（本対応で追加）                                                                                                                 |
 | `calendar.full`                  | ◐ 対応・差分なし       | `plugin_calendar_limit=0` を受け付けるが、このサンプルデータでは無印とバイト同一                                                                                  |
 | `repositories.pinned`            | ◐ 対応・差分なし       | `plugin_repositories_pinned` を受け付けるが、このサンプルデータでは無印とバイト同一                                                                               |
 | `topics.icons`                   | ○ データ無し           | `plugin_topics_mode=icons` 対応。サンプルユーザーに topics 無しで空                                                                                               |
 | `starlists.languages`            | ○ データ無し           | `plugin_starlists_languages` 対応。サンプルユーザーにデータ無しで空                                                                                               |
 | `sponsors.full`                  | ○ データ無し           | `plugin_sponsors_sections` 対応。サンプルユーザーにデータ無しで空                                                                                                 |
-| `achievements.compact`           | ✗ 未対応               | `plugin_achievements_display` を読み込んでいない（要実装）                                                                                                        |
 | `habits.facts` / `habits.charts` | ✗ 区別なし             | facts/charts のフラグを読まず、常に両方表示                                                                                                                       |
 | `notable.indepth`                | ◐ 対応・サンプル未生成 | `plugin_notable_indepth` 対応。indepth は `@owner/repo` 粒度のチップ + 統計ゲージを描画（gen-doc-samples の `plugin-notable-indepth` で生成。実データ要トークン） |
 | `contributors.contributions`     | ✗ 未対応               | repository context（M7 領域）                                                                                                                                     |
@@ -87,13 +87,13 @@ Go 実装側は plugin 単位のサンプルのみで、テンプレート総合
 
 ### achievements
 
-| upstream                                                                  | Go 実装 (`plugin-achievements.svg`)                      |
+| upstream                                                                  | Go 実装                                                  |
 | ------------------------------------------------------------------------- | -------------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.achievements.svg" width="420"> | <img src="examples/plugin-achievements.svg" width="420"> |
 
 他バリアント (upstream): <img src="original_examples/metrics.plugin.achievements.compact.svg" width="420"> (compact)
 
-> ✗ Go 側は `compact` 表示モード（`plugin_achievements_display`）未対応。
+> ✅ Go 側は `plugin_achievements_display=compact` に対応。Go サンプルは `scripts/gen-doc-samples.sh` で `plugin-achievements-compact.svg` / `.png` として生成。
 
 ### repositories
 

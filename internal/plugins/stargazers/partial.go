@@ -77,39 +77,150 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	fmt.Fprintf(&b, `<h2 class="field">%sStargazers</h2>`, starOcticon)
 
 	if len(series) > 0 {
-		// Find min/max for normalization, matching upstream's `(value-min)/(max-min)` ramp.
-		minV, maxV := series[0].Count, series[0].Count
-		for _, pt := range series[1:] {
-			if pt.Count < minV {
-				minV = pt.Count
-			}
-			if pt.Count > maxV {
-				maxV = pt.Count
-			}
-		}
-		denom := maxV - minV
-		if denom == 0 {
-			denom = 1
-		}
-
 		b.WriteString(`<div class="row margin-bottom">`)
 		b.WriteString(`<section class="column chart">`)
 		b.WriteString(`<h3>Total stargazers</h3>`)
-		b.WriteString(`<div class="chart-bars">`)
-		for _, pt := range series {
-			share := 0.05 + 0.95*float64(pt.Count-minV)/float64(denom)
-			day := pt.Date.UTC().Day()
-			fmt.Fprintf(
-				&b,
-				`<div class="entry"><span class="value">%d</span><div class="bar" style="height: %.0fpx; background-color: var(--color-calendar-graph-day-L%d-bg)"></div><span class="label">%d</span></div>`,
-				pt.Count, share*50, bgLevel(share), day,
-			)
+		if r.Charts.Type == chartsTypeGraph {
+			writeGraphChart(&b, series)
+		} else {
+			writeClassicChart(&b, series)
 		}
-		b.WriteString(`</div>`)
 		b.WriteString(`</section>`)
 		b.WriteString(`</div>`)
 	}
 
 	b.WriteString(`</section>`)
 	return b.String(), nil
+}
+
+func writeClassicChart(b *strings.Builder, series []ChartPoint) {
+	// Find min/max for normalization, matching upstream's `(value-min)/(max-min)` ramp.
+	minV, maxV := series[0].Count, series[0].Count
+	for _, pt := range series[1:] {
+		if pt.Count < minV {
+			minV = pt.Count
+		}
+		if pt.Count > maxV {
+			maxV = pt.Count
+		}
+	}
+	denom := maxV - minV
+	if denom == 0 {
+		denom = 1
+	}
+
+	b.WriteString(`<div class="chart-bars">`)
+	for _, pt := range series {
+		share := 0.05 + 0.95*float64(pt.Count-minV)/float64(denom)
+		day := pt.Date.UTC().Day()
+		fmt.Fprintf(
+			b,
+			`<div class="entry"><span class="value">%d</span><div class="bar" style="height: %.0fpx; background-color: var(--color-calendar-graph-day-L%d-bg)"></div><span class="label">%d</span></div>`,
+			pt.Count, share*50, bgLevel(share), day,
+		)
+	}
+	b.WriteString(`</div>`)
+}
+
+func writeGraphChart(b *strings.Builder, series []ChartPoint) {
+	const (
+		width  = 480.0
+		height = 200.0
+		left   = 32.0
+		top    = 12.0
+		right  = 14.0
+		bottom = 54.0
+	)
+	plotW := width - left - right
+	plotH := height - top - bottom
+	minV, maxV := series[0].Count, series[0].Count
+	for _, pt := range series[1:] {
+		if pt.Count < minV {
+			minV = pt.Count
+		}
+		if pt.Count > maxV {
+			maxV = pt.Count
+		}
+	}
+	denom := maxV - minV
+	if denom == 0 {
+		denom = 1
+	}
+
+	points := make([][2]float64, len(series))
+	for i, pt := range series {
+		x := left + plotW/2
+		if len(series) > 1 {
+			x = left + plotW*float64(i)/float64(len(series)-1)
+		}
+		y := top + plotH - plotH*float64(pt.Count-minV)/float64(denom)
+		points[i] = [2]float64{x, y}
+	}
+
+	// Thin out per-point labels so they don't overlap. Upstream's D3
+	// chart lets the layout engine drop ticks; here we keep at most
+	// ~maxLabels evenly spaced labels (always including the first/last).
+	const maxLabels = 12
+	stride := 1
+	if len(series) > maxLabels {
+		stride = (len(series) + maxLabels - 1) / maxLabels
+	}
+	labelAt := func(i int) bool {
+		return i == 0 || i == len(series)-1 || i%stride == 0
+	}
+
+	b.WriteString(`<svg class="stargazers-graph" xmlns="http://www.w3.org/2000/svg" width="480" height="200" viewBox="0 0 480 200" role="img" aria-label="Total stargazers graph">`)
+	// Y axis (dashed) + X axis (solid baseline), matching upstream's
+	// faint grey rgba(127,127,127) axis colors.
+	fmt.Fprintf(b, `<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"></line>`, left, top, left, top+plotH)
+	fmt.Fprintf(b, `<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="rgba(127, 127, 127, .8)"></line>`, left, top+plotH, left+plotW, top+plotH)
+
+	// Area fill first so the line + markers paint on top of it.
+	b.WriteString(`<path d="`)
+	writeAreaPath(b, points, top+plotH)
+	b.WriteString(`" fill="rgba(88, 166, 255, .1)"></path>`)
+	b.WriteString(`<path d="`)
+	writeLinePath(b, points)
+	b.WriteString(`" fill="transparent" stroke="#87ceeb" stroke-width="2"></path>`)
+
+	for i, pt := range series {
+		p := points[i]
+		fmt.Fprintf(b, `<circle cx="%.1f" cy="%.1f" r="2" fill="#106cbc"></circle>`, p[0], p[1])
+		if labelAt(i) {
+			fmt.Fprintf(b, `<text x="%.1f" y="%.1f" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">%d</text>`, p[0], p[1]-6, pt.Count)
+		}
+	}
+	// X-axis date labels rotated -45deg around their anchor to avoid
+	// overlap (same approach as upstream's D3 `rotate(-45)` tick text).
+	for i, pt := range series {
+		if !labelAt(i) {
+			continue
+		}
+		p := points[i]
+		label := pt.Date.UTC().Format("Jan 2006")
+		ly := top + plotH + 12
+		fmt.Fprintf(b, `<text x="%.1f" y="%.1f" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 %.1f %.1f)">%s</text>`, p[0], ly, p[0], ly, label)
+	}
+	b.WriteString(`</svg>`)
+}
+
+func writeLinePath(b *strings.Builder, points [][2]float64) {
+	for i, p := range points {
+		cmd := "L"
+		if i == 0 {
+			cmd = "M"
+		}
+		fmt.Fprintf(b, `%s%.1f,%.1f`, cmd, p[0], p[1])
+	}
+}
+
+func writeAreaPath(b *strings.Builder, points [][2]float64, baseline float64) {
+	if len(points) == 0 {
+		return
+	}
+	writeLinePath(b, points)
+	for i := len(points) - 1; i >= 0; i-- {
+		fmt.Fprintf(b, `L%.1f,%.1f`, points[i][0], baseline)
+	}
+	b.WriteString(`Z`)
 }

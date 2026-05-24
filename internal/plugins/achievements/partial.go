@@ -38,13 +38,13 @@ func rankClass(rank string) string {
 //	<section data-section="achievements">
 //	  <h2 class="field"><svg trophy/>Achievements</h2>
 //	  <div class="row">
-//	    <section class="achievements largeable-flex-wrap">
+//	    <section class="achievements [compact] largeable-flex-wrap">
 //	      [for each achievement]:
 //	        <div class="achievement ${rank-class} largeable-width-half">
 //	          <div class="icon"><svg/>...</div>
 //	          <div class="info">
 //	            <div class="title">${title}</div>
-//	            <div class="text">${description}</div>
+//	            [detailed only] <div class="text">${description}</div>
 //	          </div>
 //	        </div>
 //	    </section>
@@ -73,39 +73,56 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	b.WriteString(`<section data-section="achievements">`)
 	fmt.Fprintf(&b, `<h2 class="field">%sAchievements</h2>`, trophyOcticon)
 	b.WriteString(`<div class="row">`)
-	b.WriteString(`<section class="achievements largeable-flex-wrap">`)
+	if r.Display == displayCompact {
+		b.WriteString(`<section class="achievements compact largeable-flex-wrap">`)
+	} else {
+		b.WriteString(`<section class="achievements largeable-flex-wrap">`)
+	}
 	for _, a := range r.List {
+		writeAchievement(&b, a, r.Display == displayCompact)
+	}
+	b.WriteString(`</section>`)
+	b.WriteString(`</div>`)
+	b.WriteString(`</section>`)
+	return b.String(), nil
+}
+
+func writeAchievement(b *strings.Builder, a Achievement, compact bool) {
+	fmt.Fprintf(
+		b,
+		`<div class="achievement %s largeable-width-half" data-rank="%s" data-icon="%s">`,
+		partials.EscapeXML(rankClass(a.Rank)),
+		partials.EscapeXML(a.Rank),
+		partials.EscapeXML(a.Icon),
+	)
+	// Icon — trophy octicon placeholder until per-achievement icons
+	// land. Rendering as inline SVG (not the data-octicon placeholder
+	// that doesn't resolve in our pipeline).
+	fmt.Fprintf(b, `<div class="icon">%s</div>`, trophyOcticon)
+	b.WriteString(`<div class="info">`)
+	if compact {
 		fmt.Fprintf(
-			&b,
-			`<div class="achievement %s largeable-width-half" data-rank="%s" data-icon="%s">`,
-			partials.EscapeXML(rankClass(a.Rank)),
+			b,
+			`<div class="title"><span class="prefix">%s</span>%s<div class="value-wrapper"><div class="value">%d</div></div></div>`,
 			partials.EscapeXML(a.Rank),
-			partials.EscapeXML(a.Icon),
+			partials.EscapeXML(a.Title),
+			a.Value,
 		)
-		// Icon — trophy octicon placeholder until per-achievement icons
-		// land. Rendering as inline SVG (not the data-octicon placeholder
-		// that doesn't resolve in our pipeline).
-		fmt.Fprintf(&b, `<div class="icon">%s</div>`, trophyOcticon)
-		// Info block: title + text.
-		b.WriteString(`<div class="info">`)
+	} else {
 		fmt.Fprintf(
-			&b,
+			b,
 			`<div class="title"><span class="prefix">%s</span><span class="value">%d</span></div>`,
 			partials.EscapeXML(a.Title),
 			a.Value,
 		)
 		if a.Description != "" {
 			fmt.Fprintf(
-				&b,
+				b,
 				`<div class="text">%s</div>`,
 				partials.EscapeXML(a.Description),
 			)
 		}
-		b.WriteString(`</div>`) // .info
-		b.WriteString(`</div>`) // .achievement
 	}
-	b.WriteString(`</section>`)
-	b.WriteString(`</div>`)
-	b.WriteString(`</section>`)
-	return b.String(), nil
+	b.WriteString(`</div>`) // .info
+	b.WriteString(`</div>`) // .achievement
 }
