@@ -323,7 +323,7 @@ inputs:
 
   plugin_habits_charts:
     description: 'Charts'
-    default: 'no'
+    default: 'yes'
     required: false
 
   plugin_habits_charts_type:

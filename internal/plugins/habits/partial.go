@@ -104,60 +104,62 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if !ok || r == nil || r.Skipped {
 		return "", nil
 	}
-	totalHours := 0
-	for _, n := range r.Charts.Hours {
-		totalHours += n
-	}
-	totalDays := 0
-	for _, n := range r.Charts.Days {
-		totalDays += n
-	}
-	if totalHours == 0 && totalDays == 0 {
+	if !r.FactsEnabled && !r.ChartsEnabled {
 		return "", nil
 	}
 
 	hourIdx := dominantHourIdx(r.Charts.Hours)
 	dayName := dominantDayName(r.Charts.Days)
+	factsHasContent := r.Facts.IndentStyle != "" ||
+		r.Facts.CharsPerLine > 0 ||
+		hourIdx >= 0 ||
+		dayName != ""
+	chartsHasContent := hourIdx >= 0 || dayName != ""
+	if (!r.FactsEnabled || !factsHasContent) && (!r.ChartsEnabled || !chartsHasContent) {
+		return "", nil
+	}
 
 	var b strings.Builder
 	b.WriteString(`<section data-section="habits">`)
 
 	// ── Section 1: header + facts list ──────────────────────────────
-	b.WriteString(`<section class="habits">`)
-	b.WriteString(`<h2 class="field wrap">`)
-	b.WriteString(brainOcticon)
-	b.WriteString(`Recent coding habits`)
-	if r.From > 0 {
-		fmt.Fprintf(
-			&b,
-			`<small class="h-details">(computed from last %d commit%s)</small>`,
-			r.From, pluralS(r.From),
-		)
-	}
-	b.WriteString(`</h2>`)
+	if r.FactsEnabled && factsHasContent {
+		b.WriteString(`<section class="habits">`)
+		b.WriteString(`<h2 class="field wrap">`)
+		b.WriteString(brainOcticon)
+		b.WriteString(`Recent coding habits`)
+		if r.From > 0 {
+			fmt.Fprintf(
+				&b,
+				`<small class="h-details">(computed from last %d commit%s)</small>`,
+				r.From, pluralS(r.From),
+			)
+		}
+		b.WriteString(`</h2>`)
 
-	b.WriteString(`<div class="row"><ul class="facts">`)
-	if r.Facts.IndentStyle != "" {
-		fmt.Fprintf(&b, `<li>Uses %s for indentation</li>`, partials.EscapeXML(r.Facts.IndentStyle))
+		b.WriteString(`<div class="row"><ul class="facts">`)
+		if r.Facts.IndentStyle != "" {
+			fmt.Fprintf(&b, `<li>Uses %s for indentation</li>`, partials.EscapeXML(r.Facts.IndentStyle))
+		}
+		if r.Facts.CharsPerLine > 0 {
+			fmt.Fprintf(
+				&b,
+				`<li>Has approximately %.1f characters per line of code written</li>`,
+				r.Facts.CharsPerLine,
+			)
+		}
+		if hourIdx >= 0 {
+			fmt.Fprintf(&b, `<li>Mostly pushes code around %d:00</li>`, hourIdx)
+		}
+		if dayName != "" {
+			fmt.Fprintf(&b, `<li>Mostly active on %s</li>`, dayName)
+		}
+		b.WriteString(`</ul></div>`)
+		b.WriteString(`</section>`)
 	}
-	if r.Facts.CharsPerLine > 0 {
-		fmt.Fprintf(
-			&b,
-			`<li>Has approximately %.1f characters per line of code written</li>`,
-			r.Facts.CharsPerLine,
-		)
-	}
-	if hourIdx >= 0 {
-		fmt.Fprintf(&b, `<li>Mostly pushes code around %d:00</li>`, hourIdx)
-	}
-	if dayName != "" {
-		fmt.Fprintf(&b, `<li>Mostly active on %s</li>`, dayName)
-	}
-	b.WriteString(`</ul></div>`)
-	b.WriteString(`</section>`)
 
 	// ── Section 2: chart-bars (hour + day) ──────────────────────────
-	if hourIdx >= 0 || dayName != "" {
+	if r.ChartsEnabled && chartsHasContent {
 		b.WriteString(`<section class="habits">`)
 		if hourIdx >= 0 {
 			writeHourChart(&b, r.Charts.Hours, r.Trim)

@@ -1,5 +1,7 @@
 {
   "days": 14,
+  "factsEnabled": true,
+  "chartsEnabled": true,
   "facts": {
     "linesPerCommit": 0,
     "charsPerLine": 0,
