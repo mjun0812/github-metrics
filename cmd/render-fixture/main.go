@@ -54,7 +54,7 @@ import (
 
 func main() {
 	var (
-		slug = flag.String("slug", "sponsors", "fixture to render: sponsors / topics / topics_icons / sponsorships / projects / notable / stargazers / repositories_pinned")
+		slug = flag.String("slug", "sponsors", "fixture to render: sponsors / topics / topics_icons / sponsorships / projects / notable / stargazers / stargazers_graph / repositories_pinned")
 		out  = flag.String("out", "", "output SVG path (required)")
 	)
 	flag.Parse()
@@ -85,7 +85,9 @@ func main() {
 	case "notable":
 		seedNotable(data, inputs)
 	case "stargazers":
-		seedStargazers(data, inputs)
+		seedStargazers(data, inputs, "classic")
+	case "stargazers_graph":
+		seedStargazers(data, inputs, "graph")
 	case "repositories_pinned":
 		seedRepositoriesPinned(data, inputs)
 	default:
@@ -253,8 +255,9 @@ func seedNotable(data *plugins.Data, inputs map[string]any) {
 }
 
 // seedStargazers populates data.Plugins["stargazers"] with a synthetic
-// month-bucketed cumulative chart (spec 013).
-func seedStargazers(data *plugins.Data, inputs map[string]any) {
+// month-bucketed cumulative chart (spec 013). chartsType selects between
+// the classic bar chart and the #394 line/area graph variant.
+func seedStargazers(data *plugins.Data, inputs map[string]any, chartsType string) {
 	data.User = &plugins.User{Login: "mjun0812"}
 	series := []stargazers.ChartPoint{
 		{Date: mustTime("2024-09-01T00:00:00Z"), Count: 5},
@@ -282,9 +285,10 @@ func seedStargazers(data *plugins.Data, inputs map[string]any) {
 	data.SetPlugin("stargazers", &stargazers.Result{
 		Mode:   "user",
 		List:   []stargazers.Stargazer{},
-		Charts: stargazers.StargazersCharts{Type: "classic-latest100", Series: series},
+		Charts: stargazers.StargazersCharts{Type: chartsType, Series: series},
 	})
 	inputs["plugin_stargazers"] = "yes"
+	inputs["plugin_stargazers_charts_type"] = chartsType
 }
 
 // seedRepositoriesPinned populates data.Plugins["repositories"].Pinned

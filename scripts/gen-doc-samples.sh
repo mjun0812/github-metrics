@@ -2,9 +2,10 @@
 # scripts/gen-doc-samples.sh — generate the docs/examples/ sample SVG
 # set for the README plugins gallery + per-plugin doc pages.
 #
-# Runs the 19 adopted plugins (mjun0812 user by default) + 5 sub-mode
+# Runs the 19 adopted plugins (mjun0812 user by default) + 6 sub-mode
 # variants (achievements compact + languages recent/indepth/details +
-# isocalendar full-year) = 24 logical samples (svg + png each).
+# isocalendar full-year + stargazers graph) = 25 logical samples
+# (svg + png each).
 #
 # Pipeline per file:
 #   1. docker run github-metrics:local → writes /out/<file>.svg
@@ -137,7 +138,7 @@ echo "== other upstream-parity sub-mode variants =="
 #   - topics.icons, starlists.languages, sponsors.full
 #       sample user has no data, so the card renders empty.
 #   - habits.facts/charts, notable.indepth, contributors.contributions,
-#     stargazers.graph/worldmap/chartist, people.repository
+#     stargazers.worldmap/chartist, people.repository
 #       not yet supported by the Go implementation (needs plugin work).
 render_one "plugin-achievements-compact" \
   --template classic \
@@ -157,12 +158,19 @@ render_one "plugin-isocalendar-fullyear" \
   --plugin "plugin_isocalendar=yes" \
   --plugin "plugin_isocalendar_duration=full-year"
 
+render_one "plugin-stargazers-graph" \
+  --template classic \
+  --plugin "base=" \
+  --plugin "plugin_stargazers=yes" \
+  --plugin "plugin_stargazers_charts_type=graph"
+
 echo
 echo "== Summary =="
 # 2 formats (svg + png) per logical sample.
-# +2 languages sub-modes (recent, indepth) +3 parity variants
-# (achievements.compact, languages.details, isocalendar.fullyear).
-TOTAL=$(( (${#PLUGINS[@]} + 2 + 3) * 2 ))
+# +2 languages sub-modes (recent, indepth) +4 parity variants
+# (achievements.compact, languages.details, isocalendar.fullyear,
+#  stargazers.graph).
+TOTAL=$(( (${#PLUGINS[@]} + 2 + 4) * 2 ))
 OK=$((TOTAL - ${#FAILURES[@]}))
 echo "  OK:   ${OK}/${TOTAL}"
 if (( ${#FAILURES[@]} > 0 )); then

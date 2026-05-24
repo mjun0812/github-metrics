@@ -21,6 +21,11 @@ import (
 // Name is the canonical plugin slug.
 const Name = "stargazers"
 
+const (
+	chartsTypeClassic = "classic"
+	chartsTypeGraph   = "graph"
+)
+
 // Plugin is the singleton registered with the global plugin registry.
 var Plugin plugins.Plugin = &stargazersPlugin{}
 
@@ -78,6 +83,7 @@ func (p *stargazersPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
+	chartsType := selectedChartsType(pc.Inputs)
 	if v, ok := pc.Inputs["plugin_stargazers_worldmap"]; ok && isTruthy(v) {
 		if pc.Logger != nil {
 			pc.Logger.Warn("stargazers: worldmap is not yet implemented in M4 (planned as N-task)")
@@ -93,14 +99,14 @@ func (p *stargazersPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (
 		return &Result{
 			Mode:   plugins.ModeRepo,
 			List:   []Stargazer{},
-			Charts: StargazersCharts{Type: "classic", Series: []ChartPoint{}},
+			Charts: StargazersCharts{Type: chartsType, Series: []ChartPoint{}},
 		}, nil
 	}
 	// Spec 013: user-mode chart from viewer.repositories(owner).stargazers
 	base := &Result{
 		Mode:   plugins.ModeUser,
 		List:   []Stargazer{},
-		Charts: StargazersCharts{Type: "classic", Series: []ChartPoint{}},
+		Charts: StargazersCharts{Type: chartsType, Series: []ChartPoint{}},
 	}
 	if pc.GraphQL == nil || !isTruthy(pc.Inputs["plugin_stargazers"]) {
 		base.Skipped = true
@@ -114,30 +120,21 @@ func (p *stargazersPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (
 		pc.Data.AppendError(xerrors.NewRetryableError(err))
 		return base, nil
 	}
-	series, latestHint := buildSeries(resp)
+	series := buildSeries(resp)
 	base.Charts.Series = series
-	if latestHint {
-		base.Charts.Type = "classic-latest100"
-	}
 	return base, nil
 }
 
 // buildSeries flattens stargazers across all owned repos into month
-// buckets and accumulates into a cumulative count series. Returns the
-// chart series and a "latestHint" flag set when any repo exceeded the
-// 100-edge fetch cap (used downstream to add a "Latest 100" suffix).
-func buildSeries(resp *githubapi.ViewerStargazersReposResponse) ([]ChartPoint, bool) {
+// buckets and accumulates into a cumulative count series.
+func buildSeries(resp *githubapi.ViewerStargazersReposResponse) []ChartPoint {
 	if resp == nil || resp.Viewer == nil || resp.Viewer.Repositories == nil {
-		return []ChartPoint{}, false
+		return []ChartPoint{}
 	}
 	monthly := map[string]int{}
-	latestHint := false
 	for _, repo := range resp.Viewer.Repositories.Nodes {
 		if repo == nil || repo.Stargazers == nil {
 			continue
-		}
-		if repo.Stargazers.TotalCount > 100 {
-			latestHint = true
 		}
 		for _, edge := range repo.Stargazers.Edges {
 			if edge == nil {
@@ -159,7 +156,7 @@ func buildSeries(resp *githubapi.ViewerStargazersReposResponse) ([]ChartPoint, b
 		t, _ := time.Parse("2006-01", k)
 		out = append(out, ChartPoint{Date: t, Count: cum})
 	}
-	return out, latestHint
+	return out
 }
 
 func monthKey(t time.Time) string {
@@ -175,4 +172,28 @@ func isTruthy(v any) bool {
 		return s == "true" || s == "1" || s == "yes"
 	}
 	return false
+}
+
+// selectedChartsType resolves the user-supplied
+// `plugin_stargazers_charts_type` input into a canonical chart type.
+//
+// The resolution is a switch keyed on the lower-cased, trimmed input so
+// new aliases (e.g. #395 maps `chartist` onto `graph`) can be added with
+// a single extra case. Unknown or empty values fall back to the upstream
+// default `classic`.
+func selectedChartsType(inputs map[string]any) string {
+	raw, ok := inputs["plugin_stargazers_charts_type"]
+	if !ok {
+		return chartsTypeClassic
+	}
+	s, ok := raw.(string)
+	if !ok {
+		return chartsTypeClassic
+	}
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case chartsTypeGraph:
+		return chartsTypeGraph
+	default:
+		return chartsTypeClassic
+	}
 }
