@@ -16,6 +16,18 @@ swapping one `uses:` line. See
 [`docs/migration-to-go.md`](docs/migration-to-go.md) for the full migration
 guide and unported-feature list.
 
+<!-- AUTOGEN_START: hero -->
+### Example output
+
+`classic` template (user profile metrics):
+
+![classic template sample](docs/examples/hero-classic.svg)
+
+`repository` template (single-repo focus):
+
+![repository template sample](docs/examples/hero-repository.svg)
+<!-- AUTOGEN_END: hero -->
+
 ---
 
 ## Highlights
@@ -135,15 +147,29 @@ user's profile, so a missing token fails immediately.
 
 ## Plugins
 
-The 19 user-facing plugins below are always available; enable each via
-`plugin_<slug>: yes`. Two additional internal plugins (`base`, `core`)
-power the metadata pipeline and run automatically.
+<!-- AUTOGEN_START: plugins-gallery -->
+| | | |
+|:---:|:---:|:---:|
+| [![achievements](docs/examples/plugin-achievements.svg)](docs/plugins/achievements.md) | [![activity](docs/examples/plugin-activity.svg)](docs/plugins/activity.md) | [![calendar](docs/examples/plugin-calendar.svg)](docs/plugins/calendar.md) |
+| [`achievements`](docs/plugins/achievements.md) | [`activity`](docs/plugins/activity.md) | [`calendar`](docs/plugins/calendar.md) |
+| [![contributors](docs/examples/plugin-contributors.svg)](docs/plugins/contributors.md) | [![habits](docs/examples/plugin-habits.svg)](docs/plugins/habits.md) | [![isocalendar](docs/examples/plugin-isocalendar.svg)](docs/plugins/isocalendar.md) |
+| [`contributors`](docs/plugins/contributors.md) | [`habits`](docs/plugins/habits.md) | [`isocalendar`](docs/plugins/isocalendar.md) |
+| [![languages](docs/examples/plugin-languages.svg)](docs/plugins/languages.md) | [![notable](docs/examples/plugin-notable.svg)](docs/plugins/notable.md) | [![people](docs/examples/plugin-people.svg)](docs/plugins/people.md) |
+| [`languages`](docs/plugins/languages.md) | [`notable`](docs/plugins/notable.md) | [`people`](docs/plugins/people.md) |
+| [![projects](docs/examples/plugin-projects.svg)](docs/plugins/projects.md) | [![reactions](docs/examples/plugin-reactions.svg)](docs/plugins/reactions.md) | [![repositories](docs/examples/plugin-repositories.svg)](docs/plugins/repositories.md) |
+| [`projects`](docs/plugins/projects.md) | [`reactions`](docs/plugins/reactions.md) | [`repositories`](docs/plugins/repositories.md) |
+| [![sponsors](docs/examples/plugin-sponsors.svg)](docs/plugins/sponsors.md) | [![sponsorships](docs/examples/plugin-sponsorships.svg)](docs/plugins/sponsorships.md) | [![stargazers](docs/examples/plugin-stargazers.svg)](docs/plugins/stargazers.md) |
+| [`sponsors`](docs/plugins/sponsors.md) | [`sponsorships`](docs/plugins/sponsorships.md) | [`stargazers`](docs/plugins/stargazers.md) |
+| [![starlists](docs/examples/plugin-starlists.svg)](docs/plugins/starlists.md) | [![stars](docs/examples/plugin-stars.svg)](docs/plugins/stars.md) | [![topics](docs/examples/plugin-topics.svg)](docs/plugins/topics.md) |
+| [`starlists`](docs/plugins/starlists.md) | [`stars`](docs/plugins/stars.md) | [`topics`](docs/plugins/topics.md) |
+| [![traffic](docs/examples/plugin-traffic.svg)](docs/plugins/traffic.md) | | |
+| [`traffic`](docs/plugins/traffic.md) | | |
+<!-- AUTOGEN_END: plugins-gallery -->
 
-| Data source            | Plugins                                                                                          |
-| ---------------------- | ------------------------------------------------------------------------------------------------ |
-| Profile / repositories | `languages`, `activity`, `achievements`, `repositories`, `isocalendar`                           |
-| GraphQL / REST         | `calendar`, `habits`, `stars`, `people`, `notable`, `contributors`, `reactions`, `projects`, `sponsors`, `sponsorships`, `stargazers`, `traffic` |
-| Headless Chromium      | `topics`, `starlists`                                                                            |
+The 19 user-facing plugins above are always available; enable each via
+`plugin_<slug>: yes` and click a tile for the full per-plugin doc
+page. Two additional internal plugins (`base`, `core`) power the
+metadata pipeline and run automatically.
 
 The `languages` plugin ships `recent` and `indepth` sub-modes via
 `plugin_languages_sections`. `topics` and `starlists` require the
