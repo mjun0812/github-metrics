@@ -117,11 +117,65 @@ func TestRun_ChartsTypeDefaultsToClassic(t *testing.T) {
 	}
 }
 
-func TestRun_ChartsTypeChartistIsNotAliased(t *testing.T) {
+// TestRun_ChartsTypeChartistAliasedToGraph verifies that `chartist`
+// (deprecated upstream alias) produces the same Charts.Type as `graph`.
+func TestRun_ChartsTypeChartistAliasedToGraph(t *testing.T) {
 	t.Parallel()
 	r := runWith(t, map[string]any{"plugin_stargazers_charts_type": "chartist"})
-	if r.Charts.Type != "classic" {
-		t.Fatalf("Charts.Type = %q, want classic", r.Charts.Type)
+	if r.Charts.Type != "graph" {
+		t.Fatalf("Charts.Type = %q, want graph (chartist is an alias of graph)", r.Charts.Type)
+	}
+}
+
+// TestRun_ChartsTypeChartistOutputIdenticalToGraph verifies that
+// `charts_type=chartist` produces output byte-identical to `charts_type=graph`
+// when both share the same input data — satisfying the Acceptance Criteria of
+// GitHub issue #395.
+func TestRun_ChartsTypeChartistOutputIdenticalToGraph(t *testing.T) {
+	t.Parallel()
+	mux := mocks.NewGraphQLMux(t)
+	const mockResponse = `{"data":{"viewer":{"repositories":{"totalCount":1,"nodes":[{"nameWithOwner":"octocat/hello-world","stargazerCount":2,"stargazers":{"totalCount":2,"edges":[{"starredAt":"2026-05-02T00:00:00Z"},{"starredAt":"2026-04-01T00:00:00Z"}]}}]}}}}`
+	mux.OnBody("ViewerStargazersRepos", http.StatusOK, mockResponse)
+	mux.OnBody("ViewerStargazersRepos", http.StatusOK, mockResponse)
+
+	pcGraph := mocks.NewPluginContext(
+		t,
+		mocks.WithGraphQL(mux),
+		mocks.WithInputs(map[string]any{
+			"plugin_stargazers":             true,
+			"plugin_stargazers_charts_type": "graph",
+		}),
+	)
+	outGraph, err := stargazers.Plugin.Run(context.Background(), pcGraph)
+	if err != nil {
+		t.Fatalf("Run(graph): %v", err)
+	}
+	rGraph := outGraph.(*stargazers.Result)
+
+	pcChartist := mocks.NewPluginContext(
+		t,
+		mocks.WithGraphQL(mux),
+		mocks.WithInputs(map[string]any{
+			"plugin_stargazers":             true,
+			"plugin_stargazers_charts_type": "chartist",
+		}),
+	)
+	outChartist, err := stargazers.Plugin.Run(context.Background(), pcChartist)
+	if err != nil {
+		t.Fatalf("Run(chartist): %v", err)
+	}
+	rChartist := outChartist.(*stargazers.Result)
+
+	jsonGraph, err := json.Marshal(rGraph)
+	if err != nil {
+		t.Fatalf("json.Marshal(graph): %v", err)
+	}
+	jsonChartist, err := json.Marshal(rChartist)
+	if err != nil {
+		t.Fatalf("json.Marshal(chartist): %v", err)
+	}
+	if !bytes.Equal(jsonGraph, jsonChartist) {
+		t.Fatalf("chartist output differs from graph output\ngraph:    %s\nchartist: %s", jsonGraph, jsonChartist)
 	}
 }
 
