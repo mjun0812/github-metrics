@@ -107,6 +107,7 @@ echo "== 19 per-plugin single-panel renders =="
 for slug in "${PLUGINS[@]}"; do
   render_one "plugin-${slug}" \
     --template classic \
+    --plugin "base=" \
     --plugin "plugin_${slug}=yes"
 done
 
@@ -114,11 +115,13 @@ echo
 echo "== 2 languages sub-mode variants =="
 render_one "plugin-languages-recent" \
   --template classic \
+  --plugin "base=" \
   --plugin "plugin_languages=yes" \
   --plugin "plugin_languages_sections=most-used,recently-used"
 
 render_one "plugin-languages-indepth" \
   --template classic \
+  --plugin "base=" \
   --plugin "plugin_languages=yes" \
   --plugin "plugin_languages_indepth=yes" \
   --plugin "plugin_languages_analysis_timeout=30"
