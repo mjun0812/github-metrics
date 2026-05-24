@@ -9,21 +9,18 @@ for the migration story from upstream, see
 ## Scope discipline
 
 This project is a **subset port** of [lowlighter/metrics](https://github.com/lowlighter/metrics).
-The adopted feature set is documented in
-[`docs/design/15-selection-answer.md`](docs/design/15-selection-answer.md);
-additions to that scope require a constitution amendment
-([`.specify/memory/constitution.md`](.specify/memory/constitution.md))
-landed in a separate PR before implementation begins. Several CI
-gates enforce this: see
+The user-facing list of supported and unported features lives in
+[`docs/migration-to-go.md`](docs/migration-to-go.md). CI gates in
 [`tests/compliance/compliance_test.go`](tests/compliance/compliance_test.go)
-for the directory-set and unadopted-slug guards.
+enforce the adopted plugin set so that unported slugs cannot sneak into
+production code.
 
 Concretely, the following are **out of scope** and will be rejected:
 
-- M5 — Web instance / OAuth / Insights HTML
-- M8 — Social / external-API plugins (anilist, leetcode, chess,
-  wakatime, etc. — 19 slugs)
-- Community plugin/template extensions
+- Web instance / OAuth / Insights HTML
+- Social and external-API plugins (`anilist`, `leetcode`, `chess`,
+  `wakatime`, etc. — 19 slugs)
+- Community plugin / template extensions
 - PDF / Markdown output formats
 
 If you have a use case that needs one of these, please open a discussion
@@ -112,8 +109,8 @@ make test-heavy
 
 ### docker-smoke tests
 
-The M10 production Dockerfile smoke test (build + `--help` invocation
-+ image-size assertion) is gated behind `//go:build docker_smoke` and
+The production Dockerfile smoke test (build + `--help` invocation +
+image-size assertion) is gated behind `//go:build docker_smoke` and
 requires docker on PATH.
 
 ```sh
@@ -122,11 +119,11 @@ make docker-smoke
 
 ## Releasing
 
-See [`specs/008-m10-release-distribution/quickstart.md`](specs/008-m10-release-distribution/quickstart.md)
-for the maintainer release procedure (dry-run gate, action.yml
-pinning, tag push, post-release verification).
-
-Pre-tag dry runs are encouraged:
+The maintainer release procedure is split into three steps — dry-run
+gate, `action.yml` pinning, and tag push followed by post-release
+verification. Run `make release-dry-run` before pushing a tag to catch
+issues early; the [`scripts/release-verify.sh`](scripts/release-verify.sh)
+helper covers the post-release manifest / signature / checksum checks.
 
 ```sh
 make release-dry-run
@@ -191,10 +188,8 @@ assets/               Embedded plugin / template metadata
 deploy/               Production Dockerfile + deployment manifests
 scripts/              release-verify.sh and other maintainer helpers
 tests/                Fixtures, golden files, compliance + integration tests
-docs/design/          Design corpus (Japanese — internal reference)
 docs/migration-to-go.md   User-facing migration guide (Japanese)
-specs/                Spec Kit feature specifications and plans
-.specify/             Spec Kit machinery (workflow templates, hooks)
+docs/design/          Design corpus (Japanese — internal reference)
 ```
 
 `internal/` is the standard Go visibility boundary — nothing under it
@@ -209,10 +204,10 @@ surfaces.
   like "update" or "fix" without context are rejected.
 - **Semantic Versioning** — git tags use the `vX.Y.Z` form;
   pre-release suffixes follow SemVer 2.0.0 (e.g. `v1.0.0-rc1`).
-- **PR description** — explain *why*, not *what*. Link to the spec /
-  issue / discussion that drove the change. Constitution-relevant
-  changes (input compatibility, output DOM structure, scope) must
-  call out the impact explicitly so reviewers can gate on it.
+- **PR description** — explain *why*, not *what*. Link to the issue or
+  discussion that drove the change. Compatibility-relevant changes
+  (input naming, output DOM structure, scope) must call out the impact
+  explicitly so reviewers can gate on it.
 
 ## Reporting bugs / requesting features
 

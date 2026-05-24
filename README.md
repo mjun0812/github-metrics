@@ -139,14 +139,16 @@ The 19 user-facing plugins below are always available; enable each via
 `plugin_<slug>: yes`. Two additional internal plugins (`base`, `core`)
 power the metadata pipeline and run automatically.
 
-| Tier         | Plugins                                                                                          |
-| ------------ | ------------------------------------------------------------------------------------------------ |
-| MVP          | `languages`, `activity`, `achievements`, `repositories`, `isocalendar`                           |
-| GraphQL/REST | `calendar`, `habits`, `stars`, `people`, `notable`, `contributors`, `reactions`, `projects`, `sponsors`, `sponsorships`, `stargazers`, `traffic` |
-| chromedp     | `topics`, `starlists`                                                                            |
+| Data source            | Plugins                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------ |
+| Profile / repositories | `languages`, `activity`, `achievements`, `repositories`, `isocalendar`                           |
+| GraphQL / REST         | `calendar`, `habits`, `stars`, `people`, `notable`, `contributors`, `reactions`, `projects`, `sponsors`, `sponsorships`, `stargazers`, `traffic` |
+| Headless Chromium      | `topics`, `starlists`                                                                            |
 
 The `languages` plugin ships `recent` and `indepth` sub-modes via
-`plugin_languages_sections`.
+`plugin_languages_sections`. `topics` and `starlists` require the
+Action / Docker runtime (Chromium is bundled there) — the standalone
+Go binary skips them with a warning.
 
 Every input is documented in [`action.yml`](action.yml) and is identical
 to the corresponding upstream input. Inputs gating unported plugins
@@ -222,10 +224,10 @@ into a single command for maintainer post-release validation.
 
 Bug reports and pull requests welcome. Before opening a PR, please read
 [`CONTRIBUTING.md`](CONTRIBUTING.md) for the development workflow
-(toolchain, hooks, test categories) and the project's scope discipline
-(see also [`docs/migration-to-go.md`](docs/migration-to-go.md) §3 for the
-unported-feature list — additions to that scope require constitution
-amendment before implementation).
+(toolchain, hooks, test categories) and the project's scope discipline.
+The unported-feature list lives in
+[`docs/migration-to-go.md`](docs/migration-to-go.md) §3 — proposals that
+extend that scope are welcome via a discussion issue first.
 
 ## License
 
