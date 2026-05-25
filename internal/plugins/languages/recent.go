@@ -152,6 +152,39 @@ func (p *recentPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	totals := map[string]*acc{}
 	seenRepos := map[string]struct{}{}
 	repos := []string{}
+	// accumulate folds a commit/push file list into the per-language byte
+	// totals, applying the standard-mode alias / ignored / category
+	// filters so recent mode stays consistent with most-used mode.
+	accumulate := func(files []rawCommitFile) {
+		for _, f := range files {
+			lang := enry.GetLanguage(f.Filename, nil)
+			if lang == "" {
+				continue
+			}
+			lang = canonicalLanguage(lang, in.standard.aliases)
+			if _, drop := in.standard.ignored[lang]; drop {
+				continue
+			}
+			if !categoryAllowed(lang, in.categories) {
+				continue
+			}
+			bytes := f.Additions + f.Deletions
+			if bytes <= 0 {
+				continue
+			}
+			a, ok := totals[lang]
+			if !ok {
+				a = &acc{}
+				totals[lang] = a
+			}
+			a.size += bytes
+			a.count++
+			if a.color == "" {
+				a.color = colorFor(lang, in.standard.colors)
+			}
+		}
+	}
+
 	for _, pe := range pushes {
 		if pe.CreatedAt.Before(cutoff) {
 			continue
@@ -160,43 +193,33 @@ func (p *recentPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 			seenRepos[pe.Repo.Name] = struct{}{}
 			repos = append(repos, pe.Repo.Name)
 		}
-		for _, sha := range pe.Payload.commitSHAs() {
-			files, err := fetchCommitFiles(ctx, pc, pe.Repo.Name, sha)
-			if err != nil {
-				// Best-effort: a single commit miss should not abort
-				// the whole walk. Record once on Data.Errors so callers
-				// can see the degraded path.
-				pc.Data.AppendError(fmt.Errorf("languages.recent: commit %s/%s: %w", pe.Repo.Name, sha, err))
-				continue
+		// Prefer the explicit per-commit list when the events payload
+		// still carries it. GitHub increasingly omits payload.commits
+		// (leaving only before/head); in that case resolve the pushed
+		// range through the compare API, mirroring the gh-metrics fork
+		// of upstream metrics.
+		if shas := pe.Payload.commitSHAs(); len(shas) > 0 {
+			for _, sha := range shas {
+				files, err := fetchCommitFiles(ctx, pc, pe.Repo.Name, sha)
+				if err != nil {
+					// Best-effort: a single commit miss should not abort
+					// the whole walk. Record once on Data.Errors so
+					// callers can see the degraded path.
+					pc.Data.AppendError(fmt.Errorf("languages.recent: commit %s/%s: %w", pe.Repo.Name, sha, err))
+					continue
+				}
+				accumulate(files)
 			}
-			for _, f := range files {
-				lang := enry.GetLanguage(f.Filename, nil)
-				if lang == "" {
-					continue
-				}
-				lang = canonicalLanguage(lang, in.standard.aliases)
-				if _, drop := in.standard.ignored[lang]; drop {
-					continue
-				}
-				if !categoryAllowed(lang, in.categories) {
-					continue
-				}
-				bytes := f.Additions + f.Deletions
-				if bytes <= 0 {
-					continue
-				}
-				a, ok := totals[lang]
-				if !ok {
-					a = &acc{}
-					totals[lang] = a
-				}
-				a.size += bytes
-				a.count++
-				if a.color == "" {
-					a.color = colorFor(lang, in.standard.colors)
-				}
-			}
+			continue
 		}
+		files, err := fetchPushFiles(ctx, pc, pe.Repo.Name, pe.Payload.Before, pe.Payload.Head)
+		if err != nil {
+			// Best-effort: a single push miss should not abort the walk.
+			pc.Data.AppendError(fmt.Errorf("languages.recent: push %s (%s..%s): %w",
+				pe.Repo.Name, shortSHA(pe.Payload.Before), shortSHA(pe.Payload.Head), err))
+			continue
+		}
+		accumulate(files)
 	}
 
 	totalBytes := 0
@@ -268,7 +291,12 @@ type rawPushRepo struct {
 }
 
 type rawPushPayload struct {
+	// Commits is the legacy per-commit list. GitHub increasingly omits it
+	// from the events feed, so recent analysis falls back to Before/Head
+	// plus the compare API when it is absent.
 	Commits []rawPushCommit `json:"commits"`
+	Before  string          `json:"before"`
+	Head    string          `json:"head"`
 }
 
 func (p rawPushPayload) commitSHAs() []string {
@@ -307,6 +335,18 @@ func fetchPushEvents(ctx context.Context, pc *plugins.PluginContext, login strin
 		}
 		if resp == nil {
 			return nil, errors.New("languages.recent: nil response")
+		}
+		// GitHub's user events feed only paginates ~300 events deep
+		// (per_page=100 × 3 pages); requesting page 4+ returns HTTP 422
+		// (Unprocessable Entity). Upstream metrics (languages
+		// analyzer/recent.mjs) swallows that page-limit error and
+		// proceeds with the events already fetched ("no more page to
+		// load"). Mirror that: stop paginating on 422 and analyse
+		// whatever we gathered so far instead of failing the whole
+		// plugin. Other non-2xx (e.g. 5xx) still surface as errors so the
+		// retryable path keeps working.
+		if resp.StatusCode == 422 {
+			break
 		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 			return nil, &recentFetchStatusError{status: resp.StatusCode}
@@ -348,6 +388,56 @@ func fetchCommitFiles(ctx context.Context, pc *plugins.PluginContext, repo, sha 
 	var c rawCommit
 	if err := json.Unmarshal(body, &c); err != nil {
 		return nil, fmt.Errorf("languages.recent: decode commit: %w", err)
+	}
+	return c.Files, nil
+}
+
+// zeroSHA is git's all-zero object id. GitHub sends it as a push's
+// `before` when a brand-new branch is created (nothing to diff against).
+const zeroSHA = "0000000000000000000000000000000000000000"
+
+func isZeroSHA(sha string) bool { return sha == "" || sha == zeroSHA }
+
+func shortSHA(sha string) string {
+	if len(sha) > 7 {
+		return sha[:7]
+	}
+	return sha
+}
+
+// rawCompare is the subset of the /compare response we consume: the
+// aggregated file list across the pushed range.
+type rawCompare struct {
+	Files []rawCommitFile `json:"files"`
+}
+
+// fetchPushFiles resolves the files changed by a push via the compare API
+// (/repos/{repo}/compare/{before}...{head}), which aggregates
+// additions/deletions across every commit in the pushed range. This
+// avoids depending on payload.commits, which GitHub frequently omits from
+// the events feed. New-branch pushes carry an all-zero `before` with
+// nothing to diff from, so fall back to the head commit alone.
+func fetchPushFiles(ctx context.Context, pc *plugins.PluginContext, repo, before, head string) ([]rawCommitFile, error) {
+	if head == "" {
+		return nil, nil
+	}
+	if isZeroSHA(before) {
+		return fetchCommitFiles(ctx, pc, repo, head)
+	}
+	path := fmt.Sprintf("/repos/%s/compare/%s...%s", repo, before, head)
+	body, resp, err := pc.REST.Get(ctx, path, nil)
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil {
+		return nil, errors.New("languages.recent: nil response")
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, &recentFetchStatusError{status: resp.StatusCode}
+	}
+	var c rawCompare
+	if err := json.Unmarshal(body, &c); err != nil {
+		return nil, fmt.Errorf("languages.recent: decode compare: %w", err)
 	}
 	return c.Files, nil
 }

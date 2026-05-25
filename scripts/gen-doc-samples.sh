@@ -118,7 +118,9 @@ render_one "plugin-languages-recent" \
   --template classic \
   --plugin "base=" \
   --plugin "plugin_languages=yes" \
-  --plugin "plugin_languages_sections=most-used,recently-used"
+  --plugin "plugin_languages_sections=most-used,recently-used" \
+  --plugin "plugin_languages_recent_load=300" \
+  --plugin "plugin_languages_recent_days=30"
 
 render_one "plugin-languages-indepth" \
   --template classic \

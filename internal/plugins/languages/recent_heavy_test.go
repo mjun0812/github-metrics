@@ -319,3 +319,132 @@ func TestRecentRun_5xxRetryable(t *testing.T) {
 func pushEventsArray(events ...string) string {
 	return "[" + strings.Join(events, ",") + "]"
 }
+
+// TestRecentRun_EventsPaginationLimit — GitHub's user events feed only
+// paginates ~300 events deep; page 4+ returns HTTP 422. The plugin must
+// stop paginating and analyse the events already fetched instead of
+// failing the whole plugin (mirrors upstream metrics' graceful
+// "no more page to load" behaviour).
+func TestRecentRun_EventsPaginationLimit(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	mux := newRESTMux()
+	// Page 1 returns a full 100-event batch (== perPage) so the loop
+	// advances to page 2, but only 2 are PushEvents so `out` stays below
+	// load(100) and the page-2 request is actually issued.
+	evs := []string{
+		pushEvent("octocat/alpha", now.Add(-1*time.Hour), "sha1"),
+		pushEvent("octocat/alpha", now.Add(-2*time.Hour), "sha2"),
+	}
+	for i := 0; i < 98; i++ {
+		evs = append(evs, fmt.Sprintf(
+			`{"type":"WatchEvent","repo":{"name":"octocat/alpha"},"created_at":%q}`,
+			now.Format(time.RFC3339),
+		))
+	}
+	mux.on("/users/octocat/events?per_page=100&page=1", http.StatusOK, pushEventsArray(evs...))
+	// Page 2 hits the pagination cap → 422.
+	mux.on("/users/octocat/events?per_page=100&page=2", http.StatusUnprocessableEntity,
+		`{"message":"pagination is limited for this resource"}`)
+	mux.on("/repos/octocat/alpha/commits/sha", http.StatusOK,
+		commitBody(file("main.go", 100, 0)))
+
+	pc := newPC(t, mux, nil)
+	out, err := languages.RecentPlugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run returned error on 422 page limit (want graceful stop): %v", err)
+	}
+	r, ok := out.(*languages.RecentResult)
+	if !ok {
+		t.Fatalf("Run returned %T", out)
+	}
+	if r.Skipped {
+		t.Fatalf("unexpected Skipped: %s", r.SkippedReason)
+	}
+	if len(r.Favorites) == 0 {
+		t.Fatalf("Favorites empty; the 422 page limit must not abort analysis; got %+v", r)
+	}
+	var goBytes int
+	for _, f := range r.Favorites {
+		if f.Name == "Go" {
+			goBytes = f.Size
+		}
+	}
+	if goBytes == 0 {
+		t.Errorf("expected Go bytes > 0 from page-1 events; favorites=%+v", r.Favorites)
+	}
+}
+
+// TestRecentRun_CompareFallback — when the events payload omits the
+// commits[] array (only before/head present, as GitHub now commonly
+// returns), recent mode resolves the pushed files via the compare API.
+func TestRecentRun_CompareFallback(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	mux := newRESTMux()
+	ev := fmt.Sprintf(
+		`{"type":"PushEvent","repo":{"name":"octocat/alpha"},"created_at":%q,`+
+			`"payload":{"ref":"refs/heads/main","before":"aaa1111","head":"bbb2222"}}`,
+		now.Add(-1*time.Hour).Format(time.RFC3339),
+	)
+	mux.on("/users/octocat/events", http.StatusOK, pushEventsArray(ev))
+	mux.on("/repos/octocat/alpha/compare/aaa1111...bbb2222", http.StatusOK,
+		commitBody(file("main.go", 120, 10), file("util.py", 30, 5)))
+
+	pc := newPC(t, mux, nil)
+	out, err := languages.RecentPlugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*languages.RecentResult)
+	if r.Skipped {
+		t.Fatalf("unexpected Skipped: %s", r.SkippedReason)
+	}
+	if len(r.Favorites) == 0 {
+		t.Fatalf("Favorites empty; compare fallback failed: %+v", r)
+	}
+	names := map[string]int{}
+	for _, f := range r.Favorites {
+		names[f.Name] = f.Size
+	}
+	if names["Go"] == 0 {
+		t.Errorf("expected Go bytes > 0 via compare; favorites=%+v", r.Favorites)
+	}
+	if names["Python"] == 0 {
+		t.Errorf("expected Python bytes > 0 via compare; favorites=%+v", r.Favorites)
+	}
+}
+
+// TestRecentRun_NewBranchUsesHead — a brand-new-branch push has an
+// all-zero `before`; there is nothing to diff against, so recent mode
+// falls back to the head commit's own file list.
+func TestRecentRun_NewBranchUsesHead(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	mux := newRESTMux()
+	ev := fmt.Sprintf(
+		`{"type":"PushEvent","repo":{"name":"octocat/alpha"},"created_at":%q,`+
+			`"payload":{"ref":"refs/heads/feat","before":"0000000000000000000000000000000000000000","head":"ccc3333"}}`,
+		now.Add(-1*time.Hour).Format(time.RFC3339),
+	)
+	mux.on("/users/octocat/events", http.StatusOK, pushEventsArray(ev))
+	mux.on("/repos/octocat/alpha/commits/ccc3333", http.StatusOK,
+		commitBody(file("server.go", 80, 0)))
+
+	pc := newPC(t, mux, nil)
+	out, err := languages.RecentPlugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*languages.RecentResult)
+	if r.Skipped {
+		t.Fatalf("unexpected Skipped: %s", r.SkippedReason)
+	}
+	names := map[string]int{}
+	for _, f := range r.Favorites {
+		names[f.Name] = f.Size
+	}
+	if names["Go"] == 0 {
+		t.Errorf("expected Go bytes > 0 from head fallback; favorites=%+v", r.Favorites)
+	}
+}
