@@ -797,6 +797,11 @@ inputs:
     default: 'no'
     required: false
 
+  plugin_traffic_hide_empty:
+    description: 'Hide repositories with zero views from the per-repo breakdown'
+    default: 'yes'
+    required: false
+
   plugin_traffic_skipped:
     description: 'Skipped repositories'
     required: false

@@ -6,7 +6,10 @@
 # variants (achievements compact + languages recent/indepth/details +
 # isocalendar full-year + stargazers graph + notable indepth + habits
 # facts + habits charts) + 1 foundational `base` render = 29 logical
-# samples (svg + png each).
+# samples (svg + png each). The default `plugin-languages` sample is
+# emitted via a one-off `render_one` call (not the PLUGINS loop) so it
+# can pass `plugin_languages_details=bytes-size,percentage` alongside
+# the slug toggle.
 #
 # `core` is excluded from the foundational set: it implements
 # configuration parsing and the parallel plugin runner and has no
@@ -50,10 +53,14 @@ WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 
 # Adopted plugin slugs (mirror of tests/compliance/compliance_test.go
-# adoptedM4Plugins minus base/core).
+# adoptedM4Plugins minus base/core). `languages` is intentionally
+# omitted here and rendered via a one-off `render_one` call below so
+# the default sample can also carry the
+# `plugin_languages_details=bytes-size,percentage` override (the
+# generic loop only emits `plugin_<slug>=yes`).
 PLUGINS=(
   achievements activity calendar contributors habits isocalendar
-  languages notable people projects reactions repositories sponsors
+  notable people projects reactions repositories sponsors
   sponsorships stargazers starlists stars topics traffic
 )
 
@@ -109,7 +116,7 @@ render_one() {
   done
 }
 
-echo "== 19 per-plugin single-panel renders =="
+echo "== 18 per-plugin single-panel renders (languages handled separately) =="
 for slug in "${PLUGINS[@]}"; do
   render_one "plugin-${slug}" \
     --template classic \
@@ -118,21 +125,33 @@ for slug in "${PLUGINS[@]}"; do
 done
 
 echo
-echo "== 2 languages sub-mode variants =="
+echo "== languages default + 2 sub-mode variants =="
+# All three carry `plugin_languages_details=bytes-size,percentage` so
+# the rendered cards show per-language bytes and percentage next to
+# the colored bar. The dedicated `plugin-languages-details` variant
+# below adds `lines` on top for the "full numeric column" demo.
+render_one "plugin-languages" \
+  --template classic \
+  --plugin "base=" \
+  --plugin "plugin_languages=yes" \
+  --plugin "plugin_languages_details=bytes-size,percentage"
+
 render_one "plugin-languages-recent" \
   --template classic \
   --plugin "base=" \
   --plugin "plugin_languages=yes" \
-  --plugin "plugin_languages_sections=most-used,recently-used" \
+  --plugin "plugin_languages_sections=recently-used" \
   --plugin "plugin_languages_recent_load=300" \
-  --plugin "plugin_languages_recent_days=30"
+  --plugin "plugin_languages_recent_days=30" \
+  --plugin "plugin_languages_details=bytes-size,percentage"
 
 render_one "plugin-languages-indepth" \
   --template classic \
   --plugin "base=" \
   --plugin "plugin_languages=yes" \
   --plugin "plugin_languages_indepth=yes" \
-  --plugin "plugin_languages_analysis_timeout=30"
+  --plugin "plugin_languages_analysis_timeout=30" \
+  --plugin "plugin_languages_details=bytes-size,percentage"
 
 echo
 echo "== other upstream-parity sub-mode variants =="
@@ -210,11 +229,13 @@ render_one "plugin-base" \
 echo
 echo "== Summary =="
 # 2 formats (svg + png) per logical sample.
-# +2 languages sub-modes (recent, indepth) +7 parity variants
+# PLUGINS holds 18 slugs (languages is rendered as a one-off so it can
+# pass `plugin_languages_details=bytes-size,percentage`); +3 languages
+# entries (default, recent, indepth) +7 parity variants
 # (achievements.compact, notable.indepth, habits.facts, habits.charts,
 #  languages.details, isocalendar.fullyear, stargazers.graph)
 # +1 foundational base render.
-TOTAL=$(( (${#PLUGINS[@]} + 2 + 7 + 1) * 2 ))
+TOTAL=$(( (${#PLUGINS[@]} + 3 + 7 + 1) * 2 ))
 OK=$((TOTAL - ${#FAILURES[@]}))
 echo "  OK:   ${OK}/${TOTAL}"
 if (( ${#FAILURES[@]} > 0 )); then
