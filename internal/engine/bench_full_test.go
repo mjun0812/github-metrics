@@ -99,11 +99,10 @@ func fullPluginInputs() map[string]any {
 		"plugin_sponsorships": true,
 		"plugin_stargazers":   true,
 		"plugin_traffic":      true,
-		// P3 (chromedp / heavy). Note: pc.Render is *FakeRenderer here,
-		// so topics / starlists will skip with "chromedp not available"
-		// — Run() still executes, the gate just records a Skipped
-		// result. This matches the production behavior when chromium is
-		// unavailable.
+		// P3 (formerly chromedp; now HTTP + GraphQL). topics fetches
+		// the SSR /stars/<user>/topics page over plain HTTPS; starlists
+		// rides on the project GraphQL client. Both run unconditionally
+		// when their `plugin_<slug>` gate is set.
 		"plugin_topics":    true,
 		"plugin_starlists": true,
 	}

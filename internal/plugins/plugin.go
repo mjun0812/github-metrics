@@ -33,10 +33,10 @@ type PluginContext struct {
 	Data       *Data
 	Metadata   *config.MetadataLoader
 	Imports    PluginImports
-	// Render carries the engine's renderer. P3 chromedp-dependent
-	// plugins (topics / starlists) type-assert this to `*render.Browser`
-	// to obtain a navigation surface; the type assertion failing (nil
-	// or *render.FakeRenderer) is the documented skip path.
+	// Render carries the engine's renderer. Only the SVG -> PNG/JPEG
+	// resize pipeline (engine.dispatch.go) consumes this field today;
+	// plugins themselves never type-assert it. Tests inject a
+	// *render.FakeRenderer to avoid launching chromium.
 	Render render.Renderer
 }
 

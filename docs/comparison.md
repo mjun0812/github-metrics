@@ -152,6 +152,7 @@ Go 実装側は plugin 単位のサンプルのみで、テンプレート総合
 他バリアント (upstream): 📁 [topics.icons (1.1 MB)](original_examples/metrics.plugin.topics.icons.svg)
 
 > ○ Go 側は `plugin_topics_mode=icons` 対応だが、サンプルユーザーに topics 無しで空表示。
+> 実装メモ: upstream は puppeteer で `/stars/<user>/topics` をスクレイピングするが、Go 実装は公開 SSR ページを HTTP + goquery で取得する (chromium 不要)。
 
 ### starlists
 
@@ -162,6 +163,7 @@ Go 実装側は plugin 単位のサンプルのみで、テンプレート総合
 他バリアント (upstream): <img src="original_examples/metrics.plugin.starlists.languages.svg" width="420"> (languages)
 
 > ○ Go 側は `plugin_starlists_languages` 対応だが、サンプルユーザーにデータ無しで空表示。
+> 実装メモ: upstream は puppeteer で `/stars/<user>/lists` をスクレイピングするが、Go 実装は GitHub GraphQL の `user.lists` を 1 クエリで取得する (chromium 不要)。
 
 ### people
 

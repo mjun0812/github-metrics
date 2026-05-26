@@ -550,10 +550,11 @@ func defaultBuildDeps(_ context.Context, inv *Invocation) (engine.Deps, error) {
 	if err != nil {
 		return engine.Deps{}, fmt.Errorf("new GraphQL: %w", err)
 	}
-	// Render: FakeRenderer in mocked mode, real browser otherwise.
-	// Real chromedp browser construction lands when a chromedp-needing
-	// plugin (topics / starlists) is enabled; for the MVP commit path
-	// we let engine.Compute lazily allocate one (engine.Deps.Render
+	// Render: FakeRenderer in mocked mode, real browser otherwise. The
+	// real browser is now only needed for the SVG -> PNG/JPEG resize
+	// pipeline (engine.dispatch.go); topics and starlists no longer
+	// depend on chromedp. We let engine.Compute lazily allocate the
+	// browser when an image format is requested (engine.Deps.Render
 	// nil is the documented "lazy allocate" signal).
 	var renderer render.Renderer
 	if inv.UseMockedData {

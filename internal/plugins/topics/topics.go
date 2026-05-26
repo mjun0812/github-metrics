@@ -1,16 +1,19 @@
-// Package topics owns the M4 "topics" plugin. It scrapes the user's
-// starred-topics page via chromedp because the GitHub API does not
-// expose the dataset directly.
+// Package topics owns the M4 "topics" plugin. It fetches the user's
+// starred-topics page via plain HTTPS + goquery — the GitHub API does
+// not expose the dataset, but `https://github.com/stars/{user}/topics`
+// is fully server-rendered HTML (no React hydration, no
+// include-fragment), so a single GET is enough. No headless browser
+// required.
 //
-// The runtime keeps the chromedp surface behind a small Navigator
-// interface so non-chromedp tests can exercise the skipped/short-circuit
-// paths without launching chromium. The chromedp-tagged tests substitute
-// the production Navigator backed by *render.Browser.
+// The Navigator interface is preserved as a test seam: production code
+// uses httpNavigator; non-network tests substitute a fake. The
+// upstream chromedp-backed implementation is gone.
 package topics
 
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,7 +21,6 @@ import (
 	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
-	"github.com/mjun0812/github-metrics/internal/render"
 )
 
 // Name is the canonical plugin slug.
@@ -62,9 +64,9 @@ type Topic struct {
 	StarredAt string `json:"-"`
 }
 
-// Navigator abstracts the chromedp-backed page scrape so non-chromedp
-// tests can inject a fake. Production code uses browserNavigator backed
-// by *render.Browser.
+// Navigator abstracts the HTTP fetch + HTML parse so non-network tests
+// can inject a fake. Production code uses httpNavigator from
+// http_navigator.go.
 type Navigator interface {
 	Fetch(ctx context.Context, url string) ([]Topic, error)
 }
@@ -113,22 +115,10 @@ func (p *topicsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	}
 
 	nav := pickNavigator(pc)
-	if nav == nil {
-		// Record a *RetryableError on Data.Errors so the engine surfaces
-		// the missing-chromedp degraded path on Result.Errors per
-		// contract §3.4 step 2.
-		pc.Data.AppendError(xerrors.NewRetryableError(
-			fmt.Errorf("topics: chromedp not available"),
-		))
-		return &Result{
-			Skipped:       true,
-			SkippedReason: "chromedp not available",
-			List:          []Topic{},
-			Mode:          in.mode,
-			Limit:         in.limit,
-			Sort:          in.sort,
-		}, nil
-	}
+	// pickNavigator always returns a non-nil Navigator: tests can inject
+	// one via NavigatorKey, otherwise we fall back to a stdlib-backed
+	// httpNavigator. (No external dependency on chromedp / browsers any
+	// more — the GitHub stars-topics page is fully SSR.)
 
 	login := loginFromInputs(pc.Inputs)
 	if login == "" {
@@ -146,9 +136,9 @@ func (p *topicsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	list, err := nav.Fetch(ctx, url)
 	if err != nil {
 		wrapped := fmt.Errorf("topics: %w", err)
-		// chromedp surface errors (timeouts, context cancellation) are
-		// always transient — wrap as *RetryableError so the engine can
-		// retry or surface them on Result.Errors per contract §3.6.
+		// Network errors (timeouts, transient 5xx, context cancellation)
+		// are surfaced as *RetryableError so the engine can retry or
+		// expose them on Result.Errors per contract §3.6.
 		return nil, xerrors.NewRetryableError(wrapped)
 	}
 
@@ -175,21 +165,27 @@ func (p *topicsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 }
 
 // pickNavigator returns the test-injected Navigator if present.
-// Otherwise it returns a browserNavigator when pc.Render is a real
-// *render.Browser; nil when it is nil or a *FakeRenderer.
+// Otherwise it returns a stdlib-backed httpNavigator. Result is never
+// nil — the topics page does not depend on chromium / a logged-in
+// session, so the plugin no longer has a "navigator unavailable" path.
 func pickNavigator(pc *plugins.PluginContext) Navigator {
-	if pc.Inputs != nil {
+	if pc != nil && pc.Inputs != nil {
 		if v, ok := pc.Inputs[NavigatorKey]; ok {
 			if n, ok := v.(Navigator); ok {
 				return n
 			}
 		}
 	}
-	browser, ok := pc.Render.(*render.Browser)
-	if !ok || browser == nil {
-		return nil
+	// Prefer pc.HTTPClient (it threads the project's retryable transport
+	// + standard UA) when present. Otherwise fall back to the bare
+	// http.DefaultClient.
+	var client httpDoer
+	if pc != nil && pc.HTTPClient != nil {
+		client = pc.HTTPClient.HTTPClient()
+	} else {
+		client = http.DefaultClient
 	}
-	return &browserNavigator{browser: browser}
+	return NewHTTPNavigator(client, "")
 }
 
 func parseInputs(in map[string]any) topicsInputs {
