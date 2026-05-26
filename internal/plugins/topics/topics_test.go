@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -50,31 +52,52 @@ func newPC(_ *testing.T, nav topics.Navigator, inputs map[string]any) *plugins.P
 	return pc
 }
 
-// TestRun_Skipped_ChromedpUnavailable — no navigator and no Render =>
-// chromedp not available, returns Skipped=true and records a
-// *RetryableError on Data.Errors per contract §3.4 step 2.
-func TestRun_Skipped_ChromedpUnavailable(t *testing.T) {
+// TestRun_DefaultNavigator_IsHTTP — when no Navigator is injected the
+// plugin falls back to the stdlib-backed httpNavigator. The plugin is
+// no longer "skipped" for missing chromedp because the SSR topics page
+// is reachable via plain HTTPS.
+func TestRun_DefaultNavigator_IsHTTP(t *testing.T) {
 	t.Parallel()
-	pc := newPC(t, nil, nil)
+	// Stand up a local server returning a minimal stars/topics page
+	// (5 anchors). The navigator follows whatever URL the plugin
+	// constructs, so we cannot redirect there — instead we point the
+	// plugin at the local server via a NavigatorKey that wraps a
+	// real httpNavigator with our test endpoint.
+	body := `<!doctype html><html><body>
+<a href="/topics/go"><p>Go</p><p>Go lang</p><img src="/go.png"></a>
+<a href="/topics/rust"><p>Rust</p><p>Rust lang</p><img src="/rust.png"></a>
+</body></html>`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(body))
+	}))
+	defer srv.Close()
+
+	httpNav := topics.NewHTTPNavigator(srv.Client(), "test-agent")
+	pc := newPC(t, &fixedURLNav{inner: httpNav, target: srv.URL}, nil)
 	out, err := topics.Plugin.Run(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	r := out.(*topics.Result)
-	if !r.Skipped {
-		t.Fatalf("Skipped = false, want true")
+	if r.Skipped {
+		t.Fatalf("unexpected Skipped: %s", r.SkippedReason)
 	}
-	if r.SkippedReason != "chromedp not available" {
-		t.Errorf("SkippedReason = %q", r.SkippedReason)
+	if len(r.List) != 2 {
+		t.Fatalf("List len = %d, want 2; %+v", len(r.List), r.List)
 	}
-	snapshot := pc.Data.SnapshotErrors()
-	if len(snapshot) == 0 {
-		t.Fatalf("expected *RetryableError on Data.Errors")
-	}
-	var re *xerrors.RetryableError
-	if !errors.As(snapshot[0], &re) {
-		t.Errorf("Data.Errors[0] type = %T, want *xerrors.RetryableError; err=%v", snapshot[0], snapshot[0])
-	}
+}
+
+// fixedURLNav forwards Fetch to inner but always targets `target`,
+// ignoring the URL the plugin constructed. Used in network tests so we
+// don't have to mutate the plugin's URL builder.
+type fixedURLNav struct {
+	inner  topics.Navigator
+	target string
+}
+
+func (f *fixedURLNav) Fetch(ctx context.Context, _ string) ([]topics.Topic, error) {
+	return f.inner.Fetch(ctx, f.target)
 }
 
 // TestRun_Skipped_PuppeteerDisabled — extras toggle short-circuits

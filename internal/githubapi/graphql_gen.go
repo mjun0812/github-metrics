@@ -1226,6 +1226,242 @@ func (v *UserIndepthUserRepositoriesRepositoryConnectionPageInfo) GetEndCursor()
 	return v.EndCursor
 }
 
+// UserListsResponse is returned by UserLists on success.
+type UserListsResponse struct {
+	User *UserListsUser `json:"user"`
+}
+
+// GetUser returns UserListsResponse.User, and is useful for accessing the field via an interface.
+func (v *UserListsResponse) GetUser() *UserListsUser { return v.User }
+
+// UserListsUser includes the requested fields of the GraphQL type User.
+type UserListsUser struct {
+	Lists *UserListsUserListsUserListConnection `json:"lists"`
+}
+
+// GetLists returns UserListsUser.Lists, and is useful for accessing the field via an interface.
+func (v *UserListsUser) GetLists() *UserListsUserListsUserListConnection { return v.Lists }
+
+// UserListsUserListsUserListConnection includes the requested fields of the GraphQL type UserListConnection.
+type UserListsUserListsUserListConnection struct {
+	TotalCount int                                                  `json:"totalCount"`
+	Nodes      []*UserListsUserListsUserListConnectionNodesUserList `json:"nodes"`
+}
+
+// GetTotalCount returns UserListsUserListsUserListConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserListsUserListsUserListConnection) GetTotalCount() int { return v.TotalCount }
+
+// GetNodes returns UserListsUserListsUserListConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *UserListsUserListsUserListConnection) GetNodes() []*UserListsUserListsUserListConnectionNodesUserList {
+	return v.Nodes
+}
+
+// UserListsUserListsUserListConnectionNodesUserList includes the requested fields of the GraphQL type UserList.
+type UserListsUserListsUserListConnectionNodesUserList struct {
+	Name        string                                                                         `json:"name"`
+	Description *string                                                                        `json:"description"`
+	IsPrivate   bool                                                                           `json:"isPrivate"`
+	Items       *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection `json:"items"`
+}
+
+// GetName returns UserListsUserListsUserListConnectionNodesUserList.Name, and is useful for accessing the field via an interface.
+func (v *UserListsUserListsUserListConnectionNodesUserList) GetName() string { return v.Name }
+
+// GetDescription returns UserListsUserListsUserListConnectionNodesUserList.Description, and is useful for accessing the field via an interface.
+func (v *UserListsUserListsUserListConnectionNodesUserList) GetDescription() *string {
+	return v.Description
+}
+
+// GetIsPrivate returns UserListsUserListsUserListConnectionNodesUserList.IsPrivate, and is useful for accessing the field via an interface.
+func (v *UserListsUserListsUserListConnectionNodesUserList) GetIsPrivate() bool { return v.IsPrivate }
+
+// GetItems returns UserListsUserListsUserListConnectionNodesUserList.Items, and is useful for accessing the field via an interface.
+func (v *UserListsUserListsUserListConnectionNodesUserList) GetItems() *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection {
+	return v.Items
+}
+
+// UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection includes the requested fields of the GraphQL type UserListItemsConnection.
+type UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection struct {
+	TotalCount int                                                                                               `json:"totalCount"`
+	Nodes      []UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems `json:"-"`
+}
+
+// GetTotalCount returns UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// GetNodes returns UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection) GetNodes() []UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems {
+	return v.Nodes
+}
+
+func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection
+		Nodes []json.RawMessage `json:"nodes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Nodes
+		src := firstPass.Nodes
+		*dst = make(
+			[]UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems,
+			len(src),
+		)
+		for i, src := range src {
+			dst := &(*dst)[i]
+			if len(src) != 0 && string(src) != "null" {
+				err = __unmarshalUserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems(
+					src, dst,
+				)
+				if err != nil {
+					return fmt.Errorf(
+						"unable to unmarshal UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection.Nodes: %w", err,
+					)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalUserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection struct {
+	TotalCount int `json:"totalCount"`
+
+	Nodes []json.RawMessage `json:"nodes"`
+}
+
+func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection) __premarshalJSON() (*__premarshalUserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection, error) {
+	var retval __premarshalUserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection
+
+	retval.TotalCount = v.TotalCount
+	{
+
+		dst := &retval.Nodes
+		src := v.Nodes
+		*dst = make(
+			[]json.RawMessage,
+			len(src),
+		)
+		for i, src := range src {
+			dst := &(*dst)[i]
+			var err error
+			*dst, err = __marshalUserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems(
+				&src,
+			)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"unable to marshal UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection.Nodes: %w", err,
+				)
+			}
+		}
+	}
+	return &retval, nil
+}
+
+// UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository includes the requested fields of the GraphQL type Repository.
+type UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository struct {
+	Typename       *string `json:"__typename"`
+	NameWithOwner  string  `json:"nameWithOwner"`
+	StargazerCount int     `json:"stargazerCount"`
+}
+
+// GetTypename returns UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository.Typename, and is useful for accessing the field via an interface.
+func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository) GetTypename() *string {
+	return v.Typename
+}
+
+// GetNameWithOwner returns UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository.NameWithOwner, and is useful for accessing the field via an interface.
+func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository) GetNameWithOwner() string {
+	return v.NameWithOwner
+}
+
+// GetStargazerCount returns UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository.StargazerCount, and is useful for accessing the field via an interface.
+func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository) GetStargazerCount() int {
+	return v.StargazerCount
+}
+
+// UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems includes the requested fields of the GraphQL interface UserListItems.
+//
+// UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems is implemented by the following types:
+// UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository
+type UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems interface {
+	implementsGraphQLInterfaceUserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() *string
+}
+
+func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository) implementsGraphQLInterfaceUserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems() {
+}
+
+func __unmarshalUserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems(b []byte, v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "Repository":
+		*v = new(UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing UserListItems.__typename",
+		)
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems: "%v"`, tn.TypeName,
+		)
+	}
+}
+
+func __marshalUserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems(v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems) ([]byte, error) {
+	var typename string
+	switch v := (*v).(type) {
+	case *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository:
+		typename = "Repository"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems: "%T"`, v,
+		)
+	}
+}
+
 // UserReactionsResponse is returned by UserReactions on success.
 type UserReactionsResponse struct {
 	User *UserReactionsUser `json:"user"`
@@ -3621,6 +3857,22 @@ type __UserInput struct {
 // GetLogin returns __UserInput.Login, and is useful for accessing the field via an interface.
 func (v *__UserInput) GetLogin() string { return v.Login }
 
+// __UserListsInput is used internally by genqlient
+type __UserListsInput struct {
+	Login      string `json:"login"`
+	ListsFirst int    `json:"listsFirst"`
+	ItemsFirst int    `json:"itemsFirst"`
+}
+
+// GetLogin returns __UserListsInput.Login, and is useful for accessing the field via an interface.
+func (v *__UserListsInput) GetLogin() string { return v.Login }
+
+// GetListsFirst returns __UserListsInput.ListsFirst, and is useful for accessing the field via an interface.
+func (v *__UserListsInput) GetListsFirst() int { return v.ListsFirst }
+
+// GetItemsFirst returns __UserListsInput.ItemsFirst, and is useful for accessing the field via an interface.
+func (v *__UserListsInput) GetItemsFirst() int { return v.ItemsFirst }
+
 // __UserReactionsInput is used internally by genqlient
 type __UserReactionsInput struct {
 	Login         string `json:"login"`
@@ -4125,6 +4377,61 @@ func UserIndepth(
 	}
 
 	data_ = &UserIndepthResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by UserLists.
+const UserLists_Operation = `
+query UserLists ($login: String!, $listsFirst: Int!, $itemsFirst: Int!) {
+	user(login: $login) {
+		lists(first: $listsFirst) {
+			totalCount
+			nodes {
+				name
+				description
+				isPrivate
+				items(first: $itemsFirst) {
+					totalCount
+					nodes {
+						__typename
+						... on Repository {
+							nameWithOwner
+							stargazerCount
+						}
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func UserLists(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	login string,
+	listsFirst int,
+	itemsFirst int,
+) (data_ *UserListsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UserLists",
+		Query:  UserLists_Operation,
+		Variables: &__UserListsInput{
+			Login:      login,
+			ListsFirst: listsFirst,
+			ItemsFirst: itemsFirst,
+		},
+	}
+
+	data_ = &UserListsResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

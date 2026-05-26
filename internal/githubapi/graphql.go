@@ -175,6 +175,12 @@ func (g *GraphQL) ViewerPinnedItems(ctx context.Context, first int) (*ViewerPinn
 	return ViewerPinnedItems(ctx, g.client, first)
 }
 
+// UserLists fetches the user's starlists (user.lists) and their items
+// in a single round-trip. Consumed by the "starlists" plugin (spec 014).
+func (g *GraphQL) UserLists(ctx context.Context, login string, listsFirst, itemsFirst int) (*UserListsResponse, error) {
+	return UserLists(ctx, g.client, login, listsFirst, itemsFirst)
+}
+
 // graphqlAuthTransport adds the Authorization and Accept headers that
 // every GitHub GraphQL request needs. inner may be nil, in which case
 // http.DefaultTransport is used.

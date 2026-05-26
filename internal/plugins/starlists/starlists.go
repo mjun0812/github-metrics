@@ -1,10 +1,11 @@
-// Package starlists owns the M4 "starlists" plugin. It scrapes the
-// user's starred-lists landing page + each list's detail page via
-// chromedp because the GitHub API does not expose starlists.
+// Package starlists owns the M4 "starlists" plugin. It uses GitHub's
+// `user.lists` GraphQL field (verified live, May 2026) to fetch
+// starlists + their items in one round trip. No headless browser
+// required.
 //
-// Same Navigator-based test seam as the topics plugin: production
-// chromedp scraping is isolated behind the Navigator interface so non-
-// chromedp tests can exercise the skipped/short-circuit paths.
+// Same Navigator-based test seam as the topics plugin: production code
+// uses graphqlNavigator from graphql_navigator.go; non-network tests
+// substitute a fake.
 package starlists
 
 import (
@@ -17,7 +18,6 @@ import (
 	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
-	"github.com/mjun0812/github-metrics/internal/render"
 )
 
 // Name is the canonical plugin slug.
@@ -59,10 +59,11 @@ type Starlist struct {
 	Repos       []string               `json:"-"` // internal: repos extracted from detail page
 }
 
-// Navigator abstracts the chromedp interactions so non-chromedp tests
-// can inject a fake. The Fetch method returns the list overview; the
-// FetchRepos method drills into a single list to enumerate its repos
-// for language analysis.
+// Navigator abstracts the upstream-data fetch so non-network tests can
+// inject a fake. FetchLists returns the list overview; FetchRepos
+// enumerates a single list's repos for language analysis. The
+// production implementation is graphqlNavigator (single GraphQL query
+// answers both — see graphql_navigator.go).
 type Navigator interface {
 	FetchLists(ctx context.Context, url string) ([]Starlist, error)
 	FetchRepos(ctx context.Context, listURL string) ([]string, error)
@@ -104,24 +105,27 @@ func (p *starlistsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 		}, nil
 	}
 
-	nav := pickNavigator(pc)
-	if nav == nil {
-		pc.Data.AppendError(xerrors.NewRetryableError(
-			fmt.Errorf("starlists: chromedp not available"),
-		))
-		return &Result{
-			Skipped:       true,
-			SkippedReason: "chromedp not available",
-			List:          []Starlist{},
-			Languages:     in.languages,
-		}, nil
-	}
-
 	login := loginFromInputs(pc.Inputs)
 	if login == "" {
 		return &Result{
 			Skipped:       true,
 			SkippedReason: "no login",
+			List:          []Starlist{},
+			Languages:     in.languages,
+		}, nil
+	}
+
+	nav := pickNavigator(pc, login, in)
+	if nav == nil {
+		// The GraphQL client is absent (test harnesses with no API
+		// dep). Skip cleanly and record a retryable error so the
+		// engine surfaces the degraded path on Result.Errors.
+		pc.Data.AppendError(xerrors.NewRetryableError(
+			fmt.Errorf("starlists: graphql client not available"),
+		))
+		return &Result{
+			Skipped:       true,
+			SkippedReason: "graphql client not available",
 			List:          []Starlist{},
 			Languages:     in.languages,
 		}, nil
@@ -213,21 +217,28 @@ func analyzeLanguages(ctx context.Context, pc *plugins.PluginContext, list []Sta
 }
 
 // pickNavigator returns the test-injected Navigator if present.
-// Otherwise it returns a browserNavigator when pc.Render is a real
-// *render.Browser; nil when it is nil or a *FakeRenderer.
-func pickNavigator(pc *plugins.PluginContext) Navigator {
-	if pc.Inputs != nil {
+// Otherwise it constructs a graphqlNavigator on top of pc.GraphQL;
+// nil when pc.GraphQL is unset (test harnesses without GraphQL
+// wiring).
+func pickNavigator(pc *plugins.PluginContext, login string, in starlistsInputs) Navigator {
+	if pc != nil && pc.Inputs != nil {
 		if v, ok := pc.Inputs[NavigatorKey]; ok {
 			if n, ok := v.(Navigator); ok {
 				return n
 			}
 		}
 	}
-	browser, ok := pc.Render.(*render.Browser)
-	if !ok || browser == nil {
+	if pc == nil || pc.GraphQL == nil {
 		return nil
 	}
-	return &browserNavigator{browser: browser}
+	listsFirst := in.limit
+	if listsFirst <= 0 {
+		listsFirst = 10
+	}
+	// GitHub's GraphQL caps `first` at 100; keep items capped at 50 to
+	// stay well inside the per-query node budget. Items rarely exceed
+	// that in real starlists.
+	return NewGraphQLNavigator(pc.GraphQL, login, listsFirst, 50)
 }
 
 func parseInputs(in map[string]any) starlistsInputs {

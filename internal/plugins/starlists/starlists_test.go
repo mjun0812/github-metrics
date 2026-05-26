@@ -63,8 +63,12 @@ func newPC(_ *testing.T, nav starlists.Navigator, inputs map[string]any) *plugin
 	return pc
 }
 
-// TestRun_Skipped_ChromedpUnavailable mirrors the topics plugin behavior.
-func TestRun_Skipped_ChromedpUnavailable(t *testing.T) {
+// TestRun_Skipped_GraphQLUnavailable — when neither a fake Navigator
+// nor a real GraphQL client are wired in, the plugin records a
+// *RetryableError on Data.Errors and returns Skipped=true. This is
+// the test harness's "no API dep" path; production always has GraphQL
+// available because base/core plugins fail loudly without it.
+func TestRun_Skipped_GraphQLUnavailable(t *testing.T) {
 	t.Parallel()
 	pc := newPC(t, nil, nil)
 	out, err := starlists.Plugin.Run(context.Background(), pc)
@@ -75,7 +79,7 @@ func TestRun_Skipped_ChromedpUnavailable(t *testing.T) {
 	if !r.Skipped {
 		t.Fatalf("Skipped = false, want true")
 	}
-	if r.SkippedReason != "chromedp not available" {
+	if r.SkippedReason != "graphql client not available" {
 		t.Errorf("SkippedReason = %q", r.SkippedReason)
 	}
 	snapshot := pc.Data.SnapshotErrors()
