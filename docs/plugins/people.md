@@ -52,6 +52,12 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+For **user mode** (default): non-empty `followers` and/or `following` lists. Configure types via `plugin_people_types` (e.g. `followers,following`).
+
+For **repository mode** (`--account=repository`): supports `contributors` / `stargazers` / `watchers` types — the target repository must have those people for a non-empty card.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

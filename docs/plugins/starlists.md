@@ -53,6 +53,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+**At least one starred list** ("My Lists") created via GitHub's web UI (any starred repository → "Create a list"). Data is fetched from the official GraphQL `user.lists` field — an empty list collection yields a skipped card. No token scope beyond `read:user` is required for public lists.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

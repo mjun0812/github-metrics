@@ -51,6 +51,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+**At least one public repository** owned by the user. Forks can be excluded via `plugin_repositories_forks=no`. Accounts with only private repositories (or none at all) see an empty card.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

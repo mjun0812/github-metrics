@@ -47,6 +47,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+**At least one starred topic.** Topics can be starred from any topic page (e.g. `https://github.com/topics/go` → "Star" button). Data is fetched by HTTP-scraping `https://github.com/stars/{user}/topics` (public SSR page) — no token is required for public topic stars.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

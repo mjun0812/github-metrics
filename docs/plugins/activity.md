@@ -52,6 +52,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+**Recent public events** from the user's events feed (`PushEvent`, `IssueCommentEvent`, `PullRequestEvent`, `IssuesEvent`, `ReleaseEvent`, etc.). GitHub retains roughly the last 90 days of public events; accounts with no recent activity will see a sparse card.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

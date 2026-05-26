@@ -52,6 +52,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+**Public comments / issues / pull requests authored by the user that received reactions** (👍 😄 🎉 ❤️ 🚀 👀). Requires public activity within `plugin_reactions_days` (default `14`). Accounts with no reactions in that window produce an empty card.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

@@ -51,6 +51,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+**At least one public repository owned by the user with stargazers.** Repositories are listed top-N by stargazer count (`plugin_notable_limit`, default `4`). The `indepth` mode (`plugin_notable_indepth=yes`) additionally fetches owner / default-branch commit history / issues / pull-requests per repository to draw per-repo statistics.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

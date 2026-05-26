@@ -61,6 +61,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+**Public repositories with detectable source code.** The default `most-used` mode reads aggregated language data from owned / contributed repositories. The `recently-used` sub-mode (`plugin_languages_sections=recently-used`) additionally requires recent PushEvent activity and accessible commit files (resolved via the GitHub compare API). Accounts with only empty repositories will see a blank bar.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

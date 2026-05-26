@@ -50,6 +50,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+**Public repositories owned by the user that have stargazers.** For repository mode (`--account=repository`), a single repo with stargazers is enough. The `graph` mode (`plugin_stargazers_charts_type=graph`) renders the same data as a time-series line chart. The `worldmap` mode is currently backlog — it requires a third-party geocoding API (see #396 / #409).
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->
