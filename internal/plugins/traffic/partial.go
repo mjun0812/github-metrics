@@ -41,9 +41,13 @@ func pluralS(n int) string {
 //	  <div class="row"><section>
 //	    <div class="field"><span class="label">N views (M unique)</span></div>
 //	    [for each repo with views]:
-//	      <div class="field"><span class="repo">${name}</span> ${views} views (${uniques} unique)</div>
+//	      <div class="field"><span class="repo">${name}</span>: ${views} views (${uniques} unique)</div>
 //	  </section></div>
 //	</section>
+//
+// When `plugin_traffic_hide_empty` is true (default), repositories with
+// Count == 0 are filtered before sorting/rendering so the per-repo
+// breakdown only shows repos that actually received traffic.
 func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil {
 		return "", nil
@@ -79,6 +83,9 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		}
 		entries := make([]repoView, 0, len(r.Views))
 		for name, v := range r.Views {
+			if r.HideEmpty && v.Count == 0 {
+				continue
+			}
 			entries = append(entries, repoView{name: name, count: v.Count, uniques: v.Uniques})
 		}
 		sort.SliceStable(entries, func(i, j int) bool {
@@ -90,7 +97,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		for _, e := range entries {
 			fmt.Fprintf(
 				&b,
-				`<div class="field"><span class="repo">%s</span> %d view%s (%d unique)</div>`,
+				`<div class="field"><span class="repo">%s</span>: %d view%s (%d unique)</div>`,
 				partials.EscapeXML(e.name), e.count, pluralS(e.count), e.uniques,
 			)
 		}
