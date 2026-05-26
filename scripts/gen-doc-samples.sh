@@ -2,13 +2,18 @@
 # scripts/gen-doc-samples.sh — generate the docs/examples/ sample SVG
 # set for the README plugins gallery + per-plugin doc pages.
 #
-# Runs the 19 adopted plugins (mjun0812 user by default) + 6 sub-mode
+# Runs the 19 adopted plugins (mjun0812 user by default) + 9 sub-mode
 # variants (achievements compact + languages recent/indepth/details +
-# isocalendar full-year + stargazers graph) = 25 logical samples
-# (svg + png each). The default `plugin-languages` sample is emitted
-# via a one-off `render_one` call (not the PLUGINS loop) so it can
-# pass `plugin_languages_details=bytes-size,percentage` alongside the
-# slug toggle.
+# isocalendar full-year + stargazers graph + notable indepth + habits
+# facts + habits charts) + 1 foundational `base` render = 29 logical
+# samples (svg + png each). The default `plugin-languages` sample is
+# emitted via a one-off `render_one` call (not the PLUGINS loop) so it
+# can pass `plugin_languages_details=bytes-size,percentage` alongside
+# the slug toggle.
+#
+# `core` is excluded from the foundational set: it implements
+# configuration parsing and the parallel plugin runner and has no
+# standalone visual output — see docs/plugins/core.md.
 #
 # Pipeline per file:
 #   1. docker run github-metrics:local → writes /out/<file>.svg
@@ -208,14 +213,29 @@ render_one "plugin-habits-charts" \
   --plugin "plugin_habits_charts=yes"
 
 echo
+echo "== foundational base render =="
+# `base` is the upstream-special plugin that draws the user/org header
+# card every other plugin sits on top of. We render it on its own so
+# docs/plugins/base.md has a visual reference. Default `base` value
+# is "header, activity, community, repositories, metadata"; passing
+# no plugin_<name>=yes toggle means only the base sections render.
+#
+# `core` is intentionally absent here — it has no standalone visual
+# output (configuration + parallel runner only). See
+# docs/plugins/core.md.
+render_one "plugin-base" \
+  --template classic
+
+echo
 echo "== Summary =="
 # 2 formats (svg + png) per logical sample.
 # PLUGINS holds 18 slugs (languages is rendered as a one-off so it can
 # pass `plugin_languages_details=bytes-size,percentage`); +3 languages
 # entries (default, recent, indepth) +7 parity variants
 # (achievements.compact, notable.indepth, habits.facts, habits.charts,
-#  languages.details, isocalendar.fullyear, stargazers.graph).
-TOTAL=$(( (${#PLUGINS[@]} + 3 + 7) * 2 ))
+#  languages.details, isocalendar.fullyear, stargazers.graph)
+# +1 foundational base render.
+TOTAL=$(( (${#PLUGINS[@]} + 3 + 7 + 1) * 2 ))
 OK=$((TOTAL - ${#FAILURES[@]}))
 echo "  OK:   ${OK}/${TOTAL}"
 if (( ${#FAILURES[@]} > 0 )); then

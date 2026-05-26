@@ -1,0 +1,109 @@
+<!-- AUTOGEN_START: title-and-description -->
+# Plugin: core
+
+Global configuration and options
+<!-- AUTOGEN_END: title-and-description -->
+
+## サンプル出力
+
+このプラグインは独立した SVG 断片を描画しません (No standalone visual output)。グローバル設定とプラグイン並列ランナーを実装するプラグインで、入力のみがこのページの対象です。
+
+## このプラグインを使うべきケース
+
+<!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
+
+<!-- AUTOGEN_START: config-table -->
+## 設定 (inputs)
+
+| Input | 説明 | デフォルト | 必須 | 型 |
+|-------|------|------------|------|----|
+| `token` | GitHub Personal Access Token | `` | yes | token |
+| `user` | GitHub username | `` | no | string |
+| `repo` | GitHub repository | `` | no | string |
+| `committer_token` | GitHub Token used to commit metrics | `${{ github.token }}` | no | token |
+| `committer_branch` | Target branch | `` | no | string |
+| `committer_message` | Commit message | `Update ${filename} - [Skip GitHub Action]` | no | string |
+| `committer_gist` | Gist id | `` | no | string |
+| `filename` | Output path | `github-metrics.*` | no | string |
+| `markdown` | Markdown template path | `TEMPLATE.md` | no | string |
+| `markdown_cache` | Markdown file cache | `.cache` | no | string |
+| `output_action` | Output action - `none`: just create file in `/metrics_renders` directory of action runner - `commit`: push output to `committer_branch` - `pull-request`: push output to a new branch and open a pull request to `committer_branch` - `pull-request-merge`: same as `pull-request` and additionally merge pull request - `pull-request-squash`: same as `pull-request` and additionally squash and merge pull request - `pull-request-rebase`: same as `pull-request` and additionally rebase and merge pull request - `gist`: push output to `committer_gist` | `commit` | no | string |
+| `output_condition` | Output condition - `always`: always try to push changes - `data-changed`: skip changes if no data changed (e.g. like when only metadata changed) | `always` | no | string |
+| `optimize` | Optimization features - `css`: purge and minify CSS styles - `xml`: pretty-print XML (useful to reduce diff) - `svg`: optimization with SVGO (experimental, requires [`experimental_features: --optimize-svg`](/source/plugins/core/README.md#experimental_features)) | `css, xml` | no | array |
+| `setup_community_templates` | Community templates to setup | `` | no | array |
+| `template` | Template | `classic` | no | string |
+| `query` | Query parameters | `{}` | no | json |
+| `extras_css` | Extra CSS | `` | no | string |
+| `extras_js` | Extra JavaScript | `` | no | string |
+| `github_api_rest` | GitHub REST API endpoint | `` | no | string |
+| `github_api_graphql` | GitHub GraphQL API endpoint | `` | no | string |
+| `config_timezone` | Timezone for dates | `` | no | string |
+| `config_order` | Plugin order | `` | no | array |
+| `config_twemoji` | Use twemojis | `no` | no | boolean |
+| `config_gemoji` | Use GitHub custom emojis | `yes` | no | boolean |
+| `config_octicon` | Use GitHub octicons | `no` | no | boolean |
+| `config_display` | Display width (for image output formats) | `regular` | no | string |
+| `config_animations` | Use CSS animations | `yes` | no | boolean |
+| `config_base64` | Base64-encoded images | `yes` | no | boolean |
+| `config_padding` | Output padding | `0, 8 + 11%` | no | string |
+| `config_output` | Output format - `auto`: Template default (usually `svg` or `markdown`) - `svg`: SVG image - `png`: PNG image (animations not supported) - `jpeg`: JPEG image (animations and transparency not supported) - `json`: JSON data dump - `markdown`: Markdown rendered file - `markdown-pdf`: PDF from markdown rendered file - `insights`: Metrics Insights self-contained HTML file (not configurable) | `auto` | no | string |
+| `config_presets` | Configuration presets | `` | no | array |
+| `retries` | Retries in case of failures (for rendering) | `3` | no | number |
+| `retries_delay` | Delay between each retry (in seconds, for rendering) | `300` | no | number |
+| `retries_output_action` | Retries in case of failures (for output action) | `5` | no | number |
+| `retries_delay_output_action` | Delay between each retry (in seconds, for output action) | `120` | no | number |
+| `clean_workflows` | Clean previous workflows jobs | `` | no | array |
+| `delay` | Job delay | `0` | no | number |
+| `quota_required_rest` | Minimum GitHub REST API requests quota required to run | `200` | no | number |
+| `quota_required_graphql` | Minimum GitHub GraphQL API requests quota required to run | `200` | no | number |
+| `quota_required_search` | Minimum GitHub Search API requests quota required to run | `0` | no | number |
+| `notice_releases` | Notice about new releases of metrics | `yes` | no | boolean |
+| `use_prebuilt_image` | Use pre-built docker image from [GitHub container registry](https://github.com/lowlighter/metrics/pkgs/container/metrics) | `yes` | no | boolean |
+| `plugins_errors_fatal` | Fatal plugin errors | `no` | no | boolean |
+| `debug` | Debug mode | `no` | no | boolean |
+| `verify` | SVG validity check | `no` | no | boolean |
+| `debug_flags` | Debug flags - `--cakeday`: simulate registration anniversary - `--halloween`: enable halloween colors *(only first color scheme will be applied if multiple are specified)* - `--winter`: enable winter colors *(only first color scheme will be applied if multiple are specified)* - `--error`: force render error - `--puppeteer-debug`: enable puppeteer debug mode\* - `--puppeteer-disable-headless`: disable puppeteer headless mode *(requires a graphical environment)*\* - `--puppeteer-wait-load`: override puppeteer wait events\* - `--puppeteer-wait-domcontentloaded`: override puppeteer wait events\* - `--puppeteer-wait-networkidle0`: override puppeteer wait events\* - `--puppeteer-wait-networkidle2`: override puppeteer wait events\* | `` | no | array |
+| `debug_print` | Print output in console | `no` | no | boolean |
+| `dryrun` | Dry-run | `no` | no | boolean |
+| `experimental_features` | Experimental features | `` | no | array |
+| `use_mocked_data` | Use mocked data instead of live APIs | `no` | no | boolean |
+<!-- AUTOGEN_END: config-table -->
+
+<!-- AUTOGEN_START: usage-snippet -->
+## 使い方
+
+### GitHub Action
+
+```yaml
+- uses: mjun0812/github-metrics@v1
+  with:
+    user: <your-login>
+    token: ${{ secrets.METRICS_TOKEN }}
+    template: classic
+    config_timezone: Asia/Tokyo
+    config_output: svg
+```
+
+### CLI
+
+```sh
+metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
+  --template classic \
+  --output svg --filename github-metrics.svg \
+  --plugin config_timezone=Asia/Tokyo
+```
+<!-- AUTOGEN_END: usage-snippet -->
+
+## Requirements
+
+Core has no standalone visual output; this page documents its inputs only. The plugin implements global configuration parsing (template selection, timezone, animations, output format, etc.) and the parallel plugin runner that drives every other plugin. There are no API scopes or render prerequisites of its own — every other plugin in this repository depends on `core` having populated `data.Config` before it runs.
+
+## 既知の制約 / 注意点
+
+<!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->
+
+## 参照
+
+- [`action.yml`](../../action.yml) — canonical input schema
+- [`assets/plugins/core/metadata.yml`](../../assets/plugins/core/metadata.yml) — upstream metadata
+- 対応アカウント種別: user, organization, repository

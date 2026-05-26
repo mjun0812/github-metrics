@@ -84,6 +84,72 @@ func isPlainSlug(s string) bool {
 	return true
 }
 
+// TestFoundationalSlugs_AreBaseAndCore — the foundational set is the
+// exact pair {base, core}. Adding a third foundational plugin would
+// require a constitution amendment per docs/design/15-selection-answer.md.
+func TestFoundationalSlugs_AreBaseAndCore(t *testing.T) {
+	t.Parallel()
+	want := map[string]struct{}{"base": {}, "core": {}}
+	got := map[string]struct{}{}
+	for _, s := range foundationalSlugs {
+		got[s] = struct{}{}
+	}
+	for s := range want {
+		if _, ok := got[s]; !ok {
+			t.Errorf("foundationalSlugs missing %q", s)
+		}
+	}
+	for s := range got {
+		if _, ok := want[s]; !ok {
+			t.Errorf("foundationalSlugs has unexpected %q", s)
+		}
+	}
+}
+
+// TestRenderPluginPage_CoreOmitsSampleImage — `core` has no standalone
+// visual output, so its rendered page MUST NOT reference a non-existent
+// plugin-core.svg image and SHOULD include the canonical no-output notice.
+func TestRenderPluginPage_CoreOmitsSampleImage(t *testing.T) {
+	t.Parallel()
+	meta := pluginMetadata{Name: "core", Description: "Global configuration and options"}
+	got := renderPluginPage("core", meta, nil, nil)
+	if strings.Contains(got, "plugin-core.svg") {
+		t.Errorf("core page must not reference plugin-core.svg sample image:\n%s", got)
+	}
+	if !strings.Contains(got, "No standalone visual output") {
+		t.Errorf("core page should carry the No-standalone-visual-output notice:\n%s", got)
+	}
+	if !strings.Contains(got, "## Requirements") {
+		t.Errorf("core page should emit Requirements section on first gen:\n%s", got)
+	}
+	if !strings.Contains(got, "Core has no standalone visual output") {
+		t.Errorf("core Requirements should explain why no image is rendered:\n%s", got)
+	}
+}
+
+// TestRenderPluginPage_BaseEmitsCustomUsageSnippet — `base` is always
+// active and does not respond to a `plugin_base: yes` toggle. The usage
+// snippet must show the canonical `base: header, ...` sections input
+// instead of the generic `plugin_<slug>: yes` shape used by the 19
+// adopted plugins.
+func TestRenderPluginPage_BaseEmitsCustomUsageSnippet(t *testing.T) {
+	t.Parallel()
+	meta := pluginMetadata{Name: "base", Description: ""}
+	got := renderPluginPage("base", meta, nil, nil)
+	if strings.Contains(got, "plugin_base: yes") {
+		t.Errorf("base usage snippet must not use the generic plugin_<slug>=yes shape:\n%s", got)
+	}
+	if !strings.Contains(got, "base: header, activity, community, repositories, metadata") {
+		t.Errorf("base usage snippet should show the canonical sections list:\n%s", got)
+	}
+	if !strings.Contains(got, "plugin-base.svg") {
+		t.Errorf("base page should reference its sample SVG (base has visual output):\n%s", got)
+	}
+	if !strings.Contains(got, "## Requirements") {
+		t.Errorf("base page should emit Requirements section on first gen:\n%s", got)
+	}
+}
+
 // TestRenderPluginPage_HasRequiredSections enforces that the rendered
 // plugin page contains the 3 AUTOGEN sections + a `## サンプル出力`
 // heading.
@@ -116,7 +182,8 @@ func TestRenderPluginPage_HasRequiredSections(t *testing.T) {
 
 // TestRenderPluginPage_PreservesHumanZones verifies the re-generation
 // path: existing prose between AUTOGEN markers and headings is pulled
-// forward into the new render.
+// forward into the new render. Covers all three human-authored zones
+// (when-to-use, Requirements, 既知の制約).
 func TestRenderPluginPage_PreservesHumanZones(t *testing.T) {
 	t.Parallel()
 	meta := pluginMetadata{
@@ -146,6 +213,10 @@ old config
 old usage
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+**Public repositories with detectable source code.** This zone was added by PR #410.
+
 ## 既知の制約 / 注意点
 
 注意点もハンドメイドで書かれた内容です。
@@ -157,6 +228,9 @@ old usage
 	got := renderPluginPage("languages", meta, nil, []byte(existing))
 	if !strings.Contains(got, "ハンドメイドの説明文があります") {
 		t.Errorf("when-section human zone lost:\n%s", got)
+	}
+	if !strings.Contains(got, "Public repositories with detectable source code") {
+		t.Errorf("Requirements human zone lost:\n%s", got)
 	}
 	if !strings.Contains(got, "注意点もハンドメイドで書かれた内容です") {
 		t.Errorf("pitfalls human zone lost:\n%s", got)
