@@ -45,6 +45,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+Same data source as the `calendar` plugin (the user's public contribution calendar). Public contributions within the past year are required for a non-empty heatmap. The `full-year` mode renders 52 weeks of the same dataset.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->
