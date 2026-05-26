@@ -47,6 +47,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+**Classic GitHub Projects owned by the user.** Users with no projects see an empty card. Projects v2 (the newer "Projects beta") is not currently surfaced by this plugin.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

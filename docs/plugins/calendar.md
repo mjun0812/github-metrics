@@ -45,6 +45,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+A non-empty **GitHub contribution calendar** — i.e. public contributions (commits to default branches, opened issues / pull requests, code reviews) within the past year. Empty contribution graphs produce an empty heatmap.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

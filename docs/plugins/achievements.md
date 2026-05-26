@@ -50,6 +50,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+An account with **public activity history** — commits, repositories, issues, stars, followers, etc. The rank computation needs measurable metrics; accounts with no commits or repositories will see most achievement cards marked as "locked".
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

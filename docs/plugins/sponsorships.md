@@ -46,6 +46,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+The user must **sponsor others via GitHub Sponsors** (outgoing sponsorships). Users who do not sponsor anyone see an empty card.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

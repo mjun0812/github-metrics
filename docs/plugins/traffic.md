@@ -45,6 +45,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+**Repository context AND repository admin (or push) access** on the target repo. Run with `--account=repository` + `--repo owner/name`. The token must have admin rights because GitHub's traffic endpoints (`/repos/{owner}/{repo}/traffic/views`, `/repos/{owner}/{repo}/traffic/clones`) are restricted to repository administrators — non-admin users cannot access them.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

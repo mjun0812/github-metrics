@@ -48,6 +48,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+The user must be **sponsored via GitHub Sponsors** (incoming sponsorships) for a non-empty card. Non-sponsored accounts produce an empty card; this is normal.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

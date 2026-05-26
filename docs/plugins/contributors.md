@@ -55,6 +55,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+**Repository context required.** Run with `--account=repository` and a target repository (`--repo owner/name`). The repo must have multiple contributors for a meaningful list. The `contributions` display mode (`plugin_contributors_contributions=yes`) additionally fetches per-contributor statistics via GitHub's stats API (`GET /repos/{owner}/{repo}/stats/contributors`).
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->

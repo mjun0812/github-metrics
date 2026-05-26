@@ -59,6 +59,10 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 
 <!-- AUTOGEN_END: usage-snippet -->
 
+## Requirements
+
+**Recent PushEvent activity.** The plugin walks the user's events feed for push events from the last `plugin_habits_days` days (default `14`). Without any push events the plugin is skipped with `"no recent commits"`. Active developers see a 24-hour / weekday histogram; inactive accounts produce an empty card.
+
 ## 既知の制約 / 注意点
 
 <!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->
