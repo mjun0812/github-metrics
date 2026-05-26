@@ -53,6 +53,32 @@ var adoptedSlugs = []string{
 	"traffic",
 }
 
+// foundationalSlugs are the infrastructure plugins (`base`, `core`)
+// that ship alongside the 19 adopted user-facing plugins. They live
+// under `internal/plugins/` and `assets/plugins/` like the others,
+// but they are intentionally excluded from `adoptedSlugs` (the README
+// gallery is reserved for plugins that emit user-visible cards).
+// We still generate a `docs/plugins/<slug>.md` page for each so the
+// inputs they accept are documented in one place.
+//
+// `base` populates the user/org header card every other plugin sits
+// on top of (header / activity / community / repositories / metadata
+// sections); `core` is the configuration + parallel-runner plugin and
+// has no standalone visual output.
+var foundationalSlugs = []string{
+	"base",
+	"core",
+}
+
+// slugsWithoutSample is the set of plugin slugs whose `docs/plugins/<slug>.md`
+// page intentionally omits the sample-image section. `core` is the only
+// member: it has no standalone visual output (it implements configuration
+// parsing and the parallel plugin runner) so an example image would be
+// either empty or misleading.
+var slugsWithoutSample = map[string]struct{}{
+	"core": {},
+}
+
 func main() {
 	root, err := repoRoot()
 	if err != nil {
@@ -70,6 +96,11 @@ func fail(format string, args ...any) {
 
 func run(root string) error {
 	for _, slug := range adoptedSlugs {
+		if err := generatePluginPage(root, slug); err != nil {
+			return fmt.Errorf("plugin %s: %w", slug, err)
+		}
+	}
+	for _, slug := range foundationalSlugs {
 		if err := generatePluginPage(root, slug); err != nil {
 			return fmt.Errorf("plugin %s: %w", slug, err)
 		}
@@ -160,10 +191,11 @@ func generatePluginPage(root, slug string) error {
 }
 
 // renderPluginPage emits the full markdown for one plugin. When
-// `existing` is non-empty, the human-authored zones (the two prose
-// sections between AUTOGEN blocks) are pulled forward.
+// `existing` is non-empty, the human-authored zones (the three prose
+// sections between AUTOGEN blocks: "このプラグインを使うべきケース",
+// "Requirements", "既知の制約 / 注意点") are pulled forward.
 func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existing []byte) string {
-	whenSection, pitfallsSection := extractHumanZones(string(existing))
+	whenSection, requirementsSection, pitfallsSection := extractHumanZones(string(existing))
 
 	var b strings.Builder
 	// AUTOGEN: title + description
@@ -171,15 +203,22 @@ func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existin
 	fmt.Fprintf(&b, "# Plugin: %s\n\n", slug)
 	desc := firstParagraph(m.Description)
 	if desc == "" {
-		desc = fmt.Sprintf("`%s` plugin output for GitHub metrics.", slug)
+		desc = defaultDescription(slug)
 	}
 	b.WriteString(desc)
 	b.WriteString("\n<!-- AUTOGEN_END: title-and-description -->\n\n")
 
-	// Sample image
-	b.WriteString("## サンプル出力\n\n")
-	fmt.Fprintf(&b, "![%s sample](../examples/plugin-%s.svg)\n\n", slug, slug)
-	b.WriteString("> サンプルは `--user mjun0812` のデータで本プラグインのみを有効化してレンダリングした例です。再生成は `make docs-examples`。\n\n")
+	// Sample image (skipped for slugs that produce no standalone visual
+	// output, e.g. `core` — it implements configuration parsing and the
+	// parallel plugin runner, with no card of its own).
+	if _, skip := slugsWithoutSample[slug]; skip {
+		b.WriteString("## サンプル出力\n\n")
+		b.WriteString("このプラグインは独立した SVG 断片を描画しません (No standalone visual output)。グローバル設定とプラグイン並列ランナーを実装するプラグインで、入力のみがこのページの対象です。\n\n")
+	} else {
+		b.WriteString("## サンプル出力\n\n")
+		fmt.Fprintf(&b, "![%s sample](../examples/plugin-%s.svg)\n\n", slug, slug)
+		b.WriteString("> サンプルは `--user mjun0812` のデータで本プラグインのみを有効化してレンダリングした例です。再生成は `make docs-examples`。\n\n")
+	}
 
 	// Human-authored: when-to-use
 	b.WriteString("## このプラグインを使うべきケース\n\n")
@@ -208,21 +247,83 @@ func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existin
 	// AUTOGEN: usage snippet
 	b.WriteString("<!-- AUTOGEN_START: usage-snippet -->\n")
 	b.WriteString("## 使い方\n\n")
-	b.WriteString("### GitHub Action\n\n")
-	b.WriteString("```yaml\n")
-	b.WriteString("- uses: mjun0812/github-metrics@v1\n")
-	b.WriteString("  with:\n")
-	b.WriteString("    user: <your-login>\n")
-	b.WriteString("    token: ${{ secrets.METRICS_TOKEN }}\n")
-	fmt.Fprintf(&b, "    plugin_%s: yes\n", slug)
-	b.WriteString("```\n\n")
-	b.WriteString("### CLI\n\n")
-	b.WriteString("```sh\n")
-	b.WriteString("metrics-cli --user <your-login> --token-env GITHUB_TOKEN \\\n")
-	b.WriteString("  --output svg --filename - \\\n")
-	fmt.Fprintf(&b, "  --plugin plugin_%s=yes\n", slug)
-	b.WriteString("```\n")
+	switch slug {
+	case "base":
+		// `base` is always active (it populates the user/org header
+		// every other plugin sits on top of). What the user configures
+		// is *which* base sections to render and a few related toggles
+		// (indepth / hireable / skip). The Action / CLI snippets reflect
+		// the canonical "tweak base sections" usage rather than a
+		// non-existent `plugin_base: yes` toggle.
+		b.WriteString("### GitHub Action\n\n")
+		b.WriteString("```yaml\n")
+		b.WriteString("- uses: mjun0812/github-metrics@v1\n")
+		b.WriteString("  with:\n")
+		b.WriteString("    user: <your-login>\n")
+		b.WriteString("    token: ${{ secrets.METRICS_TOKEN }}\n")
+		b.WriteString("    base: header, activity, community, repositories, metadata\n")
+		b.WriteString("```\n\n")
+		b.WriteString("### CLI\n\n")
+		b.WriteString("```sh\n")
+		b.WriteString("metrics-cli --user <your-login> --token-env GITHUB_TOKEN \\\n")
+		b.WriteString("  --output svg --filename - \\\n")
+		b.WriteString("  --plugin 'base=header, activity, community, repositories, metadata'\n")
+		b.WriteString("```\n")
+	case "core":
+		// `core` is the configuration / parallel-runner plugin. It is
+		// never toggled on/off; users interact with it by supplying the
+		// global inputs documented in the table above (`template`,
+		// `config_*`, `optimize`, etc.).
+		b.WriteString("### GitHub Action\n\n")
+		b.WriteString("```yaml\n")
+		b.WriteString("- uses: mjun0812/github-metrics@v1\n")
+		b.WriteString("  with:\n")
+		b.WriteString("    user: <your-login>\n")
+		b.WriteString("    token: ${{ secrets.METRICS_TOKEN }}\n")
+		b.WriteString("    template: classic\n")
+		b.WriteString("    config_timezone: Asia/Tokyo\n")
+		b.WriteString("    config_output: svg\n")
+		b.WriteString("```\n\n")
+		b.WriteString("### CLI\n\n")
+		b.WriteString("```sh\n")
+		b.WriteString("metrics-cli --user <your-login> --token-env GITHUB_TOKEN \\\n")
+		b.WriteString("  --template classic \\\n")
+		b.WriteString("  --output svg --filename github-metrics.svg \\\n")
+		b.WriteString("  --plugin config_timezone=Asia/Tokyo\n")
+		b.WriteString("```\n")
+	default:
+		b.WriteString("### GitHub Action\n\n")
+		b.WriteString("```yaml\n")
+		b.WriteString("- uses: mjun0812/github-metrics@v1\n")
+		b.WriteString("  with:\n")
+		b.WriteString("    user: <your-login>\n")
+		b.WriteString("    token: ${{ secrets.METRICS_TOKEN }}\n")
+		fmt.Fprintf(&b, "    plugin_%s: yes\n", slug)
+		b.WriteString("```\n\n")
+		b.WriteString("### CLI\n\n")
+		b.WriteString("```sh\n")
+		b.WriteString("metrics-cli --user <your-login> --token-env GITHUB_TOKEN \\\n")
+		b.WriteString("  --output svg --filename - \\\n")
+		fmt.Fprintf(&b, "  --plugin plugin_%s=yes\n", slug)
+		b.WriteString("```\n")
+	}
 	b.WriteString("<!-- AUTOGEN_END: usage-snippet -->\n\n")
+
+	// Human-authored: Requirements (English; pulled forward from PR #410).
+	// This section lives BETWEEN the usage-snippet AUTOGEN block and the
+	// "既知の制約 / 注意点" heading. It is preserved verbatim when
+	// `existing` already contains one. For the two foundational plugins
+	// (`base`, `core`) we inject a canonical first-gen Requirements
+	// paragraph so the page is self-explanatory without manual editing.
+	if requirementsSection != "" {
+		b.WriteString("## Requirements\n\n")
+		b.WriteString(requirementsSection)
+		b.WriteString("\n\n")
+	} else if req := defaultRequirements(slug); req != "" {
+		b.WriteString("## Requirements\n\n")
+		b.WriteString(req)
+		b.WriteString("\n\n")
+	}
 
 	// Human-authored: known constraints
 	b.WriteString("## 既知の制約 / 注意点\n\n")
@@ -288,6 +389,38 @@ func formatDefault(d any) string {
 	return fmt.Sprintf("%v", d)
 }
 
+// defaultRequirements returns the first-gen Requirements paragraph for
+// the foundational `base` / `core` plugins. Returns "" for every other
+// slug — the 19 adopted plugins have Requirements text that landed
+// hand-written in PR #410 and is pulled forward from the existing file
+// via extractHumanZones rather than emitted here.
+func defaultRequirements(slug string) string {
+	switch slug {
+	case "base":
+		return "**A valid GitHub username (or organization login) and a token with at minimum `read:user` + `public_repo`.** The base plugin queries the GraphQL `user(login:)` / `organization(login:)` endpoint to populate the header card and walks the repositories connection (paged, with batch-halving on transient 5xx) to seed `Computed.RepositoryList` for every downstream plugin. Setting `base: \"\"` disables every base section but **does not** skip the GraphQL fetch — to fully skip base data fetching, use `base_skip: yes` and pair it with a plugin that supports `token: NOT_NEEDED`."
+	case "core":
+		return "Core has no standalone visual output; this page documents its inputs only. The plugin implements global configuration parsing (template selection, timezone, animations, output format, etc.) and the parallel plugin runner that drives every other plugin. There are no API scopes or render prerequisites of its own — every other plugin in this repository depends on `core` having populated `data.Config` before it runs."
+	}
+	return ""
+}
+
+// defaultDescription returns the AUTOGEN title-and-description fallback
+// text for plugins whose `assets/plugins/<slug>/metadata.yml` does not
+// supply a `description:` field. The `base` and `core` foundational
+// plugins use this path because their upstream metadata leaves
+// `description` empty; the generic fallback ("`<slug>` plugin output
+// for GitHub metrics.") would be misleading for them, so we provide
+// purpose-written summaries instead.
+func defaultDescription(slug string) string {
+	switch slug {
+	case "base":
+		return "`base` is the foundational plugin that runs before every other plugin and populates the shared `data.User` / `data.Organization` / `data.Computed` fields downstream plugins depend on. It also owns the user/org header card (avatar, login, follower/sponsor counts, two-week commit calendar) that every other plugin's output sits on top of."
+	case "core":
+		return "`core` is the configuration plugin: it parses the global `config_*` / `template` / `optimize` inputs into `data.Config` and drives the parallel runner that fans every other plugin out across workers. It has no card of its own — every visible output comes from another plugin running on top of the state `core` and `base` produce."
+	}
+	return fmt.Sprintf("`%s` plugin output for GitHub metrics.", slug)
+}
+
 // firstParagraph returns the leading non-empty paragraph (text up to
 // the first blank line) trimmed of surrounding whitespace.
 func firstParagraph(s string) string {
@@ -301,19 +434,32 @@ func firstParagraph(s string) string {
 // humanZoneRe matches text between the marker pair that immediately
 // precedes/follows the human-authored heading. We use this on the
 // existing file to pull forward the maintainer's prose.
+//
+// Three human-authored zones live in a previously-generated page:
+//  1. ## このプラグインを使うべきケース  — between title-and-description
+//     and the config-table AUTOGEN block.
+//  2. ## Requirements                  — added by PR #410, lives between
+//     the usage-snippet AUTOGEN block and the "既知の制約" heading.
+//     Optional (not every plugin had one before PR #410 landed).
+//  3. ## 既知の制約 / 注意点             — between Requirements (or the
+//     usage-snippet block when Requirements is absent) and "## 参照".
 var (
-	whenSectionRe     = regexp.MustCompile(`(?s)## このプラグインを使うべきケース\s*\n+(.*?)\n+<!-- AUTOGEN_START: config-table -->`)
-	pitfallsSectionRe = regexp.MustCompile(`(?s)## 既知の制約 / 注意点\s*\n+(.*?)\n+## 参照`)
+	whenSectionRe         = regexp.MustCompile(`(?s)## このプラグインを使うべきケース\s*\n+(.*?)\n+<!-- AUTOGEN_START: config-table -->`)
+	requirementsSectionRe = regexp.MustCompile(`(?s)## Requirements\s*\n+(.*?)\n+## 既知の制約 / 注意点`)
+	pitfallsSectionRe     = regexp.MustCompile(`(?s)## 既知の制約 / 注意点\s*\n+(.*?)\n+## 参照`)
 )
 
-// extractHumanZones returns the prose that lives in the two
+// extractHumanZones returns the prose that lives in the three
 // human-authored sections of a previously-generated page.
-func extractHumanZones(existing string) (when, pitfalls string) {
+func extractHumanZones(existing string) (when, requirements, pitfalls string) {
 	if existing == "" {
-		return "", ""
+		return "", "", ""
 	}
 	if m := whenSectionRe.FindStringSubmatch(existing); len(m) == 2 {
 		when = strings.TrimSpace(m[1])
+	}
+	if m := requirementsSectionRe.FindStringSubmatch(existing); len(m) == 2 {
+		requirements = strings.TrimSpace(m[1])
 	}
 	if m := pitfallsSectionRe.FindStringSubmatch(existing); len(m) == 2 {
 		pitfalls = strings.TrimSpace(m[1])
@@ -326,7 +472,7 @@ func extractHumanZones(existing string) (when, pitfalls string) {
 	if isTODOPlaceholder(pitfalls) {
 		pitfalls = ""
 	}
-	return when, pitfalls
+	return when, requirements, pitfalls
 }
 
 func isTODOPlaceholder(s string) bool {
