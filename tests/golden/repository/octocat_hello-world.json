@@ -303,6 +303,7 @@
       "sort": "name"
     },
     "traffic": {
+      "hide_empty": true,
       "skipped": true,
       "total": {
         "count": 0,
