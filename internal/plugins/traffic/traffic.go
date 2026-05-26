@@ -42,6 +42,10 @@ type Result struct {
 	SkippedReason string                 `json:"-"`
 	Views         map[string]TrafficView `json:"views"`
 	Total         TrafficView            `json:"total"`
+	// HideEmpty controls whether per-repo entries with Count==0 are
+	// filtered out at render time. It mirrors the
+	// `plugin_traffic_hide_empty` input (default true).
+	HideEmpty bool `json:"hide_empty"`
 }
 
 // IsSkipped lets the classic dispatcher detect the skipped path.
@@ -67,11 +71,13 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
+	hideEmpty := readBoolDefault(pc.Inputs, "plugin_traffic_hide_empty", true)
 	if pc.REST == nil {
 		return &Result{
 			Skipped:       true,
 			SkippedReason: "REST client unavailable",
 			Views:         map[string]TrafficView{},
+			HideEmpty:     hideEmpty,
 		}, nil
 	}
 	scopes, err := pc.REST.Scopes(ctx)
@@ -81,6 +87,7 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 			Skipped:       true,
 			SkippedReason: "could not determine token scopes",
 			Views:         map[string]TrafficView{},
+			HideEmpty:     hideEmpty,
 		}, nil
 	}
 	if !hasScope(scopes, "repo") {
@@ -88,6 +95,7 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 			Skipped:       true,
 			SkippedReason: "missing repo scope",
 			Views:         map[string]TrafficView{},
+			HideEmpty:     hideEmpty,
 		}, nil
 	}
 
@@ -134,9 +142,34 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	_ = g.Wait()
 
 	return &Result{
-		Views: views,
-		Total: total,
+		Views:     views,
+		Total:     total,
+		HideEmpty: hideEmpty,
 	}, nil
+}
+
+// readBoolDefault mirrors the helper used by other plugins
+// (cf. internal/plugins/habits/habits.go::readBoolDefault). It accepts
+// bool, "true"/"false", "yes"/"no", or "1"/"0" string variants. Any
+// other shape (including missing key) returns def.
+func readBoolDefault(in map[string]any, key string, def bool) bool {
+	v, ok := in[key]
+	if !ok {
+		return def
+	}
+	switch x := v.(type) {
+	case bool:
+		return x
+	case string:
+		s := strings.ToLower(strings.TrimSpace(x))
+		switch s {
+		case "true", "1", "yes":
+			return true
+		case "false", "0", "no":
+			return false
+		}
+	}
+	return def
 }
 
 // urlPath splits "owner/name" into url.PathEscape("owner")/url.PathEscape("name")

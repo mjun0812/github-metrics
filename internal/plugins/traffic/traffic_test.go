@@ -72,6 +72,48 @@ func TestRun_NoRepoScope_Skipped(t *testing.T) {
 	if !r.Skipped {
 		t.Errorf("expected Skipped without repo scope")
 	}
+	if !r.HideEmpty {
+		t.Errorf("HideEmpty should default to true even on the skipped path; got false")
+	}
+}
+
+// TestRun_HideEmpty_DefaultTrue verifies the new
+// `plugin_traffic_hide_empty` input defaults to true when the key is
+// absent from Inputs.
+func TestRun_HideEmpty_DefaultTrue(t *testing.T) {
+	t.Parallel()
+	mux := scopeMux("repo")
+	pc := &plugins.PluginContext{
+		Data:   plugins.NewData(),
+		Inputs: map[string]any{},
+		REST:   newREST(t, mux),
+	}
+	out, _ := traffic.Plugin.Run(context.Background(), pc)
+	r := out.(*traffic.Result)
+	if !r.HideEmpty {
+		t.Errorf("HideEmpty default = false, want true")
+	}
+}
+
+// TestRun_HideEmpty_ExplicitFalse verifies `plugin_traffic_hide_empty:
+// "no"` and `false` both turn off the filter (so legacy callers can
+// re-enable the pre-#412 behaviour).
+func TestRun_HideEmpty_ExplicitFalse(t *testing.T) {
+	t.Parallel()
+	for _, v := range []any{"no", "false", "0", false} {
+		v := v
+		mux := scopeMux("repo")
+		pc := &plugins.PluginContext{
+			Data:   plugins.NewData(),
+			Inputs: map[string]any{"plugin_traffic_hide_empty": v},
+			REST:   newREST(t, mux),
+		}
+		out, _ := traffic.Plugin.Run(context.Background(), pc)
+		r := out.(*traffic.Result)
+		if r.HideEmpty {
+			t.Errorf("HideEmpty for input %v (%T) = true, want false", v, v)
+		}
+	}
 }
 
 func TestRun_WithRepoScope_AggregatesViews(t *testing.T) {
