@@ -1,0 +1,22 @@
+query UserLists($login: String!, $listsFirst: Int!, $itemsFirst: Int!) {
+  user(login: $login) {
+    lists(first: $listsFirst) {
+      totalCount
+      nodes {
+        name
+        description
+        isPrivate
+        items(first: $itemsFirst) {
+          totalCount
+          nodes {
+            __typename
+            ... on Repository {
+              nameWithOwner
+              stargazerCount
+            }
+          }
+        }
+      }
+    }
+  }
+}

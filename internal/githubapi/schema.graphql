@@ -60,7 +60,32 @@ type User implements RepositoryOwner {
   ): SponsorshipConnection
   projectsV2(first: Int, orderBy: ProjectV2Order): ProjectV2Connection
   pinnedItems(first: Int, types: [PinnableItemType!]): PinnableItemConnection
+  # 014: starlists. GitHub exposes the user's starred lists (a.k.a.
+  # "starlists") via this connection. We project both the list metadata
+  # and the per-list items in a single round-trip.
+  lists(first: Int): UserListConnection
 }
+
+type UserListConnection {
+  totalCount: Int!
+  nodes: [UserList!]
+}
+
+type UserList {
+  name: String!
+  description: String
+  isPrivate: Boolean!
+  items(first: Int): UserListItemsConnection
+}
+
+type UserListItemsConnection {
+  totalCount: Int!
+  nodes: [UserListItems!]
+}
+
+# Starlist items are a union (Repository today, possibly more later). We
+# project only the Repository fragment; non-repo nodes are dropped.
+union UserListItems = Repository
 
 type UserConnection {
   totalCount: Int!
