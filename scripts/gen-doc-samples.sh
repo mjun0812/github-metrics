@@ -5,11 +5,12 @@
 # Runs the 19 adopted plugins (mjun0812 user by default) + 9 sub-mode
 # variants (achievements compact + languages recent/indepth/details +
 # isocalendar full-year + stargazers graph + notable indepth + habits
-# facts + habits charts) + 1 foundational `base` render = 29 logical
-# samples (svg + png each). The default `plugin-languages` sample is
-# emitted via a one-off `render_one` call (not the PLUGINS loop) so it
-# can pass `plugin_languages_details=bytes-size,percentage` alongside
-# the slug toggle.
+# facts + habits charts) + 1 foundational `base` render + 1 classic
+# template overview (multi-plugin composite) = 30 logical samples
+# (svg + png each). The default `plugin-languages` sample is emitted
+# via a one-off `render_one` call (not the PLUGINS loop) so it can
+# pass `plugin_languages_details=bytes-size,percentage` alongside the
+# slug toggle.
 #
 # `core` is excluded from the foundational set: it implements
 # configuration parsing and the parallel plugin runner and has no
@@ -213,6 +214,47 @@ render_one "plugin-habits-charts" \
   --plugin "plugin_habits_charts=yes"
 
 echo
+echo "== classic template overview (multi-plugin composite) =="
+# `metrics-classic` is the cross-plugin overview sample: the upstream
+# `metrics.classic.svg` reference (docs/original_examples/) shows what
+# a user gets when they enable a typical README plugin set on top of
+# the classic template, but the per-plugin samples in this directory
+# only convey each plugin in isolation. This render combines the
+# plugins that produce non-empty output for `mjun0812` so docs viewers
+# can preview the assembled card.
+#
+# Plugin selection rationale:
+#   - Included: isocalendar, calendar, languages, activity, achievements,
+#     notable, repositories, habits, stars, reactions, stargazers,
+#     traffic. These all have real data on mjun0812 and mirror
+#     upstream's typical classic showcase.
+#   - Excluded (empty data on the sample user): contributors, projects,
+#     sponsors, sponsorships, starlists, topics — see docs/comparison.md
+#     for the per-plugin empty-card note.
+#   - Excluded (oversized): people. The `plugin-people.svg` sample is
+#     5.8 MB on its own and would dominate the composite.
+#   - Excluded (repo-template territory or deprecated/backlog): all the
+#     variants already filtered out of the per-plugin sub-mode section
+#     above.
+render_one "metrics-classic" \
+  --template classic \
+  --plugin "base=header, activity, community, repositories, metadata" \
+  --plugin "plugin_isocalendar=yes" \
+  --plugin "plugin_calendar=yes" \
+  --plugin "plugin_languages=yes" \
+  --plugin "plugin_languages_details=bytes-size,percentage" \
+  --plugin "plugin_activity=yes" \
+  --plugin "plugin_achievements=yes" \
+  --plugin "plugin_achievements_display=compact" \
+  --plugin "plugin_notable=yes" \
+  --plugin "plugin_repositories=yes" \
+  --plugin "plugin_habits=yes" \
+  --plugin "plugin_stars=yes" \
+  --plugin "plugin_reactions=yes" \
+  --plugin "plugin_stargazers=yes" \
+  --plugin "plugin_traffic=yes"
+
+echo
 echo "== foundational base render =="
 # `base` is the upstream-special plugin that draws the user/org header
 # card every other plugin sits on top of. We render it on its own so
@@ -234,8 +276,8 @@ echo "== Summary =="
 # entries (default, recent, indepth) +7 parity variants
 # (achievements.compact, notable.indepth, habits.facts, habits.charts,
 #  languages.details, isocalendar.fullyear, stargazers.graph)
-# +1 foundational base render.
-TOTAL=$(( (${#PLUGINS[@]} + 3 + 7 + 1) * 2 ))
+# +1 foundational base render +1 classic template overview composite.
+TOTAL=$(( (${#PLUGINS[@]} + 3 + 7 + 1 + 1) * 2 ))
 OK=$((TOTAL - ${#FAILURES[@]}))
 echo "  OK:   ${OK}/${TOTAL}"
 if (( ${#FAILURES[@]} > 0 )); then
