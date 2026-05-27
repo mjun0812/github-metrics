@@ -43,13 +43,15 @@ upstream に存在する各 plugin のサブモードについて、Go 実装の
 
 ## テンプレート / base
 
-Go 実装側は plugin 単位のサンプルのみで、テンプレート総合サンプルが無いため **upstream の参考表示のみ** です。
+upstream の参考表示と Go 実装側の対応サンプルを並べています。`classic 総合` は upstream の `metrics.classic.svg` (= 実質 base ヘッダのみ) に対し、Go 側は採用 19 plugin のうち `mjun0812` で非空となる主要 12 plugin (`isocalendar` / `calendar` / `languages` / `activity` / `achievements` / `notable` / `repositories` / `habits` / `stars` / `reactions` / `stargazers` / `traffic`) を合成した overview を表示します。`repository 総合` は repository template 専用のため Go の user mode サンプルはありません。
 
-| 種別               | upstream                                                         |
-| ------------------ | ---------------------------------------------------------------- |
-| base (plugin なし) | <img src="original_examples/metrics.base.svg" width="420">       |
-| classic 総合       | <img src="original_examples/metrics.classic.svg" width="420">    |
-| repository 総合    | <img src="original_examples/metrics.repository.svg" width="420"> |
+| 種別               | upstream                                                         | Go 実装                                                       |
+| ------------------ | ---------------------------------------------------------------- | ------------------------------------------------------------- |
+| base (plugin なし) | <img src="original_examples/metrics.base.svg" width="420">       | <img src="examples/plugin-base.svg" width="420">              |
+| classic 総合       | <img src="original_examples/metrics.classic.svg" width="420">    | <img src="examples/metrics-classic.svg" width="420">          |
+| repository 総合    | <img src="original_examples/metrics.repository.svg" width="420"> | （repository template 専用、user mode 用サンプルなし）        |
+
+> ✅ Go サンプル `metrics-classic.svg` / `.png` は `scripts/gen-doc-samples.sh` の独立セクションで生成。複数 plugin を 1 回の `render_one` で合成。データ無しで空表示になる plugin (`contributors` / `projects` / `sponsors` / `sponsorships` / `starlists` / `topics`) と巨大化する `people` は除外し、合成 SVG は ~370KB / 高さ ~3976px。
 
 ---
 
