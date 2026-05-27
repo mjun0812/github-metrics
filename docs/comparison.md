@@ -12,7 +12,7 @@
 - 一部の SVG は `<foreignObject>` (HTML 埋め込み) を含み、`<img>` 経由だとブラウザ / GitHub 上で HTML 部分が描画されないことがあります。崩れて見える場合はファイルを直接開いて確認してください。
 - 表示幅は `width="420"` で統一しています（原寸は各ファイル参照）。
 - **空カードについて**: 右の Go 実装サンプルは `mjun0812` のデータを使うため、本人に該当データが無い plugin（topics / starlists / sponsors / projects 等）は枠だけの空表示になります。これは未実装ではなく「サンプルユーザーにデータが無い」ためです。
-- **repository mode**: M7 で実装した `--template repository` の各 plugin サンプルは `plugin-<slug>-repo.svg` / `.png` として別途生成しています。対象リポジトリは `mjun0812/flash-attention-prebuild-wheels`（owner 本人なので traffic plugin も実データを取得）。各 plugin の repository-mode 出力は本ページ末尾の [「repository mode サンプル一覧」](#repository-mode-サンプル一覧) を参照。
+- **repository mode**: M7 で実装した `--template repository` のサンプルは「base chrome 単体」と「単体 toggle で base chrome と byte 差を生む plugin」のみを `plugin-<slug>-repo.svg` / `.png` として生成しています。対象リポジトリは `mjun0812/flash-attention-prebuild-wheels`（owner 本人なので traffic plugin も実データを取得）。詳細・除外理由 (byte-identical / user-mode-only / partial 未登録) は本ページ末尾の [「repository mode サンプル一覧」](#repository-mode-サンプル一覧) を参照。
 
 ## variant（サブモード）の Go 実装対応状況
 
@@ -201,7 +201,7 @@ upstream の出力は両バリアントとも巨大 (9.9 / 8.7 MB) のためリ�
 
 他バリアント (upstream): 📁 [contributors.contributions (8.7 MB)](original_examples/metrics.plugin.contributors.contributions.svg)
 
-> ✅ Go 側は `plugin_contributors_contributions` 対応済み（per-contributor commits / additions / deletions）。repository mode のサンプルは `plugin-contributors-repo.svg`（commits のみ）と `plugin-contributors-repo-contributions.svg`（adds/dels 列付き）。`stats pending` 警告は `/stats/contributors` の cache が暖まる前に 202 が返った場合に表示される（#424）。詳細は末尾の [repository mode サンプル一覧](#repository-mode-サンプル一覧) を参照。
+> ✅ Go 側は `plugin_contributors_contributions` 対応済み（per-contributor commits / additions / deletions）。default mode の repository サンプルは base chrome の contributors セクションが担当し、adds/dels 列付きの変種は `plugin-contributors-repo-contributions.svg` を参照（既定 commits のみのサンプルは `plugin-base-repo.svg` と byte 同一になるため削除済み）。`stats pending` 警告は `/stats/contributors` の cache が暖まる前に 202 が返った場合に表示される（#424）。詳細は末尾の [repository mode サンプル一覧](#repository-mode-サンプル一覧) を参照。
 
 ### reactions
 
@@ -247,7 +247,7 @@ upstream の出力は両バリアントとも巨大 (9.9 / 8.7 MB) のためリ�
 | -------------------------------------------------------------------- | --------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.traffic.svg" width="420"> | <img src="examples/plugin-traffic.svg" width="420"> |
 
-> ✅ Go 側: user mode は token owner が admin の全 repo に対して `/traffic/views` を並列取得して合計表示。`plugin-traffic-repo.svg` は repository template の `_.json` に traffic partial が登録されていないため repository chrome と byte-同一になる（plugin の Run() 自体は単一 repo の views を計算するが描画されない）。upstream の `metrics.repository.svg` も同様に traffic を含まないため parity 維持。admin 権限の有無で Run() が "missing repo scope" で Skipped になる挙動は user-mode サンプルでカバー済み。
+> ✅ Go 側: user mode は token owner が admin の全 repo に対して `/traffic/views` を並列取得して合計表示。`--template repository` 単体では traffic partial が `_.json` に登録されていないため出力が `plugin-base-repo.svg` と byte 同一になり、専用サンプルは生成していない（plugin の Run() 自体は単一 repo の views を計算するが描画される partial がない）。upstream の `metrics.repository.svg` も同様に traffic を含まないため parity 維持。admin 権限の有無で Run() が "missing repo scope" で Skipped になる挙動は user-mode サンプルでカバー済み。
 
 ---
 
@@ -263,38 +263,35 @@ upstream の出力は両バリアントとも巨大 (9.9 / 8.7 MB) のためリ�
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `people` (新規 `<section data-section="people">` を追加)<br>`contributors_contributions` (chrome の contributors セクションに adds/dels 列を追加) | `achievements` / `activity` / `calendar` / `contributors` (chrome 側ですでに描画) / `habits` / `isocalendar` / `languages` (chrome 側ですでに描画) / `notable` / `projects` (データ無し) / `reactions` / `repositories` / `sponsors` (データ無し) / `sponsorships` / `stargazers` (M7 MVP は totals のみで partial は空文字列) / `starlists` / `stars` / `topics` / `traffic` (partial 未登録) |
 
-「効果なし」側の plugin (18 個) は `plugin-<slug>-repo.svg` が `plugin-base-repo.svg` と byte 同一になります。これは未実装ではなく:
+「効果なし」側の plugin (18 個) は `plugin-<slug>-repo.svg` を生成しても `plugin-base-repo.svg` と byte 同一になります（md5 一致を実測で確認済）。これは未実装ではなく:
 
 1. base 系セクションは plugin toggle 不要で常に描画される
 2. partial が template の `_.json` にない / partial が空文字列 / 対象データが無い
+3. plugin 自体が user mode 専用（mode gate により Skipped を返す）
 
-のどれかの理由による意図的な挙動で、upstream `metrics.repository.svg` でも同じ partial 集合のみが描画されます。
+のいずれかの理由による意図的な挙動で、upstream `metrics.repository.svg` でも同じ partial 集合のみが描画されます。
 
-それでも全 19 plugin について `plugin-<slug>-repo.{svg,png}` を生成しているのは、user mode サンプルと 1:1 で並べられる gallery を docs に置きたいためです。「内容が同じならファイル不要」ではなく「網羅して並べる」を優先しました。差分のあるサンプル比較は本セクション末尾の追加バリアント / 総合サンプル表を参照してください。
+これらの byte 同一サンプル (`plugin-<slug>-repo.{svg,png}` × 18) は `docs/examples/` から削除しました。「網羅性のために並べる」よりも「意味のあるサンプルだけを残す」方が docs の信号雑音比が高いと判断しています。残った repository-mode サンプルは下の追加バリアント / 総合サンプル表のみで、ユーザーは「base chrome のみ」「people セクションを足すと何が増えるか」「contributors の per-row 列を足すと何が増えるか」を 1 ファイルずつ比較できます。
 
-### 単体サンプル（19 plugin）
+#### mode-not-supported warning
 
-| plugin         | sample                                       |
-| -------------- | -------------------------------------------- |
-| achievements   | `examples/plugin-achievements-repo.svg`       |
-| activity       | `examples/plugin-activity-repo.svg`           |
-| calendar       | `examples/plugin-calendar-repo.svg`           |
-| contributors   | `examples/plugin-contributors-repo.svg`       |
-| habits         | `examples/plugin-habits-repo.svg`             |
-| isocalendar    | `examples/plugin-isocalendar-repo.svg`        |
-| languages      | `examples/plugin-languages-repo.svg`          |
-| notable        | `examples/plugin-notable-repo.svg`            |
-| people         | `examples/plugin-people-repo.svg`             |
-| projects       | `examples/plugin-projects-repo.svg`           |
-| reactions      | `examples/plugin-reactions-repo.svg`          |
-| repositories   | `examples/plugin-repositories-repo.svg`       |
-| sponsors       | `examples/plugin-sponsors-repo.svg`           |
-| sponsorships   | `examples/plugin-sponsorships-repo.svg`       |
-| stargazers     | `examples/plugin-stargazers-repo.svg`         |
-| starlists      | `examples/plugin-starlists-repo.svg`          |
-| stars          | `examples/plugin-stars-repo.svg`              |
-| topics         | `examples/plugin-topics-repo.svg`             |
-| traffic        | `examples/plugin-traffic-repo.svg`            |
+user mode 専用 plugin (14 個 = achievements / activity / calendar / habits / isocalendar / notable / projects / reactions / repositories / sponsors / sponsorships / starlists / stars / topics) を `--template repository` で起動すると、各 plugin の `Run()` は冒頭で `plugins.RequireUserMode()` を呼び、descriptive な reason をログに出して即 Skipped を返します。逆向きの contributors plugin（repository mode 専用）は `RequireRepoMode()` でユーザーモード時に同様の WARN を出します。
+
+実行例:
+
+```text
+level=WARN msg="plugin achievements is only supported in user mode (current mode: repository)" plugin=achievements mode=repository supported=user
+level=WARN msg="plugin contributors is only supported in repository mode (current mode: user)" plugin=contributors mode=user supported=repository
+```
+
+これにより operator は CI ログから「なぜこの plugin が空 SVG を返したか」を即特定できます。実装は `internal/plugins/modegate.go` 参照。
+
+### 単体サンプル
+
+| plugin         | sample                                       | 備考                                                  |
+| -------------- | -------------------------------------------- | ----------------------------------------------------- |
+| base           | `examples/plugin-base-repo.svg`              | repository template chrome のみ（plugin toggle なし） |
+| people         | `examples/plugin-people-repo.svg`            | `<section data-section="people">` 追加（既定 = stargazers + watchers） |
 
 ### 追加バリアント
 
