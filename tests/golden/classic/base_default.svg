@@ -240,6 +240,16 @@
     margin: 0 4px;
   }
 
+  /* Basic-mode notable chip badge — inline "★ N" star count rendered
+     beside the repository name when the gauge cluster is absent (issue
+     #422). Keeps the same chip font-size so the count is legible
+     instead of crammed into the tiny gauge text. */
+  .contribution.organization .stars {
+    margin: 0 4px 0 6px;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+
 /* Commit calendar */
   .calendar.field {
     margin: 4px 0;
@@ -1667,4 +1677,4 @@
     animation-play-state: paused !important;
     caret-color: transparent !important;
   }
-</style><style></style><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper"><section data-section="header"><h1 class="field"><img class="avatar" src="https://avatars.githubusercontent.com/u/12345?v=4" width="20" height="20" /><span>The Octocat</span></h1></section><section data-section="activity-community"><section class="row"><section data-block="activity"><h2 class="field"><svg class="octicon"></svg>Activity</h2><div class="field"><svg class="octicon"></svg>3.2k Commits</div><div class="field"><svg class="octicon"></svg>17 Pull requests opened</div><div class="field"><svg class="octicon"></svg>42 Issues opened</div></section><section data-block="community"></section></section></section><section data-section="repositories"><div class="row"><div class="field"><svg class="octicon"></svg>51 repositories</div><div class="field"><svg class="octicon"></svg>1.5k stargazers</div><div class="field"><svg class="octicon"></svg>81 forks</div></div></section><div id="metrics-end"></div><section data-section="metadata"><footer><span>These metrics include private contributions</span><span>Last updated 2026-05-26T23:37:52Z with mjun0812/github-metrics@test-version</span></footer></section></div></foreignObject></svg>
+</style><style></style><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper"><section data-section="header"><h1 class="field"><img class="avatar" src="https://avatars.githubusercontent.com/u/12345?v=4" width="20" height="20" /><span>The Octocat</span></h1></section><section data-section="activity-community"><section class="row"><section data-block="activity"><h2 class="field"><svg class="octicon"></svg>Activity</h2><div class="field"><svg class="octicon"></svg>3.2k Commits</div><div class="field"><svg class="octicon"></svg>17 Pull requests opened</div><div class="field"><svg class="octicon"></svg>42 Issues opened</div></section><section data-block="community"></section></section></section><section data-section="repositories"><div class="row"><div class="field"><svg class="octicon"></svg>51 repositories</div><div class="field"><svg class="octicon"></svg>1.5k stargazers</div><div class="field"><svg class="octicon"></svg>81 forks</div></div></section><div id="metrics-end"></div><section data-section="metadata"><footer><span>These metrics include private contributions</span><span>Last updated 2026-05-27T02:16:49Z with mjun0812/github-metrics@test-version</span></footer></section></div></foreignObject></svg>

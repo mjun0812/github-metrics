@@ -240,6 +240,16 @@
     margin: 0 4px;
   }
 
+  /* Basic-mode notable chip badge — inline "★ N" star count rendered
+     beside the repository name when the gauge cluster is absent (issue
+     #422). Keeps the same chip font-size so the count is legible
+     instead of crammed into the tiny gauge text. */
+  .contribution.organization .stars {
+    margin: 0 4px 0 6px;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+
 /* Commit calendar */
   .calendar.field {
     margin: 4px 0;
