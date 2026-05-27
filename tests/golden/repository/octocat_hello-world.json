@@ -67,7 +67,8 @@
       "sections": [
         "contributors"
       ],
-      "skipped": false
+      "skipped": false,
+      "stats_pending": false
     },
     "habits": {
       "charts": {

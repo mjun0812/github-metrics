@@ -42,6 +42,11 @@ type Result struct {
 	Sections      []string      `json:"sections"`
 	Base          string        `json:"base"`
 	Head          string        `json:"head"`
+	// StatsPending is true when GET /repos/{owner}/{repo}/stats/contributors
+	// returned 202 Accepted ("warming up"). The partial uses this to
+	// render a "stats pending" indicator instead of misleading ++0 --0
+	// chips when contributions mode is enabled.
+	StatsPending bool `json:"stats_pending,omitempty"`
 }
 
 // IsSkipped lets the classic dispatcher detect the skipped path.
@@ -71,9 +76,19 @@ func (p *contributorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 		// /stats/contributors is ready.
 		mode := plugins.AggregationMode(pc.Data)
 		list := fallbackList(r, in.ignored)
+		statsPending := false
 		if pc.REST != nil {
-			if loaded, ok := fetchContributorStats(ctx, pc, r.Owner, r.Name, in.ignored); ok {
+			loaded, status := fetchContributorStats(ctx, pc, r.Owner, r.Name, in.ignored)
+			switch status {
+			case statsStatusOK:
 				list = loaded
+			case statsStatusPending:
+				// /stats/contributors returned 202 Accepted — GitHub
+				// is recomputing the cache. Keep the minimal stub
+				// (so the row still names the contributor) but flag
+				// the result so partial renders "stats pending"
+				// instead of misleading ++0 --0.
+				statsPending = true
 			}
 		}
 		return &Result{
@@ -83,6 +98,7 @@ func (p *contributorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 			Sections:      in.sections,
 			Base:          defaultString(in.base, r.DefaultBranch),
 			Head:          defaultString(in.head, "HEAD"),
+			StatsPending:  statsPending,
 		}, nil
 	}
 	return &Result{
@@ -137,18 +153,38 @@ type rawContributorStat struct {
 	} `json:"author"`
 }
 
-func fetchContributorStats(ctx context.Context, pc *plugins.PluginContext, owner, repo string, ignored map[string]struct{}) ([]Contributor, bool) {
+// statsStatus describes the outcome of /stats/contributors. We
+// distinguish between OK (full payload available), Pending (GitHub
+// returned 202 Accepted while it warms the cache — caller should
+// keep the minimal stub but tell the partial to render a "stats
+// pending" indicator instead of misleading zero diff chips), and
+// Failed (transport / parse error → silently keep the minimal stub).
+type statsStatus int
+
+const (
+	statsStatusFailed statsStatus = iota
+	statsStatusOK
+	statsStatusPending
+)
+
+func fetchContributorStats(ctx context.Context, pc *plugins.PluginContext, owner, repo string, ignored map[string]struct{}) ([]Contributor, statsStatus) {
 	path := fmt.Sprintf("/repos/%s/%s/stats/contributors", url.PathEscape(owner), url.PathEscape(repo))
 	body, resp, err := pc.REST.Get(ctx, path, nil)
 	if err != nil || resp == nil {
-		return nil, false
+		return nil, statsStatusFailed
+	}
+	// 202 Accepted: GitHub is computing the statistics. Surface this
+	// to the caller so the partial can show "stats pending" instead
+	// of synthesising ++0 --0 from the empty body.
+	if resp.StatusCode == http.StatusAccepted {
+		return nil, statsStatusPending
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, false
+		return nil, statsStatusFailed
 	}
 	var rows []rawContributorStat
 	if err := json.Unmarshal(body, &rows); err != nil {
-		return nil, false
+		return nil, statsStatusFailed
 	}
 	out := make([]Contributor, 0, len(rows))
 	for _, row := range rows {
@@ -175,7 +211,7 @@ func fetchContributorStats(ctx context.Context, pc *plugins.PluginContext, owner
 		}
 		return out[i].Login < out[j].Login
 	})
-	return out, true
+	return out, statsStatusOK
 }
 
 func ignoredLogin(login string, ignored map[string]struct{}) bool {
