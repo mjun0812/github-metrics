@@ -17,23 +17,41 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/mjun0812/github-metrics/internal/format"
 	"github.com/mjun0812/github-metrics/internal/templates"
 )
+
+// nowFunc is the time source used by BaseHeader's "Joined GitHub <N>
+// years ago" label. It defaults to time.Now; tests overwrite it via
+// SetNowForTest to anchor the rendered string. Not goroutine-safe;
+// production code never reassigns it.
+var nowFunc = time.Now
+
+// SetNowForTest overrides the time source used by BaseHeader. The
+// returned function restores the previous value.
+func SetNowForTest(now func() time.Time) func() {
+	prev := nowFunc
+	nowFunc = now
+	return func() { nowFunc = prev }
+}
 
 // BaseHeader renders the avatar + display name block at the top of the
 // classic SVG. Returns "" when the User payload is absent.
 //
-// Upstream's base.header.ejs also renders a two-column sub-row with
-// "Joined GitHub", followed-by count, contribution-calendar swatches,
-// and "Contributed to N repositories". Those rely on user fields the
-// Go base plugin does not yet populate (registration date, followers,
-// repositoriesContributedTo, computed.calendar). Until those land,
-// emitting the empty placeholder `<div class="row"><section/><section/></div>`
-// produced a visually broken header (the avatar floated alone with
-// large unused vertical space below). #419 dropped the placeholder
-// so the header section is dense again. When the missing data fields
-// land, this partial should grow back to emit the populated sub-row.
+// 429 Phase 1: also renders the upstream base.header.ejs sub-row with
+// "Joined GitHub <age>", "Followed by N users", and "Following N
+// users" when those fields are populated. Each row is rendered with a
+// neutral `<svg class="octicon"></svg>` placeholder — the icon path
+// shapes are left for the Phase 2 / Phase 3 work that brings the
+// contribution-calendar grid and the upstream-equivalent octicons.
+//
+// Earlier behaviour (#419): with no real data the partial emitted an
+// empty `<div class="row"><section/><section/></div>` placeholder
+// which caused a tall blank band. With the Phase 1 fields populated
+// the row carries real content, so the placeholder regression is
+// no longer relevant.
 func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil || pc.Data.User == nil {
 		return "", nil
@@ -56,6 +74,36 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 	}
 	fmt.Fprintf(&b, `<span>%s</span>`, EscapeXML(display))
 	b.WriteString(`</h1>`)
+
+	// Upstream sub-row: Joined GitHub / Followed by / Following.
+	// Each field is suppressed when its source data is the zero value,
+	// so empty / freshly-created accounts do not gain blank rows.
+	var subRows []string
+	if age := format.RelativeAge(u.CreatedAt, nowFunc()); age != "" {
+		subRows = append(subRows, fmt.Sprintf(
+			`<div class="field"><svg class="octicon"></svg>Joined GitHub %s</div>`, age,
+		))
+	}
+	if u.Followers > 0 {
+		subRows = append(subRows, fmt.Sprintf(
+			`<div class="field"><svg class="octicon"></svg>Followed by %s %s</div>`,
+			FormatCount(int64(u.Followers)), pluralLabel("user", u.Followers),
+		))
+	}
+	if u.Following > 0 {
+		subRows = append(subRows, fmt.Sprintf(
+			`<div class="field"><svg class="octicon"></svg>Following %s %s</div>`,
+			FormatCount(int64(u.Following)), pluralLabel("user", u.Following),
+		))
+	}
+	if len(subRows) > 0 {
+		b.WriteString(`<div class="row" data-block="header-counters">`)
+		for _, row := range subRows {
+			b.WriteString(row)
+		}
+		b.WriteString(`</div>`)
+	}
+
 	b.WriteString(`</section>`)
 	return b.String(), nil
 }
@@ -138,6 +186,13 @@ func pluralLabel(singular string, count int) string {
 // BaseRepositories renders the count / stargazers / forks row. Returns
 // "" when Repositories.Count is zero so the section disappears for
 // fresh accounts.
+//
+// 429 Phase 1: also surfaces "N watching" and "N sponsors" sourced from
+// Data.User.{Watching,SponsorshipsAsMaintainer}. Both labels are
+// suppressed when their counter is zero so accounts with no
+// watch/sponsorship activity do not gain noise rows. License
+// preference / Releases / Packages / Disk used / Contributed to are
+// Phase 2 work (require extra GraphQL fetches).
 func BaseRepositories(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil {
 		return "", nil
@@ -155,6 +210,21 @@ func BaseRepositories(_ context.Context, pc *templates.PartialContext) (string, 
 		FormatCount(int64(r.Stargazers)))
 	fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s forks</div>`,
 		FormatCount(int64(r.Forks)))
+	if u := pc.Data.User; u != nil {
+		if u.Watching > 0 {
+			noun := "repositories"
+			if u.Watching == 1 {
+				noun = "repository"
+			}
+			fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>Watching %s %s</div>`,
+				FormatCount(int64(u.Watching)), noun)
+		}
+		if u.SponsorshipsAsMaintainer > 0 {
+			fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s %s</div>`,
+				FormatCount(int64(u.SponsorshipsAsMaintainer)),
+				pluralLabel("sponsor", u.SponsorshipsAsMaintainer))
+		}
+	}
 	b.WriteString(`</div></section>`)
 	return b.String(), nil
 }

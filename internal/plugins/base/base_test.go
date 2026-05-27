@@ -166,6 +166,23 @@ func TestRun_User(t *testing.T) {
 	if pc.Data.User == nil || pc.Data.User.Login != "octocat" {
 		t.Fatalf("Data.User = %+v", pc.Data.User)
 	}
+	// 429 Phase 1: User struct picks up the foundational counters
+	// surfaced by base.header / base.repositories partials.
+	if pc.Data.User.Followers != 1555 {
+		t.Errorf("Data.User.Followers = %d, want 1555", pc.Data.User.Followers)
+	}
+	if pc.Data.User.Following != 617 {
+		t.Errorf("Data.User.Following = %d, want 617", pc.Data.User.Following)
+	}
+	if pc.Data.User.Watching != 16 {
+		t.Errorf("Data.User.Watching = %d, want 16", pc.Data.User.Watching)
+	}
+	if pc.Data.User.SponsorshipsAsMaintainer != 4 {
+		t.Errorf("Data.User.SponsorshipsAsMaintainer = %d, want 4", pc.Data.User.SponsorshipsAsMaintainer)
+	}
+	if pc.Data.User.CreatedAt.Year() != 2008 {
+		t.Errorf("Data.User.CreatedAt = %v, want 2008-01-14", pc.Data.User.CreatedAt)
+	}
 	if got := pc.Data.Computed.Repositories.Count; got != 250 {
 		t.Errorf("Computed.Repositories.Count = %d, want 250", got)
 	}

@@ -5,7 +5,10 @@
 // internal/plugins/core/.
 package plugins
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
 
 // AccountKind is the high-level shape of the account the engine is
 // rendering metrics for. The base plugin branches on this value.
@@ -108,10 +111,21 @@ func (d *Data) SnapshotErrors() []error {
 
 // User is the GraphQL-derived account payload populated by the base
 // plugin's runUser branch.
+//
+// 429 Phase 1: CreatedAt / Followers / Following / Watching /
+// SponsorshipsAsMaintainer surface the foundational counters that
+// upstream `base.header.ejs` / `base.repositories.ejs` render. Zero
+// values mean "GraphQL did not return the counter"; the partials hide
+// rows whose source is zero so empty accounts do not gain noise lines.
 type User struct {
-	Login     string
-	Name      string
-	AvatarURL string
+	Login                    string
+	Name                     string
+	AvatarURL                string
+	CreatedAt                time.Time
+	Followers                int
+	Following                int
+	Watching                 int
+	SponsorshipsAsMaintainer int
 }
 
 // Organization is the organization-account payload populated by the
