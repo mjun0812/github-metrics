@@ -52,6 +52,9 @@ func (p *reactionsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
+	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
+		return &Result{Skipped: true, SkippedReason: reason}, nil
+	}
 	if !truthyInput(pc.Inputs, "plugin_"+Name) {
 		return &Result{Skipped: true, SkippedReason: "plugin disabled"}, nil
 	}

@@ -12,6 +12,7 @@
 - 一部の SVG は `<foreignObject>` (HTML 埋め込み) を含み、`<img>` 経由だとブラウザ / GitHub 上で HTML 部分が描画されないことがあります。崩れて見える場合はファイルを直接開いて確認してください。
 - 表示幅は `width="420"` で統一しています（原寸は各ファイル参照）。
 - **空カードについて**: 右の Go 実装サンプルは `mjun0812` のデータを使うため、本人に該当データが無い plugin（topics / starlists / sponsors / projects 等）は枠だけの空表示になります。これは未実装ではなく「サンプルユーザーにデータが無い」ためです。
+- **repository mode**: M7 で実装した `--template repository` のサンプルは「base chrome 単体」と「単体 toggle で base chrome と byte 差を生む plugin」のみを `plugin-<slug>-repo.svg` / `.png` として生成しています。対象リポジトリは `mjun0812/flash-attention-prebuild-wheels`（owner 本人なので traffic plugin も実データを取得）。詳細・除外理由 (byte-identical / user-mode-only / partial 未登録) は本ページ末尾の [「repository mode サンプル一覧」](#repository-mode-サンプル一覧) を参照。
 
 ## variant（サブモード）の Go 実装対応状況
 
@@ -31,11 +32,11 @@ upstream に存在する各 plugin のサブモードについて、Go 実装の
 | `sponsors.full`                  | ○ データ無し            | `plugin_sponsors_sections` 対応。サンプルユーザーにデータ無しで空                                                   |
 | `habits.facts` / `habits.charts` | ✅ 比較可               | `plugin_habits_facts` / `plugin_habits_charts` で個別トグル。`plugin-habits-facts.svg` / `plugin-habits-charts.svg` |
 | `notable.indepth`                | ✅ 比較可               | `plugin_notable_indepth` 対応。`@owner/repo` 粒度チップ + 統計ゲージ。`plugin-notable-indepth.svg`                  |
-| `contributors.contributions`     | ◐ 実装済み（repo 専用） | `plugin_contributors_contributions` 対応。repository template 専用のため user サンプルなし                          |
+| `contributors.contributions`     | ✅ 比較可（repo mode）  | `plugin_contributors_contributions` 対応。`plugin-contributors-repo-contributions.svg` で adds/dels 列を表示         |
 | `stargazers.graph`               | ✅ 比較可               | `plugin_stargazers_charts_type=graph` 対応。`plugin-stargazers-graph.svg`                                           |
 | `stargazers.worldmap`            | ✗ 未対応                | backlog（Google Maps API、R-012 Skipped path）                                                                      |
 | `stargazers.chartist`            | ◐ graph と同一          | `charts_type=chartist` は deprecated alias。`graph` とバイト同一出力                                                |
-| `people.repository`              | ◐ 実装済み（repo 専用） | contributors/stargazers/watchers 対応。repository template 専用のため user サンプルなし                             |
+| `people.repository`              | ✅ 比較可（repo mode）  | contributors/stargazers/watchers 対応。`plugin-people-repo-types.svg` で 3 種同時表示                                |
 
 ✅ = 左右比較可 / ◐ = Go は対応するがサンプル差分なし・または repository 専用 / deprecated alias でサンプル省略 / ○ = Go は対応するがサンプルユーザーにデータ無し（空） / ✗ = Go 実装が未対応（要実装・backlog）
 
@@ -43,15 +44,16 @@ upstream に存在する各 plugin のサブモードについて、Go 実装の
 
 ## テンプレート / base
 
-upstream の参考表示と Go 実装側の対応サンプルを並べています。`classic 総合` は upstream の `metrics.classic.svg` (= 実質 base ヘッダのみ) に対し、Go 側は採用 19 plugin のうち `mjun0812` で非空となる主要 12 plugin (`isocalendar` / `calendar` / `languages` / `activity` / `achievements` / `notable` / `repositories` / `habits` / `stars` / `reactions` / `stargazers` / `traffic`) を合成した overview を表示します。`repository 総合` は repository template 専用のため Go の user mode サンプルはありません。
+upstream の参考表示と Go 実装側の対応サンプルを並べています。`classic 総合` は upstream の `metrics.classic.svg` (= 実質 base ヘッダのみ) に対し、Go 側は採用 19 plugin のうち `mjun0812` で非空となる主要 12 plugin (`isocalendar` / `calendar` / `languages` / `activity` / `achievements` / `notable` / `repositories` / `habits` / `stars` / `reactions` / `stargazers` / `traffic`) を合成した overview を表示します。`repository 総合` は `--template repository --repo mjun0812/flash-attention-prebuild-wheels` で、repository template の `_.json` に partial を持つ 5 plugin (`languages` / `contributors` / `people` / `stargazers` / `activity`) を合成した overview です。
 
 | 種別               | upstream                                                         | Go 実装                                                       |
 | ------------------ | ---------------------------------------------------------------- | ------------------------------------------------------------- |
 | base (plugin なし) | <img src="original_examples/metrics.base.svg" width="420">       | <img src="examples/plugin-base.svg" width="420">              |
 | classic 総合       | <img src="original_examples/metrics.classic.svg" width="420">    | <img src="examples/metrics-classic.svg" width="420">          |
-| repository 総合    | <img src="original_examples/metrics.repository.svg" width="420"> | （repository template 専用、user mode 用サンプルなし）        |
+| repository 総合    | <img src="original_examples/metrics.repository.svg" width="420"> | <img src="examples/metrics-repository.svg" width="420">       |
 
 > ✅ Go サンプル `metrics-classic.svg` / `.png` は `scripts/gen-doc-samples.sh` の独立セクションで生成。複数 plugin を 1 回の `render_one` で合成。データ無しで空表示になる plugin (`contributors` / `projects` / `sponsors` / `sponsorships` / `starlists` / `topics`) と巨大化する `people` は除外し、合成 SVG は ~370KB / 高さ ~3976px。
+> ✅ Go サンプル `metrics-repository.svg` / `.png` は同スクリプトの repository mode セクションで生成。`mjun0812/flash-attention-prebuild-wheels` を対象に、repository template の `_.json` に partial を持つ plugin だけを合成しています: languages / contributors (+ contributions) / people (stargazers + watchers + contributors) / stargazers (graph) / activity。`traffic` 等 partial を持たない plugin はトグルしても出力に反映されないため合成対象外（repository chrome のみ）。
 
 ---
 
@@ -177,7 +179,7 @@ Go 実装の `plugin-people.svg` は 5.8MB のため埋め込まずリンクに�
 
 他バリアント (upstream): 📁 [people.repository (4.0 MB)](original_examples/metrics.plugin.people.repository.svg)
 
-> ◐ Go 側は user mode (followers/following) に加え repository context types (contributors/stargazers/watchers) を実装済み。repository template 専用のため user モードの plugin 単体サンプルは生成していない。
+> ✅ Go 側は user mode (followers/following) に加え repository context types (contributors/stargazers/watchers) を実装済み。repository mode のサンプルは `plugin-people-repo.svg`（既定の stargazers + watchers）と `plugin-people-repo-types.svg`（3 種同時 = stargazers + watchers + contributors）。詳細は本ページ末尾の [repository mode サンプル一覧](#repository-mode-サンプル一覧) を参照。
 
 ### notable
 
@@ -199,7 +201,7 @@ upstream の出力は両バリアントとも巨大 (9.9 / 8.7 MB) のためリ�
 
 他バリアント (upstream): 📁 [contributors.contributions (8.7 MB)](original_examples/metrics.plugin.contributors.contributions.svg)
 
-> ◐ Go 側は `plugin_contributors_contributions` 対応済み（per-contributor commits / additions / deletions）。repository template 専用のため user モードの plugin 単体サンプルは生成していない。
+> ✅ Go 側は `plugin_contributors_contributions` 対応済み（per-contributor commits / additions / deletions）。default mode の repository サンプルは base chrome の contributors セクションが担当し、adds/dels 列付きの変種は `plugin-contributors-repo-contributions.svg` を参照（既定 commits のみのサンプルは `plugin-base-repo.svg` と byte 同一になるため削除済み）。`stats pending` 警告は `/stats/contributors` の cache が暖まる前に 202 が返った場合に表示される（#424）。詳細は末尾の [repository mode サンプル一覧](#repository-mode-サンプル一覧) を参照。
 
 ### reactions
 
@@ -244,3 +246,62 @@ upstream の出力は両バリアントとも巨大 (9.9 / 8.7 MB) のためリ�
 | upstream                                                             | Go 実装 (`plugin-traffic.svg`)                      |
 | -------------------------------------------------------------------- | --------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.traffic.svg" width="420"> | <img src="examples/plugin-traffic.svg" width="420"> |
+
+> ✅ Go 側: user mode は token owner が admin の全 repo に対して `/traffic/views` を並列取得して合計表示。`--template repository` 単体では traffic partial が `_.json` に登録されていないため出力が `plugin-base-repo.svg` と byte 同一になり、専用サンプルは生成していない（plugin の Run() 自体は単一 repo の views を計算するが描画される partial がない）。upstream の `metrics.repository.svg` も同様に traffic を含まないため parity 維持。admin 権限の有無で Run() が "missing repo scope" で Skipped になる挙動は user-mode サンプルでカバー済み。
+
+---
+
+## repository mode サンプル一覧
+
+`--template repository --user mjun0812 --repo flash-attention-prebuild-wheels` で生成した repository-mode サンプル一覧です。`scripts/gen-doc-samples.sh` の repository mode セクションで `make docs-samples` 実行時に自動再生成されます。
+
+`--template repository` は `assets/templates/repository/partials/_.json` の固定 partial 順 (`base.header` → `introduction` → `followup` → `languages` → `projects` → `pagespeed` → `stargazers` → `people` → `activity` → `posts` → `rss` → `screenshot` → `stock` → `crypto` → `contributors` → `sponsors` → `licenses`) でレンダリングします。base 系セクション (`base.header` / `introduction` / `activity` / `contributors` / `languages`) は `base.runRepository` が常に値を populate するため、ユーザーが `--plugin <slug>=yes` を渡さなくても chrome として表示されます。
+
+そのうえで、`--plugin <slug>=yes` トグルが追加の効果を持つ plugin は **`mjun0812/flash-attention-prebuild-wheels` で実測した限り** 以下に限定されます:
+
+| 効果あり (repo mode で出力が変わる)   | 効果なし (chrome と byte 同一になる)                                                                                                                                                                                                                                                                |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `people` (新規 `<section data-section="people">` を追加)<br>`contributors_contributions` (chrome の contributors セクションに adds/dels 列を追加) | `achievements` / `activity` / `calendar` / `contributors` (chrome 側ですでに描画) / `habits` / `isocalendar` / `languages` (chrome 側ですでに描画) / `notable` / `projects` (データ無し) / `reactions` / `repositories` / `sponsors` (データ無し) / `sponsorships` / `stargazers` (M7 MVP は totals のみで partial は空文字列) / `starlists` / `stars` / `topics` / `traffic` (partial 未登録) |
+
+「効果なし」側の plugin (18 個) は `plugin-<slug>-repo.svg` を生成しても `plugin-base-repo.svg` と byte 同一になります（md5 一致を実測で確認済）。これは未実装ではなく:
+
+1. base 系セクションは plugin toggle 不要で常に描画される
+2. partial が template の `_.json` にない / partial が空文字列 / 対象データが無い
+3. plugin 自体が user mode 専用（mode gate により Skipped を返す）
+
+のいずれかの理由による意図的な挙動で、upstream `metrics.repository.svg` でも同じ partial 集合のみが描画されます。
+
+これらの byte 同一サンプル (`plugin-<slug>-repo.{svg,png}` × 18) は `docs/examples/` から削除しました。「網羅性のために並べる」よりも「意味のあるサンプルだけを残す」方が docs の信号雑音比が高いと判断しています。残った repository-mode サンプルは下の追加バリアント / 総合サンプル表のみで、ユーザーは「base chrome のみ」「people セクションを足すと何が増えるか」「contributors の per-row 列を足すと何が増えるか」を 1 ファイルずつ比較できます。
+
+#### mode-not-supported warning
+
+user mode 専用 plugin (14 個 = achievements / activity / calendar / habits / isocalendar / notable / projects / reactions / repositories / sponsors / sponsorships / starlists / stars / topics) を `--template repository` で起動すると、各 plugin の `Run()` は冒頭で `plugins.RequireUserMode()` を呼び、descriptive な reason をログに出して即 Skipped を返します。逆向きの contributors plugin（repository mode 専用）は `RequireRepoMode()` でユーザーモード時に同様の WARN を出します。
+
+実行例:
+
+```text
+level=WARN msg="plugin achievements is only supported in user mode (current mode: repository)" plugin=achievements mode=repository supported=user
+level=WARN msg="plugin contributors is only supported in repository mode (current mode: user)" plugin=contributors mode=user supported=repository
+```
+
+これにより operator は CI ログから「なぜこの plugin が空 SVG を返したか」を即特定できます。実装は `internal/plugins/modegate.go` 参照。
+
+### 単体サンプル
+
+| plugin         | sample                                       | 備考                                                  |
+| -------------- | -------------------------------------------- | ----------------------------------------------------- |
+| base           | `examples/plugin-base-repo.svg`              | repository template chrome のみ（plugin toggle なし） |
+| people         | `examples/plugin-people-repo.svg`            | `<section data-section="people">` 追加（既定 = stargazers + watchers） |
+
+### 追加バリアント
+
+| variant                              | sample                                              | 内容                                                 |
+| ------------------------------------ | --------------------------------------------------- | ---------------------------------------------------- |
+| `contributors.contributions` (repo)  | `examples/plugin-contributors-repo-contributions.svg` | `/stats/contributors` 経由で adds/dels 列を表示       |
+| `people.types` (repo)                | `examples/plugin-people-repo-types.svg`               | stargazers + watchers + contributors を 1 カードで併記 |
+
+### 総合サンプル
+
+| sample                            | 内容                                                                                             |
+| --------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `examples/metrics-repository.svg` | repository template overview。`_.json` に partial を持つ 5 plugin (`languages` / `stargazers` (graph) / `people` (stargazers + watchers + contributors) / `activity` / `contributors` (with contributions)) を合成 |

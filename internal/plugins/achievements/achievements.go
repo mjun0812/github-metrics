@@ -127,6 +127,15 @@ func (p *achievementsPlugin) Run(_ context.Context, pc *plugins.PluginContext) (
 		return nil, nil
 	}
 	in := parseInputs(pc.Inputs)
+	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
+		return &Result{
+			Skipped:       true,
+			SkippedReason: reason,
+			Display:       in.display,
+			List:          []Achievement{},
+			Ranks:         map[string]string{},
+		}, nil
+	}
 	c := pc.Data.Computed
 	repos := c.Repositories
 	if repos.Count == 0 && c.TotalCommits == 0 && len(c.RepositoryList) == 0 {

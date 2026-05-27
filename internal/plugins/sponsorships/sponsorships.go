@@ -58,6 +58,11 @@ func (p *sponsorshipsPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 		return nil, nil
 	}
 	base := &Result{Active: []Sponsored{}}
+	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
+		base.Skipped = true
+		base.SkippedReason = reason
+		return base, nil
+	}
 	if pc.GraphQL == nil || !truthy(pc.Inputs["plugin_sponsorships"]) {
 		return base, nil
 	}
