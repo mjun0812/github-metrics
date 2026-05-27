@@ -85,6 +85,15 @@ func (p *starlistsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 	}
 	in := parseInputs(pc.Inputs)
 
+	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
+		return &Result{
+			Skipped:       true,
+			SkippedReason: reason,
+			List:          []Starlist{},
+			Languages:     in.languages,
+		}, nil
+	}
+
 	// Gate on the user-facing `plugin_starlists` input so the plugin
 	// stays silent (no Data.Errors entries) when never requested.
 	if !truthy(pc.Inputs["plugin_starlists"]) {

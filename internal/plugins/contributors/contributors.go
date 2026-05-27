@@ -101,9 +101,13 @@ func (p *contributorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 			StatsPending:  statsPending,
 		}, nil
 	}
+	reason, _ := plugins.RequireRepoMode(pc, Name)
+	if reason == "" {
+		reason = "plugin contributors is only supported in repository mode (current mode: user)"
+	}
 	return &Result{
 		Skipped:       true,
-		SkippedReason: "contributors plugin requires repository template",
+		SkippedReason: reason,
 		Mode:          plugins.ModeUser,
 		Contributions: in.contributions,
 		List:          []Contributor{},

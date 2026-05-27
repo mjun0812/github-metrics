@@ -88,6 +88,17 @@ func (p *topicsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	}
 	in := parseInputs(pc.Inputs)
 
+	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
+		return &Result{
+			Skipped:       true,
+			SkippedReason: reason,
+			List:          []Topic{},
+			Mode:          in.mode,
+			Limit:         in.limit,
+			Sort:          in.sort,
+		}, nil
+	}
+
 	// Gate: the user must enable the plugin via `plugin_topics`. Without
 	// this gate the plugin would always run and pollute Result.Errors
 	// with "chromedp not available" entries even when topics was never

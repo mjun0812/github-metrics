@@ -83,6 +83,13 @@ func (p *repositoriesPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
+	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
+		return &Result{
+			Skipped:       true,
+			SkippedReason: reason,
+			Featured:      []plugins.Repository{},
+		}, nil
+	}
 	repos := pc.Data.Computed.RepositoryList
 	if len(repos) == 0 {
 		return &Result{

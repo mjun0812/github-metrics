@@ -65,6 +65,13 @@ func (p *isocalendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (a
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
+	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
+		return &Result{
+			Skipped:       true,
+			SkippedReason: reason,
+			Weeks:         []ISOWeek{},
+		}, nil
+	}
 	if pc.Data.Account == plugins.AccountOrganization {
 		return &Result{
 			Skipped:       true,

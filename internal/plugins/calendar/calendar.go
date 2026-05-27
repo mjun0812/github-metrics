@@ -74,6 +74,13 @@ func (p *calendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any,
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
+	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
+		return &Result{
+			Skipped:       true,
+			SkippedReason: reason,
+			Years:         []YearCalendar{},
+		}, nil
+	}
 	cal := pc.Data.Computed.ContributionCalendar
 	if cal == nil || len(cal.Weeks) == 0 {
 		return &Result{

@@ -55,6 +55,9 @@ func (p *starsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, 
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
+	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
+		return &Result{Skipped: true, SkippedReason: reason, List: []StarredRepo{}}, nil
+	}
 	// Per the contract a plugin runs only when plugin_<name> is truthy.
 	// Engine glue does not gate today, so each plugin self-gates.
 	if !truthyInput(pc.Inputs, "plugin_"+Name) {
