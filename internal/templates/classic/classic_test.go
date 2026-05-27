@@ -178,6 +178,12 @@ func TestClassic_Run_BaseInputMetadataRendersFooter(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 	for _, marker := range []string{
+		// #419: the footer is now wrapped in a proper
+		// `<section data-section="metadata">` so the metadata block
+		// joins the other four base sections (header / activity-
+		// community / repositories / metadata) as an addressable
+		// data-section node.
+		`<section data-section="metadata">`,
 		`<footer>`,
 		`These metrics include private contributions`,
 		`Last updated `,

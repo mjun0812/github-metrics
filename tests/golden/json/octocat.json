@@ -73,7 +73,8 @@
       "list": [],
       "mode": "user",
       "sections": [],
-      "skipped": true
+      "skipped": true,
+      "stats_pending": false
     },
     "habits": {
       "charts": {

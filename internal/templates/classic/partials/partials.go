@@ -23,6 +23,17 @@ import (
 
 // BaseHeader renders the avatar + display name block at the top of the
 // classic SVG. Returns "" when the User payload is absent.
+//
+// Upstream's base.header.ejs also renders a two-column sub-row with
+// "Joined GitHub", followed-by count, contribution-calendar swatches,
+// and "Contributed to N repositories". Those rely on user fields the
+// Go base plugin does not yet populate (registration date, followers,
+// repositoriesContributedTo, computed.calendar). Until those land,
+// emitting the empty placeholder `<div class="row"><section/><section/></div>`
+// produced a visually broken header (the avatar floated alone with
+// large unused vertical space below). #419 dropped the placeholder
+// so the header section is dense again. When the missing data fields
+// land, this partial should grow back to emit the populated sub-row.
 func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil || pc.Data.User == nil {
 		return "", nil
@@ -45,7 +56,6 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 	}
 	fmt.Fprintf(&b, `<span>%s</span>`, EscapeXML(display))
 	b.WriteString(`</h1>`)
-	b.WriteString(`<div class="row"><section></section><section></section></div>`)
 	b.WriteString(`</section>`)
 	return b.String(), nil
 }
@@ -65,18 +75,64 @@ func Introduction(_ context.Context, pc *templates.PartialContext) (string, erro
 	return "", nil
 }
 
-// BaseActivityCommunity renders the outer two-column scaffold that
-// hydrates with activity + community panes once M4 plugins land. M2
-// emits the section unconditionally so DOM ordering matches upstream.
-func BaseActivityCommunity(_ context.Context, _ *templates.PartialContext) (string, error) {
+// BaseActivityCommunity renders the activity + community two-column
+// block. The activity column shows aggregate counters (commits, issues,
+// pull requests) sourced from Data.Computed; the community column is
+// kept as a reserved placeholder for the user-relationship counters
+// (organizations, sponsoring, watching) that the upstream
+// base.activity+community.ejs partial renders — those Go-side data
+// fields (followers, sponsorshipsAsSponsor, watching, ...) are not yet
+// populated by the base plugin.
+//
+// Per #419 the partial now returns "" (no wrapper at all) when no
+// activity counter has a value, so a base-only render does not emit
+// an empty `<section data-section="activity-community">` with nothing
+// inside. The previous behaviour produced a tall empty band that made
+// the resulting SVG look broken (huge whitespace) and inflated the
+// rendered size because the section reserved space the CSS treated
+// as a real row.
+func BaseActivityCommunity(_ context.Context, pc *templates.PartialContext) (string, error) {
+	if pc == nil || pc.Data == nil {
+		return "", nil
+	}
+	c := pc.Data.Computed
+	hasActivity := c.TotalCommits > 0 || c.TotalIssues > 0 || c.TotalPullRequests > 0
+	if !hasActivity {
+		return "", nil
+	}
+
 	var b strings.Builder
 	b.WriteString(`<section data-section="activity-community">`)
 	b.WriteString(`<section class="row">`)
-	b.WriteString(`<section data-block="activity"></section>`)
+	b.WriteString(`<section data-block="activity">`)
+	b.WriteString(`<h2 class="field"><svg class="octicon"></svg>Activity</h2>`)
+	if c.TotalCommits > 0 {
+		fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s %s</div>`,
+			FormatCount(int64(c.TotalCommits)), pluralLabel("Commit", c.TotalCommits))
+	}
+	if c.TotalPullRequests > 0 {
+		fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s %s opened</div>`,
+			FormatCount(int64(c.TotalPullRequests)), pluralLabel("Pull request", c.TotalPullRequests))
+	}
+	if c.TotalIssues > 0 {
+		fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s %s opened</div>`,
+			FormatCount(int64(c.TotalIssues)), pluralLabel("Issue", c.TotalIssues))
+	}
+	b.WriteString(`</section>`)
 	b.WriteString(`<section data-block="community"></section>`)
 	b.WriteString(`</section>`)
 	b.WriteString(`</section>`)
 	return b.String(), nil
+}
+
+// pluralLabel adds a trailing "s" to the singular when count != 1.
+// Mirrors upstream `s(count)` template helper used by
+// base.activity+community.ejs.
+func pluralLabel(singular string, count int) string {
+	if count == 1 {
+		return singular
+	}
+	return singular + "s"
 }
 
 // BaseRepositories renders the count / stargazers / forks row. Returns

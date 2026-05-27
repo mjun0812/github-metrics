@@ -195,6 +195,42 @@ func TestRun_RepositoryStatsFailureKeepsMinimalStub(t *testing.T) {
 	if len(r.List) != 1 || r.List[0].Login != "octocat" || r.List[0].Commits != 3 {
 		t.Fatalf("minimal stub should remain available on stats warm-up; got %+v", r.List)
 	}
+	// 202 Accepted should flag the result so the partial knows to
+	// render "stats pending" instead of misleading ++0 --0.
+	if !r.StatsPending {
+		t.Fatalf("StatsPending should be true when /stats/contributors returns 202; got %+v", r)
+	}
+}
+
+func TestRun_RepositoryStatsErrorDoesNotFlagPending(t *testing.T) {
+	t.Parallel()
+	rest := mocks.NewRESTMux(t)
+	rest.OnBody("/repos/octocat/hello-world/stats/contributors", http.StatusInternalServerError, `{"message":"oops"}`)
+	data := plugins.NewData()
+	data.Account = plugins.AccountRepository
+	data.SetRepo(&plugins.Repo{
+		Owner:         "octocat",
+		OwnerAvatar:   "https://avatars.example/owner.png",
+		Name:          "hello-world",
+		Contributors:  1,
+		DefaultBranch: "main",
+		Activity:      plugins.RepoActivity{RecentCommits: 7},
+	})
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithREST(rest),
+		mocks.WithData(data),
+		mocks.WithInputs(map[string]any{"plugin_contributors_contributions": true}),
+	)
+
+	out, err := contributors.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*contributors.Result)
+	if r.StatsPending {
+		t.Fatalf("non-202 failures must not flag StatsPending; got %+v", r)
+	}
 }
 
 func TestPartial_ContributionsDisplayMode(t *testing.T) {
@@ -215,10 +251,87 @@ func TestPartial_ContributionsDisplayMode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
-	for _, want := range []string{"contributor-contributions", "2 commits", "++15 --5"} {
+	// Regression coverage for #421: ensure login and commit count are
+	// separated by ": " (mirroring plugin-traffic #416) so they cannot
+	// fuse into a single token like "octocat2 commits" in SVG.
+	for _, want := range []string{
+		"contributor-contributions",
+		`<span class="login">octocat</span>: <span class="contributions">`,
+		"2 commits",
+		"++15 --5",
+	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("expected %q in %q", want, got)
 		}
+	}
+	if strings.Contains(got, "octocat2 commits") || strings.Contains(got, "octocat 2 commits") {
+		t.Fatalf("login must not fuse with commit count; got %q", got)
+	}
+}
+
+// TestPartial_LoginWithDigitsHasExplicitDelimiter pins #421 directly:
+// the bug surfaced with login "mjun0812" because the rendered SVG
+// dropped the whitespace between the login span and the commits chip,
+// producing "mjun081267 commits". An explicit ": " separator keeps
+// the two tokens visually distinct regardless of SVG whitespace
+// collapsing.
+func TestPartial_LoginWithDigitsHasExplicitDelimiter(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	d.SetPlugin(contributors.Name, &contributors.Result{
+		Contributions: true,
+		List: []contributors.Contributor{{
+			Login:     "mjun0812",
+			AvatarURL: "https://avatars.example/mjun0812.png",
+			Commits:   67,
+			Additions: 1234,
+			Deletions: 56,
+		}},
+		Sections: []string{"contributors"},
+	})
+	got, err := contributors.Partial(context.Background(), &templates.PartialContext{Data: d})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	if !strings.Contains(got, `<span class="login">mjun0812</span>: <span class="contributions">`) {
+		t.Fatalf("expected ': ' delimiter between login and contributions; got %q", got)
+	}
+	if strings.Contains(got, "mjun081267") {
+		t.Fatalf("regression: login and commit count fused into %q", "mjun081267")
+	}
+	for _, want := range []string{"67 commits", "++1234 --56"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected %q in %q", want, got)
+		}
+	}
+}
+
+func TestPartial_StatsPendingShowsIndicator(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	d.SetPlugin(contributors.Name, &contributors.Result{
+		Contributions: true,
+		StatsPending:  true,
+		List: []contributors.Contributor{{
+			Login:   "octocat",
+			Commits: 3,
+		}},
+		Sections: []string{"contributors"},
+	})
+	got, err := contributors.Partial(context.Background(), &templates.PartialContext{Data: d})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	if !strings.Contains(got, `<span class="stats-pending">stats pending</span>`) {
+		t.Fatalf("expected stats-pending indicator; got %q", got)
+	}
+	// Must not emit the misleading "++0 --0" chip when stats are
+	// still warming up.
+	if strings.Contains(got, "++0 --0") {
+		t.Fatalf("stats-pending result must not show ++0 --0; got %q", got)
+	}
+	if !strings.Contains(got, "3 commits") {
+		t.Fatalf("commit count from minimal stub should still render; got %q", got)
 	}
 }
 

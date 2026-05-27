@@ -239,9 +239,18 @@ func (t *classicTemplate) loadStyles() error {
 	return nil
 }
 
-// metadataFooter renders the optional metadata <footer> when the
+// metadataFooter renders the optional metadata block when the
 // `metadata` base section is enabled, or when the legacy expanded
 // `base.metadata` input is truthy.
+//
+// The metadata block is emitted as
+// `<section data-section="metadata"><footer>…</footer></section>` so
+// the five base sections (header, activity-community, repositories,
+// metadata, plus the activity-community fallback) all carry a
+// `data-section` attribute and downstream DOM diffing (data-changed
+// mode) can locate the block unambiguously. The inner `<footer>` is
+// preserved so the M3 render.Hash footer-stripping rule still drops
+// the timestamp before hashing (see internal/render/svg_hash.go).
 func metadataFooter(pc *templates.PartialContext, sections map[string]struct{}) string {
 	_, enabledByBase := sections["metadata"]
 	if !enabledByBase && (pc == nil || pc.Inputs == nil || !truthyInput(pc.Inputs, "base.metadata")) {
@@ -252,6 +261,7 @@ func metadataFooter(pc *templates.PartialContext, sections map[string]struct{}) 
 		tz = pc.Data.Config.Timezone.Name
 	}
 	var b strings.Builder
+	b.WriteString(`<section data-section="metadata">`)
 	b.WriteString(`<footer>`)
 	if pc.Data != nil && pc.Data.Account == plugins.AccountUser {
 		b.WriteString(`<span>These metrics include private contributions</span>`)
@@ -265,6 +275,7 @@ func metadataFooter(pc *templates.PartialContext, sections map[string]struct{}) 
 			stamp, partials.EscapeXML(engine.Version()))
 	}
 	b.WriteString(`</footer>`)
+	b.WriteString(`</section>`)
 	return b.String()
 }
 
