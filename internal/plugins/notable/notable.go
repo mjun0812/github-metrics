@@ -41,16 +41,18 @@ type Result struct {
 func (r *Result) IsSkipped() bool { return r != nil && r.Skipped }
 
 // NotableContrib mirrors one entry from the upstream notable
-// contributions list. Upstream groups contributions either by
-// organization (basic mode, `name` = "@org") or by full repository
-// handle (indepth mode, `name` = "@org/repo"); the rendered card shows
-// the owner avatar plus that name, and optional gauge visualizations for
-// the per-repository commit / star / issue / pull counters that indepth
-// resolves. See source/templates/classic/partials/notable.ejs.
+// contributions list. Each entry renders an avatar + chip label and,
+// in indepth mode only, additional gauge visualizations for the
+// per-repository commit / star / issue / pull counters. See
+// source/templates/classic/partials/notable.ejs and the issue #422
+// chip layout fix.
 type NotableContrib struct {
-	// Name is the rendered chip label (without the leading "@"). It is
-	// the owner login in basic mode and the "owner/repo" handle in
-	// indepth mode.
+	// Name is the rendered chip label (without the leading "@"). In
+	// basic mode it is the bare repository name (issue #422: the
+	// ViewerNotable query is scoped to the page user, so labelling
+	// every chip by owner would collapse them into identical chips).
+	// In indepth mode it is the "owner/repo" handle, mirroring the
+	// upstream notable.ejs indepth grouping.
 	Name string `json:"name"`
 	// AvatarURL is the owner avatar shown on the chip.
 	AvatarURL string `json:"avatar,omitempty"`
@@ -124,9 +126,14 @@ func collectNotable(resp *githubapi.ViewerNotableResponse, indepth bool) []Notab
 			desc = *n.Description
 		}
 		owner := notableOwnerLogin(n)
-		// Basic mode groups by organization (chip name "@org"); indepth
-		// mode groups by full repository handle (chip name "@org/repo").
-		name := owner
+		// Basic mode labels each chip with the repository name only
+		// (chip name "@repo") because the ViewerNotable query is scoped
+		// to the page user, so "@owner" would collapse every chip into
+		// an identical label (issue #422). Indepth mode keeps the
+		// fully-qualified "@org/repo" handle since it can mix
+		// repositories from multiple owners and pairs each chip with
+		// gauge visualizations.
+		name := notableRepoName(n.NameWithOwner)
 		if indepth {
 			name = n.NameWithOwner
 		}
@@ -175,6 +182,15 @@ func sortIndepth(list []NotableContrib) {
 		}
 		return list[i].Percentage > list[j].Percentage
 	})
+}
+
+// notableRepoName returns the repository name portion of a
+// "owner/repo" handle. It is the basic-mode chip label.
+func notableRepoName(nameWithOwner string) string {
+	if _, repo, ok := strings.Cut(nameWithOwner, "/"); ok {
+		return repo
+	}
+	return nameWithOwner
 }
 
 func notableOwnerLogin(n *githubapi.ViewerNotableViewerUserRepositoriesRepositoryConnectionNodesRepository) string {
