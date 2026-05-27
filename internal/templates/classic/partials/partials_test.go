@@ -44,6 +44,15 @@ func TestBaseHeader_PopulatedEscapesName(t *testing.T) {
 	if !strings.Contains(got, `src="https://example/x.png"`) {
 		t.Errorf("avatar not present: %s", got)
 	}
+	// #419 regression guard: the previous implementation emitted an
+	// empty `<div class="row"><section></section><section></section></div>`
+	// placeholder for the upstream sub-row (Joined GitHub, followed-by,
+	// calendar, contributed-to). With no real data in the Go model the
+	// placeholder rendered as a tall blank band; dropping it keeps the
+	// header dense.
+	if strings.Contains(got, `<div class="row"><section></section><section></section></div>`) {
+		t.Errorf("header should not emit empty placeholder row: %s", got)
+	}
 }
 
 func TestIntroduction_AbsentPlugin(t *testing.T) {
@@ -55,18 +64,66 @@ func TestIntroduction_AbsentPlugin(t *testing.T) {
 	}
 }
 
-func TestBaseActivityCommunity_OuterAlwaysEmits(t *testing.T) {
+// TestBaseActivityCommunity_NoDataReturnsEmpty asserts the #419 fix:
+// with all activity counters at zero, the partial returns "" rather
+// than emitting an empty `<section data-section="activity-community">`
+// wrapper. The wrapper would otherwise produce a tall whitespace band
+// in the rendered SVG when no indepth data is available (e.g. the
+// foundational base-only sample render).
+func TestBaseActivityCommunity_NoDataReturnsEmpty(t *testing.T) {
 	t.Parallel()
 	got, err := partials.BaseActivityCommunity(context.Background(), newPC(plugins.NewData()))
 	if err != nil {
 		t.Fatalf("BaseActivityCommunity: %v", err)
 	}
-	if !strings.Contains(got, `data-section="activity-community"`) {
-		t.Errorf("outer section missing: %s", got)
+	if got != "" {
+		t.Errorf("BaseActivityCommunity(zero data) should return empty, got: %s", got)
 	}
-	for _, marker := range []string{`data-block="activity"`, `data-block="community"`} {
+}
+
+func TestBaseActivityCommunity_RendersCountersWhenIndepthPresent(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	d.Computed.TotalCommits = 3214
+	d.Computed.TotalIssues = 42
+	d.Computed.TotalPullRequests = 17
+	got, err := partials.BaseActivityCommunity(context.Background(), newPC(d))
+	if err != nil {
+		t.Fatalf("BaseActivityCommunity: %v", err)
+	}
+	for _, marker := range []string{
+		`data-section="activity-community"`,
+		`data-block="activity"`,
+		`data-block="community"`,
+		"3.2k Commits",
+		"17 Pull requests opened",
+		"42 Issues opened",
+	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("missing %q in %s", marker, got)
+		}
+	}
+}
+
+// TestBaseActivityCommunity_SingularLabel anchors the pluralLabel
+// behaviour: counts of 1 must render without a trailing "s".
+func TestBaseActivityCommunity_SingularLabel(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	d.Computed.TotalCommits = 1
+	d.Computed.TotalIssues = 1
+	d.Computed.TotalPullRequests = 1
+	got, err := partials.BaseActivityCommunity(context.Background(), newPC(d))
+	if err != nil {
+		t.Fatalf("BaseActivityCommunity: %v", err)
+	}
+	for _, marker := range []string{
+		"1 Commit</div>",
+		"1 Pull request opened",
+		"1 Issue opened",
+	} {
+		if !strings.Contains(got, marker) {
+			t.Errorf("singular form missing %q in %s", marker, got)
 		}
 	}
 }
