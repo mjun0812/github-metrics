@@ -141,7 +141,7 @@ func TestRun_IndepthCollectsExtendedStats(t *testing.T) {
 	}
 }
 
-func TestRun_BasicGroupsByOwnerLogin(t *testing.T) {
+func TestRun_BasicChipLabelIsRepoName(t *testing.T) {
 	t.Parallel()
 	r, _ := runWithGraphQL(t, map[string]any{
 		"user":           "octocat",
@@ -154,9 +154,15 @@ func TestRun_BasicGroupsByOwnerLogin(t *testing.T) {
 	if entry.Indepth {
 		t.Errorf("entry.Indepth = true, want false in basic mode")
 	}
-	// Basic mode groups by organization/owner login ("@owner").
-	if entry.Name != "octocat" {
-		t.Errorf("Name = %q, want octocat", entry.Name)
+	// Issue #422: basic mode chips label by repository name (the part
+	// after "owner/") so the five chips on a same-owner user page are
+	// distinguishable. The owner login is still preserved on the
+	// underlying Login field for the avatar lookup.
+	if entry.Name != "hello-world" {
+		t.Errorf("Name = %q, want hello-world", entry.Name)
+	}
+	if entry.Login != "octocat" {
+		t.Errorf("Login = %q, want octocat", entry.Login)
 	}
 	// Indepth-only counters stay zeroed in basic mode.
 	if entry.Commits != 0 || entry.Issues != 0 || entry.Pulls != 0 {
@@ -213,6 +219,91 @@ func TestRun_IndepthGoldenShape(t *testing.T) {
 	}
 	if string(want) != string(got) {
 		t.Fatalf("golden mismatch\nwant:\n%s\ngot:\n%s", string(want), string(got))
+	}
+}
+
+func TestPartial_BasicGolden(t *testing.T) {
+	data := plugins.NewData()
+	// Five entries owned by the same user, mirroring the issue #422
+	// repro on mjun0812's account (chips collapsed into "@mjun0812"
+	// before the fix). After the fix each chip carries a distinct
+	// repository name and an inline star badge.
+	data.SetPlugin(notable.Name, &notable.Result{
+		List: []notable.NotableContrib{
+			{Name: "flash-attention-prebuild-wheels", AvatarURL: "https://avatars.githubusercontent.com/u/1?v=4", Login: "mjun0812", Repo: "mjun0812/flash-attention-prebuild-wheels", Title: "mjun0812/flash-attention-prebuild-wheels", Type: "owner", StargazerCount: 1500},
+			{Name: "github-metrics", AvatarURL: "https://avatars.githubusercontent.com/u/1?v=4", Login: "mjun0812", Repo: "mjun0812/github-metrics", Title: "mjun0812/github-metrics", Type: "owner", StargazerCount: 32},
+			{Name: "dotfiles", AvatarURL: "https://avatars.githubusercontent.com/u/1?v=4", Login: "mjun0812", Repo: "mjun0812/dotfiles", Title: "mjun0812/dotfiles", Type: "owner", StargazerCount: 26},
+			{Name: "claude-code-tools", AvatarURL: "https://avatars.githubusercontent.com/u/1?v=4", Login: "mjun0812", Repo: "mjun0812/claude-code-tools", Title: "mjun0812/claude-code-tools", Type: "owner", StargazerCount: 7},
+			{Name: "vim-config", AvatarURL: "https://avatars.githubusercontent.com/u/1?v=4", Login: "mjun0812", Repo: "mjun0812/vim-config", Title: "mjun0812/vim-config", Type: "owner", StargazerCount: 3},
+		},
+	})
+	pc := &templates.PartialContext{Data: data}
+	got, err := notable.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	gp := filepath.Join(repoRoot(t), "tests", "golden", "classic", "m4", "notable.svg")
+	if *updateGolden {
+		_ = os.MkdirAll(filepath.Dir(gp), 0o755)
+		if werr := os.WriteFile(gp, []byte(got), 0o644); werr != nil {
+			t.Fatalf("WriteFile: %v", werr)
+		}
+		return
+	}
+	want, err := os.ReadFile(gp)
+	if err != nil {
+		t.Fatalf("ReadFile: %v (run with -update)", err)
+	}
+	if string(want) != got {
+		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
+	}
+	// Issue #422 acceptance: distinct repo names appear, the star
+	// badge text is part of the chip body (not just a tiny gauge),
+	// and the gauge cluster does NOT render in basic mode.
+	for _, marker := range []string{
+		`@flash-attention-prebuild-wheels`,
+		`@github-metrics`,
+		`@dotfiles`,
+		`@claude-code-tools`,
+		`@vim-config`,
+		`<span class="stars">★ 1.5k</span>`,
+		`<span class="stars">★ 32</span>`,
+	} {
+		if !strings.Contains(got, marker) {
+			t.Errorf("missing marker %q in:\n%s", marker, got)
+		}
+	}
+	if strings.Contains(got, `class="gauge"`) {
+		t.Errorf("basic-mode output should not render gauge SVGs:\n%s", got)
+	}
+}
+
+func TestPartial_BasicTruncatesLongRepoName(t *testing.T) {
+	t.Parallel()
+	// A 60-char repo name should be ellipsized so the chip does not
+	// overflow the 480 px card width (issue #422 layout guard).
+	longRepo := "a-very-long-and-deliberately-overflowing-repository-name-xyz"
+	data := plugins.NewData()
+	data.SetPlugin(notable.Name, &notable.Result{
+		List: []notable.NotableContrib{{
+			Name:           longRepo,
+			AvatarURL:      "https://example.invalid/avatar.png",
+			Login:          "octocat",
+			Repo:           "octocat/" + longRepo,
+			Type:           "owner",
+			StargazerCount: 4,
+		}},
+	})
+	pc := &templates.PartialContext{Data: data}
+	got, err := notable.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	if !strings.Contains(got, "…") {
+		t.Errorf("expected ellipsis in truncated chip label; got:\n%s", got)
+	}
+	if strings.Contains(got, "@"+longRepo+"<") {
+		t.Errorf("untruncated full name still present in chip label; got:\n%s", got)
 	}
 }
 

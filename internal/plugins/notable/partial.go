@@ -63,17 +63,52 @@ func formatFraction(v float64) string {
 	return s
 }
 
+// maxBasicChipNameLen caps the basic-mode chip label so the 480 px card
+// width still wraps deterministically. The chip font-size is 12 px,
+// so a 36-character ceiling keeps even the widest chip narrower than
+// the full card width while still fitting the common
+// "kebab-case-multi-word-repo-name" style verbatim (the chip flex row
+// wraps, so a single overflowing chip can take a row of its own).
+// Names longer than this are truncated with an ellipsis (issue #422).
+const maxBasicChipNameLen = 36
+
+// truncateName ellipsizes a chip label once it exceeds the per-chip
+// budget defined by maxBasicChipNameLen. The trim happens on rune
+// boundaries so multi-byte names (e.g. CJK characters) are not split
+// in the middle.
+func truncateName(name string, limit int) string {
+	if limit <= 0 {
+		return name
+	}
+	runes := []rune(name)
+	if len(runes) <= limit {
+		return name
+	}
+	if limit == 1 {
+		return "…"
+	}
+	return string(runes[:limit-1]) + "…"
+}
+
 // Partial renders the classic SVG fragment for the notable plugin.
-// Mirrors upstream source/templates/classic/partials/notable.ejs.
+// Mirrors upstream source/templates/classic/partials/notable.ejs while
+// adopting two issue #422 affordances for basic mode:
+//
+//  1. The chip label is the repository name ("@repo") so the five chips
+//     are distinguishable even when every result shares the same owner.
+//  2. The star count is rendered as an inline "★ N" badge in the chip
+//     body at the chip's 12 px font-size, instead of the tiny gauge
+//     that was the only differentiator before.
+//
+// Indepth mode keeps the upstream gauge layout (commits / stars /
+// issues / pulls) plus the "@org/repo" chip label that #392 / #405
+// already introduced.
 //
 // Returns "" while Run is unwired (Skipped or empty List). When data
 // arrives it emits the rocket-octicon header followed by a flex row of
-// contribution chips. Each chip shows the owner avatar and an "@name"
-// label: basic mode groups by organization ("@org"), indepth mode groups
-// by repository ("@org/repo") and additionally renders gauge
-// visualizations for any non-zero commit / star / issue / pull counts.
+// contribution chips.
 //
-// Output structure:
+// Output structure (basic mode):
 //
 //	<section data-section="notable">
 //	  <h2 class="field"><svg/>Notable contributions</h2>
@@ -81,8 +116,8 @@ func formatFraction(v float64) string {
 //	    [for each contrib]:
 //	      <div class="organization contribution {s|a|b|c} ">
 //	        <img class="[organization] avatar" src="..." width="16" height="16" />
-//	        <span class="name">@${name}</span>
-//	        [if commits]: <gauge/>...
+//	        <span class="name">@${repo}</span>
+//	        <span class="stars">★ ${k-formatted-count}</span>
 //	      </div>
 //	  </div>
 //	</section>
@@ -124,18 +159,36 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 			`<img class="%s" src="%s" width="16" height="16" />`,
 			avatarClass, partials.EscapeXML(c.AvatarURL),
 		)
-		fmt.Fprintf(&b, `<span class="name">@%s</span>`, partials.EscapeXML(c.Name))
-		if c.Commits > 0 {
-			gauge(&b, c.Percentage, strconv.Itoa(c.Commits), commitsIcon)
-		}
-		if c.StargazerCount > 0 {
-			gauge(&b, float64(c.StargazerCount)/float64(max(totalStars, 1)), partials.FormatCount(int64(c.StargazerCount)), starsIcon)
-		}
-		if c.Issues > 0 {
-			gauge(&b, float64(c.Issues)/float64(max(totalIssues(r.List), 1)), strconv.Itoa(c.Issues), issuesIcon)
-		}
-		if c.Pulls > 0 {
-			gauge(&b, float64(c.Pulls)/float64(max(totalPulls(r.List), 1)), strconv.Itoa(c.Pulls), pullsIcon)
+		if c.Indepth {
+			// Indepth mode keeps the full "@org/repo" handle plus the
+			// upstream gauge stack so every per-repo statistic stays
+			// visible.
+			fmt.Fprintf(&b, `<span class="name">@%s</span>`, partials.EscapeXML(c.Name))
+			if c.Commits > 0 {
+				gauge(&b, c.Percentage, strconv.Itoa(c.Commits), commitsIcon)
+			}
+			if c.StargazerCount > 0 {
+				gauge(&b, float64(c.StargazerCount)/float64(max(totalStars, 1)), partials.FormatCount(int64(c.StargazerCount)), starsIcon)
+			}
+			if c.Issues > 0 {
+				gauge(&b, float64(c.Issues)/float64(max(totalIssues(r.List), 1)), strconv.Itoa(c.Issues), issuesIcon)
+			}
+			if c.Pulls > 0 {
+				gauge(&b, float64(c.Pulls)/float64(max(totalPulls(r.List), 1)), strconv.Itoa(c.Pulls), pullsIcon)
+			}
+		} else {
+			// Basic mode: repo name plus an inline star badge so the
+			// chip carries enough information to identify the entry
+			// (issue #422).
+			displayName := truncateName(c.Name, maxBasicChipNameLen)
+			fmt.Fprintf(&b, `<span class="name">@%s</span>`, partials.EscapeXML(displayName))
+			if c.StargazerCount > 0 {
+				fmt.Fprintf(
+					&b,
+					`<span class="stars">★ %s</span>`,
+					partials.EscapeXML(partials.FormatCount(int64(c.StargazerCount))),
+				)
+			}
 		}
 		b.WriteString(`</div>`)
 	}
