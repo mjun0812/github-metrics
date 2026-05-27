@@ -89,6 +89,11 @@ func (p *notablePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	}
 	indepth := truthy(pc.Inputs["plugin_notable_indepth"])
 	base := &Result{List: []NotableContrib{}}
+	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
+		base.Skipped = true
+		base.SkippedReason = reason
+		return base, nil
+	}
 	if pc.GraphQL == nil || !truthy(pc.Inputs["plugin_notable"]) {
 		base.Skipped = true
 		base.SkippedReason = "GraphQL client unavailable"

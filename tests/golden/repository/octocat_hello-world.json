@@ -27,29 +27,13 @@
   "plugins": {
     "achievements": {
       "display": "detailed",
-      "list": [
-        {
-          "description": "Total stars received across owned repositories",
-          "icon": "star",
-          "id": "stars",
-          "rank": "C",
-          "title": "Stargazer",
-          "value": 80
-        }
-      ],
-      "ranks": {
-        "commits": "X",
-        "followers": "X",
-        "issues": "X",
-        "pull-requests": "X",
-        "repositories": "X",
-        "stars": "C"
-      },
-      "skipped": false
+      "list": [],
+      "ranks": {},
+      "skipped": true
     },
     "activity": {
       "days": 0,
-      "events": null,
+      "events": [],
       "mode": "",
       "skipped": true
     },
@@ -123,7 +107,7 @@
     },
     "isocalendar": {
       "average": 0,
-      "duration": "half-year",
+      "duration": "",
       "max": 0,
       "skipped": true,
       "streak": {
@@ -217,37 +201,10 @@
       "total": 0
     },
     "repositories": {
-      "featured": [
-        {
-          "description": "My first repository on GitHub.",
-          "forks": 9,
-          "isFork": false,
-          "language": {
-            "color": "#00ADD8",
-            "count": 0,
-            "name": "Go",
-            "size": 0,
-            "value": 0
-          },
-          "languages": [
-            {
-              "color": "#00ADD8",
-              "count": 0,
-              "name": "Go",
-              "size": 1,
-              "value": 0
-            }
-          ],
-          "nameWithOwner": "octocat/hello-world",
-          "stars": 80,
-          "uRL": "",
-          "visibility": "",
-          "watchers": 0
-        }
-      ],
+      "featured": [],
       "pinned": null,
       "random": null,
-      "skipped": false,
+      "skipped": true,
       "starred": null
     },
     "sponsors": {
@@ -274,7 +231,7 @@
     "sponsorships": {
       "active": [],
       "past": null,
-      "skipped": false
+      "skipped": true
     },
     "stargazers": {
       "charts": {

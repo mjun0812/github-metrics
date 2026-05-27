@@ -108,6 +108,13 @@ func (p *sponsorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
+	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
+		return &Result{
+			Skipped:       true,
+			SkippedReason: reason,
+			Sponsors:      []Sponsor{},
+		}, nil
+	}
 	if pc.REST == nil {
 		return &Result{
 			Skipped:       true,

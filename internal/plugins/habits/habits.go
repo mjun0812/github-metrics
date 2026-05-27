@@ -87,6 +87,9 @@ func (p *habitsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 			ChartsEnabled: chartsEnabled,
 		}
 	}
+	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
+		return skipped(reason), nil
+	}
 	if pc.REST == nil {
 		return skipped("REST client unavailable"), nil
 	}
