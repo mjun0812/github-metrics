@@ -44,15 +44,21 @@ func pluralS(n int) string {
 //	    [for each contributor]:
 //	      <div class="field contributor[ contributor-contributions]" data-login="...">
 //	        <img class="avatar" src="..."/>
-//	        <span class="login">${login}</span>
-//	        [if contributions enabled]:
-//	          <span class="contributions">
-//	            <span class="commits">${commits} commit(s)</span>
-//	            <span class="diff">++${additions} --${deletions}</span>
-//	          </span>
+//	        <span class="login">${login}</span>: <span class="contributions">
+//	          <span class="commits">${commits} commit(s)</span>
+//	          <span class="diff">++${additions} --${deletions}</span>
+//	            (or <span class="stats-pending">stats pending</span>
+//	             when /stats/contributors returned 202 Accepted)
+//	        </span>
 //	      </div>
 //	  </section></div>
 //	</section>
+//
+// Note the explicit ": " separator between the login span and the
+// contributions span — without it, an SVG-aware renderer collapses
+// whitespace and the login fuses with the commit count (see #421:
+// "mjun081267 commits" where the "67" is the commit count attached
+// to the avatar label).
 func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil {
 		return "", nil
@@ -91,16 +97,27 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		}
 		fmt.Fprintf(&b, `<span class="login">%s</span>`, partials.EscapeXML(c.Login))
 		if r.Contributions {
+			// Mirror plugin-traffic (#416): explicit ": " between the
+			// label and the metric so the avatar label cannot fuse
+			// with the commit count.
 			fmt.Fprintf(
 				&b,
-				` <span class="contributions"><span class="commits">%d commit%s</span>`,
+				`: <span class="contributions"><span class="commits">%d commit%s</span>`,
 				c.Commits, pluralS(c.Commits),
 			)
-			fmt.Fprintf(
-				&b,
-				` <span class="diff"><span class="code">++%d --%d</span></span>`,
-				c.Additions, c.Deletions,
-			)
+			if r.StatsPending {
+				// /stats/contributors returned 202 Accepted; the per-
+				// contributor add/del buckets are not yet available.
+				// Show an explicit "stats pending" chip instead of
+				// the misleading ++0 --0 we used to emit.
+				b.WriteString(` <span class="diff"><span class="stats-pending">stats pending</span></span>`)
+			} else {
+				fmt.Fprintf(
+					&b,
+					` <span class="diff"><span class="code">++%d --%d</span></span>`,
+					c.Additions, c.Deletions,
+				)
+			}
 			b.WriteString(`</span>`)
 		}
 		b.WriteString(`</div>`)
