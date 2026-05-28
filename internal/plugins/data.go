@@ -121,6 +121,14 @@ func (d *Data) SnapshotErrors() []error {
 // 429 Phase 2: ContributedTo carries the
 // `user.repositoriesContributedTo(...).totalCount` counter rendered by
 // upstream `base.header.ejs` as "Contributed to N repositories".
+//
+// 429 Phase 3: RecentContributions carries the last 11 calendar weeks
+// (up to 77 days) used by the BaseHeader mini grid. Sourced from
+// `user.contributionsCollection.contributionCalendar.weeks` and
+// truncated to the tail by base.runUser. Empty when GraphQL returned
+// no calendar (e.g. a freshly-created account or a transient API
+// failure) so the partial hides the block instead of rendering a row
+// of empty cells.
 type User struct {
 	Login                    string
 	Name                     string
@@ -131,6 +139,7 @@ type User struct {
 	Watching                 int
 	SponsorshipsAsMaintainer int
 	ContributedTo            int
+	RecentContributions      []ContributionWeek
 }
 
 // Organization is the organization-account payload populated by the

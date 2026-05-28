@@ -165,6 +165,7 @@ func (p *basePlugin) runUser(ctx context.Context, pc *plugins.PluginContext, log
 		Watching:                 watchingTotal(u),
 		SponsorshipsAsMaintainer: sponsorshipsAsMaintainerTotal(u),
 		ContributedTo:            repositoriesContributedToTotal(u),
+		RecentContributions:      recentContributionWeeks(u, baseHeaderCalendarWeeks),
 	}
 
 	// M4: walk the entire repository connection with batch-halving on
@@ -264,4 +265,61 @@ func repositoriesContributedToTotal(u *githubapi.UserUser) int {
 		return 0
 	}
 	return u.RepositoriesContributedTo.TotalCount
+}
+
+// baseHeaderCalendarWeeks is the number of trailing weeks the
+// BaseHeader mini contribution grid renders. 11 mirrors the column
+// count documented in issue #429 Phase 3 and matches the upstream
+// "last N weeks" framing used by `base.header.ejs`.
+const baseHeaderCalendarWeeks = 11
+
+// recentContributionWeeks slices the trailing `n` weeks out of
+// `user.contributionsCollection.contributionCalendar.weeks` and
+// projects each day into the plugin-side ContributionDay / Week type.
+//
+// The GraphQL connection orders weeks oldest -> newest, so the tail
+// slice gives the most recent N. When the calendar returns fewer than
+// `n` weeks (fresh account whose contribution history is shorter than
+// the requested window) all available weeks are returned untruncated;
+// the BaseHeader partial then renders only the cells that exist
+// instead of padding with phantom days. Returns nil when the GraphQL
+// payload is missing entirely so the partial hides the block.
+func recentContributionWeeks(u *githubapi.UserUser, n int) []plugins.ContributionWeek {
+	if u == nil || u.ContributionsCollection == nil || u.ContributionsCollection.ContributionCalendar == nil {
+		return nil
+	}
+	weeks := u.ContributionsCollection.ContributionCalendar.Weeks
+	if len(weeks) == 0 {
+		return nil
+	}
+	start := 0
+	if n > 0 && len(weeks) > n {
+		start = len(weeks) - n
+	}
+	out := make([]plugins.ContributionWeek, 0, len(weeks)-start)
+	for _, w := range weeks[start:] {
+		if w == nil {
+			continue
+		}
+		days := make([]plugins.ContributionDay, 0, len(w.ContributionDays))
+		for _, d := range w.ContributionDays {
+			if d == nil {
+				continue
+			}
+			days = append(days, plugins.ContributionDay{
+				Date:              d.Date,
+				ContributionCount: d.ContributionCount,
+				Weekday:           d.Weekday,
+				Color:             d.Color,
+			})
+		}
+		out = append(out, plugins.ContributionWeek{
+			FirstDay: w.FirstDay,
+			Days:     days,
+		})
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }

@@ -288,3 +288,44 @@ func FormatError(err error, opts Options) string {
 	}
 	return err.Error() + opts.Suffix
 }
+
+// ContributionLevel buckets a single calendar day into the 0..4
+// intensity tier GitHub uses on the profile contribution grid, mapping
+// upstream's `--color-calendar-graph-day-L<n>` CSS variables one-to-one.
+//
+// The `color` argument is preferred whenever it matches one of the
+// canonical GitHub palette colors (so a day with GraphQL-supplied color
+// always lands in the same tier the GitHub profile shows). When the
+// color is empty or unrecognised the function falls back to a
+// count-based quartile mirroring `source/plugins/base/calendar.ejs` in
+// upstream — 0 -> L0, 1..3 -> L1, 4..6 -> L2, 7..9 -> L3, 10+ -> L4.
+//
+// Returned values are clamped to [0, 4].
+func ContributionLevel(count int, color string) int {
+	switch strings.ToLower(strings.TrimSpace(color)) {
+	case "":
+		// Fall through to count-based bucketing.
+	case "#ebedf0":
+		return 0
+	case "#9be9a8":
+		return 1
+	case "#40c463":
+		return 2
+	case "#30a14e":
+		return 3
+	case "#216e39":
+		return 4
+	}
+	switch {
+	case count <= 0:
+		return 0
+	case count <= 3:
+		return 1
+	case count <= 6:
+		return 2
+	case count <= 9:
+		return 3
+	default:
+		return 4
+	}
+}
