@@ -22,7 +22,11 @@ const userOctocatBody = `{
 			"name": "Octocat",
 			"location": "",
 			"createdAt": "2008-01-14T04:33:35Z",
-			"avatarUrl": "https://avatars.githubusercontent.com/u/1?v=4"
+			"avatarUrl": "https://avatars.githubusercontent.com/u/1?v=4",
+			"followers": {"totalCount": 1555},
+			"following": {"totalCount": 617},
+			"watching": {"totalCount": 16},
+			"sponsorshipsAsMaintainer": {"totalCount": 4}
 		}
 	}
 }`

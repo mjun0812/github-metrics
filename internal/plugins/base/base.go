@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/mjun0812/github-metrics/internal/config"
+	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
@@ -155,9 +156,14 @@ func (p *basePlugin) runUser(ctx context.Context, pc *plugins.PluginContext, log
 	u := resp.User
 	pc.Data.Account = plugins.AccountUser
 	pc.Data.User = &plugins.User{
-		Login:     u.Login,
-		Name:      derefString(u.Name),
-		AvatarURL: u.AvatarUrl,
+		Login:                    u.Login,
+		Name:                     derefString(u.Name),
+		AvatarURL:                u.AvatarUrl,
+		CreatedAt:                u.CreatedAt,
+		Followers:                followersTotal(u),
+		Following:                followingTotal(u),
+		Watching:                 watchingTotal(u),
+		SponsorshipsAsMaintainer: sponsorshipsAsMaintainerTotal(u),
 	}
 
 	// M4: walk the entire repository connection with batch-halving on
@@ -213,4 +219,37 @@ func derefString(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+// followersTotal / followingTotal / watchingTotal /
+// sponsorshipsAsMaintainerTotal each return the totalCount sub-field
+// from the matching User connection, or 0 when the connection is nil
+// (GraphQL returned no data for that connection). They exist so
+// runUser's User struct literal stays a clean field-by-field assignment.
+func followersTotal(u *githubapi.UserUser) int {
+	if u == nil || u.Followers == nil {
+		return 0
+	}
+	return u.Followers.TotalCount
+}
+
+func followingTotal(u *githubapi.UserUser) int {
+	if u == nil || u.Following == nil {
+		return 0
+	}
+	return u.Following.TotalCount
+}
+
+func watchingTotal(u *githubapi.UserUser) int {
+	if u == nil || u.Watching == nil {
+		return 0
+	}
+	return u.Watching.TotalCount
+}
+
+func sponsorshipsAsMaintainerTotal(u *githubapi.UserUser) int {
+	if u == nil || u.SponsorshipsAsMaintainer == nil {
+		return 0
+	}
+	return u.SponsorshipsAsMaintainer.TotalCount
 }

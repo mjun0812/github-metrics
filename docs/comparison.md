@@ -55,6 +55,29 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 > ✅ Go サンプル `metrics-classic.svg` / `.png` は `scripts/gen-doc-samples.sh` の独立セクションで生成。複数 plugin を 1 回の `render_one` で合成。データ無しで空表示になる plugin (`contributors` / `projects` / `sponsors` / `sponsorships` / `starlists` / `topics`) と巨大化する `people` は除外し、合成 SVG は ~370KB / 高さ ~3976px。
 > ✅ Go サンプル `metrics-repository.svg` / `.png` は同スクリプトの repository mode セクションで生成。`mjun0812/flash-attention-prebuild-wheels` を対象に、repository template の `_.json` に partial を持つ plugin だけを合成しています: languages / contributors (+ contributions) / people (stargazers + watchers + contributors) / stargazers (graph) / activity。`traffic` 等 partial を持たない plugin はトグルしても出力に反映されないため合成対象外（repository chrome のみ）。
 
+### base partial parity (`base.header` / `base.repositories`)
+
+`base.header.ejs` / `base.repositories.ejs` で upstream が描画する 14 フィールドのうち、本リポジトリの実装状況です。両 partial は全 60 サンプル SVG が embed する基盤のため、ここのカバレッジが上がると全サンプルの見た目が一斉に改善します。詳細は [#429](https://github.com/mjun0812/github-metrics/issues/429) (Phase 1〜3 で段階リリース)。
+
+| partial             | フィールド                          | 状態          | データソース                                  |
+| ------------------- | ----------------------------------- | ------------- | --------------------------------------------- |
+| `base.header`       | Avatar + display name               | ✅ 実装済み   | `user.{avatarUrl,name,login}`                 |
+| `base.header`       | Joined GitHub `<age>`               | ✅ Phase 1    | `user.createdAt`                              |
+| `base.header`       | Followed by N users                 | ✅ Phase 1    | `user.followers.totalCount`                   |
+| `base.header`       | Following N users                   | ✅ Phase 1    | `user.following.totalCount`                   |
+| `base.header`       | Contributed to N repositories       | ⏳ Phase 2    | `user.repositoriesContributedTo`（indepth）   |
+| `base.header`       | Contribution calendar 11×1 grid     | ⏳ Phase 3    | `user.contributionsCollection.contributionCalendar` |
+| `base.repositories` | N repositories                      | ✅ 実装済み   | `Computed.Repositories.Count`                 |
+| `base.repositories` | N stargazers                        | ✅ 実装済み   | `Computed.Repositories.Stargazers`            |
+| `base.repositories` | N forks                             | ✅ 実装済み   | `Computed.Repositories.Forks`                 |
+| `base.repositories` | Watching N repositories             | ✅ Phase 1    | `user.watching.totalCount`                    |
+| `base.repositories` | N sponsors                          | ✅ Phase 1    | `user.sponsorshipsAsMaintainer.totalCount`    |
+| `base.repositories` | License preference                  | ⏳ Phase 2    | `repository.licenseInfo` の集計               |
+| `base.repositories` | Releases / Packages / Disk used     | ⏳ Phase 2    | `repository.{releases,packages,diskUsage}`    |
+| n/a (out of scope)  | `+N added` / `-N removed`           | ✗ 永久対象外  | M8 不採用の `lines` plugin (`docs/design/15-selection-answer.md` §1) |
+
+> Phase 1 の octicon は中立な `<svg class="octicon"></svg>` placeholder です。upstream と同等のアイコン path 形状は Phase 2 / Phase 3 で揃えます。
+
 ---
 
 ## plugin 比較

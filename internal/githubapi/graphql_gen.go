@@ -1904,18 +1904,22 @@ func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnecti
 
 // UserUser includes the requested fields of the GraphQL type User.
 type UserUser struct {
-	DatabaseId      *int      `json:"databaseId"`
-	Id              string    `json:"id"`
-	Login           string    `json:"login"`
-	Name            *string   `json:"name"`
-	Location        *string   `json:"location"`
-	CreatedAt       time.Time `json:"createdAt"`
-	AvatarUrl       string    `json:"avatarUrl"`
-	WebsiteUrl      *string   `json:"websiteUrl"`
-	TwitterUsername *string   `json:"twitterUsername"`
-	Email           *string   `json:"email"`
-	Bio             *string   `json:"bio"`
-	Company         *string   `json:"company"`
+	DatabaseId               *int                                                   `json:"databaseId"`
+	Id                       string                                                 `json:"id"`
+	Login                    string                                                 `json:"login"`
+	Name                     *string                                                `json:"name"`
+	Location                 *string                                                `json:"location"`
+	CreatedAt                time.Time                                              `json:"createdAt"`
+	AvatarUrl                string                                                 `json:"avatarUrl"`
+	WebsiteUrl               *string                                                `json:"websiteUrl"`
+	TwitterUsername          *string                                                `json:"twitterUsername"`
+	Email                    *string                                                `json:"email"`
+	Bio                      *string                                                `json:"bio"`
+	Company                  *string                                                `json:"company"`
+	Followers                *UserUserFollowersUserConnection                       `json:"followers"`
+	Following                *UserUserFollowingUserConnection                       `json:"following"`
+	Watching                 *UserUserWatchingRepositoryConnection                  `json:"watching"`
+	SponsorshipsAsMaintainer *UserUserSponsorshipsAsMaintainerSponsorshipConnection `json:"sponsorshipsAsMaintainer"`
 }
 
 // GetDatabaseId returns UserUser.DatabaseId, and is useful for accessing the field via an interface.
@@ -1953,6 +1957,54 @@ func (v *UserUser) GetBio() *string { return v.Bio }
 
 // GetCompany returns UserUser.Company, and is useful for accessing the field via an interface.
 func (v *UserUser) GetCompany() *string { return v.Company }
+
+// GetFollowers returns UserUser.Followers, and is useful for accessing the field via an interface.
+func (v *UserUser) GetFollowers() *UserUserFollowersUserConnection { return v.Followers }
+
+// GetFollowing returns UserUser.Following, and is useful for accessing the field via an interface.
+func (v *UserUser) GetFollowing() *UserUserFollowingUserConnection { return v.Following }
+
+// GetWatching returns UserUser.Watching, and is useful for accessing the field via an interface.
+func (v *UserUser) GetWatching() *UserUserWatchingRepositoryConnection { return v.Watching }
+
+// GetSponsorshipsAsMaintainer returns UserUser.SponsorshipsAsMaintainer, and is useful for accessing the field via an interface.
+func (v *UserUser) GetSponsorshipsAsMaintainer() *UserUserSponsorshipsAsMaintainerSponsorshipConnection {
+	return v.SponsorshipsAsMaintainer
+}
+
+// UserUserFollowersUserConnection includes the requested fields of the GraphQL type UserConnection.
+type UserUserFollowersUserConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserUserFollowersUserConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserUserFollowersUserConnection) GetTotalCount() int { return v.TotalCount }
+
+// UserUserFollowingUserConnection includes the requested fields of the GraphQL type UserConnection.
+type UserUserFollowingUserConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserUserFollowingUserConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserUserFollowingUserConnection) GetTotalCount() int { return v.TotalCount }
+
+// UserUserSponsorshipsAsMaintainerSponsorshipConnection includes the requested fields of the GraphQL type SponsorshipConnection.
+type UserUserSponsorshipsAsMaintainerSponsorshipConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserUserSponsorshipsAsMaintainerSponsorshipConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserUserSponsorshipsAsMaintainerSponsorshipConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// UserUserWatchingRepositoryConnection includes the requested fields of the GraphQL type RepositoryConnection.
+type UserUserWatchingRepositoryConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserUserWatchingRepositoryConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserUserWatchingRepositoryConnection) GetTotalCount() int { return v.TotalCount }
 
 // ViewerNotableResponse is returned by ViewerNotable on success.
 type ViewerNotableResponse struct {
@@ -4227,6 +4279,18 @@ query User ($login: String!) {
 		email
 		bio
 		company
+		followers(first: 0) {
+			totalCount
+		}
+		following(first: 0) {
+			totalCount
+		}
+		watching(first: 0) {
+			totalCount
+		}
+		sponsorshipsAsMaintainer(first: 0, activeOnly: true) {
+			totalCount
+		}
 	}
 }
 `
