@@ -202,6 +202,39 @@ func TestS_Pluralization(t *testing.T) {
 	}
 }
 
+// TestRelativeAge anchors #429 Phase 1 "Joined GitHub <age>" label.
+// The helper must pick the largest unit (year > month > day) for
+// which the elapsed difference has at least one whole unit, plural-
+// ising the noun off the count.
+func TestRelativeAge(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 1, 14, 0, 0, 0, 0, time.UTC)
+	tests := []struct {
+		name string
+		t    time.Time
+		want string
+	}{
+		{"zero time", time.Time{}, ""},
+		{"future falls back to today", now.AddDate(0, 0, 5), "today"},
+		{"same day", now, "today"},
+		{"18 years", time.Date(2008, 1, 14, 4, 33, 35, 0, time.UTC), "18 years ago"},
+		{"1 year", time.Date(2025, 1, 14, 0, 0, 0, 0, time.UTC), "1 year ago"},
+		{"2 months", time.Date(2025, 11, 14, 0, 0, 0, 0, time.UTC), "2 months ago"},
+		{"1 month", time.Date(2025, 12, 14, 0, 0, 0, 0, time.UTC), "1 month ago"},
+		{"7 days", now.AddDate(0, 0, -7), "7 days ago"},
+		{"1 day", now.AddDate(0, 0, -1), "1 day ago"},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := format.RelativeAge(tc.t, now); got != tc.want {
+				t.Fatalf("RelativeAge(%v, %v) = %q, want %q", tc.t, now, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestFormatError(t *testing.T) {
 	t.Parallel()
 

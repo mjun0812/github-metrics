@@ -194,6 +194,50 @@ func S(n int64, suffix string) string {
 	return suffix
 }
 
+// RelativeAge renders the elapsed time between t and now as the kind of
+// human-readable label upstream base.header.ejs emits via the `s(...)`
+// helper, e.g. "5 years ago", "1 month ago", "3 days ago".
+//
+// The function picks the largest unit (year, month, day) for which the
+// elapsed duration has at least one whole unit, and pluralises the noun
+// when the count is not 1. now == zero falls back to time.Now() so
+// callers can omit the parameter in production. A zero or future t
+// returns "today" — base.header.ejs has no special case for the future,
+// but the project's render flow never embeds future timestamps and a
+// non-empty fallback keeps the partial dense.
+func RelativeAge(t, now time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	if now.IsZero() {
+		now = time.Now()
+	}
+	if !now.After(t) {
+		return "today"
+	}
+	years := now.Year() - t.Year()
+	months := int(now.Month()) - int(t.Month())
+	days := now.Day() - t.Day()
+	if days < 0 {
+		months--
+	}
+	if months < 0 {
+		years--
+		months += 12
+	}
+	switch {
+	case years > 0:
+		return fmt.Sprintf("%d year%s ago", years, S(int64(years), "s"))
+	case months > 0:
+		return fmt.Sprintf("%d month%s ago", months, S(int64(months), "s"))
+	}
+	d := int(now.Sub(t).Hours() / 24)
+	if d <= 0 {
+		return "today"
+	}
+	return fmt.Sprintf("%d day%s ago", d, S(int64(d), "s"))
+}
+
 // FormatError returns a user-facing string for err. nil yields "".
 // When opts.Suffix is non-empty it is appended (no separator).
 func FormatError(err error, opts Options) string {

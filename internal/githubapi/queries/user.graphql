@@ -12,5 +12,19 @@ query User($login: String!) {
     email
     bio
     company
+    # 429 Phase 1: foundational header / repositories counters surfaced
+    # by upstream base.header.ejs / base.repositories.ejs.
+    followers(first: 0) {
+      totalCount
+    }
+    following(first: 0) {
+      totalCount
+    }
+    watching(first: 0) {
+      totalCount
+    }
+    sponsorshipsAsMaintainer(first: 0, activeOnly: true) {
+      totalCount
+    }
   }
 }

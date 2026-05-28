@@ -45,6 +45,9 @@ type User implements RepositoryOwner {
   starredRepositories(first: Int, orderBy: StarOrder): StarredRepositoryConnection
   followers(first: Int): UserConnection
   following(first: Int): UserConnection
+  # 429 Phase 1: watching connection. Only `totalCount` is read by the
+  # base partial; the full node list is left unfetched.
+  watching(first: Int): RepositoryConnection
   issues(first: Int): IssueConnectionWithReactions
   issueComments(first: Int): IssueCommentConnection
   # 013: sponsors / sponsorships / projects / pinned items (viewer-mode)

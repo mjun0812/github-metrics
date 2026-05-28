@@ -93,7 +93,11 @@ const (
 				"twitterUsername": null,
 				"email": "",
 				"bio": "Mascot",
-				"company": "@github"
+				"company": "@github",
+				"followers": {"totalCount": 1555},
+				"following": {"totalCount": 617},
+				"watching": {"totalCount": 16},
+				"sponsorshipsAsMaintainer": {"totalCount": 4}
 			}
 		}
 	}`
