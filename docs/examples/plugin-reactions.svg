@@ -97,6 +97,16 @@
     fill: #959da5;
     flex-shrink: 0;
   }
+  /* Pin every octicon SVG to the 16x16 box upstream renders at.
+     Without this, an attribute-less octicon placeholder collapses to
+     the SVG default viewport (300x150) in Chrome, which made each
+     .field row ~150px tall and inflated the base render to upstream *
+     5.6. 16x16 matches @primer/octicons defaults so real octicons are
+     unaffected. */
+  .octicon {
+    width: 16px;
+    height: 16px;
+  }
   .field.error {
     color: #cb2431;
   }

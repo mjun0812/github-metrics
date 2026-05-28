@@ -38,15 +38,25 @@ func SetNowForTest(now func() time.Time) func() {
 	return func() { nowFunc = prev }
 }
 
+// octiconPlaceholder is the empty SVG element used wherever a real
+// octicon path has not yet been substituted. Pinning width/height/viewBox
+// to 16×16 prevents Chrome from falling back to the default SVG viewport
+// (300×150 px). Without this, every `.field { display: flex; align-items:
+// center }` row would inflate to ~150 px and the base render would be
+// ~5.6× taller than upstream. CSS overrides cannot fix this because SVG
+// intrinsic size is governed by element attributes, not CSS properties
+// (legacy SVG coordinate-system spec). See also: .octicon rule in
+// style.css (belt-and-suspenders fallback for very old viewers).
+const octiconPlaceholder = `<svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>`
+
 // BaseHeader renders the avatar + display name block at the top of the
 // classic SVG. Returns "" when the User payload is absent.
 //
 // 429 Phase 1: also renders the upstream base.header.ejs sub-row with
 // "Joined GitHub <age>", "Followed by N users", and "Following N
-// users" when those fields are populated. Each row is rendered with a
-// neutral `<svg class="octicon"></svg>` placeholder — the icon path
-// shapes are left for the Phase 2 / Phase 3 work that brings the
-// contribution-calendar grid and the upstream-equivalent octicons.
+// users" when those fields are populated. Each row is rendered with an
+// octiconPlaceholder — a 16×16 SVG stub whose intrinsic size matches
+// @primer/octicons so the `.field` row height stays at ~17 px.
 //
 // Earlier behaviour (#419): with no real data the partial emitted an
 // empty `<div class="row"><section/><section/></div>` placeholder
@@ -82,18 +92,18 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 	var subRows []string
 	if age := format.RelativeAge(u.CreatedAt, nowFunc()); age != "" {
 		subRows = append(subRows, fmt.Sprintf(
-			`<div class="field"><svg class="octicon"></svg>Joined GitHub %s</div>`, age,
+			`<div class="field">`+octiconPlaceholder+`Joined GitHub %s</div>`, age,
 		))
 	}
 	if u.Followers > 0 {
 		subRows = append(subRows, fmt.Sprintf(
-			`<div class="field"><svg class="octicon"></svg>Followed by %s %s</div>`,
+			`<div class="field">`+octiconPlaceholder+`Followed by %s %s</div>`,
 			FormatCount(int64(u.Followers)), pluralLabel("user", u.Followers),
 		))
 	}
 	if u.Following > 0 {
 		subRows = append(subRows, fmt.Sprintf(
-			`<div class="field"><svg class="octicon"></svg>Following %s %s</div>`,
+			`<div class="field">`+octiconPlaceholder+`Following %s %s</div>`,
 			FormatCount(int64(u.Following)), pluralLabel("user", u.Following),
 		))
 	}
@@ -107,7 +117,7 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 			noun = "repository"
 		}
 		subRows = append(subRows, fmt.Sprintf(
-			`<div class="field"><svg class="octicon"></svg>Contributed to %s %s</div>`,
+			`<div class="field">`+octiconPlaceholder+`Contributed to %s %s</div>`,
 			FormatCount(int64(u.ContributedTo)), noun,
 		))
 	}
@@ -245,17 +255,17 @@ func BaseActivityCommunity(_ context.Context, pc *templates.PartialContext) (str
 	b.WriteString(`<section data-section="activity-community">`)
 	b.WriteString(`<section class="row">`)
 	b.WriteString(`<section data-block="activity">`)
-	b.WriteString(`<h2 class="field"><svg class="octicon"></svg>Activity</h2>`)
+	b.WriteString(`<h2 class="field">` + octiconPlaceholder + `Activity</h2>`)
 	if c.TotalCommits > 0 {
-		fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s %s</div>`,
+		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s</div>`,
 			FormatCount(int64(c.TotalCommits)), pluralLabel("Commit", c.TotalCommits))
 	}
 	if c.TotalPullRequests > 0 {
-		fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s %s opened</div>`,
+		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s opened</div>`,
 			FormatCount(int64(c.TotalPullRequests)), pluralLabel("Pull request", c.TotalPullRequests))
 	}
 	if c.TotalIssues > 0 {
-		fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s %s opened</div>`,
+		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s opened</div>`,
 			FormatCount(int64(c.TotalIssues)), pluralLabel("Issue", c.TotalIssues))
 	}
 	b.WriteString(`</section>`)
@@ -301,22 +311,22 @@ func BaseRepositories(_ context.Context, pc *templates.PartialContext) (string, 
 	var b strings.Builder
 	b.WriteString(`<section data-section="repositories">`)
 	b.WriteString(`<div class="row">`)
-	fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s repositories</div>`,
+	fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s repositories</div>`,
 		FormatCount(int64(r.Count)))
-	fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s stargazers</div>`,
+	fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s stargazers</div>`,
 		FormatCount(int64(r.Stargazers)))
-	fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s forks</div>`,
+	fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s forks</div>`,
 		FormatCount(int64(r.Forks)))
 	if r.Releases > 0 {
-		fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s %s</div>`,
+		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s</div>`,
 			FormatCount(int64(r.Releases)), pluralLabel("release", r.Releases))
 	}
 	if r.Packages > 0 {
-		fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s %s</div>`,
+		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s</div>`,
 			FormatCount(int64(r.Packages)), pluralLabel("package", r.Packages))
 	}
 	if r.DiskUsage > 0 {
-		fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s used</div>`,
+		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s used</div>`,
 			format.FormatDiskKB(r.DiskUsage))
 	}
 	if u := pc.Data.User; u != nil {
@@ -325,11 +335,11 @@ func BaseRepositories(_ context.Context, pc *templates.PartialContext) (string, 
 			if u.Watching == 1 {
 				noun = "repository"
 			}
-			fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>Watching %s %s</div>`,
+			fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`Watching %s %s</div>`,
 				FormatCount(int64(u.Watching)), noun)
 		}
 		if u.SponsorshipsAsMaintainer > 0 {
-			fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s %s</div>`,
+			fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s</div>`,
 				FormatCount(int64(u.SponsorshipsAsMaintainer)),
 				pluralLabel("sponsor", u.SponsorshipsAsMaintainer))
 		}
@@ -342,17 +352,79 @@ func BaseRepositories(_ context.Context, pc *templates.PartialContext) (string, 
 }
 
 // licensePreferenceTopRender caps the License-preference labels shown
-// inside the partial at the top three entries upstream
-// `base.repositories.ejs` displays. The data model carries up to 5
-// (see internal/plugins/base.licensePreferenceTopN) so future
-// renderers can opt into a longer breakdown without re-aggregating.
+// inside the partial at the top three entries. The data model carries
+// up to 5 (see internal/plugins/base.licensePreferenceTopN) so future
+// renderers (e.g. a richer dashboard view) can opt into a longer
+// breakdown without re-aggregating. The classic field uses a compact
+// notation tuned for the 480px upstream-parity canvas width, so even
+// three entries fit on one line for typical license names.
 const licensePreferenceTopRender = 3
 
-// licensePreferenceRow renders the "License preference: A 60% / B 20% /
-// C 10%" field when at least one license bucket exists. Returns "" so
-// callers can skip emitting the row entirely. Percentages are rounded
-// to whole numbers — the upstream label trims fractional digits, and
-// any drift below 1 percentage point would not be visually meaningful.
+// licenseShortName collapses GitHub's verbose `licenseInfo.name`
+// labels into the SPDX-flavoured short form upstream renders for
+// chips/badges. Falls back to the original string when no rule applies
+// so unknown licenses still surface (just longer).
+//
+// Examples (input -> output):
+//   - "MIT License"                                 -> "MIT"
+//   - "Apache License 2.0"                          -> "Apache-2.0"
+//   - "BSD 3-Clause \"New\" or \"Revised\" License" -> "BSD-3-Clause"
+//   - "GNU General Public License v3.0"             -> "GPL-3.0"
+//   - "GNU Lesser General Public License v2.1"      -> "LGPL-2.1"
+//   - "Mozilla Public License 2.0"                  -> "MPL-2.0"
+//   - "The Unlicense"                               -> "Unlicense"
+func licenseShortName(name string) string {
+	switch {
+	case name == "MIT License":
+		return "MIT"
+	case name == "ISC License":
+		return "ISC"
+	case name == "The Unlicense":
+		return "Unlicense"
+	case name == "Do What The F*ck You Want To Public License":
+		return "WTFPL"
+	case name == "Creative Commons Zero v1.0 Universal":
+		return "CC0-1.0"
+	case strings.HasPrefix(name, "Apache License"):
+		return "Apache-" + strings.TrimSpace(strings.TrimPrefix(name, "Apache License"))
+	case strings.HasPrefix(name, "BSD 2-Clause"):
+		return "BSD-2-Clause"
+	case strings.HasPrefix(name, "BSD 3-Clause"):
+		return "BSD-3-Clause"
+	case strings.HasPrefix(name, "BSD 4-Clause"):
+		return "BSD-4-Clause"
+	case strings.HasPrefix(name, "GNU Affero General Public License"):
+		rest := strings.TrimSpace(strings.TrimPrefix(name, "GNU Affero General Public License"))
+		return "AGPL-" + strings.TrimPrefix(rest, "v")
+	case strings.HasPrefix(name, "GNU Lesser General Public License"):
+		rest := strings.TrimSpace(strings.TrimPrefix(name, "GNU Lesser General Public License"))
+		return "LGPL-" + strings.TrimPrefix(rest, "v")
+	case strings.HasPrefix(name, "GNU General Public License"):
+		rest := strings.TrimSpace(strings.TrimPrefix(name, "GNU General Public License"))
+		return "GPL-" + strings.TrimPrefix(rest, "v")
+	case strings.HasPrefix(name, "Mozilla Public License"):
+		rest := strings.TrimSpace(strings.TrimPrefix(name, "Mozilla Public License"))
+		return "MPL-" + rest
+	case strings.HasPrefix(name, "Eclipse Public License"):
+		rest := strings.TrimSpace(strings.TrimPrefix(name, "Eclipse Public License"))
+		return "EPL-" + strings.TrimPrefix(rest, "v")
+	case strings.HasPrefix(name, "Boost Software License"):
+		return "BSL-1.0"
+	}
+	return name
+}
+
+// licensePreferenceRow renders the "MIT 50% · Apache-2.0 22% · BSD-3-Clause 6%"
+// field when at least one license bucket exists. Returns "" so callers
+// can skip emitting the row entirely. Percentages are rounded to whole
+// numbers — the upstream label trims fractional digits, and any drift
+// below 1 percentage point would not be visually meaningful.
+//
+// License names are normalised through licenseShortName so the row fits
+// on a single line at the 480px upstream-parity canvas width: the
+// previous verbose format ("License preference: MIT License 50% /
+// Apache License 2.0 22% / BSD 3-Clause \"New\" or \"Revised\" License
+// 6%") rendered ~758px wide and forced horizontal overflow.
 func licensePreferenceRow(shares []plugins.LicenseShare) string {
 	if len(shares) == 0 {
 		return ""
@@ -365,11 +437,11 @@ func licensePreferenceRow(shares []plugins.LicenseShare) string {
 	for _, s := range shares[:limit] {
 		// Round to nearest whole percent (banker-friendly via +0.5).
 		pct := int(s.Percent + 0.5)
-		parts = append(parts, fmt.Sprintf("%s %d%%", EscapeXML(s.Name), pct))
+		parts = append(parts, fmt.Sprintf("%s %d%%", EscapeXML(licenseShortName(s.Name)), pct))
 	}
 	return fmt.Sprintf(
-		`<div class="field"><svg class="octicon"></svg>License preference: %s</div>`,
-		strings.Join(parts, " / "),
+		`<div class="field">`+octiconPlaceholder+`%s</div>`,
+		strings.Join(parts, " · "),
 	)
 }
 

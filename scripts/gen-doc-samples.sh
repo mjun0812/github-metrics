@@ -107,23 +107,31 @@ render_one() {
     local tmp_raw="${WORKDIR}/${outfile}"
     local final="${OUTDIR}/${outfile}"
 
-    if ! docker run --rm \
-        -e GITHUB_TOKEN \
-        -v "${WORKDIR}:/out" \
-        "$IMAGE" \
-        --user "$USER" \
-        --token-env GITHUB_TOKEN \
-        --output "$fmt" \
-        --filename "/out/${outfile}" \
-        --dryrun \
-        "$@" >/dev/null 2>"${WORKDIR}/${outfile}.log"
-    then
+    local attempt ok=0
+    for attempt in 1 2 3; do
+      rm -f "$tmp_raw"
+      if docker run --rm \
+          -e GITHUB_TOKEN \
+          -e HTTP_PROXY="" \
+          -e HTTPS_PROXY="" \
+          -e http_proxy="" \
+          -e https_proxy="" \
+          -e NO_PROXY="*" \
+          -e no_proxy="*" \
+          -v "${WORKDIR}:/out" \
+          "$IMAGE" \
+          --user "$USER" \
+          --token-env GITHUB_TOKEN \
+          --output "$fmt" \
+          --filename "/out/${outfile}" \
+          --dryrun \
+          "$@" >/dev/null 2>"${WORKDIR}/${outfile}.log" && [[ -s "$tmp_raw" ]]; then
+        ok=1; break
+      fi
+      [[ "$attempt" -lt 3 ]] && echo "    retry ${attempt}/3 ${fmt} ..."
+    done
+    if [[ "$ok" -eq 0 ]]; then
       echo "    FAIL ${fmt} (see ${WORKDIR}/${outfile}.log)"
-      FAILURES+=("$outfile")
-      continue
-    fi
-    if [[ ! -s "$tmp_raw" ]]; then
-      echo "    FAIL ${fmt} (no output file)"
       FAILURES+=("$outfile")
       continue
     fi
@@ -159,25 +167,33 @@ render_one_repo() {
     local tmp_raw="${WORKDIR}/${outfile}"
     local final="${OUTDIR}/${outfile}"
 
-    if ! docker run --rm \
-        -e GITHUB_TOKEN \
-        -v "${WORKDIR}:/out" \
-        "$IMAGE" \
-        --user "$USER" \
-        --repo "$REPO" \
-        --template repository \
-        --token-env GITHUB_TOKEN \
-        --output "$fmt" \
-        --filename "/out/${outfile}" \
-        --dryrun \
-        "$@" >/dev/null 2>"${WORKDIR}/${outfile}.log"
-    then
+    local attempt ok=0
+    for attempt in 1 2 3; do
+      rm -f "$tmp_raw"
+      if docker run --rm \
+          -e GITHUB_TOKEN \
+          -e HTTP_PROXY="" \
+          -e HTTPS_PROXY="" \
+          -e http_proxy="" \
+          -e https_proxy="" \
+          -e NO_PROXY="*" \
+          -e no_proxy="*" \
+          -v "${WORKDIR}:/out" \
+          "$IMAGE" \
+          --user "$USER" \
+          --repo "$REPO" \
+          --template repository \
+          --token-env GITHUB_TOKEN \
+          --output "$fmt" \
+          --filename "/out/${outfile}" \
+          --dryrun \
+          "$@" >/dev/null 2>"${WORKDIR}/${outfile}.log" && [[ -s "$tmp_raw" ]]; then
+        ok=1; break
+      fi
+      [[ "$attempt" -lt 3 ]] && echo "    retry ${attempt}/3 ${fmt} ..."
+    done
+    if [[ "$ok" -eq 0 ]]; then
       echo "    FAIL ${fmt} (see ${WORKDIR}/${outfile}.log)"
-      FAILURES+=("$outfile")
-      continue
-    fi
-    if [[ ! -s "$tmp_raw" ]]; then
-      echo "    FAIL ${fmt} (no output file)"
       FAILURES+=("$outfile")
       continue
     fi

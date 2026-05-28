@@ -322,9 +322,10 @@ func TestBaseHeader_PhaseTwoFields(t *testing.T) {
 
 // TestBaseRepositories_PhaseTwoFields anchors #429 Phase 2: with
 // Releases / Packages / DiskUsage / LicensePreference populated, the
-// partial surfaces "N releases", "N packages", "<disk> used", and
-// "License preference: A 60% / B 20% / ..." alongside the Phase 1
-// labels.
+// partial surfaces "N releases", "N packages", "<disk> used", and the
+// compact license-preference row ("MIT 60% · Apache-2.0 20% · GPL-3.0
+// 10%") alongside the Phase 1 labels. License names are normalised to
+// SPDX short forms so the row fits on a single 480px line.
 func TestBaseRepositories_PhaseTwoFields(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
@@ -349,14 +350,19 @@ func TestBaseRepositories_PhaseTwoFields(t *testing.T) {
 		"10 releases",
 		"2 packages",
 		"5 GB used",
-		"License preference:",
-		"MIT License 60%",
-		"Apache License 2.0 20%",
-		"GNU General Public License v3.0 10%",
+		"MIT 60%",
+		"Apache-2.0 20%",
+		"GPL-3.0 10%",
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("missing %q in %s", marker, got)
 		}
+	}
+	if strings.Contains(got, "License preference:") {
+		t.Errorf("legacy verbose label should be gone: %s", got)
+	}
+	if strings.Contains(got, "MIT License 60%") {
+		t.Errorf("license name should be normalised to SPDX short form: %s", got)
 	}
 }
 
@@ -421,19 +427,19 @@ func TestBaseRepositories_LicensePreference_TopN(t *testing.T) {
 		d.Computed.Repositories.LicensePreference = []plugins.LicenseShare{
 			{Name: "MIT License", Count: 5, Percent: 50},
 			{Name: "Apache License 2.0", Count: 3, Percent: 30},
-			{Name: "BSD 3-Clause", Count: 1, Percent: 10},
+			{Name: "BSD 3-Clause \"New\" or \"Revised\" License", Count: 1, Percent: 10},
 			{Name: "ISC License", Count: 1, Percent: 10},
 		}
 		got, err := partials.BaseRepositories(context.Background(), newPC(d))
 		if err != nil {
 			t.Fatalf("BaseRepositories: %v", err)
 		}
-		for _, marker := range []string{"MIT License 50%", "Apache License 2.0 30%", "BSD 3-Clause 10%"} {
+		for _, marker := range []string{"MIT 50%", "Apache-2.0 30%", "BSD-3-Clause 10%"} {
 			if !strings.Contains(got, marker) {
 				t.Errorf("missing %q in %s", marker, got)
 			}
 		}
-		if strings.Contains(got, "ISC License") {
+		if strings.Contains(got, "ISC") {
 			t.Errorf("4th license entry should be capped out: %s", got)
 		}
 	})
@@ -444,7 +450,9 @@ func TestBaseRepositories_LicensePreference_TopN(t *testing.T) {
 		if err != nil {
 			t.Fatalf("BaseRepositories: %v", err)
 		}
-		if strings.Contains(got, "License preference") {
+		// Sentinel substring belongs to the compact label set; if any
+		// license string slips through it would appear as "<name> N%".
+		if strings.Contains(got, "%</div>") {
 			t.Errorf("license row should be hidden when slice is empty: %s", got)
 		}
 	})
@@ -461,10 +469,15 @@ func TestBaseRepositories_PhaseTwoZerosHidden(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
-	for _, marker := range []string{"releases", "packages", "used", "License preference"} {
+	for _, marker := range []string{"releases", "packages", "used"} {
 		if strings.Contains(got, marker) {
 			t.Errorf("zero counter should hide %q in %s", marker, got)
 		}
+	}
+	// license-preference row collapses to a compact "<name> N%" form,
+	// so the absence of any "%</div>" sentinel proves the row is hidden.
+	if strings.Contains(got, "%</div>") {
+		t.Errorf("zero counter should hide license preference row in %s", got)
 	}
 }
 
