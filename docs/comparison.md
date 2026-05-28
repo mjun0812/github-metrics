@@ -57,7 +57,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 
 ### base partial parity (`base.header` / `base.repositories`)
 
-`base.header.ejs` / `base.repositories.ejs` で upstream が描画する 14 フィールドのうち、本リポジトリの実装状況です。両 partial は全 60 サンプル SVG が embed する基盤のため、ここのカバレッジが上がると全サンプルの見た目が一斉に改善します。詳細は [#429](https://github.com/mjun0812/github-metrics/issues/429) (Phase 1〜3 で段階リリース)。
+`base.header.ejs` / `base.repositories.ejs` で upstream が描画する各フィールドの本リポジトリ実装状況です。両 partial は全 60+ サンプル SVG が embed する基盤のため、ここのカバレッジが上がると全サンプルの見た目が一斉に改善します。詳細は [#429](https://github.com/mjun0812/github-metrics/issues/429) (Phase 1〜3 で段階リリース、Phase 3 = contribution calendar inline grid のみ残)。
 
 | partial             | フィールド                          | 状態          | データソース                                  |
 | ------------------- | ----------------------------------- | ------------- | --------------------------------------------- |
@@ -65,18 +65,21 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | `base.header`       | Joined GitHub `<age>`               | ✅ Phase 1    | `user.createdAt`                              |
 | `base.header`       | Followed by N users                 | ✅ Phase 1    | `user.followers.totalCount`                   |
 | `base.header`       | Following N users                   | ✅ Phase 1    | `user.following.totalCount`                   |
-| `base.header`       | Contributed to N repositories       | ⏳ Phase 2    | `user.repositoriesContributedTo`（indepth）   |
+| `base.header`       | Contributed to N repositories       | ✅ Phase 2    | `user.repositoriesContributedTo.totalCount`   |
 | `base.header`       | Contribution calendar 11×1 grid     | ⏳ Phase 3    | `user.contributionsCollection.contributionCalendar` |
 | `base.repositories` | N repositories                      | ✅ 実装済み   | `Computed.Repositories.Count`                 |
 | `base.repositories` | N stargazers                        | ✅ 実装済み   | `Computed.Repositories.Stargazers`            |
 | `base.repositories` | N forks                             | ✅ 実装済み   | `Computed.Repositories.Forks`                 |
 | `base.repositories` | Watching N repositories             | ✅ Phase 1    | `user.watching.totalCount`                    |
 | `base.repositories` | N sponsors                          | ✅ Phase 1    | `user.sponsorshipsAsMaintainer.totalCount`    |
-| `base.repositories` | License preference                  | ⏳ Phase 2    | `repository.licenseInfo` の集計               |
-| `base.repositories` | Releases / Packages / Disk used     | ⏳ Phase 2    | `repository.{releases,packages,diskUsage}`    |
+| `base.repositories` | N releases                          | ✅ Phase 2    | `repository.releases.totalCount` の合算       |
+| `base.repositories` | N packages                          | ✅ Phase 2    | `repository.packages.totalCount` の合算       |
+| `base.repositories` | `<disk-usage>` used                 | ✅ Phase 2    | `repository.diskUsage` (KB) の合算            |
+| `base.repositories` | License preference (top 3)          | ✅ Phase 2    | `repository.licenseInfo` の集計 + 上位 N      |
 | n/a (out of scope)  | `+N added` / `-N removed`           | ✗ 永久対象外  | M8 不採用の `lines` plugin (`docs/design/15-selection-answer.md` §1) |
 
-> Phase 1 の octicon は中立な `<svg class="octicon"></svg>` placeholder です。upstream と同等のアイコン path 形状は Phase 2 / Phase 3 で揃えます。
+> Phase 1 / Phase 2 の octicon は中立な `<svg class="octicon"></svg>` placeholder です。upstream と同等のアイコン path 形状は Phase 3 で揃えます。
+> Phase 2 の License preference は `licenseInfo` を返した repo のみを母数として集計するため、ライセンス未設定 repo が混在する場合でも 100% に正規化されます (上位 3 件表示)。
 
 ---
 

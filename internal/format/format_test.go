@@ -68,6 +68,40 @@ func TestFormatBytes(t *testing.T) {
 	}
 }
 
+// TestFormatDiskKB anchors #429 Phase 2: the helper must promote KB →
+// MB → GB → TB at the 1024-step boundary, keep one fractional digit
+// for non-trailing-zero results, and round-trip negatives with a
+// leading minus.
+func TestFormatDiskKB(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		in   int
+		want string
+	}{
+		{0, "0 KB"},
+		{1, "1 KB"},
+		{500, "500 KB"},
+		{1023, "1023 KB"},
+		{1024, "1 MB"},
+		{1536, "1.5 MB"},
+		{1024 * 1024, "1 GB"},
+		{1024*1024 + 512*1024, "1.5 GB"},
+		{5242880, "5 GB"}, // 5 * 1024 * 1024 KB
+		{1024 * 1024 * 1024, "1 TB"},
+		{-2048, "-2 MB"},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+			if got := format.FormatDiskKB(tc.in); got != tc.want {
+				t.Fatalf("FormatDiskKB(%d) = %q, want %q", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestFormatPercentage(t *testing.T) {
 	t.Parallel()
 

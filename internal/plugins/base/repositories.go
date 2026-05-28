@@ -5,12 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
+
+// licensePreferenceTopN caps the License-preference slice surfaced to
+// downstream partials. Upstream `base.repositories.ejs` renders 3
+// entries; we expose 5 in the data model so future renderers can show
+// a longer breakdown without re-aggregating.
+const licensePreferenceTopN = 5
 
 // Generated genqlient types are deeply-nested per-query distinct
 // structs; aliasing here keeps the repository-conversion call sites
@@ -23,16 +30,32 @@ type (
 // pagingState bundles the inputs and accumulator of a single
 // repository-paging loop. batch shrinks on transient failure (5xx /
 // network timeout), cursor advances on success, acc grows monotonically.
+//
+// 429 Phase 2: releases / packages / diskUsage are summed across all
+// owned repos, mirroring upstream `base.repositories.ejs`'s "N
+// releases", "N packages", "<disk> used" labels. licenseCounts buckets
+// repos by `licenseInfo.name` so populateRepositories can convert the
+// raw map into a top-N LicensePreference slice (Count desc).
 type pagingState struct {
 	batch  int
 	cursor *string
 	acc    []plugins.Repository
 	// totals collected alongside the per-node list so callers that only
 	// care about counts (M1 compatibility) keep working.
-	count      int
-	stargazers int
-	forks      int
-	watchers   int
+	count         int
+	stargazers    int
+	forks         int
+	watchers      int
+	releases      int
+	packages      int
+	diskUsage     int
+	licenseCounts map[string]int
+	// licensedRepos counts repositories that reported a non-nil
+	// licenseInfo.name. It is the denominator for the LicensePreference
+	// percentage so the figures sum to 100% across the licensed subset
+	// rather than against the full repository total (which would mix
+	// repos-with-license + repos-without).
+	licensedRepos int
 }
 
 // fetchRepositories walks the connection until exhausted, halving the
@@ -111,6 +134,22 @@ func fetchOnePage(ctx context.Context, pc *plugins.PluginContext, login string, 
 			if node.Watchers != nil {
 				state.watchers += node.Watchers.TotalCount
 			}
+			if node.Releases != nil {
+				state.releases += node.Releases.TotalCount
+			}
+			if node.Packages != nil {
+				state.packages += node.Packages.TotalCount
+			}
+			if node.DiskUsage != nil {
+				state.diskUsage += *node.DiskUsage
+			}
+			if node.LicenseInfo != nil && node.LicenseInfo.Name != "" {
+				if state.licenseCounts == nil {
+					state.licenseCounts = map[string]int{}
+				}
+				state.licenseCounts[node.LicenseInfo.Name]++
+				state.licensedRepos++
+			}
 		}
 		pi := conn.PageInfo
 		return pi.HasNextPage, pi.EndCursor, nil
@@ -137,6 +176,22 @@ func fetchOnePage(ctx context.Context, pc *plugins.PluginContext, login string, 
 		if node.Watchers != nil {
 			state.watchers += node.Watchers.TotalCount
 		}
+		if node.Releases != nil {
+			state.releases += node.Releases.TotalCount
+		}
+		if node.Packages != nil {
+			state.packages += node.Packages.TotalCount
+		}
+		if node.DiskUsage != nil {
+			state.diskUsage += *node.DiskUsage
+		}
+		if node.LicenseInfo != nil && node.LicenseInfo.Name != "" {
+			if state.licenseCounts == nil {
+				state.licenseCounts = map[string]int{}
+			}
+			state.licenseCounts[node.LicenseInfo.Name]++
+			state.licensedRepos++
+		}
 	}
 	pi := conn.PageInfo
 	return pi.HasNextPage, pi.EndCursor, nil
@@ -146,6 +201,10 @@ func fetchOnePage(ctx context.Context, pc *plugins.PluginContext, login string, 
 // totals + per-node accumulator into pc.Data.Computed. Preserves the M1
 // behavior of populating count/stargazers/forks/watchers so callers
 // reading just totals keep working.
+//
+// 429 Phase 2: also writes Releases / Packages / DiskUsage /
+// LicensePreference aggregated across all owned repos so the upstream
+// base.repositories.ejs labels render with real numbers.
 func populateRepositories(ctx context.Context, pc *plugins.PluginContext, login string, first int, isUser bool) error {
 	state, err := fetchRepositories(ctx, pc, login, isUser, first)
 	if err != nil {
@@ -155,8 +214,51 @@ func populateRepositories(ctx context.Context, pc *plugins.PluginContext, login 
 	pc.Data.Computed.Repositories.Stargazers = state.stargazers
 	pc.Data.Computed.Repositories.Forks = state.forks
 	pc.Data.Computed.Repositories.Watchers = state.watchers
+	pc.Data.Computed.Repositories.Releases = state.releases
+	pc.Data.Computed.Repositories.Packages = state.packages
+	pc.Data.Computed.Repositories.DiskUsage = state.diskUsage
+	pc.Data.Computed.Repositories.LicensePreference = topLicenseShares(
+		state.licenseCounts, state.licensedRepos, licensePreferenceTopN,
+	)
 	pc.Data.Computed.RepositoryList = state.acc
 	return nil
+}
+
+// topLicenseShares converts the raw license-name → count map produced
+// by fetchRepositories into a top-N slice sorted by Count descending,
+// breaking ties alphabetically so the ordering is deterministic. The
+// returned Percent is computed against licensedRepos (the number of
+// repos that reported a non-nil licenseInfo); when licensedRepos is 0
+// the function returns nil so the partial hides the row entirely.
+//
+// limit <= 0 falls back to the package-level licensePreferenceTopN
+// constant so unit tests can pin a smaller cap without touching the
+// constant.
+func topLicenseShares(counts map[string]int, licensedRepos, limit int) []plugins.LicenseShare {
+	if len(counts) == 0 || licensedRepos <= 0 {
+		return nil
+	}
+	if limit <= 0 {
+		limit = licensePreferenceTopN
+	}
+	shares := make([]plugins.LicenseShare, 0, len(counts))
+	for name, count := range counts {
+		shares = append(shares, plugins.LicenseShare{
+			Name:    name,
+			Count:   count,
+			Percent: float64(count) * 100 / float64(licensedRepos),
+		})
+	}
+	sort.Slice(shares, func(i, j int) bool {
+		if shares[i].Count != shares[j].Count {
+			return shares[i].Count > shares[j].Count
+		}
+		return shares[i].Name < shares[j].Name
+	})
+	if len(shares) > limit {
+		shares = shares[:limit]
+	}
+	return shares
 }
 
 func repositoryFromUserNode(n *userRepoNode) plugins.Repository {

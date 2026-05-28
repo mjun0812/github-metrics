@@ -26,7 +26,8 @@ const userOctocatBody = `{
 			"followers": {"totalCount": 1555},
 			"following": {"totalCount": 617},
 			"watching": {"totalCount": 16},
-			"sponsorshipsAsMaintainer": {"totalCount": 4}
+			"sponsorshipsAsMaintainer": {"totalCount": 4},
+			"repositoriesContributedTo": {"totalCount": 37}
 		}
 	}
 }`
@@ -129,6 +130,113 @@ func TestPaging_BatchHalving(t *testing.T) {
 	}
 	if len(pc.Data.SnapshotErrors()) != 0 {
 		t.Errorf("unexpected errors: %v", pc.Data.SnapshotErrors())
+	}
+}
+
+// TestPopulateRepositories_AggregatesNewFields anchors #429 Phase 2:
+// the per-repo `releases`, `packages`, `diskUsage`, and `licenseInfo`
+// data is summed (releases / packages / disk) or bucketed (license
+// preference top-N) into Data.Computed.Repositories. Also verifies that
+// User.ContributedTo is populated from user.repositoriesContributedTo.
+func TestPopulateRepositories_AggregatesNewFields(t *testing.T) {
+	t.Parallel()
+
+	// Three repos: two MIT, one Apache, one with no license. diskUsage
+	// in KB. The license preference percentage is computed against
+	// repositories that actually reported a license (3, not 4) so MIT
+	// is 2/3 ≈ 67% and Apache is 1/3 ≈ 33%.
+	body := `{
+		"data": {
+			"user": {
+				"repositories": {
+					"totalCount": 4,
+					"pageInfo": {"hasNextPage": false, "endCursor": null},
+					"nodes": [
+						{"databaseId": 1, "id": "R_1", "name": "a", "nameWithOwner": "octocat/a", "url": "https://github.com/octocat/a", "isPrivate": false, "isFork": false, "stargazerCount": 0, "forkCount": 0, "watchers": {"totalCount": 0}, "diskUsage": 1024, "releases": {"totalCount": 3}, "packages": {"totalCount": 1}, "licenseInfo": {"name": "MIT License", "key": "mit"}},
+						{"databaseId": 2, "id": "R_2", "name": "b", "nameWithOwner": "octocat/b", "url": "https://github.com/octocat/b", "isPrivate": false, "isFork": false, "stargazerCount": 0, "forkCount": 0, "watchers": {"totalCount": 0}, "diskUsage": 512, "releases": {"totalCount": 2}, "packages": {"totalCount": 0}, "licenseInfo": {"name": "MIT License", "key": "mit"}},
+						{"databaseId": 3, "id": "R_3", "name": "c", "nameWithOwner": "octocat/c", "url": "https://github.com/octocat/c", "isPrivate": false, "isFork": false, "stargazerCount": 0, "forkCount": 0, "watchers": {"totalCount": 0}, "diskUsage": 256, "releases": {"totalCount": 5}, "packages": {"totalCount": 1}, "licenseInfo": {"name": "Apache License 2.0", "key": "apache-2.0"}},
+						{"databaseId": 4, "id": "R_4", "name": "d", "nameWithOwner": "octocat/d", "url": "https://github.com/octocat/d", "isPrivate": false, "isFork": false, "stargazerCount": 0, "forkCount": 0, "watchers": {"totalCount": 0}, "diskUsage": 100, "releases": {"totalCount": 0}, "packages": {"totalCount": 0}, "licenseInfo": null}
+					]
+				}
+			}
+		}
+	}`
+
+	mux := newGraphQLMux()
+	mux.OnSequence("User", gqlResp{Body: userOctocatBody})
+	mux.OnSequence("UserRepositories", gqlResp{Body: body})
+
+	pc := newPCWithGraphQL(t, mux)
+	pc.Data.Account = plugins.AccountUser
+	pc.Inputs = map[string]any{"user": "octocat"}
+
+	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("base.Run: %v", err)
+	}
+
+	r := pc.Data.Computed.Repositories
+	if r.Count != 4 {
+		t.Errorf("Repositories.Count = %d, want 4", r.Count)
+	}
+	if r.Releases != 10 {
+		t.Errorf("Repositories.Releases = %d, want 10 (3+2+5+0)", r.Releases)
+	}
+	if r.Packages != 2 {
+		t.Errorf("Repositories.Packages = %d, want 2 (1+0+1+0)", r.Packages)
+	}
+	if r.DiskUsage != 1892 {
+		t.Errorf("Repositories.DiskUsage = %d, want 1892 KB (1024+512+256+100)", r.DiskUsage)
+	}
+	if len(r.LicensePreference) != 2 {
+		t.Fatalf("LicensePreference len = %d, want 2 (%v)", len(r.LicensePreference), r.LicensePreference)
+	}
+	if r.LicensePreference[0].Name != "MIT License" || r.LicensePreference[0].Count != 2 {
+		t.Errorf("LicensePreference[0] = %+v, want {MIT License, 2}", r.LicensePreference[0])
+	}
+	if pct := r.LicensePreference[0].Percent; pct < 66 || pct > 67 {
+		t.Errorf("MIT percent = %v, want ~66.6", pct)
+	}
+	if r.LicensePreference[1].Name != "Apache License 2.0" || r.LicensePreference[1].Count != 1 {
+		t.Errorf("LicensePreference[1] = %+v, want {Apache License 2.0, 1}", r.LicensePreference[1])
+	}
+	if pc.Data.User == nil || pc.Data.User.ContributedTo != 37 {
+		t.Errorf("User.ContributedTo = %v, want 37 (got user=%+v)", pc.Data.User.ContributedTo, pc.Data.User)
+	}
+}
+
+// TestPopulateRepositories_AllLicensesNil keeps the License-preference
+// path quiet when no repo reported a licenseInfo, so the partial hides
+// the row.
+func TestPopulateRepositories_AllLicensesNil(t *testing.T) {
+	t.Parallel()
+
+	body := `{
+		"data": {
+			"user": {
+				"repositories": {
+					"totalCount": 2,
+					"pageInfo": {"hasNextPage": false, "endCursor": null},
+					"nodes": [
+						{"databaseId": 1, "id": "R_1", "name": "a", "nameWithOwner": "octocat/a", "url": "https://github.com/octocat/a", "isPrivate": false, "isFork": false, "stargazerCount": 0, "forkCount": 0, "watchers": {"totalCount": 0}, "diskUsage": 0, "releases": {"totalCount": 0}, "packages": {"totalCount": 0}, "licenseInfo": null},
+						{"databaseId": 2, "id": "R_2", "name": "b", "nameWithOwner": "octocat/b", "url": "https://github.com/octocat/b", "isPrivate": false, "isFork": false, "stargazerCount": 0, "forkCount": 0, "watchers": {"totalCount": 0}, "diskUsage": 0, "releases": {"totalCount": 0}, "packages": {"totalCount": 0}, "licenseInfo": null}
+					]
+				}
+			}
+		}
+	}`
+	mux := newGraphQLMux()
+	mux.OnSequence("User", gqlResp{Body: userOctocatBody})
+	mux.OnSequence("UserRepositories", gqlResp{Body: body})
+
+	pc := newPCWithGraphQL(t, mux)
+	pc.Data.Account = plugins.AccountUser
+	pc.Inputs = map[string]any{"user": "octocat"}
+
+	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("base.Run: %v", err)
+	}
+	if got := pc.Data.Computed.Repositories.LicensePreference; got != nil {
+		t.Errorf("LicensePreference = %v, want nil when no repo has a license", got)
 	}
 }
 

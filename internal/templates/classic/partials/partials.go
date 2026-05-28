@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/format"
+	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
@@ -94,6 +95,20 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 		subRows = append(subRows, fmt.Sprintf(
 			`<div class="field"><svg class="octicon"></svg>Following %s %s</div>`,
 			FormatCount(int64(u.Following)), pluralLabel("user", u.Following),
+		))
+	}
+	// 429 Phase 2: "Contributed to N repositories" sourced from
+	// user.repositoriesContributedTo.totalCount. Hidden when zero so
+	// fresh accounts (no external contributions) do not gain a noise
+	// row.
+	if u.ContributedTo > 0 {
+		noun := "repositories"
+		if u.ContributedTo == 1 {
+			noun = "repository"
+		}
+		subRows = append(subRows, fmt.Sprintf(
+			`<div class="field"><svg class="octicon"></svg>Contributed to %s %s</div>`,
+			FormatCount(int64(u.ContributedTo)), noun,
 		))
 	}
 	if len(subRows) > 0 {
@@ -190,9 +205,14 @@ func pluralLabel(singular string, count int) string {
 // 429 Phase 1: also surfaces "N watching" and "N sponsors" sourced from
 // Data.User.{Watching,SponsorshipsAsMaintainer}. Both labels are
 // suppressed when their counter is zero so accounts with no
-// watch/sponsorship activity do not gain noise rows. License
-// preference / Releases / Packages / Disk used / Contributed to are
-// Phase 2 work (require extra GraphQL fetches).
+// watch/sponsorship activity do not gain noise rows.
+//
+// 429 Phase 2: surfaces "N releases", "N packages", "<disk> used", and
+// the License-preference top-3 row sourced from
+// Data.Computed.Repositories.{Releases,Packages,DiskUsage,
+// LicensePreference}. Each label is hidden when its counter is zero
+// (or the license slice is empty), so the partial stays dense on
+// accounts that lack the corresponding signal.
 func BaseRepositories(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil {
 		return "", nil
@@ -210,6 +230,18 @@ func BaseRepositories(_ context.Context, pc *templates.PartialContext) (string, 
 		FormatCount(int64(r.Stargazers)))
 	fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s forks</div>`,
 		FormatCount(int64(r.Forks)))
+	if r.Releases > 0 {
+		fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s %s</div>`,
+			FormatCount(int64(r.Releases)), pluralLabel("release", r.Releases))
+	}
+	if r.Packages > 0 {
+		fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s %s</div>`,
+			FormatCount(int64(r.Packages)), pluralLabel("package", r.Packages))
+	}
+	if r.DiskUsage > 0 {
+		fmt.Fprintf(&b, `<div class="field"><svg class="octicon"></svg>%s used</div>`,
+			format.FormatDiskKB(r.DiskUsage))
+	}
 	if u := pc.Data.User; u != nil {
 		if u.Watching > 0 {
 			noun := "repositories"
@@ -225,8 +257,43 @@ func BaseRepositories(_ context.Context, pc *templates.PartialContext) (string, 
 				pluralLabel("sponsor", u.SponsorshipsAsMaintainer))
 		}
 	}
+	if row := licensePreferenceRow(r.LicensePreference); row != "" {
+		b.WriteString(row)
+	}
 	b.WriteString(`</div></section>`)
 	return b.String(), nil
+}
+
+// licensePreferenceTopRender caps the License-preference labels shown
+// inside the partial at the top three entries upstream
+// `base.repositories.ejs` displays. The data model carries up to 5
+// (see internal/plugins/base.licensePreferenceTopN) so future
+// renderers can opt into a longer breakdown without re-aggregating.
+const licensePreferenceTopRender = 3
+
+// licensePreferenceRow renders the "License preference: A 60% / B 20% /
+// C 10%" field when at least one license bucket exists. Returns "" so
+// callers can skip emitting the row entirely. Percentages are rounded
+// to whole numbers — the upstream label trims fractional digits, and
+// any drift below 1 percentage point would not be visually meaningful.
+func licensePreferenceRow(shares []plugins.LicenseShare) string {
+	if len(shares) == 0 {
+		return ""
+	}
+	limit := len(shares)
+	if limit > licensePreferenceTopRender {
+		limit = licensePreferenceTopRender
+	}
+	parts := make([]string, 0, limit)
+	for _, s := range shares[:limit] {
+		// Round to nearest whole percent (banker-friendly via +0.5).
+		pct := int(s.Percent + 0.5)
+		parts = append(parts, fmt.Sprintf("%s %d%%", EscapeXML(s.Name), pct))
+	}
+	return fmt.Sprintf(
+		`<div class="field"><svg class="octicon"></svg>License preference: %s</div>`,
+		strings.Join(parts, " / "),
+	)
 }
 
 // registry maps partial names (e.g. "base.header" or "plugin.languages")
