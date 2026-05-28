@@ -164,6 +164,7 @@ func (p *basePlugin) runUser(ctx context.Context, pc *plugins.PluginContext, log
 		Following:                followingTotal(u),
 		Watching:                 watchingTotal(u),
 		SponsorshipsAsMaintainer: sponsorshipsAsMaintainerTotal(u),
+		ContributedTo:            repositoriesContributedToTotal(u),
 	}
 
 	// M4: walk the entire repository connection with batch-halving on
@@ -252,4 +253,15 @@ func sponsorshipsAsMaintainerTotal(u *githubapi.UserUser) int {
 		return 0
 	}
 	return u.SponsorshipsAsMaintainer.TotalCount
+}
+
+// repositoriesContributedToTotal returns the totalCount sub-field from
+// `user.repositoriesContributedTo`, or 0 when the connection is nil
+// (GraphQL returned no data, or the user has no contributions outside
+// their own repos).
+func repositoriesContributedToTotal(u *githubapi.UserUser) int {
+	if u == nil || u.RepositoriesContributedTo == nil {
+		return 0
+	}
+	return u.RepositoriesContributedTo.TotalCount
 }

@@ -67,6 +67,25 @@ type User implements RepositoryOwner {
   # "starlists") via this connection. We project both the list metadata
   # and the per-list items in a single round-trip.
   lists(first: Int): UserListConnection
+  # 429 Phase 2: upstream base.header.ejs "Contributed to N
+  # repositories" counter. We only read totalCount; the
+  # contributionTypes argument mirrors upstream's explicit
+  # `[COMMIT, PULL_REQUEST, ISSUE, REPOSITORY]` set so the number
+  # matches what GitHub displays on the user profile.
+  repositoriesContributedTo(
+    first: Int
+    contributionTypes: [RepositoryContributionType!]
+  ): RepositoryConnection
+}
+
+# 429 Phase 2: contribution-type enum used by
+# user.repositoriesContributedTo's contributionTypes argument.
+enum RepositoryContributionType {
+  COMMIT
+  ISSUE
+  PULL_REQUEST
+  PULL_REQUEST_REVIEW
+  REPOSITORY
 }
 
 type UserListConnection {
@@ -190,6 +209,13 @@ type Repository {
   pullRequests(states: [PullRequestState!]): PullRequestConnection
   # 013: stargazers chart input
   stargazers(first: Int, orderBy: StarOrder): StargazerConnection
+  # 429 Phase 2: repository-aggregate fields surfaced by upstream
+  # base.repositories.ejs. diskUsage is reported in KB by GitHub
+  # GraphQL. releases / packages expose only totalCount in this
+  # project so we keep the connection types minimal.
+  diskUsage: Int
+  releases: ReleaseConnection
+  packages(first: Int): PackageConnection
 }
 
 interface RepositoryOwner {
@@ -200,6 +226,19 @@ interface RepositoryOwner {
 type License {
   name: String!
   spdxId: String
+  # 429 Phase 2: stable identifier used by aggregation logic when
+  # multiple repos report the same license. `key` is the short SPDX-ish
+  # slug GitHub returns (e.g. "mit", "apache-2.0").
+  key: String
+}
+
+# 429 Phase 2: Release + Package connections. Only totalCount is read.
+type ReleaseConnection {
+  totalCount: Int!
+}
+
+type PackageConnection {
+  totalCount: Int!
 }
 
 enum IssueState {

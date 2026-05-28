@@ -117,6 +117,10 @@ func (d *Data) SnapshotErrors() []error {
 // upstream `base.header.ejs` / `base.repositories.ejs` render. Zero
 // values mean "GraphQL did not return the counter"; the partials hide
 // rows whose source is zero so empty accounts do not gain noise lines.
+//
+// 429 Phase 2: ContributedTo carries the
+// `user.repositoriesContributedTo(...).totalCount` counter rendered by
+// upstream `base.header.ejs` as "Contributed to N repositories".
 type User struct {
 	Login                    string
 	Name                     string
@@ -126,6 +130,7 @@ type User struct {
 	Following                int
 	Watching                 int
 	SponsorshipsAsMaintainer int
+	ContributedTo            int
 }
 
 // Organization is the organization-account payload populated by the
@@ -192,15 +197,34 @@ type Computed struct {
 
 // ComputedRepositories carries the repository-level totals base/run
 // produces.
+//
+// 429 Phase 2: Releases / Packages / DiskUsage / LicensePreference
+// surface the per-repo aggregate fields upstream `base.repositories.ejs`
+// renders. DiskUsage is in KB (GitHub GraphQL convention); the partial
+// promotes to MB / GB / TB via format.FormatDiskKB. LicensePreference
+// is the top-N license share, sorted by Count descending.
 type ComputedRepositories struct {
-	Count        int
-	Stargazers   int
-	Forks        int
-	Releases     int
-	Watchers     int
-	Issues       int
-	PullRequests int
-	Languages    map[string]int
+	Count             int
+	Stargazers        int
+	Forks             int
+	Releases          int
+	Packages          int
+	DiskUsage         int
+	Watchers          int
+	Issues            int
+	PullRequests      int
+	Languages         map[string]int
+	LicensePreference []LicenseShare
+}
+
+// LicenseShare is one entry in the License-preference top-N. Percent is
+// the share of owned repositories whose `licenseInfo.name` matches Name
+// (0..100, never normalised against unlicensed repositories — so the
+// figures sum to <= 100 when some repos have no license).
+type LicenseShare struct {
+	Name    string
+	Count   int
+	Percent float64
 }
 
 // Repository is the per-node entry produced by the base plugin's

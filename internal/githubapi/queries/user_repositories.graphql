@@ -42,6 +42,21 @@ query UserRepositories($login: String!, $first: Int!, $after: String) {
             }
           }
         }
+        # 429 Phase 2: aggregate fields rendered by upstream
+        # base.repositories.ejs. diskUsage is reported in KB by
+        # GitHub GraphQL. Releases / packages expose only totalCount;
+        # licenseInfo can be null for repos with no LICENSE file.
+        diskUsage
+        releases {
+          totalCount
+        }
+        packages(first: 0) {
+          totalCount
+        }
+        licenseInfo {
+          name
+          key
+        }
       }
     }
   }

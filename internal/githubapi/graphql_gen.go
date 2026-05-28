@@ -184,6 +184,10 @@ type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRe
 	Watchers        *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection   `json:"watchers"`
 	PrimaryLanguage *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage             `json:"primaryLanguage"`
 	Languages       *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection `json:"languages"`
+	DiskUsage       *int                                                                                                            `json:"diskUsage"`
+	Releases        *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryReleasesReleaseConnection   `json:"releases"`
+	Packages        *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPackagesPackageConnection   `json:"packages"`
+	LicenseInfo     *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense          `json:"licenseInfo"`
 }
 
 // GetDatabaseId returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.DatabaseId, and is useful for accessing the field via an interface.
@@ -261,6 +265,26 @@ func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNod
 	return v.Languages
 }
 
+// GetDiskUsage returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.DiskUsage, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetDiskUsage() *int {
+	return v.DiskUsage
+}
+
+// GetReleases returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.Releases, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetReleases() *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryReleasesReleaseConnection {
+	return v.Releases
+}
+
+// GetPackages returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.Packages, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetPackages() *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPackagesPackageConnection {
+	return v.Packages
+}
+
+// GetLicenseInfo returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.LicenseInfo, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetLicenseInfo() *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense {
+	return v.LicenseInfo
+}
+
 // OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection includes the requested fields of the GraphQL type LanguageConnection.
 type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection struct {
 	TotalCount int                                                                                                                                `json:"totalCount"`
@@ -315,6 +339,32 @@ func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNod
 	return v.Color
 }
 
+// OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense includes the requested fields of the GraphQL type License.
+type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense struct {
+	Name string  `json:"name"`
+	Key  *string `json:"key"`
+}
+
+// GetName returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense.Name, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense) GetName() string {
+	return v.Name
+}
+
+// GetKey returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense.Key, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense) GetKey() *string {
+	return v.Key
+}
+
+// OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPackagesPackageConnection includes the requested fields of the GraphQL type PackageConnection.
+type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPackagesPackageConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPackagesPackageConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPackagesPackageConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
 // OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage includes the requested fields of the GraphQL type Language.
 type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage struct {
 	Name  string  `json:"name"`
@@ -329,6 +379,16 @@ func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNod
 // GetColor returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage.Color, and is useful for accessing the field via an interface.
 func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage) GetColor() *string {
 	return v.Color
+}
+
+// OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryReleasesReleaseConnection includes the requested fields of the GraphQL type ReleaseConnection.
+type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryReleasesReleaseConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryReleasesReleaseConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryReleasesReleaseConnection) GetTotalCount() int {
+	return v.TotalCount
 }
 
 // OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection includes the requested fields of the GraphQL type WatcherConnection.
@@ -1615,6 +1675,10 @@ type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository struct 
 	Watchers        *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection   `json:"watchers"`
 	PrimaryLanguage *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage             `json:"primaryLanguage"`
 	Languages       *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection `json:"languages"`
+	DiskUsage       *int                                                                                            `json:"diskUsage"`
+	Releases        *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryReleasesReleaseConnection   `json:"releases"`
+	Packages        *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPackagesPackageConnection   `json:"packages"`
+	LicenseInfo     *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense          `json:"licenseInfo"`
 }
 
 // GetDatabaseId returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.DatabaseId, and is useful for accessing the field via an interface.
@@ -1692,6 +1756,26 @@ func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) Ge
 	return v.Languages
 }
 
+// GetDiskUsage returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.DiskUsage, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetDiskUsage() *int {
+	return v.DiskUsage
+}
+
+// GetReleases returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.Releases, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetReleases() *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryReleasesReleaseConnection {
+	return v.Releases
+}
+
+// GetPackages returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.Packages, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetPackages() *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPackagesPackageConnection {
+	return v.Packages
+}
+
+// GetLicenseInfo returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.LicenseInfo, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetLicenseInfo() *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense {
+	return v.LicenseInfo
+}
+
 // UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection includes the requested fields of the GraphQL type LanguageConnection.
 type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLanguagesLanguageConnection struct {
 	TotalCount int                                                                                                                `json:"totalCount"`
@@ -1746,6 +1830,32 @@ func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLang
 	return v.Color
 }
 
+// UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense includes the requested fields of the GraphQL type License.
+type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense struct {
+	Name string  `json:"name"`
+	Key  *string `json:"key"`
+}
+
+// GetName returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense.Name, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense) GetName() string {
+	return v.Name
+}
+
+// GetKey returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense.Key, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense) GetKey() *string {
+	return v.Key
+}
+
+// UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPackagesPackageConnection includes the requested fields of the GraphQL type PackageConnection.
+type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPackagesPackageConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPackagesPackageConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPackagesPackageConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
 // UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage includes the requested fields of the GraphQL type Language.
 type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage struct {
 	Name  string  `json:"name"`
@@ -1760,6 +1870,16 @@ func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrim
 // GetColor returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage.Color, and is useful for accessing the field via an interface.
 func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPrimaryLanguage) GetColor() *string {
 	return v.Color
+}
+
+// UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryReleasesReleaseConnection includes the requested fields of the GraphQL type ReleaseConnection.
+type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryReleasesReleaseConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryReleasesReleaseConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryReleasesReleaseConnection) GetTotalCount() int {
+	return v.TotalCount
 }
 
 // UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryWatchersWatcherConnection includes the requested fields of the GraphQL type WatcherConnection.
@@ -1904,22 +2024,23 @@ func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnecti
 
 // UserUser includes the requested fields of the GraphQL type User.
 type UserUser struct {
-	DatabaseId               *int                                                   `json:"databaseId"`
-	Id                       string                                                 `json:"id"`
-	Login                    string                                                 `json:"login"`
-	Name                     *string                                                `json:"name"`
-	Location                 *string                                                `json:"location"`
-	CreatedAt                time.Time                                              `json:"createdAt"`
-	AvatarUrl                string                                                 `json:"avatarUrl"`
-	WebsiteUrl               *string                                                `json:"websiteUrl"`
-	TwitterUsername          *string                                                `json:"twitterUsername"`
-	Email                    *string                                                `json:"email"`
-	Bio                      *string                                                `json:"bio"`
-	Company                  *string                                                `json:"company"`
-	Followers                *UserUserFollowersUserConnection                       `json:"followers"`
-	Following                *UserUserFollowingUserConnection                       `json:"following"`
-	Watching                 *UserUserWatchingRepositoryConnection                  `json:"watching"`
-	SponsorshipsAsMaintainer *UserUserSponsorshipsAsMaintainerSponsorshipConnection `json:"sponsorshipsAsMaintainer"`
+	DatabaseId                *int                                                   `json:"databaseId"`
+	Id                        string                                                 `json:"id"`
+	Login                     string                                                 `json:"login"`
+	Name                      *string                                                `json:"name"`
+	Location                  *string                                                `json:"location"`
+	CreatedAt                 time.Time                                              `json:"createdAt"`
+	AvatarUrl                 string                                                 `json:"avatarUrl"`
+	WebsiteUrl                *string                                                `json:"websiteUrl"`
+	TwitterUsername           *string                                                `json:"twitterUsername"`
+	Email                     *string                                                `json:"email"`
+	Bio                       *string                                                `json:"bio"`
+	Company                   *string                                                `json:"company"`
+	Followers                 *UserUserFollowersUserConnection                       `json:"followers"`
+	Following                 *UserUserFollowingUserConnection                       `json:"following"`
+	Watching                  *UserUserWatchingRepositoryConnection                  `json:"watching"`
+	SponsorshipsAsMaintainer  *UserUserSponsorshipsAsMaintainerSponsorshipConnection `json:"sponsorshipsAsMaintainer"`
+	RepositoriesContributedTo *UserUserRepositoriesContributedToRepositoryConnection `json:"repositoriesContributedTo"`
 }
 
 // GetDatabaseId returns UserUser.DatabaseId, and is useful for accessing the field via an interface.
@@ -1972,6 +2093,11 @@ func (v *UserUser) GetSponsorshipsAsMaintainer() *UserUserSponsorshipsAsMaintain
 	return v.SponsorshipsAsMaintainer
 }
 
+// GetRepositoriesContributedTo returns UserUser.RepositoriesContributedTo, and is useful for accessing the field via an interface.
+func (v *UserUser) GetRepositoriesContributedTo() *UserUserRepositoriesContributedToRepositoryConnection {
+	return v.RepositoriesContributedTo
+}
+
 // UserUserFollowersUserConnection includes the requested fields of the GraphQL type UserConnection.
 type UserUserFollowersUserConnection struct {
 	TotalCount int `json:"totalCount"`
@@ -1987,6 +2113,16 @@ type UserUserFollowingUserConnection struct {
 
 // GetTotalCount returns UserUserFollowingUserConnection.TotalCount, and is useful for accessing the field via an interface.
 func (v *UserUserFollowingUserConnection) GetTotalCount() int { return v.TotalCount }
+
+// UserUserRepositoriesContributedToRepositoryConnection includes the requested fields of the GraphQL type RepositoryConnection.
+type UserUserRepositoriesContributedToRepositoryConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserUserRepositoriesContributedToRepositoryConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserUserRepositoriesContributedToRepositoryConnection) GetTotalCount() int {
+	return v.TotalCount
+}
 
 // UserUserSponsorshipsAsMaintainerSponsorshipConnection includes the requested fields of the GraphQL type SponsorshipConnection.
 type UserUserSponsorshipsAsMaintainerSponsorshipConnection struct {
@@ -4158,6 +4294,17 @@ query OrganizationRepositories ($login: String!, $first: Int!, $after: String) {
 						}
 					}
 				}
+				diskUsage
+				releases {
+					totalCount
+				}
+				packages(first: 0) {
+					totalCount
+				}
+				licenseInfo {
+					name
+					key
+				}
 			}
 		}
 	}
@@ -4289,6 +4436,9 @@ query User ($login: String!) {
 			totalCount
 		}
 		sponsorshipsAsMaintainer(first: 0, activeOnly: true) {
+			totalCount
+		}
+		repositoriesContributedTo(first: 0, contributionTypes: [COMMIT,PULL_REQUEST,ISSUE,REPOSITORY]) {
 			totalCount
 		}
 	}
@@ -4600,6 +4750,17 @@ query UserRepositories ($login: String!, $first: Int!, $after: String) {
 							color
 						}
 					}
+				}
+				diskUsage
+				releases {
+					totalCount
+				}
+				packages(first: 0) {
+					totalCount
+				}
+				licenseInfo {
+					name
+					key
 				}
 			}
 		}

@@ -268,6 +268,206 @@ func TestBaseRepositories_WatchingSingular(t *testing.T) {
 	}
 }
 
+// TestBaseHeader_PhaseTwoFields anchors #429 Phase 2: a populated
+// ContributedTo counter must surface the "Contributed to N
+// repositories" row alongside the Phase 1 Joined / Followed by /
+// Following labels. A zero ContributedTo is hidden.
+func TestBaseHeader_PhaseTwoFields(t *testing.T) {
+	restore := partials.SetNowForTest(func() time.Time {
+		return time.Date(2026, 1, 14, 0, 0, 0, 0, time.UTC)
+	})
+	defer restore()
+
+	t.Run("populated renders contributed row", func(t *testing.T) {
+		d := plugins.NewData()
+		d.User = &plugins.User{
+			Login:         "octocat",
+			Name:          "Octo",
+			CreatedAt:     time.Date(2024, 1, 14, 0, 0, 0, 0, time.UTC),
+			Followers:     10,
+			Following:     5,
+			ContributedTo: 37,
+		}
+		got, err := partials.BaseHeader(context.Background(), newPC(d))
+		if err != nil {
+			t.Fatalf("BaseHeader: %v", err)
+		}
+		if !strings.Contains(got, "Contributed to 37 repositories") {
+			t.Errorf("missing Contributed to row: %s", got)
+		}
+	})
+	t.Run("singular noun when count is 1", func(t *testing.T) {
+		d := plugins.NewData()
+		d.User = &plugins.User{Login: "x", ContributedTo: 1}
+		got, err := partials.BaseHeader(context.Background(), newPC(d))
+		if err != nil {
+			t.Fatalf("BaseHeader: %v", err)
+		}
+		if !strings.Contains(got, "Contributed to 1 repository") {
+			t.Errorf("singular noun missing: %s", got)
+		}
+	})
+	t.Run("zero is hidden", func(t *testing.T) {
+		d := plugins.NewData()
+		d.User = &plugins.User{Login: "x", ContributedTo: 0}
+		got, err := partials.BaseHeader(context.Background(), newPC(d))
+		if err != nil {
+			t.Fatalf("BaseHeader: %v", err)
+		}
+		if strings.Contains(got, "Contributed to") {
+			t.Errorf("Contributed row should be hidden when ContributedTo=0: %s", got)
+		}
+	})
+}
+
+// TestBaseRepositories_PhaseTwoFields anchors #429 Phase 2: with
+// Releases / Packages / DiskUsage / LicensePreference populated, the
+// partial surfaces "N releases", "N packages", "<disk> used", and
+// "License preference: A 60% / B 20% / ..." alongside the Phase 1
+// labels.
+func TestBaseRepositories_PhaseTwoFields(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	d.Computed.Repositories.Count = 20
+	d.Computed.Repositories.Stargazers = 100
+	d.Computed.Repositories.Forks = 5
+	d.Computed.Repositories.Releases = 10
+	d.Computed.Repositories.Packages = 2
+	d.Computed.Repositories.DiskUsage = 5242880 // 5 GB in KB
+	d.Computed.Repositories.LicensePreference = []plugins.LicenseShare{
+		{Name: "MIT License", Count: 12, Percent: 60},
+		{Name: "Apache License 2.0", Count: 4, Percent: 20},
+		{Name: "GNU General Public License v3.0", Count: 2, Percent: 10},
+	}
+	d.User = &plugins.User{Login: "octocat"}
+
+	got, err := partials.BaseRepositories(context.Background(), newPC(d))
+	if err != nil {
+		t.Fatalf("BaseRepositories: %v", err)
+	}
+	for _, marker := range []string{
+		"10 releases",
+		"2 packages",
+		"5 GB used",
+		"License preference:",
+		"MIT License 60%",
+		"Apache License 2.0 20%",
+		"GNU General Public License v3.0 10%",
+	} {
+		if !strings.Contains(got, marker) {
+			t.Errorf("missing %q in %s", marker, got)
+		}
+	}
+}
+
+// TestBaseRepositories_PhaseTwoSingulars anchors plural→singular
+// noun handling on Releases / Packages.
+func TestBaseRepositories_PhaseTwoSingulars(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	d.Computed.Repositories.Count = 1
+	d.Computed.Repositories.Releases = 1
+	d.Computed.Repositories.Packages = 1
+	got, err := partials.BaseRepositories(context.Background(), newPC(d))
+	if err != nil {
+		t.Fatalf("BaseRepositories: %v", err)
+	}
+	for _, marker := range []string{"1 release</div>", "1 package</div>"} {
+		if !strings.Contains(got, marker) {
+			t.Errorf("missing singular %q in %s", marker, got)
+		}
+	}
+}
+
+// TestBaseRepositories_DiskUsageFormat exercises the KB → MB → GB
+// boundary in the disk-usage label.
+func TestBaseRepositories_DiskUsageFormat(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		kb   int
+		want string
+	}{
+		{500, "500 KB used"},
+		{1536, "1.5 MB used"},
+		{5242880, "5 GB used"},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.want, func(t *testing.T) {
+			t.Parallel()
+			d := plugins.NewData()
+			d.Computed.Repositories.Count = 1
+			d.Computed.Repositories.DiskUsage = tc.kb
+			got, err := partials.BaseRepositories(context.Background(), newPC(d))
+			if err != nil {
+				t.Fatalf("BaseRepositories: %v", err)
+			}
+			if !strings.Contains(got, tc.want) {
+				t.Errorf("missing %q in %s", tc.want, got)
+			}
+		})
+	}
+}
+
+// TestBaseRepositories_LicensePreference_TopN asserts the partial
+// limits the license labels to the top three entries even when the
+// data model carries more, and hides the row entirely when the slice
+// is empty.
+func TestBaseRepositories_LicensePreference_TopN(t *testing.T) {
+	t.Parallel()
+	t.Run("more than 3 entries → top 3", func(t *testing.T) {
+		d := plugins.NewData()
+		d.Computed.Repositories.Count = 10
+		d.Computed.Repositories.LicensePreference = []plugins.LicenseShare{
+			{Name: "MIT License", Count: 5, Percent: 50},
+			{Name: "Apache License 2.0", Count: 3, Percent: 30},
+			{Name: "BSD 3-Clause", Count: 1, Percent: 10},
+			{Name: "ISC License", Count: 1, Percent: 10},
+		}
+		got, err := partials.BaseRepositories(context.Background(), newPC(d))
+		if err != nil {
+			t.Fatalf("BaseRepositories: %v", err)
+		}
+		for _, marker := range []string{"MIT License 50%", "Apache License 2.0 30%", "BSD 3-Clause 10%"} {
+			if !strings.Contains(got, marker) {
+				t.Errorf("missing %q in %s", marker, got)
+			}
+		}
+		if strings.Contains(got, "ISC License") {
+			t.Errorf("4th license entry should be capped out: %s", got)
+		}
+	})
+	t.Run("empty slice hides the row", func(t *testing.T) {
+		d := plugins.NewData()
+		d.Computed.Repositories.Count = 1
+		got, err := partials.BaseRepositories(context.Background(), newPC(d))
+		if err != nil {
+			t.Fatalf("BaseRepositories: %v", err)
+		}
+		if strings.Contains(got, "License preference") {
+			t.Errorf("license row should be hidden when slice is empty: %s", got)
+		}
+	})
+}
+
+// TestBaseRepositories_PhaseTwoZerosHidden confirms that with zero
+// Phase 2 counters the partial does not gain any Phase 2 rows — the
+// Phase 1 fields stay the only visible content.
+func TestBaseRepositories_PhaseTwoZerosHidden(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	d.Computed.Repositories.Count = 1
+	got, err := partials.BaseRepositories(context.Background(), newPC(d))
+	if err != nil {
+		t.Fatalf("BaseRepositories: %v", err)
+	}
+	for _, marker := range []string{"releases", "packages", "used", "License preference"} {
+		if strings.Contains(got, marker) {
+			t.Errorf("zero counter should hide %q in %s", marker, got)
+		}
+	}
+}
+
 func TestLookup_CoversManifest(t *testing.T) {
 	t.Parallel()
 	for _, name := range []string{"base.header", "introduction", "base.activity+community", "base.repositories"} {

@@ -26,5 +26,14 @@ query User($login: String!) {
     sponsorshipsAsMaintainer(first: 0, activeOnly: true) {
       totalCount
     }
+    # 429 Phase 2: "Contributed to N repositories" counter rendered by
+    # upstream base.header.ejs. Explicit contributionTypes mirrors
+    # upstream's set so the number matches the GitHub profile page.
+    repositoriesContributedTo(
+      first: 0
+      contributionTypes: [COMMIT, PULL_REQUEST, ISSUE, REPOSITORY]
+    ) {
+      totalCount
+    }
   }
 }
