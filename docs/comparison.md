@@ -57,7 +57,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 
 ### base partial parity (`base.header` / `base.repositories`)
 
-`base.header.ejs` / `base.repositories.ejs` で upstream が描画する各フィールドの本リポジトリ実装状況です。両 partial は全 60+ サンプル SVG が embed する基盤のため、ここのカバレッジが上がると全サンプルの見た目が一斉に改善します。詳細は [#429](https://github.com/mjun0812/github-metrics/issues/429) (Phase 1〜3 で段階リリース、Phase 3 = contribution calendar inline grid のみ残)。
+`base.header.ejs` / `base.repositories.ejs` で upstream が描画する各フィールドの本リポジトリ実装状況です。両 partial は全 60+ サンプル SVG が embed する基盤のため、ここのカバレッジが上がると全サンプルの見た目が一斉に改善します。詳細は [#429](https://github.com/mjun0812/github-metrics/issues/429) (Phase 1〜3 完了 — 採用範囲 14 / 14 フィールド達成)。
 
 | partial             | フィールド                          | 状態          | データソース                                  |
 | ------------------- | ----------------------------------- | ------------- | --------------------------------------------- |
@@ -66,7 +66,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | `base.header`       | Followed by N users                 | ✅ Phase 1    | `user.followers.totalCount`                   |
 | `base.header`       | Following N users                   | ✅ Phase 1    | `user.following.totalCount`                   |
 | `base.header`       | Contributed to N repositories       | ✅ Phase 2    | `user.repositoriesContributedTo.totalCount`   |
-| `base.header`       | Contribution calendar 11×1 grid     | ⏳ Phase 3    | `user.contributionsCollection.contributionCalendar` |
+| `base.header`       | Contribution calendar 11×7 mini grid | ✅ Phase 3   | `user.contributionsCollection.contributionCalendar.weeks` (末尾 11 週) |
 | `base.repositories` | N repositories                      | ✅ 実装済み   | `Computed.Repositories.Count`                 |
 | `base.repositories` | N stargazers                        | ✅ 実装済み   | `Computed.Repositories.Stargazers`            |
 | `base.repositories` | N forks                             | ✅ 実装済み   | `Computed.Repositories.Forks`                 |
@@ -78,8 +78,9 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | `base.repositories` | License preference (top 3)          | ✅ Phase 2    | `repository.licenseInfo` の集計 + 上位 N      |
 | n/a (out of scope)  | `+N added` / `-N removed`           | ✗ 永久対象外  | M8 不採用の `lines` plugin (`docs/design/15-selection-answer.md` §1) |
 
-> Phase 1 / Phase 2 の octicon は中立な `<svg class="octicon"></svg>` placeholder です。upstream と同等のアイコン path 形状は Phase 3 で揃えます。
+> Phase 1 / Phase 2 の octicon は中立な `<svg class="octicon"></svg>` placeholder です。upstream と同等のアイコン path 形状は別 issue で扱います (Phase 3 は contribution mini grid のみが対象)。
 > Phase 2 の License preference は `licenseInfo` を返した repo のみを母数として集計するため、ライセンス未設定 repo が混在する場合でも 100% に正規化されます (上位 3 件表示)。
+> Phase 3 の contribution mini grid は upstream `base.header.ejs` が描画する単列ストリップを GitHub プロフィール準拠の 11 列 × 7 行に拡張したものです。各セルは GraphQL が返した hex 色をそのまま `fill` に埋め込み、加えて `calendar-graph-day-<level>` クラスを付与するためテーマ CSS (`--color-calendar-graph-day-Ln-bg`) もそのまま適用されます。データは `runUser` が常時取得するため、`calendar` / `isocalendar` 等の indepth-tier plugin を有効化しなくても base 単体で表示されます。
 
 ---
 

@@ -35,5 +35,26 @@ query User($login: String!) {
     ) {
       totalCount
     }
+    # 429 Phase 3: contribution calendar fetched unconditionally so the
+    # BaseHeader mini grid renders even when no indepth-dependent plugin
+    # (calendar / isocalendar / habits / repositories.pinned) is
+    # enabled. The full year (~53 weeks) is returned; the BaseHeader
+    # partial slices the last 11 weeks for the mini grid. Kept separate
+    # from `runIndepth` so base no longer needs another plugin enabled
+    # to surface this field.
+    contributionsCollection {
+      contributionCalendar {
+        totalContributions
+        weeks {
+          firstDay
+          contributionDays {
+            date
+            contributionCount
+            weekday
+            color
+          }
+        }
+      }
+    }
   }
 }

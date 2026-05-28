@@ -2041,6 +2041,7 @@ type UserUser struct {
 	Watching                  *UserUserWatchingRepositoryConnection                  `json:"watching"`
 	SponsorshipsAsMaintainer  *UserUserSponsorshipsAsMaintainerSponsorshipConnection `json:"sponsorshipsAsMaintainer"`
 	RepositoriesContributedTo *UserUserRepositoriesContributedToRepositoryConnection `json:"repositoriesContributedTo"`
+	ContributionsCollection   *UserUserContributionsCollection                       `json:"contributionsCollection"`
 }
 
 // GetDatabaseId returns UserUser.DatabaseId, and is useful for accessing the field via an interface.
@@ -2096,6 +2097,81 @@ func (v *UserUser) GetSponsorshipsAsMaintainer() *UserUserSponsorshipsAsMaintain
 // GetRepositoriesContributedTo returns UserUser.RepositoriesContributedTo, and is useful for accessing the field via an interface.
 func (v *UserUser) GetRepositoriesContributedTo() *UserUserRepositoriesContributedToRepositoryConnection {
 	return v.RepositoriesContributedTo
+}
+
+// GetContributionsCollection returns UserUser.ContributionsCollection, and is useful for accessing the field via an interface.
+func (v *UserUser) GetContributionsCollection() *UserUserContributionsCollection {
+	return v.ContributionsCollection
+}
+
+// UserUserContributionsCollection includes the requested fields of the GraphQL type ContributionsCollection.
+type UserUserContributionsCollection struct {
+	ContributionCalendar *UserUserContributionsCollectionContributionCalendar `json:"contributionCalendar"`
+}
+
+// GetContributionCalendar returns UserUserContributionsCollection.ContributionCalendar, and is useful for accessing the field via an interface.
+func (v *UserUserContributionsCollection) GetContributionCalendar() *UserUserContributionsCollectionContributionCalendar {
+	return v.ContributionCalendar
+}
+
+// UserUserContributionsCollectionContributionCalendar includes the requested fields of the GraphQL type ContributionCalendar.
+type UserUserContributionsCollectionContributionCalendar struct {
+	TotalContributions int                                                                                 `json:"totalContributions"`
+	Weeks              []*UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek `json:"weeks"`
+}
+
+// GetTotalContributions returns UserUserContributionsCollectionContributionCalendar.TotalContributions, and is useful for accessing the field via an interface.
+func (v *UserUserContributionsCollectionContributionCalendar) GetTotalContributions() int {
+	return v.TotalContributions
+}
+
+// GetWeeks returns UserUserContributionsCollectionContributionCalendar.Weeks, and is useful for accessing the field via an interface.
+func (v *UserUserContributionsCollectionContributionCalendar) GetWeeks() []*UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek {
+	return v.Weeks
+}
+
+// UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek includes the requested fields of the GraphQL type ContributionCalendarWeek.
+type UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek struct {
+	FirstDay         string                                                                                                                     `json:"firstDay"`
+	ContributionDays []*UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay `json:"contributionDays"`
+}
+
+// GetFirstDay returns UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek.FirstDay, and is useful for accessing the field via an interface.
+func (v *UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek) GetFirstDay() string {
+	return v.FirstDay
+}
+
+// GetContributionDays returns UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek.ContributionDays, and is useful for accessing the field via an interface.
+func (v *UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek) GetContributionDays() []*UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay {
+	return v.ContributionDays
+}
+
+// UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay includes the requested fields of the GraphQL type ContributionCalendarDay.
+type UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay struct {
+	Date              string `json:"date"`
+	ContributionCount int    `json:"contributionCount"`
+	Weekday           int    `json:"weekday"`
+	Color             string `json:"color"`
+}
+
+// GetDate returns UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay.Date, and is useful for accessing the field via an interface.
+func (v *UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay) GetDate() string {
+	return v.Date
+}
+
+// GetContributionCount returns UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay.ContributionCount, and is useful for accessing the field via an interface.
+func (v *UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay) GetContributionCount() int {
+	return v.ContributionCount
+}
+
+// GetWeekday returns UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay.Weekday, and is useful for accessing the field via an interface.
+func (v *UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay) GetWeekday() int {
+	return v.Weekday
+}
+
+// GetColor returns UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay.Color, and is useful for accessing the field via an interface.
+func (v *UserUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay) GetColor() string {
+	return v.Color
 }
 
 // UserUserFollowersUserConnection includes the requested fields of the GraphQL type UserConnection.
@@ -4440,6 +4516,20 @@ query User ($login: String!) {
 		}
 		repositoriesContributedTo(first: 0, contributionTypes: [COMMIT,PULL_REQUEST,ISSUE,REPOSITORY]) {
 			totalCount
+		}
+		contributionsCollection {
+			contributionCalendar {
+				totalContributions
+				weeks {
+					firstDay
+					contributionDays {
+						date
+						contributionCount
+						weekday
+						color
+					}
+				}
+			}
 		}
 	}
 }

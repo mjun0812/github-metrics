@@ -13,6 +13,10 @@ import (
 
 // userOctocatBody is the minimal User payload the base plugin needs to
 // satisfy its runUser preamble before the paging loop kicks off.
+//
+// 429 Phase 3: a 13-week contributionsCollection payload is embedded so
+// runUser exercises the "trim to last 11 weeks" path. Weeks 0/1 should
+// be discarded; weeks 2..12 (11 total) end up on Data.User.RecentContributions.
 const userOctocatBody = `{
 	"data": {
 		"user": {
@@ -27,7 +31,128 @@ const userOctocatBody = `{
 			"following": {"totalCount": 617},
 			"watching": {"totalCount": 16},
 			"sponsorshipsAsMaintainer": {"totalCount": 4},
-			"repositoriesContributedTo": {"totalCount": 37}
+			"repositoriesContributedTo": {"totalCount": 37},
+			"contributionsCollection": {
+				"contributionCalendar": {
+					"totalContributions": 1234,
+					"weeks": [
+						{"firstDay": "2026-02-22", "contributionDays": [
+							{"date": "2026-02-22", "contributionCount": 0, "weekday": 0, "color": "#ebedf0"},
+							{"date": "2026-02-23", "contributionCount": 1, "weekday": 1, "color": "#9be9a8"},
+							{"date": "2026-02-24", "contributionCount": 2, "weekday": 2, "color": "#9be9a8"},
+							{"date": "2026-02-25", "contributionCount": 3, "weekday": 3, "color": "#9be9a8"},
+							{"date": "2026-02-26", "contributionCount": 4, "weekday": 4, "color": "#40c463"},
+							{"date": "2026-02-27", "contributionCount": 5, "weekday": 5, "color": "#40c463"},
+							{"date": "2026-02-28", "contributionCount": 6, "weekday": 6, "color": "#40c463"}
+						]},
+						{"firstDay": "2026-03-01", "contributionDays": [
+							{"date": "2026-03-01", "contributionCount": 7, "weekday": 0, "color": "#30a14e"},
+							{"date": "2026-03-02", "contributionCount": 8, "weekday": 1, "color": "#30a14e"},
+							{"date": "2026-03-03", "contributionCount": 9, "weekday": 2, "color": "#30a14e"},
+							{"date": "2026-03-04", "contributionCount": 10, "weekday": 3, "color": "#216e39"},
+							{"date": "2026-03-05", "contributionCount": 11, "weekday": 4, "color": "#216e39"},
+							{"date": "2026-03-06", "contributionCount": 12, "weekday": 5, "color": "#216e39"},
+							{"date": "2026-03-07", "contributionCount": 13, "weekday": 6, "color": "#216e39"}
+						]},
+						{"firstDay": "2026-03-08", "contributionDays": [
+							{"date": "2026-03-08", "contributionCount": 1, "weekday": 0, "color": "#9be9a8"},
+							{"date": "2026-03-09", "contributionCount": 1, "weekday": 1, "color": "#9be9a8"},
+							{"date": "2026-03-10", "contributionCount": 1, "weekday": 2, "color": "#9be9a8"},
+							{"date": "2026-03-11", "contributionCount": 1, "weekday": 3, "color": "#9be9a8"},
+							{"date": "2026-03-12", "contributionCount": 1, "weekday": 4, "color": "#9be9a8"},
+							{"date": "2026-03-13", "contributionCount": 1, "weekday": 5, "color": "#9be9a8"},
+							{"date": "2026-03-14", "contributionCount": 1, "weekday": 6, "color": "#9be9a8"}
+						]},
+						{"firstDay": "2026-03-15", "contributionDays": [
+							{"date": "2026-03-15", "contributionCount": 1, "weekday": 0, "color": "#9be9a8"},
+							{"date": "2026-03-16", "contributionCount": 1, "weekday": 1, "color": "#9be9a8"},
+							{"date": "2026-03-17", "contributionCount": 1, "weekday": 2, "color": "#9be9a8"},
+							{"date": "2026-03-18", "contributionCount": 1, "weekday": 3, "color": "#9be9a8"},
+							{"date": "2026-03-19", "contributionCount": 1, "weekday": 4, "color": "#9be9a8"},
+							{"date": "2026-03-20", "contributionCount": 1, "weekday": 5, "color": "#9be9a8"},
+							{"date": "2026-03-21", "contributionCount": 1, "weekday": 6, "color": "#9be9a8"}
+						]},
+						{"firstDay": "2026-03-22", "contributionDays": [
+							{"date": "2026-03-22", "contributionCount": 1, "weekday": 0, "color": "#9be9a8"},
+							{"date": "2026-03-23", "contributionCount": 1, "weekday": 1, "color": "#9be9a8"},
+							{"date": "2026-03-24", "contributionCount": 1, "weekday": 2, "color": "#9be9a8"},
+							{"date": "2026-03-25", "contributionCount": 1, "weekday": 3, "color": "#9be9a8"},
+							{"date": "2026-03-26", "contributionCount": 1, "weekday": 4, "color": "#9be9a8"},
+							{"date": "2026-03-27", "contributionCount": 1, "weekday": 5, "color": "#9be9a8"},
+							{"date": "2026-03-28", "contributionCount": 1, "weekday": 6, "color": "#9be9a8"}
+						]},
+						{"firstDay": "2026-03-29", "contributionDays": [
+							{"date": "2026-03-29", "contributionCount": 1, "weekday": 0, "color": "#9be9a8"},
+							{"date": "2026-03-30", "contributionCount": 1, "weekday": 1, "color": "#9be9a8"},
+							{"date": "2026-03-31", "contributionCount": 1, "weekday": 2, "color": "#9be9a8"},
+							{"date": "2026-04-01", "contributionCount": 1, "weekday": 3, "color": "#9be9a8"},
+							{"date": "2026-04-02", "contributionCount": 1, "weekday": 4, "color": "#9be9a8"},
+							{"date": "2026-04-03", "contributionCount": 1, "weekday": 5, "color": "#9be9a8"},
+							{"date": "2026-04-04", "contributionCount": 1, "weekday": 6, "color": "#9be9a8"}
+						]},
+						{"firstDay": "2026-04-05", "contributionDays": [
+							{"date": "2026-04-05", "contributionCount": 1, "weekday": 0, "color": "#9be9a8"},
+							{"date": "2026-04-06", "contributionCount": 1, "weekday": 1, "color": "#9be9a8"},
+							{"date": "2026-04-07", "contributionCount": 1, "weekday": 2, "color": "#9be9a8"},
+							{"date": "2026-04-08", "contributionCount": 1, "weekday": 3, "color": "#9be9a8"},
+							{"date": "2026-04-09", "contributionCount": 1, "weekday": 4, "color": "#9be9a8"},
+							{"date": "2026-04-10", "contributionCount": 1, "weekday": 5, "color": "#9be9a8"},
+							{"date": "2026-04-11", "contributionCount": 1, "weekday": 6, "color": "#9be9a8"}
+						]},
+						{"firstDay": "2026-04-12", "contributionDays": [
+							{"date": "2026-04-12", "contributionCount": 1, "weekday": 0, "color": "#9be9a8"},
+							{"date": "2026-04-13", "contributionCount": 1, "weekday": 1, "color": "#9be9a8"},
+							{"date": "2026-04-14", "contributionCount": 1, "weekday": 2, "color": "#9be9a8"},
+							{"date": "2026-04-15", "contributionCount": 1, "weekday": 3, "color": "#9be9a8"},
+							{"date": "2026-04-16", "contributionCount": 1, "weekday": 4, "color": "#9be9a8"},
+							{"date": "2026-04-17", "contributionCount": 1, "weekday": 5, "color": "#9be9a8"},
+							{"date": "2026-04-18", "contributionCount": 1, "weekday": 6, "color": "#9be9a8"}
+						]},
+						{"firstDay": "2026-04-19", "contributionDays": [
+							{"date": "2026-04-19", "contributionCount": 1, "weekday": 0, "color": "#9be9a8"},
+							{"date": "2026-04-20", "contributionCount": 1, "weekday": 1, "color": "#9be9a8"},
+							{"date": "2026-04-21", "contributionCount": 1, "weekday": 2, "color": "#9be9a8"},
+							{"date": "2026-04-22", "contributionCount": 1, "weekday": 3, "color": "#9be9a8"},
+							{"date": "2026-04-23", "contributionCount": 1, "weekday": 4, "color": "#9be9a8"},
+							{"date": "2026-04-24", "contributionCount": 1, "weekday": 5, "color": "#9be9a8"},
+							{"date": "2026-04-25", "contributionCount": 1, "weekday": 6, "color": "#9be9a8"}
+						]},
+						{"firstDay": "2026-04-26", "contributionDays": [
+							{"date": "2026-04-26", "contributionCount": 1, "weekday": 0, "color": "#9be9a8"},
+							{"date": "2026-04-27", "contributionCount": 1, "weekday": 1, "color": "#9be9a8"},
+							{"date": "2026-04-28", "contributionCount": 1, "weekday": 2, "color": "#9be9a8"},
+							{"date": "2026-04-29", "contributionCount": 1, "weekday": 3, "color": "#9be9a8"},
+							{"date": "2026-04-30", "contributionCount": 1, "weekday": 4, "color": "#9be9a8"},
+							{"date": "2026-05-01", "contributionCount": 1, "weekday": 5, "color": "#9be9a8"},
+							{"date": "2026-05-02", "contributionCount": 1, "weekday": 6, "color": "#9be9a8"}
+						]},
+						{"firstDay": "2026-05-03", "contributionDays": [
+							{"date": "2026-05-03", "contributionCount": 1, "weekday": 0, "color": "#9be9a8"},
+							{"date": "2026-05-04", "contributionCount": 1, "weekday": 1, "color": "#9be9a8"},
+							{"date": "2026-05-05", "contributionCount": 1, "weekday": 2, "color": "#9be9a8"},
+							{"date": "2026-05-06", "contributionCount": 1, "weekday": 3, "color": "#9be9a8"},
+							{"date": "2026-05-07", "contributionCount": 1, "weekday": 4, "color": "#9be9a8"},
+							{"date": "2026-05-08", "contributionCount": 1, "weekday": 5, "color": "#9be9a8"},
+							{"date": "2026-05-09", "contributionCount": 1, "weekday": 6, "color": "#9be9a8"}
+						]},
+						{"firstDay": "2026-05-10", "contributionDays": [
+							{"date": "2026-05-10", "contributionCount": 1, "weekday": 0, "color": "#9be9a8"},
+							{"date": "2026-05-11", "contributionCount": 1, "weekday": 1, "color": "#9be9a8"},
+							{"date": "2026-05-12", "contributionCount": 1, "weekday": 2, "color": "#9be9a8"},
+							{"date": "2026-05-13", "contributionCount": 1, "weekday": 3, "color": "#9be9a8"},
+							{"date": "2026-05-14", "contributionCount": 1, "weekday": 4, "color": "#9be9a8"},
+							{"date": "2026-05-15", "contributionCount": 1, "weekday": 5, "color": "#9be9a8"},
+							{"date": "2026-05-16", "contributionCount": 1, "weekday": 6, "color": "#9be9a8"}
+						]},
+						{"firstDay": "2026-05-17", "contributionDays": [
+							{"date": "2026-05-17", "contributionCount": 99, "weekday": 0, "color": "#216e39"},
+							{"date": "2026-05-18", "contributionCount": 99, "weekday": 1, "color": "#216e39"},
+							{"date": "2026-05-19", "contributionCount": 99, "weekday": 2, "color": "#216e39"},
+							{"date": "2026-05-20", "contributionCount": 99, "weekday": 3, "color": "#216e39"}
+						]}
+					]
+				}
+			}
 		}
 	}
 }`
