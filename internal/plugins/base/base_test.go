@@ -197,3 +197,66 @@ func TestRun_User(t *testing.T) {
 		t.Errorf("UserIndepth fired despite no trigger flags: %d", mux.Calls("UserIndepth"))
 	}
 }
+
+// TestRun_User_PopulatesRecentContributions anchors #429 Phase 3:
+// runUser must extract the trailing 11 weeks of
+// `contributionsCollection.contributionCalendar.weeks` onto
+// Data.User.RecentContributions and discard the older weeks. The fake
+// payload carries 13 weeks (last one is a 4-day partial) so the test
+// also covers the partial-week shape and the discarded-prefix behavior.
+//
+// The trigger semantics matter: indepth is NOT enabled here, so the
+// calendar must land on Data.User regardless of which other plugins
+// are active — this is the headline guarantee of the Phase 3 design.
+func TestRun_User_PopulatesRecentContributions(t *testing.T) {
+	t.Parallel()
+
+	mux := newGraphQLMux()
+	mux.OnSequence("User", gqlResp{Body: userOctocatBody})
+	mux.OnSequence(
+		"UserRepositories",
+		gqlResp{Body: userPage(100, true, "u1")},
+		gqlResp{Body: userPage(100, true, "u2")},
+		gqlResp{Body: userPage(50, false, "")},
+	)
+
+	pc := newPCWithGraphQL(t, mux)
+	pc.Data.Account = plugins.AccountUser
+	pc.Inputs = map[string]any{"user": "octocat"}
+
+	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("base.Run user: %v", err)
+	}
+
+	if pc.Data.User == nil {
+		t.Fatalf("Data.User nil")
+	}
+	weeks := pc.Data.User.RecentContributions
+	if len(weeks) != 11 {
+		t.Fatalf("RecentContributions len = %d, want 11 (trailing-11-of-13 slice)", len(weeks))
+	}
+	// First retained week must be week index 2 (2026-03-08) — index 0/1
+	// of the fixture are dropped by the tail slice.
+	if got := weeks[0].FirstDay; got != "2026-03-08" {
+		t.Errorf("first retained week FirstDay = %q, want 2026-03-08", got)
+	}
+	// Last retained week is the 4-day partial.
+	last := weeks[len(weeks)-1]
+	if last.FirstDay != "2026-05-17" {
+		t.Errorf("last week FirstDay = %q, want 2026-05-17", last.FirstDay)
+	}
+	if len(last.Days) != 4 {
+		t.Errorf("last week Days = %d, want 4 (partial week)", len(last.Days))
+	}
+	// Confirm color/count fidelity on a representative day.
+	if got := last.Days[0].Color; got != "#216e39" {
+		t.Errorf("partial-week day[0].Color = %q, want #216e39", got)
+	}
+	if got := last.Days[0].ContributionCount; got != 99 {
+		t.Errorf("partial-week day[0].ContributionCount = %d, want 99", got)
+	}
+	// indepth must NOT fire — base now sources calendar on its own.
+	if mux.Calls("UserIndepth") != 0 {
+		t.Errorf("UserIndepth fired despite no trigger flags: %d", mux.Calls("UserIndepth"))
+	}
+}

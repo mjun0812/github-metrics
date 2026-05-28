@@ -119,8 +119,85 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 		b.WriteString(`</div>`)
 	}
 
+	// 429 Phase 3: contribution mini grid embedded in BaseHeader. Renders
+	// the trailing 11 weeks of GitHub's contribution calendar as a 11x7
+	// SVG inside `<div class="field calendar">`. Hidden when the data
+	// payload is empty (fresh account or a GraphQL failure) so the
+	// section stays clean for accounts with no signal.
+	if grid := contributionGrid(u.RecentContributions); grid != "" {
+		b.WriteString(grid)
+	}
+
 	b.WriteString(`</section>`)
 	return b.String(), nil
+}
+
+// Contribution mini-grid geometry. Mirrors upstream's 11x11 cell size
+// with a 2px gap, giving a 13px column / row pitch. The SVG is sized
+// just large enough to bound the 11x7 cell array; the partial omits
+// itself entirely when the underlying data is empty so the SVG never
+// reserves blank space.
+const (
+	calendarCellSize  = 11
+	calendarCellGap   = 2
+	calendarCellPitch = calendarCellSize + calendarCellGap
+	calendarColumns   = 11
+	calendarRows      = 7
+	calendarWidth     = (calendarColumns-1)*calendarCellPitch + calendarCellSize
+	calendarHeight    = (calendarRows-1)*calendarCellPitch + calendarCellSize
+)
+
+// emptyCellColor is the canonical GitHub no-contribution color used for
+// padding (e.g. when the trailing week of a fresh account has < 7 days)
+// and as a defensive fallback when the GraphQL `color` field is empty.
+const emptyCellColor = "#ebedf0"
+
+// contributionGrid renders the BaseHeader mini contribution grid as a
+// fragment of SVG embedded in an HTML container so the existing
+// `.calendar.field` CSS rule (margin-left/top tweak) applies.
+//
+// Each cell is tagged `calendar-graph-day-<level>` so themed CSS
+// overrides (`--color-calendar-graph-day-Ln-bg`) still work, and the
+// `fill` attribute carries the GitHub-supplied hex so plain renderers
+// (no CSS) draw the correct color too. Returns "" when no weeks are
+// present.
+func contributionGrid(weeks []plugins.ContributionWeek) string {
+	if len(weeks) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(`<div class="field calendar" data-block="calendar-grid">`)
+	fmt.Fprintf(
+		&b,
+		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" width="%d" height="%d">`,
+		calendarWidth, calendarHeight, calendarWidth, calendarHeight,
+	)
+	b.WriteString(`<g>`)
+	for col, week := range weeks {
+		if col >= calendarColumns {
+			break
+		}
+		for row := 0; row < calendarRows; row++ {
+			x := col * calendarCellPitch
+			y := row * calendarCellPitch
+			color := emptyCellColor
+			level := 0
+			if row < len(week.Days) {
+				d := week.Days[row]
+				if d.Color != "" {
+					color = d.Color
+				}
+				level = format.ContributionLevel(d.ContributionCount, d.Color)
+			}
+			fmt.Fprintf(
+				&b,
+				`<rect class="calendar-graph-day-%d" fill=%q x="%d" y="%d" width="%d" height="%d" rx="2" ry="2"/>`,
+				level, color, x, y, calendarCellSize, calendarCellSize,
+			)
+		}
+	}
+	b.WriteString(`</g></svg></div>`)
+	return b.String()
 }
 
 // Introduction is a stub: the introduction plugin lands in M4. Until
