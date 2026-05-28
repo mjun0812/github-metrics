@@ -41,6 +41,22 @@ query OrganizationRepositories($login: String!, $first: Int!, $after: String) {
             }
           }
         }
+        # 429 Phase 2: aggregate fields rendered by upstream
+        # base.repositories.ejs. Mirrors the user_repositories.graphql
+        # extension so the organisation render path produces the same
+        # Computed.Repositories.{Releases,Packages,DiskUsage,License...}
+        # aggregates.
+        diskUsage
+        releases {
+          totalCount
+        }
+        packages(first: 0) {
+          totalCount
+        }
+        licenseInfo {
+          name
+          key
+        }
       }
     }
   }

@@ -115,6 +115,48 @@ func FormatBytes(n int64) string {
 	return sign + trimDecimal(val) + " " + suffixes[idx]
 }
 
+// FormatDiskKB renders a kilobyte count as the most natural binary
+// unit (KB / MB / GB / TB) with up to one fractional digit. Mirrors
+// upstream `base.repositories.ejs`'s `format.bytes(diskUsage * 1024)`
+// helper used for the "<disk-usage> used" label. Negative values are
+// treated as their absolute magnitude with a leading "-".
+//
+//	0          -> "0 KB"
+//	500        -> "500 KB"
+//	1024       -> "1 MB"
+//	1536       -> "1.5 MB"
+//	1048576    -> "1 GB"
+//	5242880    -> "5 GB"
+//	1073741824 -> "1 TB"
+func FormatDiskKB(kb int) string {
+	abs := kb
+	sign := ""
+	if kb < 0 {
+		sign = "-"
+		abs = -kb
+	}
+	const unit = 1024.0
+	val := float64(abs)
+	if val < unit {
+		return fmt.Sprintf("%s%d KB", sign, abs)
+	}
+	suffixes := []string{"MB", "GB", "TB"}
+	idx := -1
+	for i := 0; i < len(suffixes); i++ {
+		if val < unit {
+			break
+		}
+		val /= unit
+		idx = i
+	}
+	if idx < 0 {
+		// abs was below the MB threshold; keep the KB fast path even
+		// though we never reach this branch in practice.
+		return fmt.Sprintf("%s%d KB", sign, abs)
+	}
+	return sign + trimDecimal(val) + " " + suffixes[idx]
+}
+
 // FormatPercentage renders 0..1 as a percentage with no fractional digits,
 // or 0..100 when Options.Sign asserts the value is already in percent units
 // (caller convention). To keep the API focused we always treat n as a
