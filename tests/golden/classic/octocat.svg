@@ -97,6 +97,16 @@
     fill: #959da5;
     flex-shrink: 0;
   }
+  /* Pin every octicon SVG to the 16x16 box upstream renders at.
+     Without this, an attribute-less octicon placeholder collapses to
+     the SVG default viewport (300x150) in Chrome, which made each
+     .field row ~150px tall and inflated the base render to upstream *
+     5.6. 16x16 matches @primer/octicons defaults so real octicons are
+     unaffected. */
+  .octicon {
+    width: 16px;
+    height: 16px;
+  }
   .field.error {
     color: #cb2431;
   }
@@ -1677,4 +1687,4 @@
     animation-play-state: paused !important;
     caret-color: transparent !important;
   }
-</style><style></style><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper"><section data-section="header"><h1 class="field"><img class="avatar" src="https://avatars.githubusercontent.com/u/12345?v=4" width="20" height="20" /><span>The Octocat</span></h1><div class="row" data-block="header-counters"><div class="field"><svg class="octicon"></svg>Joined GitHub 18 years ago</div><div class="field"><svg class="octicon"></svg>Followed by 1.6k users</div><div class="field"><svg class="octicon"></svg>Following 617 users</div></div></section><section data-section="repositories"><div class="row"><div class="field"><svg class="octicon"></svg>250 repositories</div><div class="field"><svg class="octicon"></svg>150 stargazers</div><div class="field"><svg class="octicon"></svg>13 forks</div><div class="field"><svg class="octicon"></svg>Watching 16 repositories</div><div class="field"><svg class="octicon"></svg>4 sponsors</div></div></section><div id="metrics-end"></div><section data-section="metadata"><footer><span>These metrics include private contributions</span><span>Last updated 2026-05-27T23:26:46Z with mjun0812/github-metrics@test-version</span></footer></section></div></foreignObject></svg>
+</style><style></style><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper"><section data-section="header"><h1 class="field"><img class="avatar" src="https://avatars.githubusercontent.com/u/12345?v=4" width="20" height="20" /><span>The Octocat</span></h1><div class="row" data-block="header-counters"><div class="field"><svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>Joined GitHub 18 years ago</div><div class="field"><svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>Followed by 1.6k users</div><div class="field"><svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>Following 617 users</div></div></section><section data-section="repositories"><div class="row"><div class="field"><svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>250 repositories</div><div class="field"><svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>150 stargazers</div><div class="field"><svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>13 forks</div><div class="field"><svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>Watching 16 repositories</div><div class="field"><svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>4 sponsors</div></div></section><div id="metrics-end"></div><section data-section="metadata"><footer><span>These metrics include private contributions</span><span>Last updated 2026-05-28T11:46:47Z with mjun0812/github-metrics@test-version</span></footer></section></div></foreignObject></svg>

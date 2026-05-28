@@ -82,6 +82,25 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 > Phase 2 の License preference は `licenseInfo` を返した repo のみを母数として集計するため、ライセンス未設定 repo が混在する場合でも 100% に正規化されます (上位 3 件表示)。
 > Phase 3 の contribution mini grid は upstream `base.header.ejs` が描画する単列ストリップを GitHub プロフィール準拠の 11 列 × 7 行に拡張したものです。各セルは GraphQL が返した hex 色をそのまま `fill` に埋め込み、加えて `calendar-graph-day-<level>` クラスを付与するためテーマ CSS (`--color-calendar-graph-day-Ln-bg`) もそのまま適用されます。データは `runUser` が常時取得するため、`calendar` / `isocalendar` 等の indepth-tier plugin を有効化しなくても base 単体で表示されます。
 
+#### Layout / 縦長の根本対応 (`fix/base-layout-vertical-shrink`)
+
+`#429` の Phase 1〜3 を merge した後も `plugin-base.svg` の実 HTML 高さが upstream の 5〜6 倍 (約 1824 px vs 325 px) になっていた件への根本対応です。原因と修正:
+
+- **原因**: `<svg class="octicon"></svg>` placeholder が `width` / `height` / `viewBox` のいずれも持たないため、Chrome がデフォルトの SVG ビューポート (300 × 150 px) を採用していました。CSS で `.field { display: flex; align-items: center }` を当てているため、各 `<div class="field">` 行が **150 px** 高さに膨張し、これが upstream の `width="16" height="16"` 付き octicon (17 px 行高) と比較して 9 倍弱の縦長を生んでいました。Phase 1 前 (#427 時点) で既に upstream の 2.3 倍 (743 px) だったのもこの一点で説明できます。
+- **なぜ CSS では効かないか**: SVG の intrinsic size は CSS プロパティではなく **要素属性**（`width` / `height` / `viewBox`）で決まります。SVG の仕様上、CSS の `width`/`height` は SVG 要素が外部コンテナ内に配置された後の "box size" には影響しますが、`foreignObject` 内の HTML レンダリングにおいて Chrome が参照する "intrinsic size" は属性で確定します。そのため CSS の `.octicon { width: 16px; height: 16px }` を追加しても Chrome の SVG デフォルトビューポート (300×150 px) の採用は止まりませんでした。
+- **真の修正**: `partials.go` 内の全 octicon placeholder 出力箇所 (17 箇所) を `octiconPlaceholder` 定数 (`<svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>`) 経由に変更し、属性で intrinsic size を直接 16×16 に固定。これにより `.field` 行高が ~150 px → ~17 px に縮小します。
+- **CSS rule は保険として残留**: `assets/templates/classic/style.css` に追加した `.octicon { width: 16px; height: 16px }` は実質 no-op ですが、将来的に属性なし SVG が混入した際のフォールバックとして保持します。
+- **before / after** (plugin-base.svg trim height):
+
+  | sample             | before  | after  |
+  | ------------------ | ------- | ------ |
+  | plugin-base.svg    | 1824 px | 243 px |
+  | metrics-classic.svg | n/a    | 2190 px|
+  | plugin-people.svg  | n/a     | 646 px |
+  | plugin-activity.svg | n/a    | 1176 px|
+- **副作用**: License preference 行が `License preference: MIT License 50% / Apache License 2.0 22% / BSD 3-Clause "New" or "Revised" License 6%` だと 480 px キャンバス上で 758 px 幅まで overflow していたため、SPDX 短縮形式 + middle dot に圧縮 (`MIT 50% · Apache-2.0 22% · BSD-3-Clause 6%`)。`licenseShortName()` で SPDX マッピング。
+- **波及**: 全 35 sample (svg + png 約 70 ファイル) が `make docs-samples` で再生成されます。upstream parity が破壊されていないことは `tests/golden/*` と `tests/visual/*` の差分なし通過で担保。
+
 ---
 
 ## plugin 比較
