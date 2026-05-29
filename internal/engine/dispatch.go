@@ -179,8 +179,10 @@ func buildPipelineStages(ctx context.Context, inputs map[string]any, fetcher ren
 	return stages
 }
 
-// optimizeEnabled reports whether the named optimization pass ("css",
-// "xml", "svg") should run. It accepts two input shapes and OR's them:
+// optimizeEnabled reports whether the named optimization pass should
+// run. The wired passes are "css" and "xml"; "svg" (SVGO) is accepted
+// by the input grammar but not yet implemented, so buildPipelineStages
+// never queries it. It accepts two input shapes and OR's them:
 //
 //   - the upstream `optimize` input — a comma-separated list normalized
 //     to []string (metadata default "css, xml"); this is the only form

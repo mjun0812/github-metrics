@@ -103,9 +103,12 @@ func TestComputeSVG_OptimizeXMLEnabled(t *testing.T) {
 // action / CLI loader emits, metadata default "css, xml") was ignored
 // because the render dispatch only consulted the `svg.optimize.css`
 // boolean. The fix makes [buildPipelineStages] honor the `optimize`
-// list, so passing `optimize: ["css"]` MUST minify the embedded style
-// block — dropping the `/* SVG global context */` comment that the
-// classic style.css ships with and that survives an unoptimized render.
+// list, so the css pass MUST run for every shape the input can take —
+// a normalized []string, a raw string, and the comma-separated /
+// whitespace-padded multi-pass string that arrives straight from
+// INPUT_OPTIMIZE. Each must drop the `/* SVG global context */` comment
+// that the classic style.css ships with and that survives an
+// unoptimized render; the css-only forms must also shrink the output.
 func TestComputeSVG_OptimizeInputHonored(t *testing.T) {
 	t.Parallel()
 	engine.SetVersionForTest(t, "test-version")
@@ -119,31 +122,49 @@ func TestComputeSVG_OptimizeInputHonored(t *testing.T) {
 			Inputs:   inputs,
 		}
 	}
-
-	// Baseline: no optimize → the style comment is present verbatim.
-	depsPlain, _ := newEngineDeps(t, map[string]string{
-		"User":             userOctocat,
-		"UserRepositories": userRepositories250,
-	})
-	plain, err := engine.Compute(context.Background(), mkReq(nil), depsPlain)
-	if err != nil {
-		t.Fatalf("Compute(svg, no optimize): %v", err)
+	compute := func(t *testing.T, inputs map[string]any) []byte {
+		t.Helper()
+		deps, _ := newEngineDeps(t, map[string]string{
+			"User":             userOctocat,
+			"UserRepositories": userRepositories250,
+		})
+		res, err := engine.Compute(context.Background(), mkReq(inputs), deps)
+		if err != nil {
+			t.Fatalf("Compute(svg, inputs=%v): %v", inputs, err)
+		}
+		return res.Output
 	}
-	if !strings.Contains(string(plain.Output), cssComment) {
+
+	// Baseline: no optimize → the style comment is present verbatim and
+	// the CSS ships expanded.
+	plain := compute(t, nil)
+	if !strings.Contains(string(plain), cssComment) {
 		t.Fatalf("unoptimized render should retain %q; comment marker missing", cssComment)
 	}
 
-	// With the upstream `optimize` list form → CSS is minified and the
-	// comment is purged.
-	depsOpt, _ := newEngineDeps(t, map[string]string{
-		"User":             userOctocat,
-		"UserRepositories": userRepositories250,
-	})
-	opt, err := engine.Compute(context.Background(), mkReq(map[string]any{"optimize": []string{"css"}}), depsOpt)
-	if err != nil {
-		t.Fatalf("Compute(svg, optimize=[css]): %v", err)
+	cases := []struct {
+		name     string
+		optimize any
+		// shrinks is asserted only for css-only passes; a pass list that
+		// also re-indents via the xml formatter can offset the css size
+		// win, so output length is not compared there.
+		shrinks bool
+	}{
+		{"normalized list", []string{"css"}, true},
+		{"raw string", "css", true},
+		{"comma-separated multi-pass", "css,xml", false},
+		{"whitespace-padded multi-pass", "css, xml", false},
 	}
-	if strings.Contains(string(opt.Output), cssComment) {
-		t.Errorf("optimize=[css] did not minify CSS: comment %q still present", cssComment)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			out := compute(t, map[string]any{"optimize": tc.optimize})
+			if strings.Contains(string(out), cssComment) {
+				t.Errorf("optimize=%#v did not minify CSS: comment %q still present", tc.optimize, cssComment)
+			}
+			if tc.shrinks && len(out) >= len(plain) {
+				t.Errorf("optimize=%#v should shrink output: got %d bytes, baseline %d", tc.optimize, len(out), len(plain))
+			}
+		})
 	}
 }
