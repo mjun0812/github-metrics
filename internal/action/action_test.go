@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -339,6 +340,41 @@ func TestNewInvocation_Defaults(t *testing.T) {
 		t.Errorf("RetryPolicy.Delay = %v, want %v", inv.RetryPolicy.Delay, DefaultRetryDelay)
 	}
 	_ = time.Millisecond // keep time import alive across edits
+}
+
+// TestNewInvocation_OptimizeDefault guards the wiring that materializes
+// the `optimize` metadata default ("css, xml") in the action / CLI
+// path. ParseInputs does not apply metadata defaults, so newInvocation
+// must inject it — otherwise CSS/XML optimization silently never runs
+// (the root cause behind issue #434's non-minified sample output). An
+// explicitly-provided value (including empty, the opt-out form) must be
+// preserved verbatim.
+func TestNewInvocation_OptimizeDefault(t *testing.T) {
+	t.Parallel()
+	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
+
+	cases := []struct {
+		name  string
+		given map[string]any
+		want  any
+	}{
+		{"absent injects default", map[string]any{"user": "octocat"}, []string{"css", "xml"}},
+		{"explicit value preserved", map[string]any{"user": "octocat", "optimize": "css"}, "css"},
+		{"explicit empty opt-out preserved", map[string]any{"user": "octocat", "optimize": ""}, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			inv, err := newInvocation(ModeAction, tc.given, env, "/tmp/out")
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := inv.Inputs["optimize"]
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("optimize = %#v, want %#v", got, tc.want)
+			}
+		})
+	}
 }
 
 // TestNewInvocation_MissingLogin_Errors — required-input check.
