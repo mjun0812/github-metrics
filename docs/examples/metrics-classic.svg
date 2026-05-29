@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="268" class="">
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="187" class="">
       <defs>
         <style/>
       </defs>
       <style data-optimizable="true">
-        svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}@media(max-width:850px);};1h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1{font-size:20px;font-weight:700}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.octicon{width:16px;height:16px}.row{display:flex;flex-wrap:wrap}.avatar{border-radius:50%;margin:0 6px}.calendar.field{margin:4px 0;margin-left:7px}footer{margin-top:8px;font-size:10px;font-style:italic;color:#666;text-align:right;display:flex;flex-direction:column;justify-content:flex-end;padding:0 4px}@keyframes animation-gauge;};0 329@keyframes animation-rainbow0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}#FF0000:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
+        svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}@media(max-width:850px);};1h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1{font-size:20px;font-weight:700}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.octicon{width:16px;height:16px}.row{display:flex;flex-wrap:wrap}.avatar{border-radius:50%;margin:0 6px}.calendar.field{margin:4px 0;margin-left:7px}.calendar .day{outline:1px solid rgba(27,31,35,4%);outline-offset:-1px}footer{margin-top:8px;font-size:10px;font-style:italic;color:#666;text-align:right;display:flex;flex-direction:column;justify-content:flex-end;padding:0 4px}@keyframes animation-gauge;};0 329@keyframes animation-rainbow0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}#FF0000:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
       </style>
       <style/>
       <foreignObject x="0" y="0" width="100%" height="100%">
@@ -34,85 +34,22 @@
               </div>
             </div>
             <div class="field calendar" data-block="calendar-grid">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 141 89" width="141" height="89">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 11" width="210" height="16">
                 <g>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="0" y="0" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-2" fill="#40c463" x="0" y="13" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="0" y="26" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="0" y="39" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="0" y="52" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="0" y="65" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="0" y="78" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="13" y="0" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="13" y="13" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="13" y="26" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="13" y="39" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="13" y="52" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="13" y="65" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="13" y="78" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="26" y="0" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="26" y="13" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="26" y="26" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="26" y="39" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="26" y="52" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="26" y="65" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="26" y="78" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="39" y="0" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="39" y="13" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="39" y="26" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="39" y="39" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="39" y="52" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="39" y="65" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="39" y="78" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="52" y="0" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="52" y="13" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="52" y="26" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="52" y="39" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="52" y="52" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="52" y="65" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="52" y="78" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="65" y="0" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="65" y="13" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="65" y="26" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="65" y="39" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="65" y="52" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="65" y="65" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="65" y="78" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="78" y="0" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="78" y="13" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="78" y="26" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="78" y="39" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="78" y="52" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="78" y="65" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="78" y="78" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="91" y="0" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="91" y="13" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="91" y="26" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="91" y="39" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="91" y="52" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="91" y="65" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="91" y="78" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-2" fill="#40c463" x="104" y="0" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="104" y="13" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="104" y="26" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="104" y="39" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="104" y="52" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-4" fill="#216e39" x="104" y="65" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-3" fill="#30a14e" x="104" y="78" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-3" fill="#30a14e" x="117" y="0" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-4" fill="#216e39" x="117" y="13" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="117" y="26" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="117" y="39" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="117" y="52" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="117" y="65" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="117" y="78" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-2" fill="#40c463" x="130" y="0" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-2" fill="#40c463" x="130" y="13" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="130" y="26" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="130" y="39" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="130" y="52" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-1" fill="#9be9a8" x="130" y="65" width="11" height="11" rx="2" ry="2"/>
-                  <rect class="calendar-graph-day-0" fill="#ebedf0" x="130" y="78" width="11" height="11" rx="2" ry="2"/>
+                  <rect class="day" fill="#30a14e" x="0" y="0" width="11" height="11" rx="2" ry="2"/>
+                  <rect class="day" fill="#30a14e" x="15" y="0" width="11" height="11" rx="2" ry="2"/>
+                  <rect class="day" fill="#216e39" x="30" y="0" width="11" height="11" rx="2" ry="2"/>
+                  <rect class="day" fill="#9be9a8" x="45" y="0" width="11" height="11" rx="2" ry="2"/>
+                  <rect class="day" fill="#9be9a8" x="60" y="0" width="11" height="11" rx="2" ry="2"/>
+                  <rect class="day" fill="#9be9a8" x="75" y="0" width="11" height="11" rx="2" ry="2"/>
+                  <rect class="day" fill="#9be9a8" x="90" y="0" width="11" height="11" rx="2" ry="2"/>
+                  <rect class="day" fill="#9be9a8" x="105" y="0" width="11" height="11" rx="2" ry="2"/>
+                  <rect class="day" fill="#40c463" x="120" y="0" width="11" height="11" rx="2" ry="2"/>
+                  <rect class="day" fill="#40c463" x="135" y="0" width="11" height="11" rx="2" ry="2"/>
+                  <rect class="day" fill="#9be9a8" x="150" y="0" width="11" height="11" rx="2" ry="2"/>
+                  <rect class="day" fill="#9be9a8" x="165" y="0" width="11" height="11" rx="2" ry="2"/>
+                  <rect class="day" fill="#9be9a8" x="180" y="0" width="11" height="11" rx="2" ry="2"/>
+                  <rect class="day" fill="#9be9a8" x="195" y="0" width="11" height="11" rx="2" ry="2"/>
                 </g>
               </svg>
             </div>

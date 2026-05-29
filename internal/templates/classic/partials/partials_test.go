@@ -481,29 +481,26 @@ func TestBaseRepositories_PhaseTwoZerosHidden(t *testing.T) {
 	}
 }
 
-// TestBaseHeader_CalendarGrid anchors #429 Phase 3: when the User
-// payload carries RecentContributions the partial renders a
-// `<div class="field calendar">` block that contains exactly 11 weeks
-// x 7 days = 77 <rect> cells.
-func TestBaseHeader_CalendarGrid(t *testing.T) {
+// TestBaseHeader_CalendarRow anchors #436: when the User payload
+// carries RecentContributions the partial renders a
+// `<div class="field calendar">` block containing a single horizontal
+// row of `class="day"` cells — one per contribution day, all at y="0" —
+// matching upstream `base.header.ejs`.
+func TestBaseHeader_CalendarRow(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
-	weeks := make([]plugins.ContributionWeek, 11)
-	for w := range weeks {
-		days := make([]plugins.ContributionDay, 7)
-		for i := 0; i < 7; i++ {
-			days[i] = plugins.ContributionDay{
-				Date:              "2026-05-01",
-				ContributionCount: w + i,
-				Color:             "#9be9a8",
-			}
+	days := make([]plugins.ContributionDay, 14)
+	for i := range days {
+		days[i] = plugins.ContributionDay{
+			Date:              "2026-05-01",
+			ContributionCount: i,
+			Color:             "#9be9a8",
 		}
-		weeks[w] = plugins.ContributionWeek{Days: days}
 	}
 	d.User = &plugins.User{
 		Login:               "octocat",
 		Name:                "Octo",
-		RecentContributions: weeks,
+		RecentContributions: days,
 	}
 	got, err := partials.BaseHeader(context.Background(), newPC(d))
 	if err != nil {
@@ -515,20 +512,32 @@ func TestBaseHeader_CalendarGrid(t *testing.T) {
 	if !strings.Contains(got, `data-block="calendar-grid"`) {
 		t.Errorf("data-block marker missing: %s", got)
 	}
-	if c := strings.Count(got, "calendar-graph-day-"); c != 77 {
-		t.Errorf("expected 77 cells, got %d in %s", c, got)
+	// Single row: 14 `day` cells, no legacy intensity-bucket classes.
+	if c := strings.Count(got, `<rect class="day"`); c != 14 {
+		t.Errorf("expected 14 <rect class=\"day\"> cells, got %d in %s", c, got)
 	}
-	if c := strings.Count(got, `<rect class="calendar-graph-day-`); c != 77 {
-		t.Errorf("expected 77 <rect> entries, got %d", c)
+	if strings.Contains(got, "calendar-graph-day-") {
+		t.Errorf("legacy calendar-graph-day-N class must be gone: %s", got)
 	}
-	// At least one cell should carry the GitHub-supplied hex.
+	// Every cell sits on the single row.
+	if c := strings.Count(got, `y="0"`); c != 14 {
+		t.Errorf("expected all 14 cells at y=\"0\" (single row), got %d", c)
+	}
+	// The GitHub-supplied hex flows straight into the fill attribute.
 	if !strings.Contains(got, `fill="#9be9a8"`) {
 		t.Errorf("expected GraphQL-supplied color in output: %s", got)
 	}
+	// viewBox / dimensions mirror upstream: width = 14*15 = 210, height 16.
+	if !strings.Contains(got, `viewBox="0 0 210 11"`) {
+		t.Errorf("expected viewBox \"0 0 210 11\": %s", got)
+	}
+	if !strings.Contains(got, `width="210" height="16"`) {
+		t.Errorf("expected width=210 height=16: %s", got)
+	}
 }
 
-// TestBaseHeader_CalendarGrid_Empty: missing data hides the block.
-func TestBaseHeader_CalendarGrid_Empty(t *testing.T) {
+// TestBaseHeader_CalendarRow_Empty: missing data hides the block.
+func TestBaseHeader_CalendarRow_Empty(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	d.User = &plugins.User{
@@ -540,86 +549,39 @@ func TestBaseHeader_CalendarGrid_Empty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BaseHeader: %v", err)
 	}
-	if strings.Contains(got, "calendar-graph-day-") {
-		t.Errorf("calendar block must be hidden when data is empty: %s", got)
-	}
 	if strings.Contains(got, `class="field calendar"`) {
-		t.Errorf("calendar wrapper must be hidden when data is empty")
+		t.Errorf("calendar wrapper must be hidden when data is empty: %s", got)
+	}
+	if strings.Contains(got, `<rect class="day"`) {
+		t.Errorf("calendar cells must be hidden when data is empty: %s", got)
 	}
 }
 
-// TestBaseHeader_CalendarGrid_LessThan11Weeks: fresh account with
-// fewer than 11 weeks renders only the weeks that exist, not 11 padded
-// columns.
-func TestBaseHeader_CalendarGrid_LessThan11Weeks(t *testing.T) {
+// TestBaseHeader_CalendarRow_FewerThan14Days: a fresh account with
+// fewer than 14 days renders only the days that exist (no phantom
+// padding) and sizes the SVG to the day count.
+func TestBaseHeader_CalendarRow_FewerThan14Days(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
-	weeks := make([]plugins.ContributionWeek, 3)
-	for w := range weeks {
-		days := make([]plugins.ContributionDay, 7)
-		for i := 0; i < 7; i++ {
-			days[i] = plugins.ContributionDay{
-				Date:  "2026-05-01",
-				Color: "#ebedf0",
-			}
-		}
-		weeks[w] = plugins.ContributionWeek{Days: days}
+	days := make([]plugins.ContributionDay, 5)
+	for i := range days {
+		days[i] = plugins.ContributionDay{Date: "2026-05-01", Color: "#ebedf0"}
 	}
 	d.User = &plugins.User{
 		Login:               "octocat",
 		Name:                "Octo",
-		RecentContributions: weeks,
+		RecentContributions: days,
 	}
 	got, err := partials.BaseHeader(context.Background(), newPC(d))
 	if err != nil {
 		t.Fatalf("BaseHeader: %v", err)
 	}
-	if c := strings.Count(got, "calendar-graph-day-"); c != 21 {
-		t.Errorf("expected 21 cells (3 weeks x 7 days), got %d", c)
+	if c := strings.Count(got, `<rect class="day"`); c != 5 {
+		t.Errorf("expected 5 cells (no padding), got %d in %s", c, got)
 	}
-}
-
-// TestBaseHeader_CalendarGrid_PartialWeek: when the last week has < 7
-// days (today is mid-week), the missing rows must still render as
-// empty padding cells so the grid stays a clean rectangle.
-func TestBaseHeader_CalendarGrid_PartialWeek(t *testing.T) {
-	t.Parallel()
-	d := plugins.NewData()
-	// Two full weeks + a 3-day trailing week.
-	week := plugins.ContributionWeek{
-		Days: []plugins.ContributionDay{
-			{Color: "#9be9a8", ContributionCount: 1},
-			{Color: "#9be9a8", ContributionCount: 1},
-			{Color: "#9be9a8", ContributionCount: 1},
-			{Color: "#9be9a8", ContributionCount: 1},
-			{Color: "#9be9a8", ContributionCount: 1},
-			{Color: "#9be9a8", ContributionCount: 1},
-			{Color: "#9be9a8", ContributionCount: 1},
-		},
-	}
-	partial := plugins.ContributionWeek{
-		Days: []plugins.ContributionDay{
-			{Color: "#40c463", ContributionCount: 5},
-			{Color: "#40c463", ContributionCount: 5},
-			{Color: "#40c463", ContributionCount: 5},
-		},
-	}
-	d.User = &plugins.User{
-		Login:               "octocat",
-		Name:                "Octo",
-		RecentContributions: []plugins.ContributionWeek{week, week, partial},
-	}
-	got, err := partials.BaseHeader(context.Background(), newPC(d))
-	if err != nil {
-		t.Fatalf("BaseHeader: %v", err)
-	}
-	if c := strings.Count(got, "calendar-graph-day-"); c != 21 {
-		t.Errorf("expected 21 cells (3 weeks x 7 days), got %d", c)
-	}
-	// The 4 padding cells in the trailing column must use the empty
-	// color #ebedf0.
-	if c := strings.Count(got, `fill="#ebedf0"`); c != 4 {
-		t.Errorf("expected 4 empty-padding cells, got %d in %s", c, got)
+	// width = 5*15 = 75.
+	if !strings.Contains(got, `viewBox="0 0 75 11"`) {
+		t.Errorf("expected viewBox \"0 0 75 11\": %s", got)
 	}
 }
 
