@@ -6,7 +6,8 @@
 # variants (achievements compact + languages recent/indepth/details +
 # isocalendar full-year + stargazers graph + notable indepth + habits
 # facts + habits charts) + 1 foundational `plugin-base` render + 1
-# classic template overview (multi-plugin composite) = 30 user-mode
+# classic template overview (upstream-parity base-only render) = 30
+# user-mode
 # logical samples. On top of that the repository-mode section renders
 # the foundational `plugin-base-repo` chrome, the one repo-context
 # plugin that produces a unique panel on its own (`plugin-people-repo`),
@@ -309,45 +310,30 @@ render_one "plugin-habits-charts" \
   --plugin "plugin_habits_charts=yes"
 
 echo
-echo "== classic template overview (multi-plugin composite) =="
-# `metrics-classic` is the cross-plugin overview sample: the upstream
-# `metrics.classic.svg` reference (docs/original_examples/) shows what
-# a user gets when they enable a typical README plugin set on top of
-# the classic template, but the per-plugin samples in this directory
-# only convey each plugin in isolation. This render combines the
-# plugins that produce non-empty output for `mjun0812` so docs viewers
-# can preview the assembled card.
+echo "== classic template overview (upstream-parity base render) =="
+# `metrics-classic` mirrors the upstream `metrics.classic.svg` reference
+# (docs/original_examples/): a classic-template card carrying ONLY the
+# base chrome (header / activity / community / repositories / metadata),
+# with no `plugin_<name>=yes` toggles. Inspecting the upstream reference
+# shows it contains exactly those base sections — no language bars, no
+# activity timeline, no isocalendar grid — so reproducing it means a
+# base-only render rather than the multi-plugin composite this sample
+# used to be (which diverged ~20x in height and never matched upstream;
+# see issue #434).
 #
-# Plugin selection rationale:
-#   - Included: isocalendar, calendar, languages, activity, achievements,
-#     notable, repositories, habits, stars, reactions, stargazers,
-#     traffic. These all have real data on mjun0812 and mirror
-#     upstream's typical classic showcase.
-#   - Excluded (empty data on the sample user): contributors, projects,
-#     sponsors, sponsorships, starlists, topics — see docs/comparison.md
-#     for the per-plugin empty-card note.
-#   - Excluded (oversized): people. The `plugin-people.svg` sample is
-#     5.8 MB on its own and would dominate the composite.
-#   - Excluded (repo-template territory or deprecated/backlog): all the
-#     variants already filtered out of the per-plugin sub-mode section
-#     above.
+# CSS is minified automatically: the metadata `optimize` default
+# ("css, xml") now flows through the render pipeline (see
+# internal/engine/dispatch.go::optimizeEnabled), matching upstream's
+# single-line minified style block.
+#
+# NOTE: with no plugin toggles, this render is byte-identical to the
+# `plugin-base` sample below (same user, same base sections, same
+# optimize). They are kept as separate files because they document
+# different pages — `metrics-classic` is the classic-template overview,
+# `plugin-base` is the base-plugin reference for docs/plugins/base.md.
 render_one "metrics-classic" \
   --template classic \
-  --plugin "base=header, activity, community, repositories, metadata" \
-  --plugin "plugin_isocalendar=yes" \
-  --plugin "plugin_calendar=yes" \
-  --plugin "plugin_languages=yes" \
-  --plugin "plugin_languages_details=bytes-size,percentage" \
-  --plugin "plugin_activity=yes" \
-  --plugin "plugin_achievements=yes" \
-  --plugin "plugin_achievements_display=compact" \
-  --plugin "plugin_notable=yes" \
-  --plugin "plugin_repositories=yes" \
-  --plugin "plugin_habits=yes" \
-  --plugin "plugin_stars=yes" \
-  --plugin "plugin_reactions=yes" \
-  --plugin "plugin_stargazers=yes" \
-  --plugin "plugin_traffic=yes"
+  --plugin "base=header, activity, community, repositories, metadata"
 
 echo
 echo "== foundational base render =="
@@ -466,7 +452,8 @@ echo "== Summary =="
 # entries (default, recent, indepth) +7 parity variants
 # (achievements.compact, notable.indepth, habits.facts, habits.charts,
 #  languages.details, isocalendar.fullyear, stargazers.graph)
-# +1 foundational base render +1 classic template overview composite.
+# +1 foundational base render +1 classic template overview
+# (upstream-parity base-only render).
 # Repository mode adds:
 #   - 1 foundational `plugin-base-repo` render
 #   - 1 stand-alone repo-mode plugin sample (`plugin-people-repo`)
