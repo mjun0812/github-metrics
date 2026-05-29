@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
@@ -148,10 +149,16 @@ func obtainRenderer(deps Deps) (render.Renderer, func(), error) {
 //     HTTP client is wired). Rewrites remote `<img src="http(s)://...">`
 //     avatars / icons into self-contained `data:` URIs so the SVG
 //     renders on GitHub's camo proxy and offline.
-//  3. css           — only when inputs["svg.optimize.css"] == true. Purges
-//     unused selectors and minifies the surviving rules.
-//  4. xml           — only when inputs["svg.optimize.xml"] == true.
+//  3. css           — when the "css" optimization pass is requested.
+//     Purges unused selectors and minifies the surviving rules.
+//  4. xml           — when the "xml" optimization pass is requested.
 //     Re-indents the document with two-space indentation.
+//
+// A pass is "requested" when the upstream `optimize` input lists it
+// (default "css, xml") or the explicit `svg.optimize.<pass>` boolean is
+// truthy — see [optimizeEnabled]. Honoring the `optimize` input here is
+// what wires the upstream default through: the action / CLI loader only
+// ever produces the `optimize` key, never the `svg.optimize.*` form.
 //
 // Each stage is best-effort: errors land in res.Errors (via Apply)
 // and the input is forwarded unchanged to the next stage so a
@@ -163,13 +170,44 @@ func buildPipelineStages(ctx context.Context, inputs map[string]any, fetcher ren
 	if fetcher != nil {
 		stages = append(stages, render.InlineImagesStage(ctx, fetcher))
 	}
-	if asBool(inputs, "svg.optimize.css") {
+	if optimizeEnabled(inputs, "css") {
 		stages = append(stages, render.PipelineStage{Name: "css", Run: render.OptimizeCSS})
 	}
-	if asBool(inputs, "svg.optimize.xml") {
+	if optimizeEnabled(inputs, "xml") {
 		stages = append(stages, render.PipelineStage{Name: "xml", Run: render.FormatXML})
 	}
 	return stages
+}
+
+// optimizeEnabled reports whether the named optimization pass should
+// run. The wired passes are "css" and "xml"; "svg" (SVGO) is accepted
+// by the input grammar but not yet implemented, so buildPipelineStages
+// never queries it. It accepts two input shapes and OR's them:
+//
+//   - the upstream `optimize` input — a comma-separated list normalized
+//     to []string (metadata default "css, xml"); this is the only form
+//     the action / CLI input loader emits, so it carries the real
+//     upstream default into the render pipeline.
+//   - the explicit `svg.optimize.<pass>` boolean — set directly by
+//     integration tests and advanced callers that bypass the loader.
+//
+// Either form turning the pass on is sufficient.
+func optimizeEnabled(inputs map[string]any, pass string) bool {
+	if asBool(inputs, "svg.optimize."+pass) {
+		return true
+	}
+	// The `optimize` input may arrive as a normalized []string
+	// ({"css","xml"}) or as a raw comma-separated string ("css,xml")
+	// when it comes straight from an INPUT_OPTIMIZE env var, so split
+	// each element defensively before matching.
+	for _, p := range stringSliceInput(inputs, "optimize") {
+		for part := range strings.SplitSeq(p, ",") {
+			if strings.EqualFold(strings.TrimSpace(part), pass) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // imageFetcher adapts deps.HTTPClient to the render.ImageFetcher
