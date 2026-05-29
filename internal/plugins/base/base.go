@@ -165,7 +165,7 @@ func (p *basePlugin) runUser(ctx context.Context, pc *plugins.PluginContext, log
 		Watching:                 watchingTotal(u),
 		SponsorshipsAsMaintainer: sponsorshipsAsMaintainerTotal(u),
 		ContributedTo:            repositoriesContributedToTotal(u),
-		RecentContributions:      recentContributionWeeks(u, baseHeaderCalendarWeeks),
+		RecentContributions:      recentContributionDays(u, baseHeaderCalendarDays),
 	}
 
 	// M4: walk the entire repository connection with batch-halving on
@@ -267,24 +267,25 @@ func repositoriesContributedToTotal(u *githubapi.UserUser) int {
 	return u.RepositoriesContributedTo.TotalCount
 }
 
-// baseHeaderCalendarWeeks is the number of trailing weeks the
-// BaseHeader mini contribution grid renders. 11 mirrors the column
-// count documented in issue #429 Phase 3 and matches the upstream
-// "last N weeks" framing used by `base.header.ejs`.
-const baseHeaderCalendarWeeks = 11
+// baseHeaderCalendarDays is the number of trailing contribution days
+// the BaseHeader mini calendar renders as a single horizontal row. 14
+// mirrors upstream `core/index.mjs`'s `slice(-14)` over the flattened
+// day list (see `base.header.ejs`).
+const baseHeaderCalendarDays = 14
 
-// recentContributionWeeks slices the trailing `n` weeks out of
-// `user.contributionsCollection.contributionCalendar.weeks` and
-// projects each day into the plugin-side ContributionDay / Week type.
+// recentContributionDays flattens
+// `user.contributionsCollection.contributionCalendar.weeks` into a
+// chronological day list and returns the trailing `n` days, mirroring
+// upstream `core/index.mjs`'s `slice(-14)`.
 //
-// The GraphQL connection orders weeks oldest -> newest, so the tail
-// slice gives the most recent N. When the calendar returns fewer than
-// `n` weeks (fresh account whose contribution history is shorter than
-// the requested window) all available weeks are returned untruncated;
-// the BaseHeader partial then renders only the cells that exist
-// instead of padding with phantom days. Returns nil when the GraphQL
-// payload is missing entirely so the partial hides the block.
-func recentContributionWeeks(u *githubapi.UserUser, n int) []plugins.ContributionWeek {
+// The GraphQL connection orders weeks (and days within a week) oldest
+// -> newest, so the tail slice gives the most recent N days. When the
+// calendar holds fewer than `n` days (fresh account whose history is
+// shorter than the requested window) all available days are returned
+// untruncated; the BaseHeader partial then renders only the cells that
+// exist instead of padding with phantom days. Returns nil when the
+// GraphQL payload is missing entirely so the partial hides the block.
+func recentContributionDays(u *githubapi.UserUser, n int) []plugins.ContributionDay {
 	if u == nil || u.ContributionsCollection == nil || u.ContributionsCollection.ContributionCalendar == nil {
 		return nil
 	}
@@ -292,16 +293,11 @@ func recentContributionWeeks(u *githubapi.UserUser, n int) []plugins.Contributio
 	if len(weeks) == 0 {
 		return nil
 	}
-	start := 0
-	if n > 0 && len(weeks) > n {
-		start = len(weeks) - n
-	}
-	out := make([]plugins.ContributionWeek, 0, len(weeks)-start)
-	for _, w := range weeks[start:] {
+	days := make([]plugins.ContributionDay, 0, len(weeks)*7)
+	for _, w := range weeks {
 		if w == nil {
 			continue
 		}
-		days := make([]plugins.ContributionDay, 0, len(w.ContributionDays))
 		for _, d := range w.ContributionDays {
 			if d == nil {
 				continue
@@ -313,13 +309,12 @@ func recentContributionWeeks(u *githubapi.UserUser, n int) []plugins.Contributio
 				Color:             d.Color,
 			})
 		}
-		out = append(out, plugins.ContributionWeek{
-			FirstDay: w.FirstDay,
-			Days:     days,
-		})
 	}
-	if len(out) == 0 {
+	if len(days) == 0 {
 		return nil
 	}
-	return out
+	if n > 0 && len(days) > n {
+		days = days[len(days)-n:]
+	}
+	return days
 }
