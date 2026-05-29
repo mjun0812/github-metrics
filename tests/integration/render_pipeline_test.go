@@ -97,3 +97,53 @@ func TestComputeSVG_OptimizeXMLEnabled(t *testing.T) {
 		t.Fatalf("output should still contain an <svg> element")
 	}
 }
+
+// TestComputeSVG_OptimizeInputHonored is the regression guard for the
+// wiring bug where the upstream `optimize` input (the only form the
+// action / CLI loader emits, metadata default "css, xml") was ignored
+// because the render dispatch only consulted the `svg.optimize.css`
+// boolean. The fix makes [buildPipelineStages] honor the `optimize`
+// list, so passing `optimize: ["css"]` MUST minify the embedded style
+// block — dropping the `/* SVG global context */` comment that the
+// classic style.css ships with and that survives an unoptimized render.
+func TestComputeSVG_OptimizeInputHonored(t *testing.T) {
+	t.Parallel()
+	engine.SetVersionForTest(t, "test-version")
+
+	const cssComment = "/* SVG global context */"
+	mkReq := func(inputs map[string]any) engine.Request {
+		return engine.Request{
+			Login:    "octocat",
+			Template: "classic",
+			Format:   "svg",
+			Inputs:   inputs,
+		}
+	}
+
+	// Baseline: no optimize → the style comment is present verbatim.
+	depsPlain, _ := newEngineDeps(t, map[string]string{
+		"User":             userOctocat,
+		"UserRepositories": userRepositories250,
+	})
+	plain, err := engine.Compute(context.Background(), mkReq(nil), depsPlain)
+	if err != nil {
+		t.Fatalf("Compute(svg, no optimize): %v", err)
+	}
+	if !strings.Contains(string(plain.Output), cssComment) {
+		t.Fatalf("unoptimized render should retain %q; comment marker missing", cssComment)
+	}
+
+	// With the upstream `optimize` list form → CSS is minified and the
+	// comment is purged.
+	depsOpt, _ := newEngineDeps(t, map[string]string{
+		"User":             userOctocat,
+		"UserRepositories": userRepositories250,
+	})
+	opt, err := engine.Compute(context.Background(), mkReq(map[string]any{"optimize": []string{"css"}}), depsOpt)
+	if err != nil {
+		t.Fatalf("Compute(svg, optimize=[css]): %v", err)
+	}
+	if strings.Contains(string(opt.Output), cssComment) {
+		t.Errorf("optimize=[css] did not minify CSS: comment %q still present", cssComment)
+	}
+}

@@ -476,6 +476,17 @@ func envSliceToMap(env []string) map[string]string {
 }
 
 func newInvocation(mode RunMode, inputs map[string]any, env map[string]string, outputDir string) (*Invocation, error) {
+	// Materialize the `optimize` metadata default. The action / CLI
+	// input layer (ParseInputs) only carries explicitly-provided
+	// inputs — it does not apply metadata.yml defaults — so without
+	// this the upstream default ("css, xml") never reaches the render
+	// dispatch and CSS/XML optimization silently never runs (see
+	// internal/engine/dispatch.go::optimizeEnabled and
+	// assets/plugins/core/metadata.yml `optimize`). An explicitly empty
+	// `optimize=` is preserved so callers can still opt out of it.
+	if _, ok := inputs["optimize"]; !ok {
+		inputs["optimize"] = []string{"css", "xml"}
+	}
 	inv := &Invocation{
 		Mode:             mode,
 		Inputs:           inputs,
