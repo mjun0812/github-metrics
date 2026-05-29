@@ -198,12 +198,14 @@ func TestRun_User(t *testing.T) {
 	}
 }
 
-// TestRun_User_PopulatesRecentContributions anchors #429 Phase 3:
-// runUser must extract the trailing 11 weeks of
-// `contributionsCollection.contributionCalendar.weeks` onto
-// Data.User.RecentContributions and discard the older weeks. The fake
-// payload carries 13 weeks (last one is a 4-day partial) so the test
-// also covers the partial-week shape and the discarded-prefix behavior.
+// TestRun_User_PopulatesRecentContributions anchors #436: runUser must
+// flatten `contributionsCollection.contributionCalendar.weeks` into a
+// chronological day list and keep only the trailing 14 days on
+// Data.User.RecentContributions (mirroring upstream `slice(-14)`),
+// discarding the older days. The fake payload carries 13 weeks (88 days,
+// the last week a 4-day partial), so the trailing-14 window spans the
+// last 3 days of the 2026-05-03 week, the full 2026-05-10 week, and the
+// 4-day 2026-05-17 partial week.
 //
 // The trigger semantics matter: indepth is NOT enabled here, so the
 // calendar must land on Data.User regardless of which other plugins
@@ -231,29 +233,26 @@ func TestRun_User_PopulatesRecentContributions(t *testing.T) {
 	if pc.Data.User == nil {
 		t.Fatalf("Data.User nil")
 	}
-	weeks := pc.Data.User.RecentContributions
-	if len(weeks) != 11 {
-		t.Fatalf("RecentContributions len = %d, want 11 (trailing-11-of-13 slice)", len(weeks))
+	days := pc.Data.User.RecentContributions
+	if len(days) != 14 {
+		t.Fatalf("RecentContributions len = %d, want 14 (trailing-14-day slice)", len(days))
 	}
-	// First retained week must be week index 2 (2026-03-08) — index 0/1
-	// of the fixture are dropped by the tail slice.
-	if got := weeks[0].FirstDay; got != "2026-03-08" {
-		t.Errorf("first retained week FirstDay = %q, want 2026-03-08", got)
+	// First retained day is 14 days back from the end: the 2026-05-03
+	// week is the boundary, so its 2026-05-07 day leads the window.
+	if got := days[0].Date; got != "2026-05-07" {
+		t.Errorf("first retained day = %q, want 2026-05-07", got)
 	}
-	// Last retained week is the 4-day partial.
-	last := weeks[len(weeks)-1]
-	if last.FirstDay != "2026-05-17" {
-		t.Errorf("last week FirstDay = %q, want 2026-05-17", last.FirstDay)
+	// Last retained day is the final day of the 4-day partial week, with
+	// color/count fidelity preserved from the GraphQL payload.
+	last := days[len(days)-1]
+	if last.Date != "2026-05-20" {
+		t.Errorf("last day Date = %q, want 2026-05-20", last.Date)
 	}
-	if len(last.Days) != 4 {
-		t.Errorf("last week Days = %d, want 4 (partial week)", len(last.Days))
+	if last.Color != "#216e39" {
+		t.Errorf("last day Color = %q, want #216e39", last.Color)
 	}
-	// Confirm color/count fidelity on a representative day.
-	if got := last.Days[0].Color; got != "#216e39" {
-		t.Errorf("partial-week day[0].Color = %q, want #216e39", got)
-	}
-	if got := last.Days[0].ContributionCount; got != 99 {
-		t.Errorf("partial-week day[0].ContributionCount = %d, want 99", got)
+	if last.ContributionCount != 99 {
+		t.Errorf("last day ContributionCount = %d, want 99", last.ContributionCount)
 	}
 	// indepth must NOT fire — base now sources calendar on its own.
 	if mux.Calls("UserIndepth") != 0 {
