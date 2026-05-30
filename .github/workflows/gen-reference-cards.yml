@@ -1,0 +1,522 @@
+name: Generate upstream reference cards (temporary)
+
+# TEMPORARY workflow — run once, then delete.
+#
+# Renders reference metrics cards with the *upstream* lowlighter/metrics@v3.34
+# tool using mjun0812's own data and the flash-attention-prebuild-wheels repo,
+# limited to the plugins this project has reimplemented in Go. Every card is
+# rendered with output_action: none (saved to /metrics_renders on the runner);
+# the final step copies them into docs/reference_examples/ and commits them.
+#
+# Trigger is workflow_dispatch only, so it never fires before METRICS_TOKEN is
+# configured. Requires repo secret METRICS_TOKEN (a classic PAT) — github.token
+# cannot fetch data outside this repository, which would leave the cards empty.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cards:
+    name: Render + commit reference cards
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: chore/upstream-reference-cards
+
+      # ---------- USER cards (user: mjun0812) ----------
+
+      - name: base (header, activity, community, repositories, metadata)
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.base.svg
+          output_action: none
+          base: header, activity, community, repositories, metadata
+          config_timezone: Asia/Tokyo
+
+      - name: classic overview
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.classic.svg
+          output_action: none
+          base: header, repositories
+          config_timezone: Asia/Tokyo
+
+      - name: achievements
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.achievements.svg
+          output_action: none
+          base: ""
+          plugin_achievements: yes
+          plugin_achievements_threshold: C
+
+      - name: achievements (compact)
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.achievements.compact.svg
+          output_action: none
+          base: ""
+          plugin_achievements: yes
+          plugin_achievements_display: compact
+          plugin_achievements_threshold: X
+
+      - name: activity
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.activity.svg
+          output_action: none
+          base: ""
+          plugin_activity: yes
+          plugin_activity_limit: 5
+          plugin_activity_days: 0
+          plugin_activity_filter: issue, pr, release, fork, review, ref/create
+          config_timezone: Asia/Tokyo
+
+      - name: calendar
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.calendar.svg
+          output_action: none
+          base: ""
+          plugin_calendar: yes
+
+      - name: calendar (full history)
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.calendar.full.svg
+          output_action: none
+          base: ""
+          plugin_calendar: yes
+          plugin_calendar_limit: 0
+
+      - name: habits (facts)
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.habits.facts.svg
+          output_action: none
+          base: ""
+          plugin_habits: yes
+          plugin_habits_facts: yes
+          plugin_habits_charts: no
+          config_timezone: Asia/Tokyo
+
+      - name: habits (charts)
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.habits.charts.svg
+          output_action: none
+          base: ""
+          plugin_habits: yes
+          plugin_habits_facts: no
+          plugin_habits_charts: yes
+          config_timezone: Asia/Tokyo
+
+      - name: isocalendar
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.isocalendar.svg
+          output_action: none
+          base: ""
+          plugin_isocalendar: yes
+
+      - name: isocalendar (full year)
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.isocalendar.fullyear.svg
+          output_action: none
+          base: ""
+          plugin_isocalendar: yes
+          plugin_isocalendar_duration: full-year
+
+      - name: languages
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.languages.svg
+          output_action: none
+          base: ""
+          plugin_languages: yes
+          plugin_languages_limit: 8
+
+      - name: languages (details)
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.languages.details.svg
+          output_action: none
+          base: ""
+          plugin_languages: yes
+          plugin_languages_details: bytes-size, percentage
+          plugin_languages_limit: 8
+
+      - name: languages (indepth)
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.languages.indepth.svg
+          output_action: none
+          base: ""
+          plugin_languages: yes
+          plugin_languages_indepth: yes
+          plugin_languages_details: lines, bytes-size
+          plugin_languages_limit: 8
+          plugin_languages_analysis_timeout: 15
+
+      - name: notable
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.notable.svg
+          output_action: none
+          base: ""
+          plugin_notable: yes
+
+      - name: notable (indepth)
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.notable.indepth.svg
+          output_action: none
+          base: ""
+          plugin_notable: yes
+          plugin_notable_indepth: yes
+          plugin_notable_repositories: yes
+
+      - name: people
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.people.svg
+          output_action: none
+          base: ""
+          plugin_people: yes
+          plugin_people_types: followers, following
+
+      - name: projects
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.projects.svg
+          output_action: none
+          base: ""
+          plugin_projects: yes
+          plugin_projects_limit: 0
+
+      - name: reactions
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.reactions.svg
+          output_action: none
+          base: ""
+          plugin_reactions: yes
+          plugin_reactions_limit: 100
+          plugin_reactions_details: percentage
+
+      - name: repositories (featured)
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.repositories.svg
+          output_action: none
+          base: ""
+          plugin_repositories: yes
+          plugin_repositories_featured: mjun0812/flash-attention-prebuild-wheels
+
+      - name: repositories (pinned)
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.repositories.pinned.svg
+          output_action: none
+          base: ""
+          plugin_repositories: yes
+          plugin_repositories_pinned: 6
+
+      - name: sponsors
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.sponsors.svg
+          output_action: none
+          base: ""
+          plugin_sponsors: yes
+
+      - name: sponsorships
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.sponsorships.svg
+          output_action: none
+          base: ""
+          plugin_sponsorships: yes
+
+      - name: stargazers
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.stargazers.svg
+          output_action: none
+          base: ""
+          plugin_stargazers: yes
+
+      - name: stargazers (graph)
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.stargazers.graph.svg
+          output_action: none
+          base: ""
+          plugin_stargazers: yes
+          plugin_stargazers_charts_type: graph
+
+      - name: stars
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.stars.svg
+          output_action: none
+          base: ""
+          plugin_stars: yes
+          plugin_stars_limit: 4
+
+      - name: starlists
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.starlists.svg
+          output_action: none
+          base: ""
+          plugin_starlists: yes
+          plugin_starlists_limit: 0
+          plugin_starlists_limit_repositories: 2
+
+      - name: topics (labels)
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.topics.svg
+          output_action: none
+          base: ""
+          plugin_topics: yes
+          plugin_topics_limit: 12
+
+      - name: topics (icons)
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.topics.icons.svg
+          output_action: none
+          base: ""
+          plugin_topics: yes
+          plugin_topics_limit: 0
+          plugin_topics_mode: icons
+
+      - name: traffic
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          filename: metrics.plugin.traffic.svg
+          output_action: none
+          base: repositories
+          plugin_traffic: yes
+
+      # ---------- REPOSITORY cards (repo: flash-attention-prebuild-wheels) ----------
+
+      - name: repository overview
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          repo: flash-attention-prebuild-wheels
+          template: repository
+          filename: metrics.repository.svg
+          output_action: none
+          config_timezone: Asia/Tokyo
+
+      - name: repository languages
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          repo: flash-attention-prebuild-wheels
+          template: repository
+          filename: metrics.repository.plugin.languages.svg
+          output_action: none
+          base: ""
+          plugin_languages: yes
+
+      - name: repository contributors
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          repo: flash-attention-prebuild-wheels
+          template: repository
+          filename: metrics.repository.plugin.contributors.svg
+          output_action: none
+          base: ""
+          plugin_contributors: yes
+          plugin_contributors_contributions: yes
+
+      - name: repository activity
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          repo: flash-attention-prebuild-wheels
+          template: repository
+          filename: metrics.repository.plugin.activity.svg
+          output_action: none
+          base: ""
+          plugin_activity: yes
+          plugin_activity_limit: 5
+          config_timezone: Asia/Tokyo
+
+      - name: repository people
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          repo: flash-attention-prebuild-wheels
+          template: repository
+          filename: metrics.repository.plugin.people.svg
+          output_action: none
+          base: ""
+          plugin_people: yes
+          plugin_people_types: contributors, stargazers, watchers
+
+      - name: repository stargazers
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          repo: flash-attention-prebuild-wheels
+          template: repository
+          filename: metrics.repository.plugin.stargazers.svg
+          output_action: none
+          base: ""
+          plugin_stargazers: yes
+
+      - name: repository traffic
+        continue-on-error: true
+        uses: lowlighter/metrics@v3.34
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: mjun0812
+          repo: flash-attention-prebuild-wheels
+          template: repository
+          filename: metrics.repository.plugin.traffic.svg
+          output_action: none
+          base: ""
+          plugin_traffic: yes
+
+      # ---------- collect + commit ----------
+
+      - name: List rendered cards
+        if: always()
+        run: |
+          echo "Rendered files in /metrics_renders:"
+          sudo ls -la /metrics_renders || true
+
+      - name: Commit cards to docs/reference_examples
+        if: always()
+        run: |
+          set -euo pipefail
+          sudo chown -R "$(id -u):$(id -g)" /metrics_renders
+          mkdir -p docs/reference_examples
+          # Only copy the cards we intend to publish (skip any stray files).
+          cp /metrics_renders/metrics.*.svg docs/reference_examples/
+          echo "Cards now in docs/reference_examples:"
+          ls -1 docs/reference_examples/*.svg | wc -l
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/reference_examples/*.svg
+          if git diff --cached --quiet; then
+            echo "No card changes to commit."
+          else
+            git commit -m "docs(reference): regenerate upstream cards via GitHub Actions [skip ci]"
+            git push origin HEAD:chore/upstream-reference-cards
+          fi
