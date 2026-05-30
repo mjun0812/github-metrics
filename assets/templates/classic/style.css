@@ -128,6 +128,32 @@
   .row section {
     flex: 1 1 0;
   }
+/* Repository template — introduction badges + community / activity stats.
+   These horizontal lists are emitted by the repository partials
+   (internal/templates/repository/partials). `.row` already gives them
+   flex layout; these rules add the inter-item spacing the labels need
+   (without it they run together, e.g. "PythonBSD 3-Clause ... Licensemain")
+   plus the primary-language colour dot. The selectors are
+   repository-only, so the classic CSS purge drops them from user-mode
+   renders that have no matching element. */
+  .repo-badges .badge {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 14px;
+  }
+  .repo-badges .badge.language::before {
+    content: "";
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 5px;
+    border-radius: 50%;
+    background-color: var(--lang-color, #959da5);
+  }
+  .community-stats .stat,
+  .activity-stats .stat {
+    margin-right: 16px;
+  }
   .column {
     display: flex;
     flex-direction: column;
