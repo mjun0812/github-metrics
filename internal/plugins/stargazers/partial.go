@@ -38,20 +38,22 @@ func bgLevel(p float64) int {
 // Mirrors upstream org_repo/source/templates/classic/partials/stargazers.ejs.
 //
 // Returns "" until stargazers.go's Run is wired with chart data (current
-// M4 path stays Skipped). When data arrives, emits the upstream
-// "Total stargazers" chart-bars block alongside the section header.
+// M4 path stays Skipped). When data arrives, emits the upstream two
+// chart-bars columns ("Total stargazers" + "New stargazers") for the
+// classic chart type, or the single line plot for the graph type.
 //
-// Output structure:
+// Output structure (classic):
 //
 //	<section data-section="stargazers">
 //	  <h2 class="field"><svg star/>Stargazers</h2>
 //	  <div class="row margin-bottom">
 //	    <section class="column chart">
 //	      <h3>Total stargazers</h3>
-//	      <div class="chart-bars">
-//	        [for each point]:
-//	          <div class="entry"><span class="value">N</span><div class="bar"/><span class="label">DD</span></div>
-//	      </div>
+//	      <div class="chart-bars">…cumulative…</div>
+//	    </section>
+//	    <section class="column chart">
+//	      <h3>New stargazers per month</h3>
+//	      <div class="chart-bars">…per-bucket increments…</div>
 //	    </section>
 //	  </div>
 //	</section>
@@ -78,14 +80,17 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 
 	if len(series) > 0 {
 		b.WriteString(`<div class="row margin-bottom">`)
-		b.WriteString(`<section class="column chart">`)
-		b.WriteString(`<h3>Total stargazers</h3>`)
 		if r.Charts.Type == chartsTypeGraph {
+			// The graph chart is a single full-width line plot.
+			b.WriteString(`<section class="column chart">`)
+			b.WriteString(`<h3>Total stargazers</h3>`)
 			writeGraphChart(&b, series)
+			b.WriteString(`</section>`)
 		} else {
-			writeClassicChart(&b, series)
+			// The classic chart mirrors upstream's two side-by-side
+			// chart-bars columns (cumulative + per-bucket new stars).
+			writeClassicCharts(&b, series)
 		}
-		b.WriteString(`</section>`)
 		b.WriteString(`</div>`)
 	}
 
@@ -93,15 +98,51 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	return b.String(), nil
 }
 
-func writeClassicChart(b *strings.Builder, series []ChartPoint) {
-	// Find min/max for normalization, matching upstream's `(value-min)/(max-min)` ramp.
-	minV, maxV := series[0].Count, series[0].Count
-	for _, pt := range series[1:] {
-		if pt.Count < minV {
-			minV = pt.Count
+// writeClassicCharts renders the two upstream chart-bars columns:
+// cumulative "Total stargazers" and per-bucket "New stargazers". The Go
+// series is bucketed by month (stargazers.buildSeries), so the second
+// column is labelled "per month" rather than upstream's daily "per day",
+// and each bar's x-axis label is the month (the date is always the 1st
+// of its month, which previously rendered as a meaningless "1").
+func writeClassicCharts(b *strings.Builder, series []ChartPoint) {
+	totals := make([]int, len(series))
+	news := make([]int, len(series))
+	prev := 0
+	for i, pt := range series {
+		totals[i] = pt.Count
+		news[i] = pt.Count - prev
+		prev = pt.Count
+	}
+	// Keep only the most recent buckets so the two columns fit side by
+	// side at the 480px card width. Upstream charts a fixed recent
+	// window; the Go series spans a repo's whole star history (monthly),
+	// which would otherwise overflow a half-width column and wrap the
+	// second chart below the first. Increments are computed on the full
+	// series above so the first kept bar still reflects its true delta.
+	const maxBuckets = 15
+	if len(series) > maxBuckets {
+		start := len(series) - maxBuckets
+		series, totals, news = series[start:], totals[start:], news[start:]
+	}
+	writeChartColumn(b, "Total stargazers", series, totals)
+	writeChartColumn(b, "New stargazers per month", series, news)
+}
+
+// writeChartColumn emits one `<section class="column chart">` containing
+// a chart-bars block whose bar heights are normalised within `values`
+// (matching upstream's `(value-min)/(max-min)` ramp). Each bar is
+// labelled with its month; a zero value renders an empty `.value`.
+func writeChartColumn(b *strings.Builder, title string, series []ChartPoint, values []int) {
+	b.WriteString(`<section class="column chart">`)
+	fmt.Fprintf(b, `<h3>%s</h3>`, title)
+
+	minV, maxV := values[0], values[0]
+	for _, v := range values[1:] {
+		if v < minV {
+			minV = v
 		}
-		if pt.Count > maxV {
-			maxV = pt.Count
+		if v > maxV {
+			maxV = v
 		}
 	}
 	denom := maxV - minV
@@ -109,17 +150,41 @@ func writeClassicChart(b *strings.Builder, series []ChartPoint) {
 		denom = 1
 	}
 
+	// Thin the annotations so month names don't overlap on the narrow
+	// half-width columns (same stride idea as the graph chart's labels):
+	// every bar still draws, but only ~maxLabels of them carry a month
+	// label + value. The month label is emitted as bare text — like
+	// upstream's `<%= d %>` — NOT inside `<span class="label">`, which is
+	// the unrelated blue pill-badge class (.label{background;padding;…})
+	// that previously turned each x-axis tick into a wide rounded chip
+	// and overflowed the column.
+	const maxLabels = 7
+	stride := 1
+	if len(series) > maxLabels {
+		stride = (len(series) + maxLabels - 1) / maxLabels
+	}
+
 	b.WriteString(`<div class="chart-bars">`)
-	for _, pt := range series {
-		share := 0.05 + 0.95*float64(pt.Count-minV)/float64(denom)
-		day := pt.Date.UTC().Day()
+	for i, pt := range series {
+		v := values[i]
+		share := 0.05 + 0.95*float64(v-minV)/float64(denom)
+		labeled := i == 0 || i == len(series)-1 || i%stride == 0
+		valueStr := ""
+		label := ""
+		if labeled {
+			if v != 0 {
+				valueStr = partials.FormatCount(int64(v))
+			}
+			label = pt.Date.UTC().Format("Jan") // month abbreviation, always safe ASCII
+		}
 		fmt.Fprintf(
 			b,
-			`<div class="entry"><span class="value">%d</span><div class="bar" style="height: %.0fpx; background-color: var(--color-calendar-graph-day-L%d-bg)"></div><span class="label">%d</span></div>`,
-			pt.Count, share*50, bgLevel(share), day,
+			`<div class="entry"><span class="value">%s</span><div class="bar" style="height: %.0fpx; background-color: var(--color-calendar-graph-day-L%d-bg)"></div>%s</div>`,
+			valueStr, share*50, bgLevel(share), label,
 		)
 	}
 	b.WriteString(`</div>`)
+	b.WriteString(`</section>`)
 }
 
 func writeGraphChart(b *strings.Builder, series []ChartPoint) {
