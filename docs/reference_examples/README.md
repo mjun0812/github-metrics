@@ -49,8 +49,7 @@
 - `metrics.plugin.habits.facts.svg` / `metrics.plugin.habits.charts.svg`
 - `metrics.plugin.isocalendar.svg` / `metrics.plugin.isocalendar.fullyear.svg`
 - `metrics.plugin.languages.svg` / `.details.svg` / `.indepth.svg`
-  （`.recent.svg` は upstream v3.34 の `RecentAnalyzer` が本データで例外を投げるため未生成。
-  詳細は下記注記）
+  （`.recent.svg` は上記注記のとおり upstream 不具合で未生成）
 - `metrics.plugin.notable.svg` / `metrics.plugin.notable.indepth.svg`
 - `metrics.plugin.people.svg`
 - `metrics.plugin.projects.svg`
@@ -76,7 +75,8 @@
 ## 再生成
 
 `GITHUB_TOKEN`（`repo` / `read:user` 程度のスコープを持つ PAT）を環境変数に設定し、
-upstream イメージへ `INPUT_*` を渡して実行します。例:
+upstream イメージへ `INPUT_*` を渡して実行します。値は `jq @uri` で url-encode して渡す点に
+注意してください（upstream の `metadata.mjs` が `decodeURIComponent` で復号します）。例:
 
 ```sh
 docker run --init --rm -v "$PWD/docs/reference_examples:/renders" \
