@@ -13,6 +13,8 @@ name: Generate upstream reference cards (temporary)
 # cannot fetch data outside this repository, which would leave the cards empty.
 
 on:
+  push:
+    branches: [chore/upstream-reference-cards]
   workflow_dispatch:
 
 permissions:
