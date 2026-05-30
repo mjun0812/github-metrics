@@ -83,6 +83,97 @@ func TestOptimizeCSS_EmptyInput(t *testing.T) {
 	}
 }
 
+// TestOptimizeCSS_PreservesAtRuleBraces guards the at-rule
+// reconstruction: `@keyframes` / `@media` bodies must keep their
+// braces so the minified output stays valid CSS. Regression for the
+// bug where BeginAtRuleGrammar dropped the opening `{`, producing
+// `@keyframes name0%,100%{…}` and leaking the last keyframe's tokens
+// (e.g. `#FF0000`) into the following rule.
+func TestOptimizeCSS_PreservesAtRuleBraces(t *testing.T) {
+	t.Parallel()
+	in := `<svg xmlns="http://www.w3.org/2000/svg"><style data-optimizable="true">
+		@keyframes animation-gauge { 0% { stroke-dasharray: 0 329; } }
+		@keyframes animation-rainbow {
+			0%, 100% { color: #7f00ff; fill: #7f00ff; }
+			86% { color: #FF0000; fill: #FF0000; }
+		}
+		.used { color: red; }
+		:root { --accent: #ebedf0; }
+	</style><g class="used"/></svg>`
+	out, err := OptimizeCSS(in)
+	if err != nil {
+		t.Fatalf("OptimizeCSS: %v", err)
+	}
+
+	// The keyframes blocks must survive intact with their braces.
+	for _, want := range []string{
+		"@keyframes animation-gauge{0%{stroke-dasharray:0 329}}",
+		"@keyframes animation-rainbow{",
+		"0%,100%{",
+		".used{color:red}",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("expected minified output to contain %q\n got: %q", want, out)
+		}
+	}
+
+	// The keyframe color must NOT leak onto the following selector.
+	for _, bad := range []string{
+		"#FF0000:root", "#ff0000:root",
+		"@keyframes animation-rainbow0%", // missing brace signature
+		";};",                            // mangled-brace signature
+	} {
+		if strings.Contains(out, bad) {
+			t.Errorf("output should not contain mangled fragment %q\n got: %q", bad, out)
+		}
+	}
+
+	// Validate brace balance — broken at-rule emission unbalances it.
+	if open, close := strings.Count(out, "{"), strings.Count(out, "}"); open != close {
+		t.Errorf("unbalanced braces: %d open vs %d close\n got: %q", open, close, out)
+	}
+}
+
+// TestOptimizeCSS_DropsEmptyMediaAfterPurge confirms a `@media` whose
+// only inner rule is purged collapses away entirely (matching upstream
+// purgecss + csso), rather than leaving an empty `@media(...){}`.
+func TestOptimizeCSS_DropsEmptyMediaAfterPurge(t *testing.T) {
+	t.Parallel()
+	in := `<svg xmlns="http://www.w3.org/2000/svg"><style data-optimizable="true">
+		.used { color: red; }
+		@media (max-width: 850px) { .unused-wrapper { column-count: 1; } }
+	</style><g class="used"/></svg>`
+	out, err := OptimizeCSS(in)
+	if err != nil {
+		t.Fatalf("OptimizeCSS: %v", err)
+	}
+	if !strings.Contains(out, ".used{color:red}") {
+		t.Errorf("used selector should survive: %q", out)
+	}
+	if strings.Contains(out, "@media") {
+		t.Errorf("empty @media should be dropped after purge: %q", out)
+	}
+}
+
+// TestOptimizeCSS_KeepsMediaWithUsedRule confirms a `@media` block is
+// preserved (with braces) when its inner selector is actually used.
+func TestOptimizeCSS_KeepsMediaWithUsedRule(t *testing.T) {
+	t.Parallel()
+	in := `<svg xmlns="http://www.w3.org/2000/svg"><style data-optimizable="true">
+		@media (max-width: 850px) { .wrap { column-count: 1; } }
+	</style><g class="wrap"/></svg>`
+	out, err := OptimizeCSS(in)
+	if err != nil {
+		t.Fatalf("OptimizeCSS: %v", err)
+	}
+	if !strings.Contains(out, "@media") || !strings.Contains(out, ".wrap{column-count:1}") {
+		t.Errorf("used @media rule should survive with braces: %q", out)
+	}
+	if open, close := strings.Count(out, "{"), strings.Count(out, "}"); open != close {
+		t.Errorf("unbalanced braces: %d open vs %d close\n got: %q", open, close, out)
+	}
+}
+
 // TestOptimizeCSS_MinifiesSurvivingRules confirms the minify step
 // runs after the purge.
 func TestOptimizeCSS_MinifiesSurvivingRules(t *testing.T) {

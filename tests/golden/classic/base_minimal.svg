@@ -128,6 +128,32 @@
   .row section {
     flex: 1 1 0;
   }
+/* Repository template — introduction badges + community / activity stats.
+   These horizontal lists are emitted by the repository partials
+   (internal/templates/repository/partials). `.row` already gives them
+   flex layout; these rules add the inter-item spacing the labels need
+   (without it they run together, e.g. "PythonBSD 3-Clause ... Licensemain")
+   plus the primary-language colour dot. The selectors are
+   repository-only, so the classic CSS purge drops them from user-mode
+   renders that have no matching element. */
+  .repo-badges .badge {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 14px;
+  }
+  .repo-badges .badge.language::before {
+    content: "";
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 5px;
+    border-radius: 50%;
+    background-color: var(--lang-color, #959da5);
+  }
+  .community-stats .stat,
+  .activity-stats .stat {
+    margin-right: 16px;
+  }
   .column {
     display: flex;
     flex-direction: column;
@@ -1687,4 +1713,4 @@
     animation-play-state: paused !important;
     caret-color: transparent !important;
   }
-</style><style></style><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper"><section data-section="header"><h1 class="field"><img class="avatar" src="https://avatars.githubusercontent.com/u/12345?v=4" width="20" height="20" /><span>The Octocat</span></h1></section><section data-section="repositories"><div class="row"><div class="field"><svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>51 repositories</div><div class="field"><svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>1.5k stargazers</div><div class="field"><svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>81 forks</div></div></section><div id="metrics-end"></div><section data-section="metadata"><footer><span>These metrics include private contributions</span><span>Last updated 2026-05-28T11:46:06Z with mjun0812/github-metrics@test-version</span></footer></section></div></foreignObject></svg>
+</style><style></style><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper"><section data-section="header"><h1 class="field"><img class="avatar" src="https://avatars.githubusercontent.com/u/12345?v=4" width="20" height="20" /><span>The Octocat</span></h1></section><section data-section="repositories"><div class="row"><div class="field"><svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>51 repositories</div><div class="field"><svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>1.5k stargazers</div><div class="field"><svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>81 forks</div></div></section><div id="metrics-end"></div><section data-section="metadata"><footer><span>These metrics include private contributions</span><span>Last updated 2026-05-30T06:46:51Z with mjun0812/github-metrics@test-version</span></footer></section></div></foreignObject></svg>

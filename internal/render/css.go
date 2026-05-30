@@ -3,6 +3,8 @@ package render
 import (
 	"bytes"
 	"fmt"
+	"html"
+	"regexp"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -12,6 +14,12 @@ import (
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/css"
 )
+
+// optimizableStyleRe matches an embedded `<style data-optimizable="true">`
+// block and captures its inner CSS. Non-greedy so adjacent blocks are
+// matched individually. Mirrors upstream's regex
+// (org_repo/source/app/metrics/utils.mjs optimize.css).
+var optimizableStyleRe = regexp.MustCompile(`(?s)<style data-optimizable="true">(.*?)</style>`)
 
 // OptimizeCSS walks the embedded `<style data-optimizable="true">`
 // nodes, drops selectors that no element in the document matches,
@@ -27,35 +35,58 @@ func OptimizeCSS(in string) (string, error) {
 	if strings.TrimSpace(in) == "" {
 		return in, nil
 	}
+
+	matches := optimizableStyleRe.FindAllStringSubmatch(in, -1)
+	if len(matches) == 0 {
+		return in, nil
+	}
+
+	// Parse a READ-ONLY copy of the document for the selector-purge
+	// analysis only (keepSelector needs to know which selectors match a
+	// node in the body). The actual replacement happens via regex on
+	// the original string below so the SVG body — in particular the
+	// foreignObject XHTML — is preserved byte-for-byte. Upstream's
+	// optimize.css does the same: it regex-extracts the style blocks and
+	// never DOM-round-trips the rendered SVG (utils.mjs). The previous
+	// goquery round-trip here re-serialized the whole document as HTML,
+	// which stripped foreignObject `xmlns`, injected an <html>/<body>
+	// wrapper, and left content that the downstream FormatXML pass then
+	// mis-parsed — collapsing chart/list rows into nested, malformed
+	// elements (see issue: habits/isocalendar layout collapse).
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(in))
 	if err != nil {
 		return in, fmt.Errorf("render: OptimizeCSS parse: %w", err)
 	}
 
-	var firstErr error
-	doc.Find(`style[data-optimizable="true"]`).Each(func(_ int, sel *goquery.Selection) {
-		original := sel.Text()
-		optimized, optErr := purgeAndMinify(original, doc)
-		if optErr != nil {
-			if firstErr == nil {
-				firstErr = optErr
-			}
-			return
+	// Concatenate every optimizable block's (unescaped) CSS and optimize
+	// them together, matching upstream which joins the extracted styles
+	// before a single purge+minify pass.
+	var combined strings.Builder
+	for i, m := range matches {
+		if i > 0 {
+			combined.WriteByte('\n')
 		}
-		sel.SetText(optimized)
-	})
-	if firstErr != nil {
-		return in, firstErr
+		combined.WriteString(html.UnescapeString(m[1]))
+	}
+	optimized, optErr := purgeAndMinify(combined.String(), doc)
+	if optErr != nil {
+		return in, optErr
 	}
 
-	// goquery's Html() always wraps fragments in <html><body>; the
-	// upstream caller wants the original SVG envelope preserved. We
-	// rebuild the output by reading the document selection's HTML
-	// content rather than the auto-wrapped page.
-	if doc.Find("html").Length() > 0 {
-		return goquery.OuterHtml(doc.Find("html").First())
-	}
-	return goquery.OuterHtml(doc.Selection)
+	// Replace the FIRST optimizable block with the combined, optimized
+	// <style>; drop any remaining optimizable blocks (their CSS now
+	// lives in the first one). The optimized CSS is emitted raw — the
+	// downstream FormatXML pass re-escapes text content, matching
+	// upstream's optimize.css → optimize.xml ordering.
+	replaced := false
+	out := optimizableStyleRe.ReplaceAllStringFunc(in, func(string) string {
+		if replaced {
+			return ""
+		}
+		replaced = true
+		return "<style>" + optimized + "</style>"
+	})
+	return out, nil
 }
 
 // purgeAndMinify tokenizes `source` (the inner text of a single
@@ -67,6 +98,23 @@ func purgeAndMinify(source string, doc *goquery.Document) (string, error) {
 	p := css.NewParser(parse.NewInput(strings.NewReader(source)), false)
 
 	var rebuilt bytes.Buffer
+	// atRuleStack tracks nested at-rules so we know how to treat the
+	// rulesets inside them. A `true` entry means the enclosing at-rule
+	// is `@keyframes` (or a vendor-prefixed variant): its inner blocks
+	// (`0%`, `from`, `to`, …) are keyframe selectors, NOT document
+	// selectors, so they must be copied verbatim rather than purged.
+	// `@media`/`@supports` push `false` — their inner rulesets are real
+	// selectors and still get the unused-selector purge (matching
+	// upstream purgecss, which drops empty `@media` blocks afterward).
+	var atRuleStack []bool
+	insideKeyframes := func() bool {
+		for _, isKeyframes := range atRuleStack {
+			if isKeyframes {
+				return true
+			}
+		}
+		return false
+	}
 	for {
 		gt, _, data := p.Next()
 		if gt == css.ErrorGrammar {
@@ -80,7 +128,10 @@ func purgeAndMinify(source string, doc *goquery.Document) (string, error) {
 		case css.BeginRulesetGrammar:
 			values := p.Values()
 			selectorText := joinValues(values)
-			if keepSelector(selectorText, doc) {
+			// Keyframe blocks are kept unconditionally — their `0%` /
+			// `from` / `to` "selectors" are not addressable in the
+			// document and must never be purged.
+			if insideKeyframes() || keepSelector(selectorText, doc) {
 				rebuilt.WriteString(selectorText)
 				rebuilt.WriteString("{")
 				// Copy declarations until we see EndRulesetGrammar.
@@ -90,15 +141,30 @@ func purgeAndMinify(source string, doc *goquery.Document) (string, error) {
 				skipRulesetBody(p)
 			}
 
-		case css.AtRuleGrammar, css.BeginAtRuleGrammar, css.EndAtRuleGrammar:
-			// At-rules (`@media`, `@keyframes`) keep their entire
-			// body — purging them would require recursive analysis
-			// that the upstream optimizer also skips.
+		case css.BeginAtRuleGrammar:
+			// `@media (...)` / `@keyframes name` / `@supports (...)`:
+			// emit the prelude AND the opening brace that the parser
+			// leaves implicit. Forgetting the brace collapses the
+			// nested body into the prelude and produces invalid CSS
+			// (e.g. `@keyframes name0%,100%{…}`), which the minifier
+			// then mangles further.
 			rebuilt.Write(data)
 			rebuilt.Write(valuesBytes(p.Values()))
-			if gt == css.AtRuleGrammar {
-				rebuilt.WriteString(";")
+			rebuilt.WriteString("{")
+			atRuleStack = append(atRuleStack, isKeyframesAtRule(data))
+
+		case css.EndAtRuleGrammar:
+			rebuilt.WriteString("}")
+			if len(atRuleStack) > 0 {
+				atRuleStack = atRuleStack[:len(atRuleStack)-1]
 			}
+
+		case css.AtRuleGrammar:
+			// Statement at-rule (`@import …;`, `@charset …;`): prelude
+			// followed by a semicolon, no body.
+			rebuilt.Write(data)
+			rebuilt.Write(valuesBytes(p.Values()))
+			rebuilt.WriteString(";")
 
 		case css.QualifiedRuleGrammar, css.DeclarationGrammar, css.CustomPropertyGrammar:
 			rebuilt.Write(data)
@@ -170,6 +236,15 @@ func keepSelector(selectorText string, doc *goquery.Document) bool {
 		_ = sel
 	}
 	return false
+}
+
+// isKeyframesAtRule reports whether the at-rule keyword in `data`
+// (e.g. `@keyframes`, `@-webkit-keyframes`) introduces a keyframes
+// block. The tdewolff parser lowercases the keyword, so a simple
+// suffix check covers the standard rule and every vendor prefix.
+func isKeyframesAtRule(data []byte) bool {
+	name := strings.TrimPrefix(strings.ToLower(strings.TrimSpace(string(data))), "@")
+	return strings.HasSuffix(name, "keyframes")
 }
 
 // joinValues concatenates the token values produced by

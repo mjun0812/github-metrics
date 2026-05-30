@@ -3,10 +3,12 @@ package integration_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/engine"
@@ -222,10 +224,21 @@ func newP1Deps(t *testing.T) engine.Deps {
 		t.Fatalf("NewGraphQL: %v", err)
 	}
 
-	eventsBody := `[
-		{"type":"PushEvent","repo":{"name":"octocat/alpha"},"created_at":"2026-05-15T10:00:00Z","public":true},
-		{"type":"PullRequestEvent","repo":{"name":"octocat/beta"},"created_at":"2026-05-15T09:00:00Z","public":true}
-	]`
+	// Timestamps are generated relative to "now" so the events always
+	// fall inside the activity plugin's default 14-day recency window
+	// (internal/plugins/activity: cutoff = now - days). Hardcoded dates
+	// silently aged out of the window and made this test fail by the
+	// calendar — the activity <section> only renders when ≥1 event
+	// survives the cutoff.
+	now := time.Now().UTC()
+	eventsBody := fmt.Sprintf(
+		`[
+		{"type":"PushEvent","repo":{"name":"octocat/alpha"},"created_at":%q,"public":true},
+		{"type":"PullRequestEvent","repo":{"name":"octocat/beta"},"created_at":%q,"public":true}
+	]`,
+		now.Add(-24*time.Hour).Format(time.RFC3339),
+		now.Add(-25*time.Hour).Format(time.RFC3339),
+	)
 	rest, err := githubapi.NewREST(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost",

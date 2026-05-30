@@ -141,6 +141,84 @@ func TestFormatXML_XmlnsRoundtrip(t *testing.T) {
 	}
 }
 
+// TestFormatXML_ForeignObjectHTMLNotSelfClosed is the regression anchor
+// for the habits / isocalendar / calendar / languages layout collapse.
+// Empty *HTML* elements inside <foreignObject> must keep an explicit
+// close tag. FormatXML used to self-close every empty element
+// (`<div/>`), but the render measurement step injects the SVG into an
+// HTML document (chrome page.setDocumentContent), whose HTML parser
+// treats `<div/>` as an UNCLOSED <div> — so each following sibling
+// nested inside it and the chart/list rows collapsed into one column.
+func TestFormatXML_ForeignObjectHTMLNotSelfClosed(t *testing.T) {
+	t.Parallel()
+	in := `<svg xmlns="http://www.w3.org/2000/svg">` +
+		`<foreignObject><div xmlns="http://www.w3.org/1999/xhtml" class="chart-bars">` +
+		`<div class="entry"><span class="value">6</span><div class="bar"></div>00</div>` +
+		`<div class="entry"><span class="value">1</span><div class="bar"></div>01</div>` +
+		`</div></foreignObject></svg>`
+	out, err := FormatXML(in)
+	if err != nil {
+		t.Fatalf("FormatXML: %v", err)
+	}
+	if strings.Contains(out, `<div class="bar"/>`) {
+		t.Errorf("empty HTML <div> must NOT self-close inside foreignObject; got %q", out)
+	}
+	if !strings.Contains(out, `<div class="bar"></div>`) {
+		t.Errorf("empty HTML <div> should close explicitly; got %q", out)
+	}
+	if got := strings.Count(out, `class="entry"`); got != 2 {
+		t.Errorf("want 2 sibling entry divs, got %d; %q", got, out)
+	}
+	// Every label and value must survive — they used to be swallowed
+	// when the rows nested.
+	for _, want := range []string{"6", "1", "00", "01"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("content %q dropped; got %q", want, out)
+		}
+	}
+}
+
+// TestFormatXML_VoidHTMLElementSelfCloses confirms void HTML elements
+// (img, br, …) inside foreignObject stay self-closing — an explicit
+// `</img>` would be re-parsed by the HTML parser as a second element.
+func TestFormatXML_VoidHTMLElementSelfCloses(t *testing.T) {
+	t.Parallel()
+	in := `<svg xmlns="http://www.w3.org/2000/svg"><foreignObject>` +
+		`<div xmlns="http://www.w3.org/1999/xhtml"><img class="avatar" src="x"></img></div>` +
+		`</foreignObject></svg>`
+	out, err := FormatXML(in)
+	if err != nil {
+		t.Fatalf("FormatXML: %v", err)
+	}
+	if !strings.Contains(out, `<img class="avatar" src="x"/>`) {
+		t.Errorf("void HTML <img> should self-close; got %q", out)
+	}
+}
+
+// TestFormatXML_NoDuplicateXmlns guards the duplicate-xmlns emission:
+// encoding/xml surfaces a default namespace declaration BOTH as
+// Name.Space AND as a regular Attr, so writeStart must not print it
+// twice. Prefixed declarations (xmlns:xlink) must still survive.
+func TestFormatXML_NoDuplicateXmlns(t *testing.T) {
+	t.Parallel()
+	in := `<svg xmlns="http://www.w3.org/2000/svg"><foreignObject>` +
+		`<div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink">x</div>` +
+		`</foreignObject></svg>`
+	out, err := FormatXML(in)
+	if err != nil {
+		t.Fatalf("FormatXML: %v", err)
+	}
+	if strings.Contains(out, `xmlns="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg"`) {
+		t.Errorf("duplicate svg xmlns emitted; got %q", out)
+	}
+	if c := strings.Count(out, `xmlns="http://www.w3.org/1999/xhtml"`); c != 1 {
+		t.Errorf("xhtml xmlns should appear exactly once, got %d; %q", c, out)
+	}
+	if !strings.Contains(out, `xmlns:xlink="http://www.w3.org/1999/xlink"`) {
+		t.Errorf("xmlns:xlink declaration must survive; got %q", out)
+	}
+}
+
 // TestFormatXML_Empty preserves the empty/whitespace passthrough
 // contract (FR-018 fallback expects unmodified input).
 func TestFormatXML_Empty(t *testing.T) {
