@@ -11,7 +11,11 @@ import (
 // FormatXML returns a re-indented copy of the input XML/SVG payload.
 // The output uses two-space indentation, a single `\n` line separator,
 // and emits empty elements as self-closing `<foo/>` tokens (matching
-// the upstream xml-formatter `collapseContent=true` knob).
+// the upstream xml-formatter `collapseContent=true` knob) — EXCEPT for
+// non-void HTML elements inside <foreignObject>, which keep an explicit
+// `</foo>` close tag because the render-measurement step re-parses the
+// SVG as HTML (where `<div/>` would be an unclosed element). See the
+// EndElement handling for details.
 //
 // Whitespace-only text nodes are discarded; non-empty text content
 // inside an element ends up on its own line. CDATA, processing
@@ -80,12 +84,37 @@ func FormatXML(in string) (string, error) {
 
 		case xml.EndElement:
 			depth--
+			// The element's own default namespace is the value pushed at
+			// its StartElement, i.e. the current top of the stack before
+			// we pop it here.
+			elemDefaultNS := defaultNSStack[len(defaultNSStack)-1]
 			if len(defaultNSStack) > 1 {
 				defaultNSStack = defaultNSStack[:len(defaultNSStack)-1]
 			}
 			if pendingOpen {
-				// Empty element: collapse to self-closing.
-				buf.WriteString("/>\n")
+				// Empty element. Self-closing (`<tag/>`) is only safe for
+				// SVG / XML elements. A non-void HTML element inside
+				// <foreignObject> MUST use an explicit close tag: the
+				// measurement round-trip injects this SVG into an HTML
+				// document (chrome page.setDocumentContent), and the HTML
+				// parser treats `<div/>` as an *unclosed* <div>, nesting
+				// every following sibling inside it — which collapsed
+				// chart/list rows (habits, isocalendar, …) into a single
+				// malformed column. Void HTML elements (img, br, …) stay
+				// self-closing because an explicit `</img>` would be
+				// re-parsed as a second element. Mirrors upstream output
+				// (`<div ...></div>` yet `<path .../>`).
+				if elemDefaultNS == xhtmlNamespace && !isVoidHTMLElement(t.Name.Local) {
+					buf.WriteString("></")
+					if prefix := localPrefix(t.Name.Space); prefix != "" {
+						buf.WriteString(prefix)
+						buf.WriteString(":")
+					}
+					buf.WriteString(t.Name.Local)
+					buf.WriteString(">\n")
+				} else {
+					buf.WriteString("/>\n")
+				}
 				pendingOpen = false
 				continue
 			}
@@ -189,6 +218,16 @@ func writeStart(buf *bytes.Buffer, t xml.StartElement, parentDefaultNS string) {
 	}
 
 	for _, a := range t.Attr {
+		// Skip the default-namespace declaration: writeStart re-emits it
+		// above when the element opens a new default-NS scope. Go's
+		// encoding/xml ALSO surfaces `xmlns="..."` as a regular Attr, so
+		// without this skip the opening tag would carry a duplicate
+		// `xmlns="..."` — invalid XML that some parsers reject.
+		// Prefixed declarations (`xmlns:xlink="..."`, surfaced with
+		// Name.Space=="xmlns") are kept: they are not re-emitted above.
+		if a.Name.Local == "xmlns" && a.Name.Space == "" {
+			continue
+		}
 		buf.WriteString(" ")
 		if prefix := localPrefix(a.Name.Space); prefix != "" {
 			buf.WriteString(prefix)
@@ -199,6 +238,28 @@ func writeStart(buf *bytes.Buffer, t xml.StartElement, parentDefaultNS string) {
 		_ = xml.EscapeText(buf, []byte(a.Value))
 		buf.WriteString(`"`)
 	}
+}
+
+// xhtmlNamespace is the default namespace the templates declare on the
+// root <div> inside <foreignObject>. Elements resolved to this
+// namespace are HTML and must not be emitted as self-closing tags (see
+// the EndElement handling in FormatXML).
+const xhtmlNamespace = "http://www.w3.org/1999/xhtml"
+
+// voidHTMLElements is the HTML5 set of void elements — those that have
+// no closing tag. They remain self-closing in FormatXML output because
+// an explicit `</img>`-style close would be re-parsed by the HTML
+// parser as a separate (and usually invalid) element.
+var voidHTMLElements = map[string]bool{
+	"area": true, "base": true, "br": true, "col": true, "embed": true,
+	"hr": true, "img": true, "input": true, "link": true, "meta": true,
+	"param": true, "source": true, "track": true, "wbr": true,
+}
+
+// isVoidHTMLElement reports whether name (case-insensitively) is an
+// HTML void element.
+func isVoidHTMLElement(name string) bool {
+	return voidHTMLElements[strings.ToLower(name)]
 }
 
 // isURINamespace reports whether `ns` is a URI-shaped namespace
