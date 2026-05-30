@@ -32,6 +32,12 @@
 > `Metrics` バージョン文字列など動的な部分は再生成ごとに変わります（`docs/examples`
 > 側は `normalize-svg-stream` でマスク済みなので、その点だけ差分が出ます）。
 
+> ℹ️ `metrics.plugin.languages.recent.svg`（`plugin_languages_sections: recently-used`）は
+> upstream v3.34 の `source/plugins/languages/analyzer/recent.mjs` が `mjun0812` のデータで
+> 例外（`Array.filter` at `recent.mjs:70`）を投げて生成できなかったため、含めていません。
+> upstream 側の実行時不具合で、リトライしても決定的に失敗します。`languages` プラグイン本体・
+> `details` / `indepth` の各カードは正常に生成済みです。
+
 ## ファイル一覧
 
 ### User カード（`user: mjun0812`）
@@ -42,7 +48,9 @@
 - `metrics.plugin.calendar.svg` / `metrics.plugin.calendar.full.svg`
 - `metrics.plugin.habits.facts.svg` / `metrics.plugin.habits.charts.svg`
 - `metrics.plugin.isocalendar.svg` / `metrics.plugin.isocalendar.fullyear.svg`
-- `metrics.plugin.languages.svg` / `.details.svg` / `.recent.svg` / `.indepth.svg`
+- `metrics.plugin.languages.svg` / `.details.svg` / `.indepth.svg`
+  （`.recent.svg` は upstream v3.34 の `RecentAnalyzer` が本データで例外を投げるため未生成。
+  詳細は下記注記）
 - `metrics.plugin.notable.svg` / `metrics.plugin.notable.indepth.svg`
 - `metrics.plugin.people.svg`
 - `metrics.plugin.projects.svg`
