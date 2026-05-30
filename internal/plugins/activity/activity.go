@@ -198,7 +198,11 @@ func loginFromInputs(in map[string]any) string {
 
 func parseInputs(in map[string]any) inputs {
 	out := inputs{
-		limit:      100,
+		// Display limit. 5 matches upstream's metadata default
+		// (assets/plugins/activity/metadata.yml plugin_activity_limit)
+		// — the previous 100 rendered an over-long timeline (every event
+		// in the 14-day window) instead of the short recent-activity card.
+		limit:      5,
 		load:       300,
 		days:       14,
 		visibility: "public",

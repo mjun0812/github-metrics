@@ -186,6 +186,26 @@ func TestRun_Limit(t *testing.T) {
 	}
 }
 
+// TestRun_DefaultLimit asserts the default display limit is 5 (matching
+// upstream metadata) so the timeline stays short when no
+// plugin_activity_limit is supplied.
+func TestRun_DefaultLimit(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	mux := newRESTMux()
+	evs := make([]string, 0, 7)
+	for i := range 7 {
+		evs = append(evs, ev("PushEvent", "octocat/a", now.Add(-time.Duration(i+1)*time.Hour), true))
+	}
+	mux.on("/users/octocat/events", http.StatusOK, eventsBody(evs...))
+	pc := newPC(t, mux, nil) // no plugin_activity_limit → default
+	out, _ := activity.Plugin.Run(context.Background(), pc)
+	r := out.(*activity.Result)
+	if len(r.Events) != 5 {
+		t.Errorf("default Events len = %d, want 5", len(r.Events))
+	}
+}
+
 // TestRun_EmptyEvents returns an empty array and asserts the plugin
 // still returns Skipped=false with an empty Events slice (contract §2.5).
 func TestRun_EmptyEvents(t *testing.T) {
