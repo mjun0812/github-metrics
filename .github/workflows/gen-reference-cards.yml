@@ -29,7 +29,7 @@ permissions:
 jobs:
   cards:
     name: Render + commit reference cards
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
