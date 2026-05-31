@@ -97,13 +97,10 @@ PAT secret が必須です。
 
 ### ローカル Docker での単発再生成
 
-1枚だけ手元で再生成する場合は upstream イメージを直接実行できます。値は `jq @uri` で
-url-encode して渡す点に注意してください（upstream の `metadata.mjs` が
-`decodeURIComponent` で復号します）。例:
-
-`GITHUB_TOKEN`（`repo` / `read:user` 程度のスコープを持つ PAT）を環境変数に設定し、
-upstream イメージへ `INPUT_*` を渡して実行します。値は `jq @uri` で url-encode して渡す点に
-注意してください（upstream の `metadata.mjs` が `decodeURIComponent` で復号します）。例:
+1枚だけ手元で再生成する場合は upstream イメージを直接実行できます。`GITHUB_TOKEN`
+（`repo` / `read:user` 程度のスコープを持つ PAT）を環境変数に設定し、upstream イメージへ
+`INPUT_*` を渡します。値は `jq @uri` で url-encode して渡す点に注意してください（upstream の
+`metadata.mjs` が `decodeURIComponent` で復号します）。例:
 
 ```sh
 docker run --init --rm -v "$PWD/docs/reference_examples:/renders" \
