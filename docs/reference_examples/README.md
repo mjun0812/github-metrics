@@ -17,26 +17,36 @@
 
 ## 生成条件
 
-| 項目 | 値 |
-| --- | --- |
-| ツール | `ghcr.io/lowlighter/metrics:v3.34`（upstream 本体・Docker イメージ） |
-| 実行方法 | ローカル Docker（`docker run --env-file ... :/renders`、action.yml と同一方式） |
-| 対象 user | `mjun0812` |
-| 対象 repository | `mjun0812/flash-attention-prebuild-wheels`（`template: repository`） |
-| 対象プラグイン | **本プロジェクトが Go 実装済みのプラグインのみ**（採用外 plugin は生成しない） |
-| `output_action` | `none`（レンダリングのみ。commit はしない） |
-| `config_timezone` | `Asia/Tokyo`（一部カード） |
-| 生成日 | 2026-05-30 |
+| 項目              | 値                                                                                                                                            |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| ツール            | `lowlighter/metrics@v3.34`（upstream 本体・GitHub Action）                                                                                    |
+| 実行方法          | 一時的な GitHub Actions ワークフローを GitHub-hosted runner (`ubuntu-latest`) で1度実行し、`github-actions[bot]` がこのディレクトリへコミット |
+| 対象 user         | `mjun0812`                                                                                                                                    |
+| 対象 repository   | `mjun0812/flash-attention-prebuild-wheels`（`template: repository`）                                                                          |
+| 対象プラグイン    | **本プロジェクトが Go 実装済みのプラグインのみ**（採用外 plugin は生成しない）                                                                |
+| `output_action`   | `none`（レンダリングのみ。コミットはワークフロー最終 step が別途実施）                                                                        |
+| `config_timezone` | `Asia/Tokyo`（一部カード）                                                                                                                    |
+| 生成日            | 2026-05-31                                                                                                                                    |
 
 > ⚠️ これらは正規化していない **生の** upstream 出力です。フッターの生成タイムスタンプや
 > `Metrics` バージョン文字列など動的な部分は再生成ごとに変わります（`docs/examples`
 > 側は `normalize-svg-stream` でマスク済みなので、その点だけ差分が出ます）。
 
-> ℹ️ `metrics.plugin.languages.recent.svg`（`plugin_languages_sections: recently-used`）は
-> upstream v3.34 の `source/plugins/languages/analyzer/recent.mjs` が `mjun0812` のデータで
-> 例外（`Array.filter` at `recent.mjs:70`）を投げて生成できなかったため、含めていません。
-> upstream 側の実行時不具合で、リトライしても決定的に失敗します。`languages` プラグイン本体・
-> `details` / `indepth` の各カードは正常に生成済みです。
+## 正しく描画できていないカード（エラー・データ不足）
+
+以下は生成時にエラー・警告が出た、または対象データが存在せず **正しく描画できていない**
+カードです。いずれも本プロジェクトの Go 実装の不具合ではなく、upstream ツールの挙動・
+GitHub API の権限/データ起因です。
+
+| カード                                  | 状態                                | 原因                                                                                                                                                                                                                                                            |
+| --------------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `metrics.plugin.languages.recent.svg`   | **未生成**（ファイル無し）          | upstream v3.34 の `source/plugins/languages/analyzer/recent.mjs:70` が `mjun0812` のデータで例外（`Array.filter`）を投げて決定的に失敗。`plugin_languages_sections: recently-used` 指定時のみ発生するため、このワークフローでは最初から生成対象に含めていない。 |
+| `metrics.repository.plugin.traffic.svg` | **空**（コンテンツ無し、高さ ~8px） | `traffic` プラグインがログに `warning │ no data or unsufficient permissions for repository traffic, skipping...` を出力。リポジトリ traffic API は push/admin 権限が必要で、データ取得できずセクションごとスキップされた。                                      |
+| `metrics.plugin.traffic.svg`            | **ほぼ空**（実テキストなし）        | 同上。user 配下リポジトリの traffic も同じ警告でスキップされ、空セクションのみ描画。                                                                                                                                                                            |
+
+> 補足: `languages` プラグイン本体・`.details` / `.indepth` の各カードは正常に生成済みです。
+> `metrics.plugin.reactions.svg` などテキスト量の少ないカードはエラーではなく、対象データ
+> （対象期間のリアクション等）が少ないだけで正常です。
 
 ## ファイル一覧
 
@@ -60,7 +70,7 @@
 - `metrics.plugin.stars.svg`
 - `metrics.plugin.starlists.svg`
 - `metrics.plugin.topics.svg` / `metrics.plugin.topics.icons.svg`
-- `metrics.plugin.traffic.svg`
+- `metrics.plugin.traffic.svg` ⚠️ ほぼ空（traffic スキップ。上記「正しく描画できていないカード」参照）
 
 ### Repository カード（`repo: flash-attention-prebuild-wheels`, `template: repository`）
 
@@ -70,9 +80,26 @@
 - `metrics.repository.plugin.activity.svg`
 - `metrics.repository.plugin.people.svg`
 - `metrics.repository.plugin.stargazers.svg`
-- `metrics.repository.plugin.traffic.svg`
+- `metrics.repository.plugin.traffic.svg` ⚠️ 空（traffic スキップ。上記「正しく描画できていないカード」参照）
 
 ## 再生成
+
+参照カードは一時的な GitHub Actions ワークフローで生成しました。リポジトリ secret
+`METRICS_TOKEN`（classic PAT）を設定し、対象ブランチへワークフローを push して
+GitHub-hosted runner で1度実行 → `github-actions[bot]` がこのディレクトリへコミット、
+という流れです。`github.token` ではリポジトリ外データが取得できずカードが空になるため、
+PAT secret が必須です。
+
+> ⚠️ self-hosted runner では動きません。upstream action が `--volume $GITHUB_EVENT_PATH`
+> をマウントしますが host 側に実体が無く、コンテナ内で `@actions/github` が `EISDIR`
+> （`event.json` をディレクトリとして読む）で即死し、カードが1枚も生成されません。必ず
+> GitHub-hosted (`ubuntu-latest`) を使ってください。
+
+### ローカル Docker での単発再生成
+
+1枚だけ手元で再生成する場合は upstream イメージを直接実行できます。値は `jq @uri` で
+url-encode して渡す点に注意してください（upstream の `metadata.mjs` が
+`decodeURIComponent` で復号します）。例:
 
 `GITHUB_TOKEN`（`repo` / `read:user` 程度のスコープを持つ PAT）を環境変数に設定し、
 upstream イメージへ `INPUT_*` を渡して実行します。値は `jq @uri` で url-encode して渡す点に
