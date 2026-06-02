@@ -140,7 +140,7 @@ user's profile, so a missing token fails immediately.
 |:---:|:---:|:---:|
 | [![achievements](docs/examples/plugin-achievements.svg)](docs/plugins/achievements.md) | [![activity](docs/examples/plugin-activity.svg)](docs/plugins/activity.md) | [![calendar](docs/examples/plugin-calendar.svg)](docs/plugins/calendar.md) |
 | [`achievements`](docs/plugins/achievements.md) | [`activity`](docs/plugins/activity.md) | [`calendar`](docs/plugins/calendar.md) |
-| [![contributors](docs/examples/plugin-contributors.svg)](docs/plugins/contributors.md) | [![habits](docs/examples/plugin-habits.svg)](docs/plugins/habits.md) | [![isocalendar](docs/examples/plugin-isocalendar.svg)](docs/plugins/isocalendar.md) |
+| [![contributors](docs/examples/plugin-contributors-repo-contributions.svg)](docs/plugins/contributors.md) | [![habits](docs/examples/plugin-habits.svg)](docs/plugins/habits.md) | [![isocalendar](docs/examples/plugin-isocalendar.svg)](docs/plugins/isocalendar.md) |
 | [`contributors`](docs/plugins/contributors.md) | [`habits`](docs/plugins/habits.md) | [`isocalendar`](docs/plugins/isocalendar.md) |
 | [![languages](docs/examples/plugin-languages.svg)](docs/plugins/languages.md) | [![notable](docs/examples/plugin-notable.svg)](docs/plugins/notable.md) | [![people](docs/examples/plugin-people.svg)](docs/plugins/people.md) |
 | [`languages`](docs/plugins/languages.md) | [`notable`](docs/plugins/notable.md) | [`people`](docs/plugins/people.md) |
