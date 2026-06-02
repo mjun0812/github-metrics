@@ -58,10 +58,7 @@
                 </div>
               </section>
             </div>
-            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" class="isocalendar-grid" style="margin-top: -130px;" viewBox="0,0 480,170" role="img" aria-label="Isometric contribution heatmap">
-              <title>
-                Isometric contribution heatmap
-              </title>
+            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" class="isocalendar-grid" style="margin-top: -130px;" viewBox="0,0 480,170">
               <filter id="brightness1">
                 <feComponentTransfer>
                   <feFuncR type="linear" slope="0.60"/>
