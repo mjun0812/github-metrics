@@ -50,6 +50,9 @@ type User implements RepositoryOwner {
   watching(first: Int): RepositoryConnection
   issues(first: Int): IssueConnectionWithReactions
   issueComments(first: Int): IssueCommentConnection
+  # 442: "Member of N organizations" community-stats counter rendered by
+  # upstream base.activity+community.ejs. Only totalCount is read.
+  organizations(first: Int): OrganizationConnection
   # 013: sponsors / sponsorships / projects / pinned items (viewer-mode)
   sponsorsListing: SponsorsListing
   sponsorshipsAsMaintainer(
@@ -372,7 +375,18 @@ type OrganizationMemberConnection {
 }
 
 type ContributionsCollection {
+  # 442: lifetime aggregate counters for the base Activity section.
+  totalCommitContributions: Int!
+  totalPullRequestReviewContributions: Int!
+  totalPullRequestContributions: Int!
+  totalIssueContributions: Int!
   contributionCalendar: ContributionCalendar!
+}
+
+# 442: minimal organizations connection — only totalCount is consumed
+# by the base Community-stats section ("Member of N organizations").
+type OrganizationConnection {
+  totalCount: Int!
 }
 
 type ContributionCalendar {

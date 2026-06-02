@@ -180,6 +180,33 @@ func TestRun_User(t *testing.T) {
 	if pc.Data.User.SponsorshipsAsMaintainer != 4 {
 		t.Errorf("Data.User.SponsorshipsAsMaintainer = %d, want 4", pc.Data.User.SponsorshipsAsMaintainer)
 	}
+	// 442: Activity-section aggregate counters sourced from
+	// contributionsCollection.* + issueComments.totalCount.
+	if pc.Data.User.Commits != 7293 {
+		t.Errorf("Data.User.Commits = %d, want 7293", pc.Data.User.Commits)
+	}
+	if pc.Data.User.PullRequestsReviewed != 68 {
+		t.Errorf("Data.User.PullRequestsReviewed = %d, want 68", pc.Data.User.PullRequestsReviewed)
+	}
+	if pc.Data.User.PullRequestsOpened != 290 {
+		t.Errorf("Data.User.PullRequestsOpened = %d, want 290", pc.Data.User.PullRequestsOpened)
+	}
+	if pc.Data.User.IssuesOpened != 443 {
+		t.Errorf("Data.User.IssuesOpened = %d, want 443", pc.Data.User.IssuesOpened)
+	}
+	if pc.Data.User.IssueComments != 120 {
+		t.Errorf("Data.User.IssueComments = %d, want 120", pc.Data.User.IssueComments)
+	}
+	// 442: Community-stats counters.
+	if pc.Data.User.Organizations != 3 {
+		t.Errorf("Data.User.Organizations = %d, want 3", pc.Data.User.Organizations)
+	}
+	if pc.Data.User.Sponsoring != 2 {
+		t.Errorf("Data.User.Sponsoring = %d, want 2", pc.Data.User.Sponsoring)
+	}
+	if pc.Data.User.Starred != 88 {
+		t.Errorf("Data.User.Starred = %d, want 88", pc.Data.User.Starred)
+	}
 	if pc.Data.User.CreatedAt.Year() != 2008 {
 		t.Errorf("Data.User.CreatedAt = %v, want 2008-01-14", pc.Data.User.CreatedAt)
 	}

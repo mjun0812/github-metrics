@@ -31,8 +31,16 @@ const userOctocatBody = `{
 			"following": {"totalCount": 617},
 			"watching": {"totalCount": 16},
 			"sponsorshipsAsMaintainer": {"totalCount": 4},
+			"organizations": {"totalCount": 3},
+			"sponsorshipsAsSponsor": {"totalCount": 2},
+			"starredRepositories": {"totalCount": 88},
+			"issueComments": {"totalCount": 120},
 			"repositoriesContributedTo": {"totalCount": 37},
 			"contributionsCollection": {
+				"totalCommitContributions": 7293,
+				"totalPullRequestReviewContributions": 68,
+				"totalPullRequestContributions": 290,
+				"totalIssueContributions": 443,
 				"contributionCalendar": {
 					"totalContributions": 1234,
 					"weeks": [

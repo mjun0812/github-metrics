@@ -214,54 +214,152 @@ func Introduction(_ context.Context, pc *templates.PartialContext) (string, erro
 	return "", nil
 }
 
-// BaseActivityCommunity renders the activity + community two-column
-// block. The activity column shows aggregate counters (commits, issues,
-// pull requests) sourced from Data.Computed; the community column is
-// kept as a reserved placeholder for the user-relationship counters
-// (organizations, sponsoring, watching) that the upstream
-// base.activity+community.ejs partial renders — those Go-side data
-// fields (followers, sponsorshipsAsSponsor, watching, ...) are not yet
-// populated by the base plugin.
+// BaseActivityCommunity renders the Activity + Community-stats two-column
+// block, mirroring upstream `base.activity+community.ejs`.
 //
-// Per #419 the partial now returns "" (no wrapper at all) when no
-// activity counter has a value, so a base-only render does not emit
-// an empty `<section data-section="activity-community">` with nothing
-// inside. The previous behaviour produced a tall empty band that made
-// the resulting SVG look broken (huge whitespace) and inflated the
-// rendered size because the section reserved space the CSS treated
-// as a real row.
+// The Activity column shows the lifetime contribution aggregates
+// (commits, PRs reviewed, PRs opened, issues opened, issue comments)
+// sourced from Data.User — the base plugin populates these from the
+// always-fetched User query's `contributionsCollection.*` aggregate
+// fields plus `issueComments.totalCount` (#442), so the section renders
+// for a plain `base` run without requiring an indepth-dependent plugin.
+//
+// The Community column shows the user-relationship counters
+// (organizations, following, sponsoring, starred, watching) also
+// sourced from Data.User. Per upstream every community row renders
+// unconditionally — including "Sponsoring 0 repositories" — so the
+// column reflects the GitHub profile exactly.
+//
+// Each column is independently gated by the resolved `base` sections:
+// the Activity column only appears when `activity` is enabled, the
+// Community column only when `community` is enabled. The classic
+// dispatcher already skips this partial entirely when neither flag is
+// set, so reaching here means at least one column is active.
+//
+// Per #419 the partial returns "" (no wrapper at all) when neither
+// active column has any data — i.e. the base plugin has not populated
+// the User contribution/community counters (the gen-doc-samples base
+// sample, or a degraded GraphQL response). That keeps a base-only
+// render from emitting an empty `<section
+// data-section="activity-community">` band that previously inflated
+// the card height.
 func BaseActivityCommunity(_ context.Context, pc *templates.PartialContext) (string, error) {
-	if pc == nil || pc.Data == nil {
+	if pc == nil || pc.Data == nil || pc.Data.User == nil {
 		return "", nil
 	}
-	c := pc.Data.Computed
-	hasActivity := c.TotalCommits > 0 || c.TotalIssues > 0 || c.TotalPullRequests > 0
-	if !hasActivity {
+	u := pc.Data.User
+
+	activityOn := baseSectionEnabled(pc.Inputs, "activity")
+	communityOn := baseSectionEnabled(pc.Inputs, "community")
+
+	hasActivity := activityOn && (u.Commits > 0 || u.PullRequestsReviewed > 0 ||
+		u.PullRequestsOpened > 0 || u.IssuesOpened > 0 || u.IssueComments > 0)
+	// Community renders rows unconditionally (upstream shows "Sponsoring
+	// 0 repositories"), so the presence test keys off any populated
+	// community-or-following/watching counter to distinguish a real run
+	// from an unpopulated fixture.
+	hasCommunity := communityOn && (u.Organizations > 0 || u.Following > 0 ||
+		u.Sponsoring > 0 || u.Starred > 0 || u.Watching > 0)
+	if !hasActivity && !hasCommunity {
 		return "", nil
 	}
 
 	var b strings.Builder
 	b.WriteString(`<section data-section="activity-community">`)
 	b.WriteString(`<section class="row">`)
-	b.WriteString(`<section data-block="activity">`)
-	b.WriteString(`<h2 class="field">` + octiconPlaceholder + `Activity</h2>`)
-	if c.TotalCommits > 0 {
+
+	if hasActivity {
+		b.WriteString(`<section data-block="activity">`)
+		b.WriteString(`<h2 class="field">` + octiconPlaceholder + `Activity</h2>`)
 		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s</div>`,
-			FormatCount(int64(c.TotalCommits)), pluralLabel("Commit", c.TotalCommits))
-	}
-	if c.TotalPullRequests > 0 {
+			FormatCount(int64(u.Commits)), pluralLabel("Commit", u.Commits))
+		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s reviewed</div>`,
+			FormatCount(int64(u.PullRequestsReviewed)), pluralLabel("Pull request", u.PullRequestsReviewed))
 		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s opened</div>`,
-			FormatCount(int64(c.TotalPullRequests)), pluralLabel("Pull request", c.TotalPullRequests))
-	}
-	if c.TotalIssues > 0 {
+			FormatCount(int64(u.PullRequestsOpened)), pluralLabel("Pull request", u.PullRequestsOpened))
 		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s opened</div>`,
-			FormatCount(int64(c.TotalIssues)), pluralLabel("Issue", c.TotalIssues))
+			FormatCount(int64(u.IssuesOpened)), pluralLabel("Issue", u.IssuesOpened))
+		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s issue %s</div>`,
+			FormatCount(int64(u.IssueComments)), pluralLabel("comment", u.IssueComments))
+		b.WriteString(`</section>`)
 	}
-	b.WriteString(`</section>`)
-	b.WriteString(`<section data-block="community"></section>`)
+
+	if hasCommunity {
+		b.WriteString(`<section data-block="community">`)
+		b.WriteString(`<h2 class="field">` + octiconPlaceholder + `Community stats</h2>`)
+		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`Member of %s %s</div>`,
+			FormatCount(int64(u.Organizations)), pluralLabel("organization", u.Organizations))
+		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`Following %s %s</div>`,
+			FormatCount(int64(u.Following)), pluralLabel("user", u.Following))
+		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`Sponsoring %s %s</div>`,
+			FormatCount(int64(u.Sponsoring)), pluralRepositoryLabel(u.Sponsoring))
+		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`Starred %s %s</div>`,
+			FormatCount(int64(u.Starred)), pluralRepositoryLabel(u.Starred))
+		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`Watching %s %s</div>`,
+			FormatCount(int64(u.Watching)), pluralRepositoryLabel(u.Watching))
+		b.WriteString(`</section>`)
+	}
+
 	b.WriteString(`</section>`)
 	b.WriteString(`</section>`)
 	return b.String(), nil
+}
+
+// pluralRepositoryLabel renders "repository" / "repositories" matching
+// upstream's `s(count, "y")` helper used by the Community-stats rows.
+func pluralRepositoryLabel(count int) string {
+	if count == 1 {
+		return "repository"
+	}
+	return "repositories"
+}
+
+// baseSectionEnabled reports whether the named base section (e.g.
+// "activity" / "community") is enabled by the resolved `base` input.
+// When the `base` input is absent every section is enabled (mirrors the
+// classic dispatcher's resolveBaseSections default). An explicit empty
+// string disables all sections.
+func baseSectionEnabled(in map[string]any, section string) bool {
+	raw, present := readBaseInputValue(in)
+	if !present {
+		return true
+	}
+	for _, part := range strings.Split(raw, ",") {
+		if strings.EqualFold(strings.TrimSpace(part), section) {
+			return true
+		}
+	}
+	return false
+}
+
+// readBaseInputValue extracts the `base` input as a CSV string.
+// Returns (value, true) when the key is present even if the value is ""
+// so callers can distinguish "unset" (render all) from "explicit empty"
+// (render none). Mirrors classic.readBaseInput; kept local to avoid a
+// partials→classic import cycle.
+func readBaseInputValue(in map[string]any) (string, bool) {
+	if in == nil {
+		return "", false
+	}
+	v, ok := in["base"]
+	if !ok {
+		return "", false
+	}
+	switch x := v.(type) {
+	case string:
+		return x, true
+	case []string:
+		return strings.Join(x, ","), true
+	case []any:
+		parts := make([]string, 0, len(x))
+		for _, p := range x {
+			if s, ok := p.(string); ok {
+				parts = append(parts, s)
+			}
+		}
+		return strings.Join(parts, ","), true
+	}
+	return "", false
 }
 
 // pluralLabel adds a trailing "s" to the singular when count != 1.
@@ -318,15 +416,11 @@ func BaseRepositories(_ context.Context, pc *templates.PartialContext) (string, 
 		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s used</div>`,
 			format.FormatDiskKB(r.DiskUsage))
 	}
+	// 442: "Watching N repositories" moved to the Community-stats column
+	// (base.activity+community.ejs) to match upstream's layout — only the
+	// "N sponsors" (sponsorshipsAsMaintainer) counter belongs to the
+	// repositories row per upstream base.repositories.ejs.
 	if u := pc.Data.User; u != nil {
-		if u.Watching > 0 {
-			noun := "repositories"
-			if u.Watching == 1 {
-				noun = "repository"
-			}
-			fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`Watching %s %s</div>`,
-				FormatCount(int64(u.Watching)), noun)
-		}
 		if u.SponsorshipsAsMaintainer > 0 {
 			fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s</div>`,
 				FormatCount(int64(u.SponsorshipsAsMaintainer)),

@@ -26,6 +26,27 @@ query User($login: String!) {
     sponsorshipsAsMaintainer(first: 0, activeOnly: true) {
       totalCount
     }
+    # 442: Community-stats counters surfaced by upstream
+    # base.activity+community.ejs. "Member of N organizations" /
+    # "Sponsoring N repositories" / "Starred N repositories" — the
+    # remaining community rows (following / watching) reuse the
+    # connections already declared above.
+    organizations(first: 0) {
+      totalCount
+    }
+    sponsorshipsAsSponsor(first: 0, activeOnly: true) {
+      totalCount
+    }
+    starredRepositories(first: 0) {
+      totalCount
+    }
+    # 442: Activity-section "issue comments" counter. The remaining
+    # activity counters (commits / PRs reviewed / PRs opened / issues
+    # opened) come from the contributionsCollection aggregate fields
+    # added below.
+    issueComments(first: 0) {
+      totalCount
+    }
     # 429 Phase 2: "Contributed to N repositories" counter rendered by
     # upstream base.header.ejs. Explicit contributionTypes mirrors
     # upstream's set so the number matches the GitHub profile page.
@@ -43,6 +64,16 @@ query User($login: String!) {
     # from `runIndepth` so base no longer needs another plugin enabled
     # to surface this field.
     contributionsCollection {
+      # 442: Activity-section aggregate counters rendered by upstream
+      # base.activity+community.ejs ("N Commits / N Pull requests
+      # reviewed / N Pull requests opened / N Issues opened"). These
+      # are the lifetime contributionsCollection totals (the default
+      # window with no from/to is the trailing year on the GitHub API,
+      # matching upstream's base run which omits from/to as well).
+      totalCommitContributions
+      totalPullRequestReviewContributions
+      totalPullRequestContributions
+      totalIssueContributions
       contributionCalendar {
         totalContributions
         weeks {
