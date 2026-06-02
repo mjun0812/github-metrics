@@ -54,7 +54,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | classic 総合       | <img src="original_examples/metrics.classic.svg" width="420">    | <img src="reference_examples/metrics.classic.svg" width="420">    | <img src="examples/metrics-classic.svg" width="420">    |
 | repository 総合    | <img src="original_examples/metrics.repository.svg" width="420"> | <img src="reference_examples/metrics.repository.svg" width="420"> | <img src="examples/metrics-repository.svg" width="420"> |
 
-> ✅ Go サンプル `metrics-classic.svg` / `.png` は `scripts/gen-doc-samples.sh` の独立セクションで生成。複数 plugin を 1 回の `render_one` で合成。データ無しで空表示になる plugin (`contributors` / `projects` / `sponsors` / `sponsorships` / `starlists` / `topics`) と巨大化する `people` は除外し、合成 SVG は ~370KB / 高さ ~3976px。
+> ✅ Go サンプル `metrics-classic.svg` / `.png` は `scripts/gen-doc-samples.sh` の独立セクションで生成。主要 12 plugin (`isocalendar` / `calendar` / `languages` / `activity` / `achievements` / `notable` / `repositories` / `habits` / `stars` / `reactions` / `stargazers` / `traffic`) を 1 回の `render_one` で合成します。データ無しで空表示になる plugin (`contributors` / `projects` / `sponsors` / `sponsorships` / `starlists` / `topics`) と巨大化する `people` は除外。合成 SVG は複数セクションを積んだ縦長カードになります (具体的なサイズ / 高さは `make docs-samples` での再生成後に確定)。
 > ✅ Go サンプル `metrics-repository.svg` / `.png` は同スクリプトの repository mode セクションで生成。`mjun0812/flash-attention-prebuild-wheels` を対象に、repository template の `_.json` に partial を持つ plugin だけを合成しています: languages / contributors (+ contributions) / people (stargazers + watchers + contributors) / stargazers (graph) / activity。`traffic` 等 partial を持たない plugin はトグルしても出力に反映されないため合成対象外（repository chrome のみ）。
 
 ### base partial parity (`base.header` / `base.repositories`)
@@ -247,10 +247,12 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 ### contributors
 
 > upstream (lowlighter) の出力は両バリアントとも巨大 (9.9 / 8.7 MB) です。本ページの方針に従い `<img>` で埋め込んでいますが、GitHub 上での表示は重くなります。中列 (mjun0812) は repository mode のサンプル (`metrics.repository.plugin.contributors.svg`) を並べています。
+>
+> `contributors` は **repository mode 専用** plugin です (user mode では `internal/plugins/modegate.go::RequireRepoMode` により Skipped となり空カードになる)。そのため Go 実装列は user mode の空カードではなく repo mode サンプル `plugin-contributors-repo-contributions.svg` を代表サンプルとして掲載しています (#448)。
 
-| upstream (lowlighter, categories)                                                    | upstream (mjun0812, repo)                                                             | Go 実装 (`plugin-contributors.svg`)                      |
-| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| <img src="original_examples/metrics.plugin.contributors.categories.svg" width="420"> | <img src="reference_examples/metrics.repository.plugin.contributors.svg" width="420"> | <img src="examples/plugin-contributors.svg" width="420"> |
+| upstream (lowlighter, categories)                                                    | upstream (mjun0812, repo)                                                             | Go 実装 (`plugin-contributors-repo-contributions.svg`, repo mode)           |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.contributors.categories.svg" width="420"> | <img src="reference_examples/metrics.repository.plugin.contributors.svg" width="420"> | <img src="examples/plugin-contributors-repo-contributions.svg" width="420"> |
 
 他バリアント (upstream / lowlighter): <img src="original_examples/metrics.plugin.contributors.contributions.svg" width="420"> (contributions, 8.7 MB)
 

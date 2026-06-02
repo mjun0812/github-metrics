@@ -258,7 +258,7 @@ func TestRenderGallery_AllSlugsLinkedAlphabetically(t *testing.T) {
 	t.Parallel()
 	got := renderGallery()
 	for _, s := range adoptedSlugs {
-		if !strings.Contains(got, "plugin-"+s+".svg") {
+		if !strings.Contains(got, sampleImageBase(s)+".svg") {
 			t.Errorf("gallery missing image for slug %q", s)
 		}
 		if !strings.Contains(got, "docs/plugins/"+s+".md") {
