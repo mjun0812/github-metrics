@@ -157,10 +157,14 @@ func (g *GraphQL) ViewerProjects(ctx context.Context, first int) (*ViewerProject
 	return ViewerProjects(ctx, g.client, first)
 }
 
-// ViewerNotable fetches the viewer's most-starred owned repositories
-// for the "notable" plugin (spec 013, basic mode).
-func (g *GraphQL) ViewerNotable(ctx context.Context, first int) (*ViewerNotableResponse, error) {
-	return ViewerNotable(ctx, g.client, first)
+// UserNotable fetches the repositories a user contributed to on other
+// users'/organizations' accounts, ordered by stargazers, for the
+// "notable" plugin (issue #447). `types` selects the contribution kinds
+// (commit / pull_request / issue) and `self` (upstream
+// plugin_notable_self, default no) controls whether the user's own
+// repositories are included.
+func (g *GraphQL) UserNotable(ctx context.Context, login string, first int, after *string, types []RepositoryContributionType, self *bool) (*UserNotableResponse, error) {
+	return UserNotable(ctx, g.client, login, first, after, types, self)
 }
 
 // ViewerStargazersRepos fetches the viewer's top repos and their
