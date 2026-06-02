@@ -6,7 +6,7 @@ This plugin display repositories contributors from a commit range along with add
 
 ## サンプル出力
 
-![contributors sample](../examples/plugin-contributors.svg)
+![contributors sample](../examples/plugin-contributors-repo-contributions.svg)
 
 > サンプルは `--user mjun0812` のデータで本プラグインのみを有効化してレンダリングした例です。再生成は `make docs-examples`。
 

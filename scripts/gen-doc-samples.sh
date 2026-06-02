@@ -6,9 +6,11 @@
 # variants (achievements compact + languages recent/indepth/details +
 # isocalendar full-year + stargazers graph + notable indepth + habits
 # facts + habits charts) + 1 foundational `plugin-base` render + 1
-# classic template overview (upstream-parity base-only render) = 30
+# classic template overview (multi-plugin composite render) = 29
 # user-mode
-# logical samples. On top of that the repository-mode section renders
+# logical samples. (`contributors` is NOT rendered in user mode — it is a
+# repository-mode-only plugin and would emit an empty card; see issue #448
+# and the PLUGINS array note below.) On top of that the repository-mode section renders
 # the foundational `plugin-base-repo` chrome, the one repo-context
 # plugin that produces a unique panel on its own (`plugin-people-repo`),
 # 2 repo-context variants (`plugin-contributors-repo-contributions`
@@ -82,8 +84,16 @@ trap 'rm -rf "$WORKDIR"' EXIT
 # the default sample can also carry the
 # `plugin_languages_details=bytes-size,percentage` override (the
 # generic loop only emits `plugin_<slug>=yes`).
+# NOTE: `contributors` is intentionally NOT in this user-mode list. It is a
+# repository-mode-only plugin (internal/plugins/contributors/contributors.go
+# short-circuits to Skipped when RepoRef() == nil, see
+# internal/plugins/modegate.go::RequireRepoMode). Rendering it here produced an
+# empty user-mode card (height=8, ~1729 bytes) that was wrongly published as the
+# canonical `plugin-contributors.svg` sample (issue #448). The representative
+# contributors sample is the repo-mode `plugin-contributors-repo-contributions`
+# render below.
 PLUGINS=(
-  achievements activity calendar contributors habits isocalendar
+  achievements activity calendar habits isocalendar
   notable people projects repositories sponsors
   sponsorships stargazers starlists stars topics traffic
 )
@@ -213,7 +223,7 @@ render_one_repo() {
   done
 }
 
-echo "== 18 per-plugin single-panel renders (languages handled separately) =="
+echo "== 17 per-plugin single-panel renders (languages handled separately) =="
 for slug in "${PLUGINS[@]}"; do
   render_one "plugin-${slug}" \
     --template classic \
@@ -322,30 +332,49 @@ render_one "plugin-habits-charts" \
   --plugin "plugin_habits_charts=yes"
 
 echo
-echo "== classic template overview (upstream-parity base render) =="
-# `metrics-classic` mirrors the upstream `metrics.classic.svg` reference
-# (docs/original_examples/): a classic-template card carrying ONLY the
-# base chrome (header / activity / community / repositories / metadata),
-# with no `plugin_<name>=yes` toggles. Inspecting the upstream reference
-# shows it contains exactly those base sections — no language bars, no
-# activity timeline, no isocalendar grid — so reproducing it means a
-# base-only render rather than the multi-plugin composite this sample
-# used to be (which diverged ~20x in height and never matched upstream;
-# see issue #434).
+echo "== classic template overview (multi-plugin composite) =="
+# `metrics-classic` is the classic-template overview card: it composes
+# the base chrome PLUS the major plugins that render non-empty content
+# for ${USER}, in a single render call. `render_one` forwards `"$@"`, so
+# multiple `--plugin plugin_<name>=yes` toggles can be passed.
+#
+# Composed set (matches docs/comparison.md "テンプレート / base"): the
+# adopted plugins that produce a non-empty panel for `mjun0812` —
+# isocalendar / calendar / languages / activity / achievements / notable
+# / repositories / habits / stars / reactions / stargazers / traffic.
+# Excluded from the composite:
+#   - contributors / projects / sponsors / sponsorships / starlists /
+#     topics: render empty for this user (no data / repo-mode only), so
+#     they would add empty sections.
+#   - people: produces a very tall panel that dominates the overview.
+#   - languages carries `plugin_languages_details=bytes-size,percentage`
+#     to match the standalone `plugin-languages` sample.
+#
+# Historical note: this sample previously passed ONLY `--plugin base=...`
+# with no plugin toggles, which made it byte-identical to `plugin-base`
+# (issue #443). It now composes the plugins above so the overview is a
+# tall, multi-section card as documented.
 #
 # CSS is minified automatically: the metadata `optimize` default
-# ("css, xml") now flows through the render pipeline (see
+# ("css, xml") flows through the render pipeline (see
 # internal/engine/dispatch.go::optimizeEnabled), matching upstream's
 # single-line minified style block.
-#
-# NOTE: with no plugin toggles, this render is byte-identical to the
-# `plugin-base` sample below (same user, same base sections, same
-# optimize). They are kept as separate files because they document
-# different pages — `metrics-classic` is the classic-template overview,
-# `plugin-base` is the base-plugin reference for docs/plugins/base.md.
 render_one "metrics-classic" \
   --template classic \
-  --plugin "base=header, activity, community, repositories, metadata"
+  --plugin "plugin_isocalendar=yes" \
+  --plugin "plugin_calendar=yes" \
+  --plugin "plugin_languages=yes" \
+  --plugin "plugin_languages_details=bytes-size,percentage" \
+  --plugin "plugin_activity=yes" \
+  --plugin "plugin_achievements=yes" \
+  --plugin "plugin_notable=yes" \
+  --plugin "plugin_repositories=yes" \
+  --plugin "plugin_habits=yes" \
+  --plugin "plugin_stars=yes" \
+  --plugin "plugin_reactions=yes" \
+  --plugin "plugin_reactions_details=percentage" \
+  --plugin "plugin_stargazers=yes" \
+  --plugin "plugin_traffic=yes"
 
 echo
 echo "== foundational base render =="
@@ -459,13 +488,13 @@ render_one_repo "metrics-repository" \
 echo
 echo "== Summary =="
 # 2 formats (svg + png) per logical sample.
-# PLUGINS holds 18 slugs (languages is rendered as a one-off so it can
+# PLUGINS holds 17 slugs (languages is rendered as a one-off so it can
 # pass `plugin_languages_details=bytes-size,percentage`); +3 languages
 # entries (default, recent, indepth) +7 parity variants
 # (achievements.compact, notable.indepth, habits.facts, habits.charts,
 #  languages.details, isocalendar.fullyear, stargazers.graph)
 # +1 foundational base render +1 classic template overview
-# (upstream-parity base-only render).
+# (multi-plugin composite render).
 # Repository mode adds:
 #   - 1 foundational `plugin-base-repo` render
 #   - 1 stand-alone repo-mode plugin sample (`plugin-people-repo`)

@@ -79,6 +79,28 @@ var slugsWithoutSample = map[string]struct{}{
 	"core": {},
 }
 
+// sampleOverrides maps a plugin slug to the example SVG basename (without
+// the `.svg` extension, relative to docs/examples/) that best represents
+// it, when that is NOT the default `plugin-<slug>` user-mode render.
+//
+// `contributors` is repository-mode-only: in user mode it short-circuits
+// to Skipped (internal/plugins/modegate.go::RequireRepoMode) and renders
+// an empty card. The representative sample is therefore the repo-mode
+// `plugin-contributors-repo-contributions` render, which shows populated
+// per-contributor rows (issue #448).
+var sampleOverrides = map[string]string{
+	"contributors": "plugin-contributors-repo-contributions",
+}
+
+// sampleImageBase returns the example SVG basename (without `.svg`) used
+// for the given plugin slug in docs pages and the README gallery.
+func sampleImageBase(slug string) string {
+	if override, ok := sampleOverrides[slug]; ok {
+		return override
+	}
+	return "plugin-" + slug
+}
+
 func main() {
 	root, err := repoRoot()
 	if err != nil {
@@ -216,7 +238,7 @@ func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existin
 		b.WriteString("このプラグインは独立した SVG 断片を描画しません (No standalone visual output)。グローバル設定とプラグイン並列ランナーを実装するプラグインで、入力のみがこのページの対象です。\n\n")
 	} else {
 		b.WriteString("## サンプル出力\n\n")
-		fmt.Fprintf(&b, "![%s sample](../examples/plugin-%s.svg)\n\n", slug, slug)
+		fmt.Fprintf(&b, "![%s sample](../examples/%s.svg)\n\n", slug, sampleImageBase(slug))
 		b.WriteString("> サンプルは `--user mjun0812` のデータで本プラグインのみを有効化してレンダリングした例です。再生成は `make docs-examples`。\n\n")
 	}
 
@@ -547,7 +569,7 @@ func renderGallery() string {
 				continue
 			}
 			s := slugs[i+c]
-			fmt.Fprintf(&b, " [![%s](docs/examples/plugin-%s.svg)](docs/plugins/%s.md) |", s, s, s)
+			fmt.Fprintf(&b, " [![%s](docs/examples/%s.svg)](docs/plugins/%s.md) |", s, sampleImageBase(s), s)
 		}
 		b.WriteString("\n")
 		// Caption row.
