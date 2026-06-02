@@ -84,7 +84,7 @@ trap 'rm -rf "$WORKDIR"' EXIT
 # generic loop only emits `plugin_<slug>=yes`).
 PLUGINS=(
   achievements activity calendar contributors habits isocalendar
-  notable people projects reactions repositories sponsors
+  notable people projects repositories sponsors
   sponsorships stargazers starlists stars topics traffic
 )
 
@@ -282,6 +282,18 @@ render_one "plugin-languages-details" \
   --plugin "base=" \
   --plugin "plugin_languages=yes" \
   --plugin "plugin_languages_details=bytes-size,percentage,lines"
+
+# `reactions` is rendered separately so the sample carries the
+# `plugin_reactions_details=percentage` override, producing the
+# upstream 8-emoji gauge panel with per-emoji percentages (matching
+# docs/reference_examples/metrics.plugin.reactions.svg). The default
+# `plugin_reactions_limit` is 200 (see metadata.yml), so the header
+# reads "from last <=200 comments".
+render_one "plugin-reactions" \
+  --template classic \
+  --plugin "base=" \
+  --plugin "plugin_reactions=yes" \
+  --plugin "plugin_reactions_details=percentage"
 
 render_one "plugin-isocalendar-fullyear" \
   --template classic \

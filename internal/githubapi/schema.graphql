@@ -153,6 +153,22 @@ type IssueCommentWithReactions {
 
 type ReactionConnection {
   totalCount: Int!
+  nodes: [Reaction!]
+}
+
+type Reaction {
+  content: ReactionContent!
+}
+
+enum ReactionContent {
+  THUMBS_UP
+  THUMBS_DOWN
+  LAUGH
+  HOORAY
+  CONFUSED
+  HEART
+  ROCKET
+  EYES
 }
 
 enum RepositoryAffiliation {

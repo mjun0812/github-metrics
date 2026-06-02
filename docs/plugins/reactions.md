@@ -54,7 +54,7 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 
 ## Requirements
 
-**Public comments / issues / pull requests authored by the user that received reactions** (👍 😄 🎉 ❤️ 🚀 👀). Requires public activity within `plugin_reactions_days` (default `14`). Accounts with no reactions in that window produce an empty card.
+**Public comments / issues / pull requests authored by the user that received reactions** (❤️ 👍 👎 😄 😕 👀 🚀 🎉). The card renders an 8-emoji gauge panel where each emoji is a circular gauge scaled by its share of total reactions. `plugin_reactions_days` (default `0` = disabled) bounds comment age. Accounts with no reactions produce gauges at 0%.
 
 ## 既知の制約 / 注意点
 
