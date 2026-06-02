@@ -206,8 +206,7 @@
       "comments": 0,
       "days": 0,
       "details": null,
-      "discussions": 0,
-      "issues": 0,
+      "list": null,
       "skipped": true,
       "total": 0
     },

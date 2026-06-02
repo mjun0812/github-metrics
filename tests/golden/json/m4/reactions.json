@@ -1,7 +1,17 @@
 {
-  "issues": 5,
-  "comments": 3,
-  "discussions": 0,
+  "list": {
+    "HEART": {
+      "value": 5,
+      "percentage": 0.625,
+      "score": 0.625
+    },
+    "THUMBS_UP": {
+      "value": 3,
+      "percentage": 0.375,
+      "score": 0.375
+    }
+  },
   "total": 8,
-  "days": 30
+  "comments": 6,
+  "days": 0
 }

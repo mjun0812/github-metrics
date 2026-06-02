@@ -17,6 +17,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/reactions"
+	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
 var updateGolden = flag.Bool("update", false, "update golden files")
@@ -71,16 +72,19 @@ func newGQL(t *testing.T, body string) *githubapi.GraphQL {
 	return gql
 }
 
-func TestRun_AggregatesIssuesAndComments(t *testing.T) {
+func TestRun_AggregatesReactionContent(t *testing.T) {
 	t.Parallel()
+	// 2 issues + 3 issue comments scanned; reactions aggregated by
+	// content: HEART x3, THUMBS_UP x2, ROCKET x1 (total 6).
 	body := `{"data":{"user":{
 		"issues":{"totalCount":2,"nodes":[
-			{"reactions":{"totalCount":3}},
-			{"reactions":{"totalCount":5}}
+			{"reactions":{"totalCount":2,"nodes":[{"content":"HEART"},{"content":"HEART"}]}},
+			{"reactions":{"totalCount":1,"nodes":[{"content":"ROCKET"}]}}
 		]},
-		"issueComments":{"totalCount":2,"nodes":[
-			{"reactions":{"totalCount":1}},
-			{"reactions":{"totalCount":2}}
+		"issueComments":{"totalCount":3,"nodes":[
+			{"reactions":{"totalCount":1,"nodes":[{"content":"HEART"}]}},
+			{"reactions":{"totalCount":2,"nodes":[{"content":"THUMBS_UP"},{"content":"THUMBS_UP"}]}},
+			{"reactions":{"totalCount":0,"nodes":[]}}
 		]}
 	}}}`
 	pc := &plugins.PluginContext{
@@ -90,29 +94,64 @@ func TestRun_AggregatesIssuesAndComments(t *testing.T) {
 	}
 	out, _ := reactions.Plugin.Run(context.Background(), pc)
 	r := out.(*reactions.Result)
-	if r.Issues != 8 {
-		t.Errorf("Issues = %d, want 8", r.Issues)
+	if r.Total != 6 {
+		t.Errorf("Total = %d, want 6", r.Total)
 	}
-	if r.Comments != 3 {
-		t.Errorf("Comments = %d, want 3", r.Comments)
+	if r.Comments != 5 {
+		t.Errorf("Comments = %d, want 5", r.Comments)
 	}
-	if r.Total != 11 {
-		t.Errorf("Total = %d, want 11", r.Total)
+	if got := r.List["HEART"].Value; got != 3 {
+		t.Errorf("HEART value = %d, want 3", got)
+	}
+	if got := r.List["THUMBS_UP"].Value; got != 2 {
+		t.Errorf("THUMBS_UP value = %d, want 2", got)
+	}
+	if got := r.List["ROCKET"].Value; got != 1 {
+		t.Errorf("ROCKET value = %d, want 1", got)
+	}
+	// absolute display: score == percentage == value/total.
+	if got := r.List["HEART"].Score; got < 0.49 || got > 0.51 {
+		t.Errorf("HEART score = %v, want ~0.5", got)
 	}
 }
 
-func TestRun_DetailsFlagSurfacesMap(t *testing.T) {
+func TestRun_RelativeDisplayScalesByMax(t *testing.T) {
 	t.Parallel()
-	body := `{"data":{"user":{"issues":{"totalCount":0,"nodes":[]},"issueComments":{"totalCount":0,"nodes":[]}}}}`
+	// HEART x3 (max), THUMBS_UP x1. relative score = value/max.
+	body := `{"data":{"user":{
+		"issues":{"totalCount":0,"nodes":[]},
+		"issueComments":{"totalCount":2,"nodes":[
+			{"reactions":{"totalCount":3,"nodes":[{"content":"HEART"},{"content":"HEART"},{"content":"HEART"}]}},
+			{"reactions":{"totalCount":1,"nodes":[{"content":"THUMBS_UP"}]}}
+		]}
+	}}}`
 	pc := &plugins.PluginContext{
 		Data:    plugins.NewData(),
-		Inputs:  map[string]any{"user": "octocat", "plugin_reactions": true, "plugin_reactions_details": true},
+		Inputs:  map[string]any{"user": "octocat", "plugin_reactions": true, "plugin_reactions_display": "relative"},
 		GraphQL: newGQL(t, body),
 	}
 	out, _ := reactions.Plugin.Run(context.Background(), pc)
 	r := out.(*reactions.Result)
-	if r.Details == nil {
-		t.Errorf("Details should be non-nil (even empty) when _details=true")
+	if got := r.List["HEART"].Score; got != 1.0 {
+		t.Errorf("HEART relative score = %v, want 1.0", got)
+	}
+	if got := r.List["THUMBS_UP"].Score; got < 0.32 || got > 0.34 {
+		t.Errorf("THUMBS_UP relative score = %v, want ~0.333", got)
+	}
+}
+
+func TestRun_DetailsParsed(t *testing.T) {
+	t.Parallel()
+	body := `{"data":{"user":{"issues":{"totalCount":0,"nodes":[]},"issueComments":{"totalCount":0,"nodes":[]}}}}`
+	pc := &plugins.PluginContext{
+		Data:    plugins.NewData(),
+		Inputs:  map[string]any{"user": "octocat", "plugin_reactions": true, "plugin_reactions_details": "percentage, count"},
+		GraphQL: newGQL(t, body),
+	}
+	out, _ := reactions.Plugin.Run(context.Background(), pc)
+	r := out.(*reactions.Result)
+	if len(r.Details) != 2 || r.Details[0] != "percentage" || r.Details[1] != "count" {
+		t.Errorf("Details = %v, want [percentage count]", r.Details)
 	}
 }
 
@@ -184,7 +223,15 @@ func TestRun_NoLogin_Skipped(t *testing.T) {
 }
 
 func TestRun_GoldenShape(t *testing.T) {
-	r := &reactions.Result{Issues: 5, Comments: 3, Total: 8, Days: 30}
+	r := &reactions.Result{
+		List: map[string]reactions.Reaction{
+			"HEART":     {Value: 5, Percentage: 0.625, Score: 0.625},
+			"THUMBS_UP": {Value: 3, Percentage: 0.375, Score: 0.375},
+		},
+		Total:    8,
+		Comments: 6,
+		Days:     0,
+	}
 	got, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		t.Fatalf("MarshalIndent: %v", err)
@@ -204,5 +251,57 @@ func TestRun_GoldenShape(t *testing.T) {
 	}
 	if string(want) != string(got) {
 		t.Fatalf("golden mismatch\nwant:\n%s\ngot:\n%s", string(want), string(got))
+	}
+}
+
+// TestPartial_Reactions_Golden locks the upstream 8-emoji gauge panel
+// structure: one gauge SVG per reaction, a gauge-arc when score > 0, and
+// the percentage detail span (plugin_reactions_details=percentage).
+func TestPartial_Reactions_Golden(t *testing.T) {
+	r := &reactions.Result{
+		List: map[string]reactions.Reaction{
+			"HEART":     {Value: 6, Percentage: 0.75, Score: 0.75},
+			"THUMBS_UP": {Value: 2, Percentage: 0.25, Score: 0.25},
+		},
+		Total:    8,
+		Comments: 200,
+		Details:  []string{"percentage"},
+		Days:     0,
+	}
+	data := plugins.NewData()
+	data.SetPlugin(reactions.Name, r)
+	pc := &templates.PartialContext{Data: data}
+	got, err := reactions.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	gp := filepath.Join(repoRoot(t), "tests", "golden", "classic", "m4", "reactions.svg")
+	if *updateGolden {
+		_ = os.MkdirAll(filepath.Dir(gp), 0o755)
+		if werr := os.WriteFile(gp, []byte(got), 0o644); werr != nil {
+			t.Fatalf("WriteFile: %v", werr)
+		}
+		return
+	}
+	want, err := os.ReadFile(gp)
+	if err != nil {
+		t.Fatalf("ReadFile %s: %v (run with -update)", gp, err)
+	}
+	if string(want) != got {
+		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
+	}
+	// Structural markers required for upstream parity.
+	if n := strings.Count(got, `class="gauge info"`); n != 8 {
+		t.Errorf("gauge count = %d, want 8", n)
+	}
+	for _, marker := range []string{
+		`from last 200 comments`,
+		`<text x="60" y="60" dominant-baseline="central">❤️</text>`,
+		`stroke-dasharray="`, // HEART has score>0 so an arc is present
+		`class="title nowrap"`,
+	} {
+		if !strings.Contains(got, marker) {
+			t.Errorf("partial missing marker %q in:\n%s", marker, got)
+		}
 	}
 }

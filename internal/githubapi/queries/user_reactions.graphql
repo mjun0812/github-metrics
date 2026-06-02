@@ -5,6 +5,9 @@ query UserReactions($login: String!, $issuesFirst: Int!, $commentsFirst: Int!) {
       nodes {
         reactions {
           totalCount
+          nodes {
+            content
+          }
         }
       }
     }
@@ -13,6 +16,9 @@ query UserReactions($login: String!, $issuesFirst: Int!, $commentsFirst: Int!) {
       nodes {
         reactions {
           totalCount
+          nodes {
+            content
+          }
         }
       }
     }
