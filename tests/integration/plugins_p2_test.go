@@ -208,14 +208,17 @@ func TestComputeSVG_P2Bundle(t *testing.T) {
 			}
 			// Spec 013: GraphQL plugins (sponsors / sponsorships /
 			// projects / notable / stargazers / repositories.Pinned) now
-			// fire viewer.* queries when their `plugin_<slug>` is true.
-			// In bundles B / C the GraphQL mux has no fixture for these
-			// new operations, so they record a *RetryableError per plugin.
+			// fire viewer.* / user.* queries when their `plugin_<slug>`
+			// is true. The notable plugin fires UserNotable
+			// (user.repositoriesContributedTo) since issue #447. In
+			// bundles B / C the GraphQL mux has no fixture for these new
+			// operations, so they record a *RetryableError per plugin.
 			// That's an EXPECTED degraded path (FR-002), not a test
 			// failure — partial output stays correct (Skipped fragments
 			// produce no DOM). Only fail on out-of-bounds errors.
 			for _, e := range res.Errors {
-				if !strings.Contains(e.Error(), "no fixture for operation Viewer") {
+				if !strings.Contains(e.Error(), "no fixture for operation Viewer") &&
+					!strings.Contains(e.Error(), "no fixture for operation UserNotable") {
 					t.Errorf("Result.Errors entry: %v", e)
 				}
 			}

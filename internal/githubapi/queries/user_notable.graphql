@@ -1,0 +1,60 @@
+# UserNotable lists the repositories a user contributed to on *other*
+# users'/organizations' accounts, mirroring upstream
+# source/plugins/notable/queries/contributions.graphql. Own
+# repositories are excluded unless includeUserRepositories ($self) is
+# set; results are ordered by stargazers descending so the most notable
+# contributions surface first. See issue #447.
+query UserNotable(
+  $login: String!
+  $first: Int!
+  $after: String
+  $types: [RepositoryContributionType!]
+  $self: Boolean
+) {
+  user(login: $login) {
+    repositoriesContributedTo(
+      first: $first
+      after: $after
+      includeUserRepositories: $self
+      contributionTypes: $types
+      orderBy: { field: STARGAZERS, direction: DESC }
+    ) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        nameWithOwner
+        description
+        url
+        isInOrganization
+        owner {
+          __typename
+          login
+          avatarUrl(size: 64)
+        }
+        stargazerCount
+        forkCount
+        isFork
+        isPrivate
+        defaultBranchRef {
+          target {
+            __typename
+            ... on Commit {
+              history(first: 0) {
+                totalCount
+              }
+            }
+          }
+        }
+        issues {
+          totalCount
+        }
+        pullRequests {
+          totalCount
+        }
+      }
+    }
+  }
+}
