@@ -89,12 +89,36 @@ func TestRun_SingleYear(t *testing.T) {
 
 func TestRun_MultiYear(t *testing.T) {
 	t.Parallel()
-	r := run(t, makeCal([]int{2023, 2024, 2025, 2026}), nil)
+	// limit=0 means "all years" (zero: disable); pass it explicitly to opt out
+	// of the metadata default (1) and exercise the multi-year path.
+	r := run(t, makeCal([]int{2023, 2024, 2025, 2026}), map[string]any{
+		"plugin_calendar_limit": 0,
+	})
 	if len(r.Years) != 4 {
 		t.Errorf("Years len = %d, want 4", len(r.Years))
 	}
 	if r.Years[0].Year != 2023 || r.Years[3].Year != 2026 {
 		t.Errorf("years not ascending: %+v", r.Years)
+	}
+}
+
+// TestRun_DefaultLimitSingleYear is the regression for #444: with no explicit
+// plugin_calendar_limit, the metadata default (1) must be applied so only the
+// most-recent year is rendered (matching upstream), not all years.
+func TestRun_DefaultLimitSingleYear(t *testing.T) {
+	t.Parallel()
+	r := run(t, makeCal([]int{2025, 2026}), nil)
+	if r.Skipped {
+		t.Fatalf("unexpected Skipped")
+	}
+	if len(r.Years) != 1 {
+		t.Fatalf("default limit should keep 1 year; got %d years: %+v", len(r.Years), r.Years)
+	}
+	if r.Years[0].Year != 2026 {
+		t.Errorf("default limit should keep most-recent year 2026; got %d", r.Years[0].Year)
+	}
+	if r.Limit != 1 {
+		t.Errorf("Limit should default to 1; got %d", r.Limit)
 	}
 }
 

@@ -89,7 +89,11 @@ func (p *calendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any,
 			Years:         []YearCalendar{},
 		}, nil
 	}
-	limit := readInt(pc.Inputs, "plugin_calendar_limit")
+	// plugin_calendar_limit defaults to 1 per assets/plugins/calendar/metadata.yml
+	// (display the last year only). The key is absent unless the user sets it
+	// explicitly, so apply the metadata default here instead of falling back to
+	// the Go zero value (0 = "all years"), matching upstream's index.mjs.
+	limit := readIntDefault(pc.Inputs, "plugin_calendar_limit", 1)
 
 	byYear := map[int]*YearCalendar{}
 	yearsOrder := []int{}
@@ -193,10 +197,13 @@ func sortInts(s []int) {
 	}
 }
 
-func readInt(in map[string]any, key string) int {
+// readIntDefault reads an integer plugin input by key, returning def when the
+// key is absent or the value cannot be parsed. This honors metadata `default:`
+// values (the input map only contains keys the user set explicitly).
+func readIntDefault(in map[string]any, key string, def int) int {
 	v, ok := in[key]
 	if !ok {
-		return 0
+		return def
 	}
 	switch x := v.(type) {
 	case int:
@@ -208,9 +215,9 @@ func readInt(in map[string]any, key string) int {
 	case string:
 		n, err := strconv.Atoi(strings.TrimSpace(x))
 		if err != nil {
-			return 0
+			return def
 		}
 		return n
 	}
-	return 0
+	return def
 }
