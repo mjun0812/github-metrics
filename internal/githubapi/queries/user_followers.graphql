@@ -1,11 +1,11 @@
-query UserFollowers($login: String!, $first: Int!) {
+query UserFollowers($login: String!, $first: Int!, $size: Int!) {
   user(login: $login) {
     followers(first: $first) {
       totalCount
       nodes {
         login
         name
-        avatarUrl
+        avatarUrl(size: $size)
       }
     }
     following(first: $first) {
@@ -13,7 +13,7 @@ query UserFollowers($login: String!, $first: Int!) {
       nodes {
         login
         name
-        avatarUrl
+        avatarUrl(size: $size)
       }
     }
   }
