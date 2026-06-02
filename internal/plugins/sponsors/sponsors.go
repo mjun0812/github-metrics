@@ -138,8 +138,10 @@ func (p *sponsorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 			Sponsors:      []Sponsor{},
 		}, nil
 	}
-	// Parse 011 v2 inputs.
-	sections := []string{"list"}
+	// Parse 011 v2 inputs. Defaults mirror upstream
+	// assets/plugins/sponsors/metadata.yml: sections=goal,list,about,
+	// size=24, title="Sponsor Me!".
+	sections := []string{"goal", "list", "about"}
 	if v, ok := pc.Inputs["plugin_sponsors_sections"]; ok {
 		if s, ok := v.(string); ok && s != "" {
 			sections = splitCSV(s)
@@ -149,18 +151,20 @@ func (p *sponsorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 	if v, ok := pc.Inputs["plugin_sponsors_past"]; ok {
 		past = truthy(v)
 	}
-	size := 64
+	size := 24
 	if v, ok := pc.Inputs["plugin_sponsors_size"]; ok {
 		if n, ok := v.(int); ok && n > 0 {
 			size = n
 		}
 	}
-	title := "Sponsors"
+	title := "Sponsor Me!"
 	user := ""
 	if pc.Data != nil && pc.Data.User != nil {
 		user = pc.Data.User.Login
-		if user != "" {
-			title = user + "'s sponsors"
+	}
+	if v, ok := pc.Inputs["plugin_sponsors_title"]; ok {
+		if s, ok := v.(string); ok && s != "" {
+			title = s
 		}
 	}
 
@@ -183,8 +187,13 @@ func (p *sponsorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 	if pc.GraphQL == nil || !pluginEnabled(pc.Inputs, "plugin_sponsors") {
 		return base, nil
 	}
+	// GitHub's GraphQL API rejects a connection `first: 0` (it must be a
+	// positive integer), so we never pass 0. Upstream only fetches the
+	// past connection when `plugin_sponsors_past` is enabled; we mirror
+	// that by always requesting a valid `first` (>= 1) and discarding the
+	// past result when `past` is disabled (see populateFromGraphQL).
 	activeFirst := 12
-	pastFirst := 0
+	pastFirst := 1
 	if past {
 		pastFirst = 12
 	}
@@ -197,19 +206,21 @@ func (p *sponsorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 		}
 		return base, nil
 	}
-	populateFromGraphQL(base, resp)
+	populateFromGraphQL(base, resp, past)
 	return base, nil
 }
 
 // populateFromGraphQL maps the ViewerSponsors GraphQL response onto the
-// pre-built base Result. It mutates `out` in place.
-func populateFromGraphQL(out *Result, resp *githubapi.ViewerSponsorsResponse) {
+// pre-built base Result. It mutates `out` in place. When `past` is false
+// the past connection is fetched only to satisfy GitHub's `first >= 1`
+// requirement and its results are discarded.
+func populateFromGraphQL(out *Result, resp *githubapi.ViewerSponsorsResponse, past bool) {
 	if resp == nil || resp.Viewer == nil {
 		return
 	}
 	v := resp.Viewer
 	if v.SponsorsListing != nil {
-		out.About = v.SponsorsListing.ShortDescription
+		out.About = v.SponsorsListing.FullDescription
 		if g := v.SponsorsListing.ActiveGoal; g != nil {
 			goalTitle := ""
 			if g.Title != nil {
@@ -230,7 +241,7 @@ func populateFromGraphQL(out *Result, resp *githubapi.ViewerSponsorsResponse) {
 		out.Count.Active.Total = v.Active.TotalCount
 		out.Sponsors = collectActive(v.Active.Nodes)
 	}
-	if v.Past != nil {
+	if past && v.Past != nil {
 		pastOnly := collectPast(v.Past.Nodes)
 		out.Past = pastOnly
 		out.Count.Past.Total = len(pastOnly)
