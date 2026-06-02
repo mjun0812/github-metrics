@@ -100,12 +100,18 @@ func TestRun_BothScopes_NotSkipped(t *testing.T) {
 	if r.Skipped {
 		t.Errorf("expected non-Skipped with both scopes; got %+v", r)
 	}
-	// 011 v2: default sections changed from ["sponsors"] (legacy v1
-	// shape) to ["list"] (upstream-equivalent default per EJS lines
-	// 17-49 — "list" enables the avatar grid). Caller can override with
-	// `plugin_sponsors_sections` input.
-	if len(r.Sections) == 0 || r.Sections[0] != "list" {
-		t.Errorf("expected Sections=[list]; got %+v", r.Sections)
+	// Default sections mirror upstream
+	// assets/plugins/sponsors/metadata.yml (goal, list, about). Caller
+	// can override with the `plugin_sponsors_sections` input.
+	want := []string{"goal", "list", "about"}
+	if len(r.Sections) != len(want) {
+		t.Fatalf("expected Sections=%v; got %+v", want, r.Sections)
+	}
+	for i, s := range want {
+		if r.Sections[i] != s {
+			t.Errorf("expected Sections=%v; got %+v", want, r.Sections)
+			break
+		}
 	}
 }
 

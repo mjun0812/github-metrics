@@ -370,6 +370,7 @@ type RateLimit {
 
 type SponsorsListing {
   shortDescription: String!
+  fullDescription: String!
   activeGoal: SponsorsGoal
 }
 

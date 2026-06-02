@@ -92,7 +92,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 
 	title := r.Title
 	if title == "" {
-		title = "Sponsors"
+		title = "Sponsor Me!"
 	}
 	user := r.User
 	if user == "" {
@@ -100,7 +100,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	}
 	size := r.Size
 	if size == 0 {
-		size = 64
+		size = 24
 	}
 
 	var b strings.Builder
@@ -113,7 +113,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	// list inline (EJS line 17).
 	sections := r.Sections
 	if len(sections) == 0 {
-		sections = []string{"list"}
+		sections = []string{"goal", "list", "about"}
 	}
 	hasGoal := containsString(sections, "goal")
 	hasList := containsString(sections, "list")
@@ -145,6 +145,9 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 					width, width, filled, filled, empty)
 			}
 			// "N sponsors are funding ${user}'s work" line + goal title.
+			// Upstream (sponsors.ejs) only emits the text when
+			// count.active.total is truthy; with zero active sponsors the
+			// span is left empty (matching docs/reference_examples).
 			b.WriteString(`<div class="goal-text">`)
 			b.WriteString(`<span>`)
 			if r.Count.Active.Total > 0 {
@@ -155,9 +158,6 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 					sponsorsAreFundingVerb(r.Count.Active.Total),
 					partials.EscapeXML(user),
 				)
-			} else {
-				// Empty-state per mjun0812 case — no active sponsors.
-				fmt.Fprintf(&b, `0 sponsors are funding %s's work`, partials.EscapeXML(user))
 			}
 			b.WriteString(`</span>`)
 			if section == "goal" && r.Goal != nil && r.Goal.Title != "" {
@@ -212,10 +212,11 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 			b.WriteString(`<div class="row fill-width">`)
 			b.WriteString(`<section class="sponsors">`)
 			if r.About != "" {
-				// Note: upstream uses `<%- %>` (unescaped) for the
-				// markdown — we render escaped here as a defence-in-depth
-				// (markdown rendering is not wired in v1).
-				fmt.Fprintf(&b, `<div class="markdown">%s</div>`, partials.EscapeXML(r.About))
+				// Upstream emits the bio unescaped (`<%- %>` in
+				// sponsors.ejs) after running it through `imports.markdown`.
+				// renderMarkdown reproduces that markup (paragraphs, links,
+				// images, emphasis) while escaping the text nodes.
+				fmt.Fprintf(&b, `<div class="markdown">%s</div>`, renderMarkdown(r.About))
 			} else {
 				b.WriteString(`<div class="markdown"></div>`)
 			}
