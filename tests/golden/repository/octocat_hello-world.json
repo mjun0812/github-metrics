@@ -230,8 +230,15 @@
     },
     "sponsorships": {
       "active": [],
+      "amount": 0,
+      "image": "",
       "past": null,
-      "skipped": true
+      "sections": [
+        "amount",
+        "sponsorships"
+      ],
+      "skipped": true,
+      "started": null
     },
     "stargazers": {
       "charts": {
