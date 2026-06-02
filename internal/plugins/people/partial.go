@@ -112,7 +112,13 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	}
 	sort.Strings(keys)
 
-	avatarSize := 64 // upstream `plugins.people.size` default
+	// Avatar display size honors plugin_people_size (resolved in Run,
+	// stored on the Result). Fall back to the metadata default (28)
+	// when the Result predates the size field (e.g. golden fixtures).
+	avatarSize := r.Size
+	if avatarSize <= 0 {
+		avatarSize = defaultPeopleSize
+	}
 
 	var b strings.Builder
 	b.WriteString(`<section data-section="people">`)
