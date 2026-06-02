@@ -32,37 +32,49 @@
 > `Metrics` バージョン文字列など動的な部分は再生成ごとに変わります（`docs/examples`
 > 側は `normalize-svg-stream` でマスク済みなので、その点だけ差分が出ます）。
 
-## 正しく描画できていないカード（エラー・データ不足）
+## 正しく描画できなかったカード（削除済み）
 
-以下は生成時にエラー・警告が出た、または対象データが存在せず **正しく描画できていない**
-カードです。いずれも本プロジェクトの Go 実装の不具合ではなく、upstream ツールの挙動・
-GitHub API の権限/データ起因です。
+以下のカードは生成時に **upstream v3.34 側のエラー**でカード本体に `Unexpected error`
+が描画される、または対象データが取得できず空になったため、**このディレクトリから削除**
+しました。いずれも本プロジェクトの Go 実装の不具合ではなく、upstream ツールのコードバグ・
+GitHub API 仕様変更・権限/データ起因です。
 
-| カード                                  | 状態                                | 原因                                                                                                                                                                                                                                                            |
-| --------------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `metrics.plugin.languages.recent.svg`   | **未生成**（ファイル無し）          | upstream v3.34 の `source/plugins/languages/analyzer/recent.mjs:70` が `mjun0812` のデータで例外（`Array.filter`）を投げて決定的に失敗。`plugin_languages_sections: recently-used` 指定時のみ発生するため、このワークフローでは最初から生成対象に含めていない。 |
-| `metrics.repository.plugin.traffic.svg` | **空**（コンテンツ無し、高さ ~8px） | `traffic` プラグインがログに `warning │ no data or unsufficient permissions for repository traffic, skipping...` を出力。リポジトリ traffic API は push/admin 権限が必要で、データ取得できずセクションごとスキップされた。                                      |
-| `metrics.plugin.traffic.svg`            | **ほぼ空**（実テキストなし）        | 同上。user 配下リポジトリの traffic も同じ警告でスキップされ、空セクションのみ描画。                                                                                                                                                                            |
+| 削除したカード                            | 原因                                                                                                                                                                                                                                        |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `metrics.plugin.achievements.svg`         | GitHub が **Projects (classic) API を廃止**（[sunset 2024-05](https://github.blog/changelog/2024-05-23-sunset-notice-projects-classic/)）。achievements は内部で classic projects を参照するため GraphQL `NOT_FOUND` → `Unexpected error`。 |
+| `metrics.plugin.achievements.compact.svg` | 同上（achievements の compact 表示）。                                                                                                                                                                                                      |
+| `metrics.plugin.projects.svg`             | 同上。`projects` プラグインが Projects (classic) API を直接参照するため `NOT_FOUND` → `Unexpected error`。                                                                                                                                  |
+| `metrics.plugin.activity.svg`             | upstream のコードバグ。`TypeError: Cannot read properties of undefined (reading 'filter')`（`source/plugins/activity`）で `Unexpected error`。                                                                                              |
+| `metrics.repository.plugin.activity.svg`  | 同上（repository テンプレートの activity）。                                                                                                                                                                                                |
+| `metrics.plugin.habits.facts.svg`         | upstream のコードバグ。`TypeError: Cannot destructure property 'author' of 'undefined'`（`source/plugins/habits/index.mjs:51`）で `Unexpected error`。                                                                                      |
+| `metrics.plugin.habits.charts.svg`        | 同上（habits の charts 表示）。                                                                                                                                                                                                             |
+| `metrics.repository.plugin.traffic.svg`   | `traffic` API はリポジトリ push/admin 権限が必要で、データ取得できずセクションごとスキップ。コンテンツ無し（高さ ~8px）の空カードになるため削除。                                                                                           |
 
-> 補足: `languages` プラグイン本体・`.details` / `.indepth` の各カードは正常に生成済みです。
-> `metrics.plugin.reactions.svg` などテキスト量の少ないカードはエラーではなく、対象データ
-> （対象期間のリアクション等）が少ないだけで正常です。
+### 未生成（最初から対象外）
+
+| カード                                | 原因                                                                                                                                                                                                                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `metrics.plugin.languages.recent.svg` | upstream v3.34 の `source/plugins/languages/analyzer/recent.mjs:70` が `mjun0812` のデータで例外（`Array.filter`）を投げて決定的に失敗。`plugin_languages_sections: recently-used` 指定時のみ発生するため、ワークフローの生成対象に含めていない。 |
+
+> 補足:
+>
+> - `metrics.plugin.stargazers.svg` / `.graph.svg` はエラー無し・実データ描画済みで**正常**です。
+> - `metrics.plugin.traffic.svg`（user テンプレート）は traffic セクションこそデータ無しですが、
+>   カード自体は他要素を含めて描画されており保持しています。
+> - `languages` プラグイン本体・`.details` / `.indepth` の各カードは正常です。
+> - `metrics.plugin.reactions.svg` などテキスト量の少ないカードはエラーではなく、対象データが
+>   少ないだけで正常です。
 
 ## ファイル一覧
 
 ### User カード（`user: mjun0812`）
 
 - `metrics.base.svg` / `metrics.classic.svg`
-- `metrics.plugin.achievements.svg` / `metrics.plugin.achievements.compact.svg`
-- `metrics.plugin.activity.svg`
 - `metrics.plugin.calendar.svg` / `metrics.plugin.calendar.full.svg`
-- `metrics.plugin.habits.facts.svg` / `metrics.plugin.habits.charts.svg`
 - `metrics.plugin.isocalendar.svg` / `metrics.plugin.isocalendar.fullyear.svg`
 - `metrics.plugin.languages.svg` / `.details.svg` / `.indepth.svg`
-  （`.recent.svg` は上記注記のとおり upstream 不具合で未生成）
 - `metrics.plugin.notable.svg` / `metrics.plugin.notable.indepth.svg`
 - `metrics.plugin.people.svg`
-- `metrics.plugin.projects.svg`
 - `metrics.plugin.reactions.svg`
 - `metrics.plugin.repositories.svg` / `metrics.plugin.repositories.pinned.svg`
 - `metrics.plugin.sponsors.svg` / `metrics.plugin.sponsorships.svg`
@@ -70,17 +82,22 @@ GitHub API の権限/データ起因です。
 - `metrics.plugin.stars.svg`
 - `metrics.plugin.starlists.svg`
 - `metrics.plugin.topics.svg` / `metrics.plugin.topics.icons.svg`
-- `metrics.plugin.traffic.svg` ⚠️ ほぼ空（traffic スキップ。上記「正しく描画できていないカード」参照）
+- `metrics.plugin.traffic.svg`
+
+> achievements / achievements.compact / activity / habits.facts / habits.charts /
+> projects は upstream v3.34 のエラーで描画できず削除しました（上記「正しく描画できなかった
+> カード」参照）。
 
 ### Repository カード（`repo: flash-attention-prebuild-wheels`, `template: repository`）
 
 - `metrics.repository.svg`
 - `metrics.repository.plugin.languages.svg`
 - `metrics.repository.plugin.contributors.svg`
-- `metrics.repository.plugin.activity.svg`
 - `metrics.repository.plugin.people.svg`
 - `metrics.repository.plugin.stargazers.svg`
-- `metrics.repository.plugin.traffic.svg` ⚠️ 空（traffic スキップ。上記「正しく描画できていないカード」参照）
+
+> activity / traffic は upstream v3.34 のエラー・データ不足で描画できず削除しました
+> （上記「正しく描画できなかったカード」参照）。
 
 ## 再生成
 
