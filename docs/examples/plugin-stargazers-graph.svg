@@ -3,7 +3,7 @@
     <style/>
   </defs>
   <style>
-    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}h3{font-size:14px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.column{display:flex;flex-direction:column;align-items:center}.margin-bottom{margin-bottom:16px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}.chart{padding:0 8px}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
+    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}h3{font-size:14px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}.column{display:flex;flex-direction:column;align-items:center}.margin-bottom{margin-bottom:16px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}.chart{padding:0 8px}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
   </style>
   <style/>
   <foreignObject x="0" y="0" width="100%" height="100%">
@@ -24,58 +24,62 @@
               <svg xmlns="http://www.w3.org/2000/svg" class="stargazers-graph" width="480" height="200" viewBox="0 0 480 200" role="img" aria-label="Total stargazers graph">
                 <line x1="32.0" y1="12.0" x2="32.0" y2="146.0" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
                 <line x1="32.0" y1="146.0" x2="466.0" y2="146.0" stroke="rgba(127, 127, 127, .8)"/>
-                <path d="M32.0,146.0L53.7,145.2L75.4,144.5L97.1,143.7L118.8,143.0L140.5,142.2L162.2,141.5L183.9,140.7L205.6,139.9L227.3,139.2L249.0,111.9L270.7,105.9L292.4,105.1L314.1,103.6L335.8,100.6L357.5,99.1L379.2,96.0L400.9,95.3L422.6,94.5L444.3,88.5L466.0,12.0L466.0,146.0L444.3,146.0L422.6,146.0L400.9,146.0L379.2,146.0L357.5,146.0L335.8,146.0L314.1,146.0L292.4,146.0L270.7,146.0L249.0,146.0L227.3,146.0L205.6,146.0L183.9,146.0L162.2,146.0L140.5,146.0L118.8,146.0L97.1,146.0L75.4,146.0L53.7,146.0L32.0,146.0Z" fill="rgba(88, 166, 255, .1)"/>
-                <path d="M32.0,146.0L53.7,145.2L75.4,144.5L97.1,143.7L118.8,143.0L140.5,142.2L162.2,141.5L183.9,140.7L205.6,139.9L227.3,139.2L249.0,111.9L270.7,105.9L292.4,105.1L314.1,103.6L335.8,100.6L357.5,99.1L379.2,96.0L400.9,95.3L422.6,94.5L444.3,88.5L466.0,12.0" fill="transparent" stroke="#87ceeb" stroke-width="2"/>
+                <path d="M32.0,146.0L52.7,145.2L73.3,144.5L94.0,143.7L114.7,143.0L135.3,142.2L156.0,141.5L176.7,140.7L197.3,139.9L218.0,139.2L238.7,111.9L259.3,105.9L280.0,105.1L300.7,103.6L321.3,100.6L342.0,99.1L362.7,96.0L383.3,95.3L404.0,94.5L424.7,88.5L445.3,19.6L466.0,12.0L466.0,146.0L445.3,146.0L424.7,146.0L404.0,146.0L383.3,146.0L362.7,146.0L342.0,146.0L321.3,146.0L300.7,146.0L280.0,146.0L259.3,146.0L238.7,146.0L218.0,146.0L197.3,146.0L176.7,146.0L156.0,146.0L135.3,146.0L114.7,146.0L94.0,146.0L73.3,146.0L52.7,146.0L32.0,146.0Z" fill="rgba(88, 166, 255, .1)"/>
+                <path d="M32.0,146.0L52.7,145.2L73.3,144.5L94.0,143.7L114.7,143.0L135.3,142.2L156.0,141.5L176.7,140.7L197.3,139.9L218.0,139.2L238.7,111.9L259.3,105.9L280.0,105.1L300.7,103.6L321.3,100.6L342.0,99.1L362.7,96.0L383.3,95.3L404.0,94.5L424.7,88.5L445.3,19.6L466.0,12.0" fill="transparent" stroke="#87ceeb" stroke-width="2"/>
                 <circle cx="32.0" cy="146.0" r="2" fill="#106cbc"/>
                 <text x="32.0" y="140.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
                   1
                 </text>
-                <circle cx="53.7" cy="145.2" r="2" fill="#106cbc"/>
-                <circle cx="75.4" cy="144.5" r="2" fill="#106cbc"/>
-                <text x="75.4" y="138.5" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                <circle cx="52.7" cy="145.2" r="2" fill="#106cbc"/>
+                <circle cx="73.3" cy="144.5" r="2" fill="#106cbc"/>
+                <text x="73.3" y="138.5" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
                   3
                 </text>
-                <circle cx="97.1" cy="143.7" r="2" fill="#106cbc"/>
-                <circle cx="118.8" cy="143.0" r="2" fill="#106cbc"/>
-                <text x="118.8" y="137.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                <circle cx="94.0" cy="143.7" r="2" fill="#106cbc"/>
+                <circle cx="114.7" cy="143.0" r="2" fill="#106cbc"/>
+                <text x="114.7" y="137.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
                   5
                 </text>
-                <circle cx="140.5" cy="142.2" r="2" fill="#106cbc"/>
-                <circle cx="162.2" cy="141.5" r="2" fill="#106cbc"/>
-                <text x="162.2" y="135.5" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                <circle cx="135.3" cy="142.2" r="2" fill="#106cbc"/>
+                <circle cx="156.0" cy="141.5" r="2" fill="#106cbc"/>
+                <text x="156.0" y="135.5" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
                   7
                 </text>
-                <circle cx="183.9" cy="140.7" r="2" fill="#106cbc"/>
-                <circle cx="205.6" cy="139.9" r="2" fill="#106cbc"/>
-                <text x="205.6" y="133.9" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                <circle cx="176.7" cy="140.7" r="2" fill="#106cbc"/>
+                <circle cx="197.3" cy="139.9" r="2" fill="#106cbc"/>
+                <text x="197.3" y="133.9" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
                   9
                 </text>
-                <circle cx="227.3" cy="139.2" r="2" fill="#106cbc"/>
-                <circle cx="249.0" cy="111.9" r="2" fill="#106cbc"/>
-                <text x="249.0" y="105.9" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                <circle cx="218.0" cy="139.2" r="2" fill="#106cbc"/>
+                <circle cx="238.7" cy="111.9" r="2" fill="#106cbc"/>
+                <text x="238.7" y="105.9" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
                   46
                 </text>
-                <circle cx="270.7" cy="105.9" r="2" fill="#106cbc"/>
-                <circle cx="292.4" cy="105.1" r="2" fill="#106cbc"/>
-                <text x="292.4" y="99.1" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                <circle cx="259.3" cy="105.9" r="2" fill="#106cbc"/>
+                <circle cx="280.0" cy="105.1" r="2" fill="#106cbc"/>
+                <text x="280.0" y="99.1" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
                   55
                 </text>
-                <circle cx="314.1" cy="103.6" r="2" fill="#106cbc"/>
-                <circle cx="335.8" cy="100.6" r="2" fill="#106cbc"/>
-                <text x="335.8" y="94.6" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                <circle cx="300.7" cy="103.6" r="2" fill="#106cbc"/>
+                <circle cx="321.3" cy="100.6" r="2" fill="#106cbc"/>
+                <text x="321.3" y="94.6" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
                   61
                 </text>
-                <circle cx="357.5" cy="99.1" r="2" fill="#106cbc"/>
-                <circle cx="379.2" cy="96.0" r="2" fill="#106cbc"/>
-                <text x="379.2" y="90.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                <circle cx="342.0" cy="99.1" r="2" fill="#106cbc"/>
+                <circle cx="362.7" cy="96.0" r="2" fill="#106cbc"/>
+                <text x="362.7" y="90.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
                   67
                 </text>
-                <circle cx="400.9" cy="95.3" r="2" fill="#106cbc"/>
-                <circle cx="422.6" cy="94.5" r="2" fill="#106cbc"/>
-                <text x="422.6" y="88.5" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                <circle cx="383.3" cy="95.3" r="2" fill="#106cbc"/>
+                <circle cx="404.0" cy="94.5" r="2" fill="#106cbc"/>
+                <text x="404.0" y="88.5" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
                   69
                 </text>
-                <circle cx="444.3" cy="88.5" r="2" fill="#106cbc"/>
+                <circle cx="424.7" cy="88.5" r="2" fill="#106cbc"/>
+                <circle cx="445.3" cy="19.6" r="2" fill="#106cbc"/>
+                <text x="445.3" y="13.6" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  168
+                </text>
                 <circle cx="466.0" cy="12.0" r="2" fill="#106cbc"/>
                 <text x="466.0" y="6.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
                   178
@@ -83,35 +87,38 @@
                 <text x="32.0" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 32.0 158.0)">
                   Nov 2022
                 </text>
-                <text x="75.4" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 75.4 158.0)">
+                <text x="73.3" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 73.3 158.0)">
                   Aug 2023
                 </text>
-                <text x="118.8" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 118.8 158.0)">
+                <text x="114.7" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 114.7 158.0)">
                   Apr 2024
                 </text>
-                <text x="162.2" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 162.2 158.0)">
+                <text x="156.0" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 156.0 158.0)">
                   Aug 2024
                 </text>
-                <text x="205.6" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 205.6 158.0)">
+                <text x="197.3" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 197.3 158.0)">
                   Mar 2025
                 </text>
-                <text x="249.0" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 249.0 158.0)">
+                <text x="238.7" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 238.7 158.0)">
                   Jun 2025
                 </text>
-                <text x="292.4" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 292.4 158.0)">
+                <text x="280.0" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 280.0 158.0)">
                   Aug 2025
                 </text>
-                <text x="335.8" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 335.8 158.0)">
+                <text x="321.3" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 321.3 158.0)">
                   Oct 2025
                 </text>
-                <text x="379.2" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 379.2 158.0)">
+                <text x="362.7" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 362.7 158.0)">
                   Dec 2025
                 </text>
-                <text x="422.6" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 422.6 158.0)">
+                <text x="404.0" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 404.0 158.0)">
                   Feb 2026
                 </text>
-                <text x="466.0" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 466.0 158.0)">
+                <text x="445.3" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 445.3 158.0)">
                   May 2026
+                </text>
+                <text x="466.0" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 466.0 158.0)">
+                  Jun 2026
                 </text>
               </svg>
             </section>
