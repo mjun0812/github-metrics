@@ -435,6 +435,30 @@ type OrganizationResponse struct {
 // GetOrganization returns OrganizationResponse.Organization, and is useful for accessing the field via an interface.
 func (v *OrganizationResponse) GetOrganization() *OrganizationOrganization { return v.Organization }
 
+type ReactionContent string
+
+const (
+	ReactionContentThumbsUp   ReactionContent = "THUMBS_UP"
+	ReactionContentThumbsDown ReactionContent = "THUMBS_DOWN"
+	ReactionContentLaugh      ReactionContent = "LAUGH"
+	ReactionContentHooray     ReactionContent = "HOORAY"
+	ReactionContentConfused   ReactionContent = "CONFUSED"
+	ReactionContentHeart      ReactionContent = "HEART"
+	ReactionContentRocket     ReactionContent = "ROCKET"
+	ReactionContentEyes       ReactionContent = "EYES"
+)
+
+var AllReactionContent = []ReactionContent{
+	ReactionContentThumbsUp,
+	ReactionContentThumbsDown,
+	ReactionContentLaugh,
+	ReactionContentHooray,
+	ReactionContentConfused,
+	ReactionContentHeart,
+	ReactionContentRocket,
+	ReactionContentEyes,
+}
+
 // RepositoryRepository includes the requested fields of the GraphQL type Repository.
 type RepositoryRepository struct {
 	DatabaseId       *int                                                   `json:"databaseId"`
@@ -1574,12 +1598,28 @@ func (v *UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWi
 
 // UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnection includes the requested fields of the GraphQL type ReactionConnection.
 type UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnection struct {
-	TotalCount int `json:"totalCount"`
+	TotalCount int                                                                                                                           `json:"totalCount"`
+	Nodes      []*UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnectionNodesReaction `json:"nodes"`
 }
 
 // GetTotalCount returns UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnection.TotalCount, and is useful for accessing the field via an interface.
 func (v *UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnection) GetTotalCount() int {
 	return v.TotalCount
+}
+
+// GetNodes returns UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnection) GetNodes() []*UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnectionNodesReaction {
+	return v.Nodes
+}
+
+// UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnectionNodesReaction includes the requested fields of the GraphQL type Reaction.
+type UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnectionNodesReaction struct {
+	Content ReactionContent `json:"content"`
+}
+
+// GetContent returns UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnectionNodesReaction.Content, and is useful for accessing the field via an interface.
+func (v *UserReactionsUserIssueCommentsIssueCommentConnectionNodesIssueCommentWithReactionsReactionsReactionConnectionNodesReaction) GetContent() ReactionContent {
+	return v.Content
 }
 
 // UserReactionsUserIssuesIssueConnectionWithReactions includes the requested fields of the GraphQL type IssueConnectionWithReactions.
@@ -1610,12 +1650,28 @@ func (v *UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReacti
 
 // UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnection includes the requested fields of the GraphQL type ReactionConnection.
 type UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnection struct {
-	TotalCount int `json:"totalCount"`
+	TotalCount int                                                                                                                   `json:"totalCount"`
+	Nodes      []*UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnectionNodesReaction `json:"nodes"`
 }
 
 // GetTotalCount returns UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnection.TotalCount, and is useful for accessing the field via an interface.
 func (v *UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnection) GetTotalCount() int {
 	return v.TotalCount
+}
+
+// GetNodes returns UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnection) GetNodes() []*UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnectionNodesReaction {
+	return v.Nodes
+}
+
+// UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnectionNodesReaction includes the requested fields of the GraphQL type Reaction.
+type UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnectionNodesReaction struct {
+	Content ReactionContent `json:"content"`
+}
+
+// GetContent returns UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnectionNodesReaction.Content, and is useful for accessing the field via an interface.
+func (v *UserReactionsUserIssuesIssueConnectionWithReactionsNodesIssueWithReactionsReactionsReactionConnectionNodesReaction) GetContent() ReactionContent {
+	return v.Content
 }
 
 // UserRepositoriesResponse is returned by UserRepositories on success.
@@ -4762,6 +4818,9 @@ query UserReactions ($login: String!, $issuesFirst: Int!, $commentsFirst: Int!) 
 			nodes {
 				reactions {
 					totalCount
+					nodes {
+						content
+					}
 				}
 			}
 		}
@@ -4770,6 +4829,9 @@ query UserReactions ($login: String!, $issuesFirst: Int!, $commentsFirst: Int!) 
 			nodes {
 				reactions {
 					totalCount
+					nodes {
+						content
+					}
 				}
 			}
 		}
