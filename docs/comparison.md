@@ -20,25 +20,25 @@
 
 upstream に存在する各 plugin のサブモードについて、Go 実装の対応状況です。
 
-| upstream variant                 | Go 側                  | 備考                                                                                                                |
-| -------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `languages.recent`               | ✅ 比較可              | `plugin-languages-recent.svg`                                                                                       |
-| `languages.indepth`              | ✅ 比較可              | `plugin-languages-indepth.svg`                                                                                      |
-| `languages.details`              | ✅ 比較可              | `plugin-languages-details.svg`（本対応で追加）                                                                      |
-| `achievements.compact`           | ✅ 比較可              | `plugin-achievements-compact.svg`（本対応で追加）                                                                   |
-| `isocalendar.fullyear`           | ✅ 比較可              | `plugin-isocalendar-fullyear.svg`（本対応で追加）                                                                   |
-| `calendar.full`                  | ◐ 対応・差分なし       | `plugin_calendar_limit=0` を受け付けるが、このサンプルデータでは無印とバイト同一                                    |
-| `repositories.pinned`            | ◐ 対応・差分なし       | `plugin_repositories_pinned` を受け付けるが、このサンプルデータでは無印とバイト同一                                 |
-| `topics.icons`                   | ○ データ無し           | `plugin_topics_mode=icons` 対応。サンプルユーザーに topics 無しで空                                                 |
-| `starlists.languages`            | ○ データ無し           | `plugin_starlists_languages` 対応。サンプルユーザーにデータ無しで空                                                 |
-| `sponsors.full`                  | ○ データ無し           | `plugin_sponsors_sections` 対応。サンプルユーザーにデータ無しで空                                                   |
-| `habits.facts` / `habits.charts` | ✅ 比較可              | `plugin_habits_facts` / `plugin_habits_charts` で個別トグル。`plugin-habits-facts.svg` / `plugin-habits-charts.svg` |
-| `notable.indepth`                | ✅ 比較可              | `plugin_notable_indepth` 対応。`@owner/repo` 粒度チップ + 統計ゲージ。`plugin-notable-indepth.svg`                  |
-| `contributors.contributions`     | ✅ 比較可（repo mode） | `plugin_contributors_contributions` 対応。`plugin-contributors-repo-contributions.svg` で adds/dels 列を表示        |
-| `stargazers.graph`               | ✅ 比較可              | `plugin_stargazers_charts_type=graph` 対応。`plugin-stargazers-graph.svg`                                           |
-| `stargazers.worldmap`            | ✗ 未対応               | backlog（Google Maps API、R-012 Skipped path）                                                                      |
-| `stargazers.chartist`            | ◐ graph と同一         | `charts_type=chartist` は deprecated alias。`graph` とバイト同一出力                                                |
-| `people.repository`              | ✅ 比較可（repo mode） | contributors/stargazers/watchers 対応。`plugin-people-repo-types.svg` で 3 種同時表示                               |
+| upstream variant                 | Go 側                  | 備考                                                                                                                    |
+| -------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `languages.recent`               | ✅ 比較可              | `plugin-languages-recent.svg`                                                                                           |
+| `languages.indepth`              | ✅ 比較可              | `plugin-languages-indepth.svg`                                                                                          |
+| `languages.details`              | ✅ 比較可              | `plugin-languages-details.svg`（本対応で追加）                                                                          |
+| `achievements.compact`           | ✅ 比較可              | `plugin-achievements-compact.svg`（本対応で追加）                                                                       |
+| `isocalendar.fullyear`           | ✅ 比較可              | `plugin-isocalendar-fullyear.svg`（本対応で追加）                                                                       |
+| `calendar.full`                  | ◐ 対応・差分なし       | `plugin_calendar_limit=0` を受け付けるが、このサンプルデータでは無印とバイト同一                                        |
+| `repositories.pinned`            | ◐ 対応・差分なし       | `plugin_repositories_pinned` を受け付けるが、このサンプルデータでは無印とバイト同一                                     |
+| `topics.icons`                   | ○ データ無し           | `plugin_topics_mode=icons` 対応。サンプルユーザーに topics 無しで空                                                     |
+| `starlists.languages`            | ○ データ無し           | `plugin_starlists_languages` 対応。サンプルユーザーにデータ無しで空                                                     |
+| `sponsors.full`                  | ○ データ無し           | `plugin_sponsors_sections` 対応。サンプルユーザーにデータ無しで空                                                       |
+| `habits.facts` / `habits.charts` | ✅ 比較可              | `plugin_habits_facts` / `plugin_habits_charts` で個別トグル。<br>`plugin-habits-facts.svg` / `plugin-habits-charts.svg` |
+| `notable.indepth`                | ✅ 比較可              | `plugin_notable_indepth` 対応。`@owner/repo` 粒度チップ + 統計ゲージ。<br>`plugin-notable-indepth.svg`                  |
+| `contributors.contributions`     | ✅ 比較可（repo mode） | `plugin_contributors_contributions` 対応。<br>`plugin-contributors-repo-contributions.svg` で adds/dels 列を表示        |
+| `stargazers.graph`               | ✅ 比較可              | `plugin_stargazers_charts_type=graph` 対応。<br>`plugin-stargazers-graph.svg`                                           |
+| `stargazers.worldmap`            | ✗ 未対応               | backlog（Google Maps API、R-012 Skipped path）                                                                          |
+| `stargazers.chartist`            | ◐ graph と同一         | `charts_type=chartist` は deprecated alias。`graph` とバイト同一出力                                                    |
+| `people.repository`              | ✅ 比較可（repo mode） | contributors / stargazers / watchers 対応。<br>`plugin-people-repo-types.svg` で 3 種同時表示                           |
 
 ✅ = 左右比較可 / ◐ = Go は対応するがサンプル差分なし・または repository 専用 / deprecated alias でサンプル省略 / ○ = Go は対応するがサンプルユーザーにデータ無し（空） / ✗ = Go 実装が未対応（要実装・backlog）
 
@@ -317,9 +317,9 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 
 そのうえで、`--plugin <slug>=yes` トグルが追加の効果を持つ plugin は **`mjun0812/flash-attention-prebuild-wheels` で実測した限り** 以下に限定されます:
 
-| 効果あり (repo mode で出力が変わる)                                                                                                               | 効果なし (chrome と byte 同一になる)                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `people` (新規 `<section data-section="people">` を追加)<br>`contributors_contributions` (chrome の contributors セクションに adds/dels 列を追加) | `achievements` / `activity` / `calendar` / `contributors` (chrome 側ですでに描画) / `habits` / `isocalendar` / `languages` (chrome 側ですでに描画) / `notable` / `projects` (データ無し) / `reactions` / `repositories` / `sponsors` (データ無し) / `sponsorships` / `stargazers` (M7 MVP は totals のみで partial は空文字列) / `starlists` / `stars` / `topics` / `traffic` (partial 未登録) |
+| 効果あり (repo mode で出力が変わる)                                                                                                                     | 効果なし (chrome と byte 同一になる)                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `people`<br>新規 `<section data-section="people">` を追加<br><br>`contributors_contributions`<br>chrome の contributors セクションに adds/dels 列を追加 | `achievements` / `activity` / `calendar` / `habits`<br>`isocalendar` / `notable` / `reactions` / `repositories`<br>`sponsorships` / `starlists` / `stars` / `topics`<br><br>`contributors` / `languages`: chrome 側ですでに描画<br>`projects` / `sponsors`: データ無し<br>`stargazers`: M7 MVP は totals のみで partial は空文字列<br>`traffic`: partial 未登録 |
 
 「効果なし」側の plugin (18 個) は `plugin-<slug>-repo.svg` を生成しても `plugin-base-repo.svg` と byte 同一になります（md5 一致を実測で確認済）。これは未実装ではなく:
 
@@ -360,9 +360,9 @@ level=WARN msg="plugin contributors is only supported in repository mode (curren
 
 ### 総合サンプル
 
-| sample                            | 内容                                                                                                                                                                                                               |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `examples/metrics-repository.svg` | repository template overview。`_.json` に partial を持つ 5 plugin (`languages` / `stargazers` (graph) / `people` (stargazers + watchers + contributors) / `activity` / `contributors` (with contributions)) を合成 |
+| sample                            | 内容                                                                                                                                                                                                                   |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `examples/metrics-repository.svg` | repository template overview。`_.json` に partial を持つ 5 plugin を合成。<br>`languages` / `stargazers` (graph) / `people` (stargazers + watchers + contributors)<br>`activity` / `contributors` (with contributions) |
 
 ### repository mode の upstream(mjun0812) ↔ Go 実装 比較
 
