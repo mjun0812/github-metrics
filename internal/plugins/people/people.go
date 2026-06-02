@@ -42,7 +42,29 @@ type Result struct {
 	Skipped       bool                `json:"skipped,omitempty"`
 	SkippedReason string              `json:"-"`
 	Mode          string              `json:"mode,omitempty"`
+	Size          int                 `json:"size,omitempty"`
 	Types         map[string][]Person `json:"types"`
+}
+
+// Avatar size bounds mirror assets/plugins/people/metadata.yml
+// (plugin_people_size: default 28, min 8, max 64).
+const (
+	defaultPeopleSize = 28
+	minPeopleSize     = 8
+	maxPeopleSize     = 64
+)
+
+// readPeopleSize resolves plugin_people_size, applying the metadata
+// default (28) and clamping to [min 8, max 64].
+func readPeopleSize(in map[string]any) int {
+	size := readIntDefault(in, "plugin_people_size", defaultPeopleSize)
+	if size < minPeopleSize {
+		size = minPeopleSize
+	}
+	if size > maxPeopleSize {
+		size = maxPeopleSize
+	}
+	return size
 }
 
 // IsSkipped lets the classic dispatcher detect the skipped path.
@@ -82,7 +104,8 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		defaultTypes = []string{"stargazers", "watchers"}
 	}
 	types := readCSVDefault(pc.Inputs, "plugin_people_types", defaultTypes)
-	limit := readIntDefault(pc.Inputs, "plugin_people_limit", 26)
+	limit := readIntDefault(pc.Inputs, "plugin_people_limit", 24)
+	size := readPeopleSize(pc.Inputs)
 	shuffle := readBool(pc.Inputs, "plugin_people_shuffle")
 
 	out := make(map[string][]Person, len(types))
@@ -117,7 +140,7 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		if login == "" {
 			return &Result{Skipped: true, SkippedReason: "no login", Types: map[string][]Person{}}, nil
 		}
-		resp, err := pc.GraphQL.UserFollowers(ctx, login, limit)
+		resp, err := pc.GraphQL.UserFollowers(ctx, login, limit, size)
 		if err != nil {
 			return nil, xerrors.NewRetryableError(fmt.Errorf("people: %w", err))
 		}
@@ -157,7 +180,7 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		}
 	}
 
-	return &Result{Mode: plugins.AggregationMode(pc.Data), Types: out}, nil
+	return &Result{Mode: plugins.AggregationMode(pc.Data), Size: size, Types: out}, nil
 }
 
 func isRepositoryPeopleType(t string) bool {

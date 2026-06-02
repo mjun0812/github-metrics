@@ -182,6 +182,7 @@
     },
     "people": {
       "mode": "",
+      "size": 0,
       "skipped": true,
       "types": {}
     },
