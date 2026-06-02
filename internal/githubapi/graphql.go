@@ -133,9 +133,10 @@ func (g *GraphQL) UserReactions(ctx context.Context, login string, issuesFirst, 
 }
 
 // UserFollowers fetches the user's followers + following pages.
-// Consumed by the "people" plugin.
-func (g *GraphQL) UserFollowers(ctx context.Context, login string, first int) (*UserFollowersResponse, error) {
-	return UserFollowers(ctx, g.client, login, first)
+// Consumed by the "people" plugin. size bounds the fetched avatar
+// resolution via avatarUrl(size:) so embedded base64 stays small.
+func (g *GraphQL) UserFollowers(ctx context.Context, login string, first, size int) (*UserFollowersResponse, error) {
+	return UserFollowers(ctx, g.client, login, first, size)
 }
 
 // ViewerSponsors fetches sponsorshipsAsMaintainer (active + past) and

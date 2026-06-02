@@ -60,6 +60,43 @@ func (f *fixedMux) RoundTrip(req *http.Request) (*http.Response, error) {
 	}, nil
 }
 
+// capturingMux records the GraphQL request variables of the last call
+// so tests can assert the `first` / `size` arguments sent upstream.
+type capturingMux struct {
+	mu    sync.Mutex
+	body  string
+	vars  map[string]any
+	count int
+}
+
+func (c *capturingMux) RoundTrip(req *http.Request) (*http.Response, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.count++
+	if req.Body != nil {
+		raw, _ := io.ReadAll(req.Body)
+		var payload struct {
+			Variables map[string]any `json:"variables"`
+		}
+		_ = json.Unmarshal(raw, &payload)
+		c.vars = payload.Variables
+	}
+	h := http.Header{}
+	h.Set("Content-Type", "application/json")
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     h,
+		Body:       io.NopCloser(strings.NewReader(c.body)),
+		Request:    req,
+	}, nil
+}
+
+func (c *capturingMux) lastVariables() map[string]any {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.vars
+}
+
 func newGQL(t *testing.T, body string) *githubapi.GraphQL {
 	t.Helper()
 	gql, err := githubapi.NewGraphQL(
@@ -97,6 +134,94 @@ func TestRun_DefaultTypes(t *testing.T) {
 	}
 	if len(r.Types["following"]) != 1 {
 		t.Errorf("following len = %d, want 1", len(r.Types["following"]))
+	}
+}
+
+// TestRun_DefaultSizeAndLimit pins the upstream metadata.yml defaults
+// (plugin_people_size: 28, plugin_people_limit: 24) so a future
+// hardcode regression (issue #446) is caught. The limit is asserted via
+// the GraphQL `first` argument captured from the request body.
+func TestRun_DefaultSizeAndLimit(t *testing.T) {
+	t.Parallel()
+	cap := &capturingMux{body: followersBody}
+	gql, err := githubapi.NewGraphQL(
+		config.NewToken("MOCKED_TOKEN"),
+		"http://mock.localhost/graphql",
+		httpx.Options{Transport: cap, MaxRetries: 0},
+	)
+	if err != nil {
+		t.Fatalf("NewGraphQL: %v", err)
+	}
+	pc := &plugins.PluginContext{
+		Data:    plugins.NewData(),
+		Inputs:  map[string]any{"user": "octocat", "plugin_people": true},
+		GraphQL: gql,
+	}
+	out, _ := people.Plugin.Run(context.Background(), pc)
+	r := out.(*people.Result)
+	if r.Size != 28 {
+		t.Errorf("default Size = %d, want 28 (upstream metadata default)", r.Size)
+	}
+	if got := cap.lastVariables()["first"]; got != float64(24) {
+		t.Errorf("GraphQL first = %v, want 24 (upstream limit default)", got)
+	}
+	if got := cap.lastVariables()["size"]; got != float64(28) {
+		t.Errorf("GraphQL size = %v, want 28 (avatarUrl(size:) bound)", got)
+	}
+}
+
+// TestRun_SizeInputClamped verifies plugin_people_size is honored and
+// clamped to the metadata.yml [min 8, max 64] range.
+func TestRun_SizeInputClamped(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name string
+		in   any
+		want int
+	}{
+		{"honored", 40, 40},
+		{"below min clamps to 8", 2, 8},
+		{"above max clamps to 64", 999, 64},
+		{"string parsed", "32", 32},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			pc := &plugins.PluginContext{
+				Data:    plugins.NewData(),
+				Inputs:  map[string]any{"user": "octocat", "plugin_people": true, "plugin_people_size": tc.in},
+				GraphQL: newGQL(t, followersBody),
+			}
+			out, _ := people.Plugin.Run(context.Background(), pc)
+			r := out.(*people.Result)
+			if r.Size != tc.want {
+				t.Errorf("Size = %d, want %d", r.Size, tc.want)
+			}
+		})
+	}
+}
+
+// TestPartial_HonorsResultSize confirms the avatar <img> width/height
+// attributes follow Result.Size rather than a hardcoded value.
+func TestPartial_HonorsResultSize(t *testing.T) {
+	t.Parallel()
+	r := &people.Result{
+		Size: 28,
+		Types: map[string][]people.Person{
+			"followers": {{Login: "alice", Name: "Alice", AvatarURL: "a"}},
+		},
+	}
+	data := plugins.NewData()
+	data.SetPlugin(people.Name, r)
+	got, err := people.Partial(context.Background(), &templates.PartialContext{Data: data})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	if !strings.Contains(got, `width="28" height="28"`) {
+		t.Errorf("partial avatar should be 28x28; got:\n%s", got)
+	}
+	if strings.Contains(got, `width="64"`) {
+		t.Errorf("partial must not hardcode 64px; got:\n%s", got)
 	}
 }
 

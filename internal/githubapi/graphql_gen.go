@@ -4081,6 +4081,7 @@ func (v *__RepositoryInput) GetRepo() string { return v.Repo }
 type __UserFollowersInput struct {
 	Login string `json:"login"`
 	First int    `json:"first"`
+	Size  int    `json:"size"`
 }
 
 // GetLogin returns __UserFollowersInput.Login, and is useful for accessing the field via an interface.
@@ -4088,6 +4089,9 @@ func (v *__UserFollowersInput) GetLogin() string { return v.Login }
 
 // GetFirst returns __UserFollowersInput.First, and is useful for accessing the field via an interface.
 func (v *__UserFollowersInput) GetFirst() int { return v.First }
+
+// GetSize returns __UserFollowersInput.Size, and is useful for accessing the field via an interface.
+func (v *__UserFollowersInput) GetSize() int { return v.Size }
 
 // __UserIndepthInput is used internally by genqlient
 type __UserIndepthInput struct {
@@ -4562,14 +4566,14 @@ func User(
 
 // The query executed by UserFollowers.
 const UserFollowers_Operation = `
-query UserFollowers ($login: String!, $first: Int!) {
+query UserFollowers ($login: String!, $first: Int!, $size: Int!) {
 	user(login: $login) {
 		followers(first: $first) {
 			totalCount
 			nodes {
 				login
 				name
-				avatarUrl
+				avatarUrl(size: $size)
 			}
 		}
 		following(first: $first) {
@@ -4577,7 +4581,7 @@ query UserFollowers ($login: String!, $first: Int!) {
 			nodes {
 				login
 				name
-				avatarUrl
+				avatarUrl(size: $size)
 			}
 		}
 	}
@@ -4589,6 +4593,7 @@ func UserFollowers(
 	client_ graphql.Client,
 	login string,
 	first int,
+	size int,
 ) (data_ *UserFollowersResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "UserFollowers",
@@ -4596,6 +4601,7 @@ func UserFollowers(
 		Variables: &__UserFollowersInput{
 			Login: login,
 			First: first,
+			Size:  size,
 		},
 	}
 
