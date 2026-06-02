@@ -17,34 +17,26 @@ env:
   # Built against Go 1.26; matches the runner pin above.
   GOLANGCI_LINT_VERSION: "v2.12.2"
 
-# NOTE: GHA quota exhausted — all jobs temporarily moved to the local
-# self-hosted runner (hestia-x64-hestia, Linux/X64/ubuntu-24.04). The
-# original `runs-on: ubuntu-latest` line is kept as a comment above each
-# job for an easy revert once the quota recovers. macOS / arm64 jobs are
-# fully commented out because the self-hosted infra has no equivalent
-# capacity; restore them at the same time as the quota.
+# Job placement: chromium-dependent and macOS jobs run on GitHub-hosted
+# runners (ubuntu-latest pre-installs Chrome; macos-latest is the only
+# Darwin capacity). Pure-Go static checks (vet / lint / vuln / compliance)
+# stay on the local self-hosted runner (hestia-x64-hestia, Linux/X64) to
+# keep hosted-minute usage down.
 jobs:
-  # test disabled on self-hosted runner — `go test ./...` walks tests/visual,
-  # which enters CI strict mode (env CI=true) and fails with "chromium /
-  # google-chrome not found" because the self-hosted runner has no browser
-  # installed. Restore in full when GHA quota recovers and ubuntu-latest is
-  # back (it pre-installs Chrome).
-  # test:
-  #   name: test
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v5
-  #     - uses: actions/setup-go@v6
-  #       with:
-  #         go-version: ${{ env.GO_VERSION }}
-  #         cache: true
-  #     - name: go test
-  #       run: go test ./...
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: go test
+        run: go test ./...
 
   vet:
     name: vet
-    # github-hosted (restore when quota recovers):
-    # runs-on: ubuntu-latest
     runs-on: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v5
@@ -57,8 +49,6 @@ jobs:
 
   lint:
     name: lint
-    # github-hosted (restore when quota recovers):
-    # runs-on: ubuntu-latest
     runs-on: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v5
@@ -73,8 +63,6 @@ jobs:
 
   vuln:
     name: vuln
-    # github-hosted (restore when quota recovers):
-    # runs-on: ubuntu-latest
     runs-on: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v5
@@ -87,75 +75,63 @@ jobs:
       - name: govulncheck
         run: govulncheck ./...
 
-  # test-race disabled on self-hosted runner — same chromium-missing
-  # cause as `test` above (tests/visual fails in CI strict mode). Restore
-  # when quota recovers.
-  # test-race:
-  #   name: test-race
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v5
-  #     - uses: actions/setup-go@v6
-  #       with:
-  #         go-version: ${{ env.GO_VERSION }}
-  #         cache: true
-  #     - name: go test -race
-  #       run: go test -race ./...
+  test-race:
+    name: test-race
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: go test -race
+        run: go test -race ./...
 
-  # test-chromedp disabled on self-hosted runner — the `container:` mount
-  # uses GHA's hosted-runner-specific `/__w/_temp/` path which the
-  # self-hosted runner does not provision. Result: `sh: 0: cannot open
-  # /__w/_temp/<uuid>.sh`. Restore when quota recovers.
-  # test-chromedp:
-  #   name: test-chromedp
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: chromedp/headless-shell:latest
-  #   env:
-  #     METRICS_CHROME_PATH: /headless-shell/headless-shell
-  #   steps:
-  #     # The chromedp/headless-shell image is minimal and ships
-  #     # without `make` or `ca-certificates`. apt-get is available
-  #     # because the base is debian-slim; install the cert bundle so
-  #     # `go mod download` can verify the GoSumDB / proxy TLS chain.
-  #     - name: Install CA certificates
-  #       run: |
-  #         apt-get update
-  #         apt-get install -y --no-install-recommends ca-certificates
-  #     - uses: actions/checkout@v5
-  #     - uses: actions/setup-go@v6
-  #       with:
-  #         go-version: ${{ env.GO_VERSION }}
-  #         cache: true
-  #     # `-tags=chromedp` is what the Makefile target sets too; the
-  #     # Makefile is unused here because the image lacks `make`.
-  #     - name: go test -tags=chromedp
-  #       run: go test -tags=chromedp ./...
+  test-chromedp:
+    name: test-chromedp
+    runs-on: ubuntu-latest
+    container:
+      image: chromedp/headless-shell:latest
+    env:
+      METRICS_CHROME_PATH: /headless-shell/headless-shell
+    steps:
+      # The chromedp/headless-shell image is minimal and ships
+      # without `make` or `ca-certificates`. apt-get is available
+      # because the base is debian-slim; install the cert bundle so
+      # `go mod download` can verify the GoSumDB / proxy TLS chain.
+      - name: Install CA certificates
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      # `-tags=chromedp` is what the Makefile target sets too; the
+      # Makefile is unused here because the image lacks `make`.
+      - name: go test -tags=chromedp
+        run: go test -tags=chromedp ./...
 
-  # test-heavy disabled on self-hosted runner — same chromium-missing
-  # cause as `test` above (`-tags=heavy` still includes tests/visual,
-  # which fails in CI strict mode). Restore when quota recovers.
-  # test-heavy:
-  #   name: test-heavy
-  #   runs-on: ubuntu-latest
-  #   # `heavy` build tag covers M4 plugins that pull in go-enry's
-  #   # embedded language database and go-git's shallow clone path
-  #   # (languages.recent, languages.indepth). Both are pure Go, so no
-  #   # chromium container is needed; we just want the wall-time cost
-  #   # off the default `test` job. Parallel with `test` + `test-chromedp`.
-  #   steps:
-  #     - uses: actions/checkout@v5
-  #     - uses: actions/setup-go@v6
-  #       with:
-  #         go-version: ${{ env.GO_VERSION }}
-  #         cache: true
-  #     - name: go test -tags=heavy
-  #       run: go test -tags=heavy ./...
+  test-heavy:
+    name: test-heavy
+    runs-on: ubuntu-latest
+    # `heavy` build tag covers M4 plugins that pull in go-enry's
+    # embedded language database and go-git's shallow clone path
+    # (languages.recent, languages.indepth). Both are pure Go, so no
+    # chromium container is needed; we just want the wall-time cost
+    # off the default `test` job. Parallel with `test` + `test-chromedp`.
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: go test -tags=heavy
+        run: go test -tags=heavy ./...
 
   compliance:
     name: compliance
-    # github-hosted (restore when quota recovers):
-    # runs-on: ubuntu-latest
     runs-on: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v5
@@ -166,24 +142,21 @@ jobs:
       - name: compliance (no unadopted plugin refs, no removed sentinels, org_repo ignored)
         run: go test ./tests/compliance/...
 
-  # smoke-macos disabled while GHA quota is exhausted — the self-hosted
-  # runner is Linux/X64 only, so this job has no place to land. Restore
-  # in full when quota recovers.
-  # smoke-macos:
-  #   name: smoke-macos
-  #   runs-on: macos-latest
-  #   steps:
-  #     - uses: actions/checkout@v5
-  #     - uses: actions/setup-go@v6
-  #       with:
-  #         go-version: ${{ env.GO_VERSION }}
-  #         cache: true
-  #     - name: go build
-  #       run: go build ./...
-  #     - name: go test (config subset, run when packages exist)
-  #       run: |
-  #         if [ -d internal/config ]; then
-  #           go test ./internal/config/...
-  #         else
-  #           echo "internal/config not present yet; smoke build only"
-  #         fi
+  smoke-macos:
+    name: smoke-macos
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: go build
+        run: go build ./...
+      - name: go test (config subset, run when packages exist)
+        run: |
+          if [ -d internal/config ]; then
+            go test ./internal/config/...
+          else
+            echo "internal/config not present yet; smoke build only"
+          fi
