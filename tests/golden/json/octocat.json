@@ -266,8 +266,15 @@
     },
     "sponsorships": {
       "active": [],
+      "amount": 0,
+      "image": "",
       "past": null,
-      "skipped": false
+      "sections": [
+        "amount",
+        "sponsorships"
+      ],
+      "skipped": false,
+      "started": null
     },
     "stargazers": {
       "charts": {

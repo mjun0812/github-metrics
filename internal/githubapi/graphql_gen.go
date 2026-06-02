@@ -3758,7 +3758,13 @@ func (v *ViewerSponsorshipsResponse) GetViewer() *ViewerSponsorshipsViewerUser {
 
 // ViewerSponsorshipsViewerUser includes the requested fields of the GraphQL type User.
 type ViewerSponsorshipsViewerUser struct {
-	SponsorshipsAsSponsor *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnection `json:"sponsorshipsAsSponsor"`
+	TotalSponsorshipAmountAsSponsorInCents *int                                                                    `json:"totalSponsorshipAmountAsSponsorInCents"`
+	SponsorshipsAsSponsor                  *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnection `json:"sponsorshipsAsSponsor"`
+}
+
+// GetTotalSponsorshipAmountAsSponsorInCents returns ViewerSponsorshipsViewerUser.TotalSponsorshipAmountAsSponsorInCents, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorshipsViewerUser) GetTotalSponsorshipAmountAsSponsorInCents() *int {
+	return v.TotalSponsorshipAmountAsSponsorInCents
 }
 
 // GetSponsorshipsAsSponsor returns ViewerSponsorshipsViewerUser.SponsorshipsAsSponsor, and is useful for accessing the field via an interface.
@@ -5253,7 +5259,8 @@ func ViewerSponsors(
 const ViewerSponsorships_Operation = `
 query ViewerSponsorships ($first: Int!) {
 	viewer {
-		sponsorshipsAsSponsor(first: $first, orderBy: {field:CREATED_AT,direction:DESC}) {
+		totalSponsorshipAmountAsSponsorInCents
+		sponsorshipsAsSponsor(first: $first, activeOnly: false, orderBy: {field:CREATED_AT,direction:DESC}) {
 			totalCount
 			nodes {
 				createdAt

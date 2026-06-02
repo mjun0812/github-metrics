@@ -1,7 +1,9 @@
 query ViewerSponsorships($first: Int!) {
   viewer {
+    totalSponsorshipAmountAsSponsorInCents
     sponsorshipsAsSponsor(
       first: $first
+      activeOnly: false
       orderBy: { field: CREATED_AT, direction: DESC }
     ) {
       totalCount
