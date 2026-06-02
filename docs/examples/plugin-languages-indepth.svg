@@ -3,7 +3,7 @@
     <style/>
   </defs>
   <style>
-    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}h3{font-size:14px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.column{display:flex;flex-direction:column;align-items:center}.fill-width{width:100%}svg.bar{margin:4px 0}.field.language{margin:0 8px;flex-grow:0}.field.language.details{display:flex;justify-content:space-between}.field.language.details small{display:flex;justify-content:space-between;color:#666;text-align:right}.field.language.details&gt;*,.field.language.details small&gt;*{flex:1}.field.language.details small&gt;*:not(:last-child){margin-right:6px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
+    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}h3{font-size:14px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}.column{display:flex;flex-direction:column;align-items:center}.fill-width{width:100%}svg.bar{margin:4px 0}.field.language{margin:0 8px;flex-grow:0}.field.language.details{display:flex;justify-content:space-between}.field.language.details small{display:flex;justify-content:space-between;color:#666;text-align:right}.field.language.details&gt;*,.field.language.details small&gt;*{flex:1}.field.language.details small&gt;*:not(:last-child){margin-right:6px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
   </style>
   <style/>
   <foreignObject x="0" y="0" width="100%" height="100%">
@@ -23,7 +23,7 @@
               Most used languages
             </h3>
             <small>
-              estimation from 169.2 MB of code in 32 analyzed repositories
+              estimation from 169.4 MB of code in 32 analyzed repositories
             </small>
             <svg xmlns="http://www.w3.org/2000/svg" class="bar" width="460" height="8" role="img" aria-label="Languages distribution">
               <title>
@@ -34,15 +34,15 @@
               </mask>
               <rect mask="url(#languages-bar-most)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-progress">
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="76.90" height="8" fill="#a91e50" data-language="EJS"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="76.90" y="0" width="76.67" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="153.58" y="0" width="68.50" height="8" fill="#3D6117" data-language="TeX"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="222.08" y="0" width="61.75" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="283.83" y="0" width="49.76" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="333.59" y="0" width="49.20" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="382.78" y="0" width="45.51" height="8" fill="#f1e05a" data-language="JavaScript"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="428.29" y="0" width="9.17" height="8" fill="#3A4E3A" data-language="Cuda"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="437.46" y="0" width="22.54" height="8" fill="#cccccc" data-language="Other"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="75.50" height="8" fill="#a91e50" data-language="EJS"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="75.50" y="0" width="75.27" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="150.77" y="0" width="67.25" height="8" fill="#3D6117" data-language="TeX"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="218.03" y="0" width="60.76" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="278.78" y="0" width="52.03" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="330.81" y="0" width="48.46" height="8" fill="#f1e05a" data-language="JavaScript"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="379.26" y="0" width="48.30" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="427.57" y="0" width="9.00" height="8" fill="#3A4E3A" data-language="Cuda"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="436.57" y="0" width="23.43" height="8" fill="#cccccc" data-language="Other"/>
               </g>
             </svg>
             <div class="row fill-width">
@@ -59,7 +59,7 @@
                       2.3 MB
                     </div>
                     <div>
-                      16.7%
+                      16.4%
                     </div>
                   </small>
                 </div>
@@ -75,7 +75,7 @@
                       2.1 MB
                     </div>
                     <div>
-                      14.9%
+                      14.6%
                     </div>
                   </small>
                 </div>
@@ -91,23 +91,23 @@
                       115 B
                     </div>
                     <div>
-                      10.8%
+                      11.3%
                     </div>
                   </small>
                 </div>
-                <div class="field language details" data-language="JavaScript">
+                <div class="field language details" data-language="Python">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#f1e05a" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#3572A5" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    JavaScript
+                    Python
                   </div>
                   <small>
                     <div>
-                      10.0 MB
+                      18.9 MB
                     </div>
                     <div>
-                      9.9%
+                      10.5%
                     </div>
                   </small>
                 </div>
@@ -120,10 +120,10 @@
                   </div>
                   <small>
                     <div>
-                      691.7 kB
+                      732.4 kB
                     </div>
                     <div>
-                      4.9%
+                      5.1%
                     </div>
                   </small>
                 </div>
@@ -141,7 +141,7 @@
                       42.4 MB
                     </div>
                     <div>
-                      16.7%
+                      16.4%
                     </div>
                   </small>
                 </div>
@@ -154,26 +154,26 @@
                   </div>
                   <small>
                     <div>
-                      99.3 kB
+                      101.5 kB
                     </div>
                     <div>
-                      13.4%
+                      13.2%
                     </div>
                   </small>
                 </div>
-                <div class="field language details" data-language="Python">
+                <div class="field language details" data-language="JavaScript">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#3572A5" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#f1e05a" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    Python
+                    JavaScript
                   </div>
                   <small>
                     <div>
-                      18.9 MB
+                      10.0 MB
                     </div>
                     <div>
-                      10.7%
+                      10.5%
                     </div>
                   </small>
                 </div>
@@ -204,10 +204,10 @@
               <text class="indepth-language" data-language="Rust" data-bytes="26191855">
                 Rust
               </text>
-              <text class="indepth-language" data-language="Python" data-bytes="19843194">
+              <text class="indepth-language" data-language="Python" data-bytes="19843273">
                 Python
               </text>
-              <text class="indepth-language" data-language="JSON" data-bytes="16797104">
+              <text class="indepth-language" data-language="JSON" data-bytes="16964742">
                 JSON
               </text>
               <text class="indepth-language" data-language="Jest Snapshot" data-bytes="14329594">
@@ -222,13 +222,13 @@
               <text class="indepth-language" data-language="Java" data-bytes="5386420">
                 Java
               </text>
-              <text class="indepth-language" data-language="Markdown" data-bytes="5242353">
+              <text class="indepth-language" data-language="Markdown" data-bytes="5272096">
                 Markdown
               </text>
               <text class="indepth-language" data-language="TypeScript" data-bytes="4981583">
                 TypeScript
               </text>
-              <text class="indepth-language" data-language="SVG" data-bytes="3904693">
+              <text class="indepth-language" data-language="SVG" data-bytes="3905673">
                 SVG
               </text>
               <text class="indepth-language" data-language="CSV" data-bytes="2716407">
@@ -243,7 +243,7 @@
               <text class="indepth-language" data-language="RenderScript" data-bytes="1323984">
                 RenderScript
               </text>
-              <text class="indepth-language" data-language="YAML" data-bytes="1184055">
+              <text class="indepth-language" data-language="YAML" data-bytes="1185556">
                 YAML
               </text>
               <text class="indepth-language" data-language="CSS" data-bytes="1160190">
@@ -273,7 +273,7 @@
               <text class="indepth-language" data-language="C" data-bytes="127647">
                 C
               </text>
-              <text class="indepth-language" data-language="Shell" data-bytes="101728">
+              <text class="indepth-language" data-language="Shell" data-bytes="103919">
                 Shell
               </text>
               <text class="indepth-language" data-language="Ignore List" data-bytes="92361">

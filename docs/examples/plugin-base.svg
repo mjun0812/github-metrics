@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="172" class="">
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="283" class="">
   <defs>
     <style/>
   </defs>
   <style>
-    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1{font-size:20px;font-weight:700}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.octicon{width:16px;height:16px}.row{display:flex;flex-wrap:wrap}.avatar{border-radius:50%;margin:0 6px}.calendar.field{margin:4px 0;margin-left:7px}.calendar .day{outline:1px solid rgba(27,31,35,4%);outline-offset:-1px}footer{margin-top:8px;font-size:10px;font-style:italic;color:#666;text-align:right;display:flex;flex-direction:column;justify-content:flex-end;padding:0 4px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
+    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h1{font-size:20px;font-weight:700}h2{font-size:16px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.octicon{width:16px;height:16px}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}.avatar{border-radius:50%;margin:0 6px}.calendar.field{margin:4px 0;margin-left:7px}.calendar .day{outline:1px solid rgba(27,31,35,4%);outline-offset:-1px}footer{margin-top:8px;font-size:10px;font-style:italic;color:#666;text-align:right;display:flex;flex-direction:column;justify-content:flex-end;padding:0 4px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
   </style>
   <style/>
   <foreignObject x="0" y="0" width="100%" height="100%">
@@ -36,23 +36,79 @@
         <div class="field calendar" data-block="calendar-grid">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 11" width="210" height="16">
             <g>
-              <rect class="day" fill="#30a14e" x="0" y="0" width="11" height="11" rx="2" ry="2"/>
-              <rect class="day" fill="#216e39" x="15" y="0" width="11" height="11" rx="2" ry="2"/>
+              <rect class="day" fill="#9be9a8" x="0" y="0" width="11" height="11" rx="2" ry="2"/>
+              <rect class="day" fill="#9be9a8" x="15" y="0" width="11" height="11" rx="2" ry="2"/>
               <rect class="day" fill="#9be9a8" x="30" y="0" width="11" height="11" rx="2" ry="2"/>
-              <rect class="day" fill="#9be9a8" x="45" y="0" width="11" height="11" rx="2" ry="2"/>
-              <rect class="day" fill="#9be9a8" x="60" y="0" width="11" height="11" rx="2" ry="2"/>
+              <rect class="day" fill="#40c463" x="45" y="0" width="11" height="11" rx="2" ry="2"/>
+              <rect class="day" fill="#40c463" x="60" y="0" width="11" height="11" rx="2" ry="2"/>
               <rect class="day" fill="#9be9a8" x="75" y="0" width="11" height="11" rx="2" ry="2"/>
               <rect class="day" fill="#9be9a8" x="90" y="0" width="11" height="11" rx="2" ry="2"/>
-              <rect class="day" fill="#40c463" x="105" y="0" width="11" height="11" rx="2" ry="2"/>
-              <rect class="day" fill="#40c463" x="120" y="0" width="11" height="11" rx="2" ry="2"/>
+              <rect class="day" fill="#9be9a8" x="105" y="0" width="11" height="11" rx="2" ry="2"/>
+              <rect class="day" fill="#9be9a8" x="120" y="0" width="11" height="11" rx="2" ry="2"/>
               <rect class="day" fill="#9be9a8" x="135" y="0" width="11" height="11" rx="2" ry="2"/>
               <rect class="day" fill="#9be9a8" x="150" y="0" width="11" height="11" rx="2" ry="2"/>
               <rect class="day" fill="#9be9a8" x="165" y="0" width="11" height="11" rx="2" ry="2"/>
               <rect class="day" fill="#9be9a8" x="180" y="0" width="11" height="11" rx="2" ry="2"/>
-              <rect class="day" fill="#9be9a8" x="195" y="0" width="11" height="11" rx="2" ry="2"/>
+              <rect class="day" fill="#40c463" x="195" y="0" width="11" height="11" rx="2" ry="2"/>
             </g>
           </svg>
         </div>
+      </section>
+      <section data-section="activity-community">
+        <section class="row">
+          <section data-block="activity">
+            <h2 class="field">
+              <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
+              Activity
+            </h2>
+            <div class="field">
+              <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
+              2.5k Commits
+            </div>
+            <div class="field">
+              <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
+              68 Pull requests reviewed
+            </div>
+            <div class="field">
+              <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
+              311 Pull requests opened
+            </div>
+            <div class="field">
+              <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
+              453 Issues opened
+            </div>
+            <div class="field">
+              <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
+              333 issue comments
+            </div>
+          </section>
+          <section data-block="community">
+            <h2 class="field">
+              <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
+              Community stats
+            </h2>
+            <div class="field">
+              <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
+              Member of 1 organization
+            </div>
+            <div class="field">
+              <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
+              Following 20 users
+            </div>
+            <div class="field">
+              <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
+              Sponsoring 0 repositories
+            </div>
+            <div class="field">
+              <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
+              Starred 311 repositories
+            </div>
+            <div class="field">
+              <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
+              Watching 32 repositories
+            </div>
+          </section>
+        </section>
       </section>
       <section data-section="repositories">
         <div class="row">
@@ -70,15 +126,11 @@
           </div>
           <div class="field">
             <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
-            117 releases
+            127 releases
           </div>
           <div class="field">
             <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
             2.6 GB used
-          </div>
-          <div class="field">
-            <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
-            Watching 32 repositories
           </div>
           <div class="field">
             <svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>
