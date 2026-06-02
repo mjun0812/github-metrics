@@ -90,21 +90,19 @@ func truncateName(name string, limit int) string {
 	return string(runes[:limit-1]) + "…"
 }
 
-// Partial renders the classic SVG fragment for the notable plugin.
-// Mirrors upstream source/templates/classic/partials/notable.ejs while
-// adopting two issue #422 affordances for basic mode:
+// Partial renders the classic SVG fragment for the notable plugin,
+// mirroring upstream source/templates/classic/partials/notable.ejs
+// (issue #447). The chip label is the aggregation key chosen by Run:
+// the owner segment ("@huggingface") by default, or the full
+// "@owner/repo" handle when plugin_notable_repositories is enabled.
 //
-//  1. The chip label is the repository name ("@repo") so the five chips
-//     are distinguishable even when every result shares the same owner.
-//  2. The star count is rendered as an inline "★ N" badge in the chip
-//     body at the chip's 12 px font-size, instead of the tiny gauge
-//     that was the only differentiator before.
+// Basic mode renders only the avatar + owner chip — no star count is
+// drawn (the previous "★ N" badge from #422 was a regression).
+// Indepth mode additionally renders the upstream gauge stack
+// (commits / stars / issues / pulls), each gauge guarded on a non-zero
+// counter.
 //
-// Indepth mode keeps the upstream gauge layout (commits / stars /
-// issues / pulls) plus the "@org/repo" chip label that #392 / #405
-// already introduced.
-//
-// Returns "" while Run is unwired (Skipped or empty List). When data
+// Returns "" when there is no data (Skipped or empty List). When data
 // arrives it emits the rocket-octicon header followed by a flex row of
 // contribution chips.
 //
@@ -116,8 +114,7 @@ func truncateName(name string, limit int) string {
 //	    [for each contrib]:
 //	      <div class="organization contribution {s|a|b|c} ">
 //	        <img class="[organization] avatar" src="..." width="16" height="16" />
-//	        <span class="name">@${repo}</span>
-//	        <span class="stars">★ ${k-formatted-count}</span>
+//	        <span class="name">@${owner}</span>
 //	      </div>
 //	  </div>
 //	</section>
@@ -159,11 +156,17 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 			`<img class="%s" src="%s" width="16" height="16" />`,
 			avatarClass, partials.EscapeXML(c.AvatarURL),
 		)
+		// The chip label is the aggregation key produced by Run: the
+		// owner segment ("@huggingface") by default, or the full
+		// "@owner/repo" handle when plugin_notable_repositories is
+		// enabled (issue #447). It is overflow-truncated so a single
+		// long handle cannot blow out the 480 px card width.
+		fmt.Fprintf(&b, `<span class="name">@%s</span>`, partials.EscapeXML(truncateName(c.Name, maxBasicChipNameLen)))
 		if c.Indepth {
-			// Indepth mode keeps the full "@org/repo" handle plus the
-			// upstream gauge stack so every per-repo statistic stays
-			// visible.
-			fmt.Fprintf(&b, `<span class="name">@%s</span>`, partials.EscapeXML(c.Name))
+			// Indepth mode adds the upstream gauge stack (commits /
+			// stars / issues / pulls). Each gauge only renders when its
+			// counter is populated, mirroring upstream's
+			// `<% if (commits) %>` guards.
 			if c.Commits > 0 {
 				gauge(&b, c.Percentage, strconv.Itoa(c.Commits), commitsIcon)
 			}
@@ -176,20 +179,10 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 			if c.Pulls > 0 {
 				gauge(&b, float64(c.Pulls)/float64(max(totalPulls(r.List), 1)), strconv.Itoa(c.Pulls), pullsIcon)
 			}
-		} else {
-			// Basic mode: repo name plus an inline star badge so the
-			// chip carries enough information to identify the entry
-			// (issue #422).
-			displayName := truncateName(c.Name, maxBasicChipNameLen)
-			fmt.Fprintf(&b, `<span class="name">@%s</span>`, partials.EscapeXML(displayName))
-			if c.StargazerCount > 0 {
-				fmt.Fprintf(
-					&b,
-					`<span class="stars">★ %s</span>`,
-					partials.EscapeXML(partials.FormatCount(int64(c.StargazerCount))),
-				)
-			}
 		}
+		// Basic mode renders the avatar + owner chip only. Upstream
+		// notable.ejs does not draw star counts in basic mode (issue
+		// #447 — the stray "★ N" badge was a #422 regression).
 		b.WriteString(`</div>`)
 	}
 	b.WriteString(`</div>`)

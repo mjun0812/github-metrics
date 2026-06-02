@@ -77,9 +77,19 @@ type User implements RepositoryOwner {
   # contributionTypes argument mirrors upstream's explicit
   # `[COMMIT, PULL_REQUEST, ISSUE, REPOSITORY]` set so the number
   # matches what GitHub displays on the user profile.
+  #
+  # #447: the notable plugin reuses this connection to list
+  # contributions to *other* users'/organizations' repositories
+  # (source/plugins/notable/queries/contributions.graphql). It needs
+  # cursor pagination (`after`), the `includeUserRepositories` toggle
+  # (upstream `plugin_notable_self`, default no = exclude own repos)
+  # and STARGAZERS ordering.
   repositoriesContributedTo(
     first: Int
+    after: String
+    includeUserRepositories: Boolean
     contributionTypes: [RepositoryContributionType!]
+    orderBy: RepositoryOrder
   ): RepositoryConnection
 }
 
@@ -216,6 +226,10 @@ type Repository {
   isPrivate: Boolean!
   isFork: Boolean!
   isArchived: Boolean!
+  # #447: notable plugin reads isInOrganization to toggle the upstream
+  # `organization` avatar CSS class and to honor `plugin_notable_from`
+  # (organization / user / all owner-type filtering).
+  isInOrganization: Boolean!
   pushedAt: DateTime
   updatedAt: DateTime
   stargazerCount: Int!
