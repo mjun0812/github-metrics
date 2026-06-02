@@ -157,7 +157,7 @@ func buildIsometricSVG(r *Result) string {
 	var b strings.Builder
 	fmt.Fprintf(
 		&b,
-		`<svg version="1.1" xmlns="http://www.w3.org/2000/svg" class="isocalendar-grid" style="margin-top: -130px;" viewBox="0,0 480,%d" role="img" aria-label="Isometric contribution heatmap"><title>Isometric contribution heatmap</title>`,
+		`<svg version="1.1" xmlns="http://www.w3.org/2000/svg" class="isocalendar-grid" style="margin-top: -130px;" viewBox="0,0 480,%d">`,
 		height,
 	)
 
