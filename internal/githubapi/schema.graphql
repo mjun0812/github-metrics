@@ -59,8 +59,13 @@ type User implements RepositoryOwner {
   ): SponsorshipConnection
   sponsorshipsAsSponsor(
     first: Int
+    activeOnly: Boolean
     orderBy: SponsorshipOrder
   ): SponsorshipConnection
+  # 449: total amount (in cents) the viewer has sponsored as a sponsor.
+  # Drives the sponsorships plugin's "amount" section. Renders even at
+  # zero (null is treated as $0.00).
+  totalSponsorshipAmountAsSponsorInCents: Int
   projectsV2(first: Int, orderBy: ProjectV2Order): ProjectV2Connection
   pinnedItems(first: Int, types: [PinnableItemType!]): PinnableItemConnection
   # 014: starlists. GitHub exposes the user's starred lists (a.k.a.

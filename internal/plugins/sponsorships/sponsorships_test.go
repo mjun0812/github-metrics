@@ -6,10 +6,12 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/sponsorships"
+	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
 var updateGolden = flag.Bool("update", false, "update golden files")
@@ -86,8 +88,91 @@ func TestRun_NilInputs(t *testing.T) {
 	}
 }
 
+// partialFor renders the partial against a Data carrying the given
+// Result and user login. Mirrors how the classic dispatcher invokes it.
+func partialFor(t *testing.T, r *sponsorships.Result, login string) string {
+	t.Helper()
+	data := plugins.NewData()
+	data.User = &plugins.User{Login: login}
+	data.SetPlugin(sponsorships.Name, r)
+	out, err := sponsorships.Partial(context.Background(), &templates.PartialContext{Data: data})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	return out
+}
+
+// TestPartial_ZeroState verifies the #449 fix: with zero sponsorships and
+// the default sections, the partial still renders the amount section
+// (heart image + "$0.00") and the "0 users" goal text rather than an
+// empty string.
+func TestPartial_ZeroState(t *testing.T) {
+	t.Parallel()
+	r := &sponsorships.Result{
+		Active:   []sponsorships.Sponsored{},
+		Sections: []string{"amount", "sponsorships"},
+		Amount:   0,
+		Image:    "https://github.githubassets.com/images/icons/emoji/hearts_around.png",
+	}
+	out := partialFor(t, r, "mjun0812")
+
+	for _, want := range []string{
+		`data-section="sponsorships"`,
+		`<img src="https://github.githubassets.com/images/icons/emoji/hearts_around.png" alt="" />`,
+		`has given a total of <span class="bold">$0.00</span> to open source software`,
+		`mjun0812 helped funding the work of 0 users and organizations.`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("zero-state output missing %q\ngot: %s", want, out)
+		}
+	}
+}
+
+// TestPartial_AmountFormatting checks the en-US USD formatting of
+// non-zero, thousands-separated amounts.
+func TestPartial_AmountFormatting(t *testing.T) {
+	t.Parallel()
+	r := &sponsorships.Result{
+		Active:   []sponsorships.Sponsored{},
+		Sections: []string{"amount"},
+		Amount:   1234.5,
+	}
+	out := partialFor(t, r, "octocat")
+	if !strings.Contains(out, `<span class="bold">$1,234.50</span>`) {
+		t.Errorf("expected $1,234.50 in output\ngot: %s", out)
+	}
+	// Only the amount section requested: no goal-text line.
+	if strings.Contains(out, "helped funding the work of") {
+		t.Errorf("amount-only sections should not render the sponsorships branch\ngot: %s", out)
+	}
+}
+
+// TestPartial_SponsorshipsOnly verifies the sponsorships branch can run
+// without the amount section (no heart image emitted).
+func TestPartial_SponsorshipsOnly(t *testing.T) {
+	t.Parallel()
+	r := &sponsorships.Result{
+		Active:   []sponsorships.Sponsored{{Login: "alice", Type: "user"}},
+		Sections: []string{"sponsorships"},
+	}
+	out := partialFor(t, r, "octocat")
+	if strings.Contains(out, "hearts_around.png") {
+		t.Errorf("sponsorships-only output should not include the amount heart image\ngot: %s", out)
+	}
+	if !strings.Contains(out, "helped funding the work of 1 user and organizations.") {
+		t.Errorf("expected singular goal text for 1 sponsorship\ngot: %s", out)
+	}
+	if !strings.Contains(out, `src="https://github.com/alice.png?size=64"`) {
+		t.Errorf("expected alice avatar img\ngot: %s", out)
+	}
+}
+
 func TestRun_GoldenShape(t *testing.T) {
-	r := &sponsorships.Result{Active: []sponsorships.Sponsored{}}
+	r := &sponsorships.Result{
+		Active:   []sponsorships.Sponsored{},
+		Sections: []string{"amount", "sponsorships"},
+		Amount:   0,
+	}
 	got, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		t.Fatalf("MarshalIndent: %v", err)
