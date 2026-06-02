@@ -66,14 +66,23 @@ func TestClassic_BaseRender_AllSections(t *testing.T) {
 		Login:     "octocat",
 		Name:      "The Octocat",
 		AvatarURL: "https://avatars.githubusercontent.com/u/12345?v=4",
+		// 442: Activity / Community counters sourced from the base
+		// plugin's contributionsCollection + connection fetches.
+		Commits:              3214,
+		PullRequestsReviewed: 9,
+		PullRequestsOpened:   17,
+		IssuesOpened:         42,
+		IssueComments:        88,
+		Organizations:        3,
+		Following:            20,
+		Sponsoring:           0,
+		Starred:              120,
+		Watching:             32,
 	}
 	data.Config.Timezone.Name = "UTC"
 	data.Computed.Repositories.Count = 51
 	data.Computed.Repositories.Stargazers = 1500
 	data.Computed.Repositories.Forks = 81
-	data.Computed.TotalCommits = 3214
-	data.Computed.TotalIssues = 42
-	data.Computed.TotalPullRequests = 17
 
 	pc := &templates.PartialContext{
 		Inputs: map[string]any{},
@@ -95,8 +104,14 @@ func TestClassic_BaseRender_AllSections(t *testing.T) {
 		`1.5k stargazers`,
 		`81 forks`,
 		`3.2k Commits`,
+		`9 Pull requests reviewed`,
 		`17 Pull requests opened`,
 		`42 Issues opened`,
+		`88 issue comments`,
+		`Member of 3 organizations`,
+		`Sponsoring 0 repositories`,
+		`Starred 120 repositories`,
+		`Watching 32 repositories`,
 		`The Octocat`,
 		`<footer>`,
 	} {

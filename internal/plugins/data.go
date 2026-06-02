@@ -141,6 +141,28 @@ type User struct {
 	SponsorshipsAsMaintainer int
 	ContributedTo            int
 	RecentContributions      []ContributionDay
+
+	// 442: Activity-section counters surfaced by upstream
+	// base.activity+community.ejs. Sourced from the always-fetched
+	// User query's contributionsCollection aggregate fields and the
+	// issueComments connection. They render in the base "Activity"
+	// column regardless of whether an indepth-dependent plugin is
+	// enabled (the upstream base run shows them unconditionally).
+	Commits              int
+	PullRequestsReviewed int
+	PullRequestsOpened   int
+	IssuesOpened         int
+	IssueComments        int
+
+	// 442: Community-stats counters surfaced by the same upstream
+	// partial. Organizations / Sponsoring / Starred come from the
+	// organizations / sponsorshipsAsSponsor / starredRepositories
+	// connections; Following and Watching reuse the fields above.
+	// Sponsoring renders even at zero to match upstream ("Sponsoring
+	// 0 repositories").
+	Organizations int
+	Sponsoring    int
+	Starred       int
 }
 
 // Organization is the organization-account payload populated by the

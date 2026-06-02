@@ -97,7 +97,18 @@ const (
 				"followers": {"totalCount": 1555},
 				"following": {"totalCount": 617},
 				"watching": {"totalCount": 16},
-				"sponsorshipsAsMaintainer": {"totalCount": 4}
+				"sponsorshipsAsMaintainer": {"totalCount": 4},
+				"organizations": {"totalCount": 2},
+				"sponsorshipsAsSponsor": {"totalCount": 0},
+				"starredRepositories": {"totalCount": 310},
+				"issueComments": {"totalCount": 333},
+				"contributionsCollection": {
+					"totalCommitContributions": 7293,
+					"totalPullRequestReviewContributions": 68,
+					"totalPullRequestContributions": 290,
+					"totalIssueContributions": 443,
+					"contributionCalendar": {"totalContributions": 8000, "weeks": []}
+				}
 			}
 		}
 	}`

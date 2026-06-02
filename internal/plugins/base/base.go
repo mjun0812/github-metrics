@@ -166,6 +166,16 @@ func (p *basePlugin) runUser(ctx context.Context, pc *plugins.PluginContext, log
 		SponsorshipsAsMaintainer: sponsorshipsAsMaintainerTotal(u),
 		ContributedTo:            repositoriesContributedToTotal(u),
 		RecentContributions:      recentContributionDays(u, baseHeaderCalendarDays),
+		// 442: Activity-section aggregate counters.
+		Commits:              contributionCommits(u),
+		PullRequestsReviewed: contributionPullRequestReviews(u),
+		PullRequestsOpened:   contributionPullRequests(u),
+		IssuesOpened:         contributionIssues(u),
+		IssueComments:        issueCommentsTotal(u),
+		// 442: Community-stats counters.
+		Organizations: organizationsTotal(u),
+		Sponsoring:    sponsorshipsAsSponsorTotal(u),
+		Starred:       starredRepositoriesTotal(u),
 	}
 
 	// M4: walk the entire repository connection with batch-halving on
@@ -254,6 +264,73 @@ func sponsorshipsAsMaintainerTotal(u *githubapi.UserUser) int {
 		return 0
 	}
 	return u.SponsorshipsAsMaintainer.TotalCount
+}
+
+// 442: contribution* helpers read the lifetime aggregate counters from
+// `user.contributionsCollection`. They back the base Activity section
+// ("N Commits / N Pull requests reviewed / N Pull requests opened / N
+// Issues opened"). Each returns 0 when the collection is nil so a
+// degraded GraphQL response hides the row instead of panicking.
+func contributionCommits(u *githubapi.UserUser) int {
+	if u == nil || u.ContributionsCollection == nil {
+		return 0
+	}
+	return u.ContributionsCollection.TotalCommitContributions
+}
+
+func contributionPullRequestReviews(u *githubapi.UserUser) int {
+	if u == nil || u.ContributionsCollection == nil {
+		return 0
+	}
+	return u.ContributionsCollection.TotalPullRequestReviewContributions
+}
+
+func contributionPullRequests(u *githubapi.UserUser) int {
+	if u == nil || u.ContributionsCollection == nil {
+		return 0
+	}
+	return u.ContributionsCollection.TotalPullRequestContributions
+}
+
+func contributionIssues(u *githubapi.UserUser) int {
+	if u == nil || u.ContributionsCollection == nil {
+		return 0
+	}
+	return u.ContributionsCollection.TotalIssueContributions
+}
+
+// 442: issueCommentsTotal / organizationsTotal / sponsorshipsAsSponsorTotal
+// / starredRepositoriesTotal read the totalCount sub-field of the
+// connections feeding the Activity "issue comments" row and the
+// Community-stats rows ("Member of N organizations", "Sponsoring N
+// repositories", "Starred N repositories"). Each returns 0 when its
+// connection is nil.
+func issueCommentsTotal(u *githubapi.UserUser) int {
+	if u == nil || u.IssueComments == nil {
+		return 0
+	}
+	return u.IssueComments.TotalCount
+}
+
+func organizationsTotal(u *githubapi.UserUser) int {
+	if u == nil || u.Organizations == nil {
+		return 0
+	}
+	return u.Organizations.TotalCount
+}
+
+func sponsorshipsAsSponsorTotal(u *githubapi.UserUser) int {
+	if u == nil || u.SponsorshipsAsSponsor == nil {
+		return 0
+	}
+	return u.SponsorshipsAsSponsor.TotalCount
+}
+
+func starredRepositoriesTotal(u *githubapi.UserUser) int {
+	if u == nil || u.StarredRepositories == nil {
+		return 0
+	}
+	return u.StarredRepositories.TotalCount
 }
 
 // repositoriesContributedToTotal returns the totalCount sub-field from

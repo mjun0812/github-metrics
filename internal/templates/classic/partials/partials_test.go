@@ -141,12 +141,28 @@ func TestBaseActivityCommunity_NoDataReturnsEmpty(t *testing.T) {
 	}
 }
 
-func TestBaseActivityCommunity_RendersCountersWhenIndepthPresent(t *testing.T) {
+// TestBaseActivityCommunity_RendersActivityAndCommunity anchors #442:
+// with the User payload carrying contribution aggregates and
+// community counters, the partial renders both the Activity column
+// (commits / PRs reviewed / PRs opened / issues / issue comments) and
+// the Community-stats column (orgs / following / sponsoring / starred /
+// watching). The `base` input is unset so all sections are enabled.
+func TestBaseActivityCommunity_RendersActivityAndCommunity(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
-	d.Computed.TotalCommits = 3214
-	d.Computed.TotalIssues = 42
-	d.Computed.TotalPullRequests = 17
+	d.User = &plugins.User{
+		Login:                "octocat",
+		Commits:              7293,
+		PullRequestsReviewed: 68,
+		PullRequestsOpened:   290,
+		IssuesOpened:         443,
+		IssueComments:        333,
+		Organizations:        1,
+		Following:            20,
+		Sponsoring:           0,
+		Starred:              310,
+		Watching:             32,
+	}
 	got, err := partials.BaseActivityCommunity(context.Background(), newPC(d))
 	if err != nil {
 		t.Fatalf("BaseActivityCommunity: %v", err)
@@ -155,9 +171,18 @@ func TestBaseActivityCommunity_RendersCountersWhenIndepthPresent(t *testing.T) {
 		`data-section="activity-community"`,
 		`data-block="activity"`,
 		`data-block="community"`,
-		"3.2k Commits",
-		"17 Pull requests opened",
-		"42 Issues opened",
+		"Activity</h2>",
+		"7.3k Commits",
+		"68 Pull requests reviewed",
+		"290 Pull requests opened",
+		"443 Issues opened",
+		"333 issue comments",
+		"Community stats</h2>",
+		"Member of 1 organization",
+		"Following 20 users",
+		"Sponsoring 0 repositories",
+		"Starred 310 repositories",
+		"Watching 32 repositories",
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("missing %q in %s", marker, got)
@@ -166,25 +191,85 @@ func TestBaseActivityCommunity_RendersCountersWhenIndepthPresent(t *testing.T) {
 }
 
 // TestBaseActivityCommunity_SingularLabel anchors the pluralLabel
-// behaviour: counts of 1 must render without a trailing "s".
+// behaviour: counts of 1 must render without a trailing "s", and the
+// "repository" singular for the community rows.
 func TestBaseActivityCommunity_SingularLabel(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
-	d.Computed.TotalCommits = 1
-	d.Computed.TotalIssues = 1
-	d.Computed.TotalPullRequests = 1
+	d.User = &plugins.User{
+		Commits:              1,
+		PullRequestsReviewed: 1,
+		PullRequestsOpened:   1,
+		IssuesOpened:         1,
+		IssueComments:        1,
+		Organizations:        1,
+		Following:            1,
+		Sponsoring:           1,
+		Starred:              1,
+		Watching:             1,
+	}
 	got, err := partials.BaseActivityCommunity(context.Background(), newPC(d))
 	if err != nil {
 		t.Fatalf("BaseActivityCommunity: %v", err)
 	}
 	for _, marker := range []string{
 		"1 Commit</div>",
+		"1 Pull request reviewed",
 		"1 Pull request opened",
 		"1 Issue opened",
+		"1 issue comment</div>",
+		"Member of 1 organization</div>",
+		"Following 1 user</div>",
+		"Sponsoring 1 repository</div>",
+		"Starred 1 repository</div>",
+		"Watching 1 repository</div>",
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("singular form missing %q in %s", marker, got)
 		}
+	}
+}
+
+// TestBaseActivityCommunity_SectionGating anchors #442's column
+// gating: when the `base` input restricts sections, only the requested
+// column renders.
+func TestBaseActivityCommunity_SectionGating(t *testing.T) {
+	t.Parallel()
+	mk := func() *plugins.Data {
+		d := plugins.NewData()
+		d.User = &plugins.User{
+			Commits:       10,
+			Organizations: 2,
+		}
+		return d
+	}
+
+	// activity-only
+	pc := newPC(mk())
+	pc.Inputs = map[string]any{"base": "header, activity, repositories, metadata"}
+	got, err := partials.BaseActivityCommunity(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("BaseActivityCommunity: %v", err)
+	}
+	if !strings.Contains(got, `data-block="activity"`) {
+		t.Errorf("activity column should render when activity enabled: %s", got)
+	}
+	if strings.Contains(got, `data-block="community"`) {
+		t.Errorf("community column should be omitted when community disabled: %s", got)
+	}
+
+	// community-only
+	pc = newPC(mk())
+	pc.Inputs = map[string]any{"base": "header, community, repositories, metadata"}
+	got, err = partials.BaseActivityCommunity(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("BaseActivityCommunity: %v", err)
+	}
+	if strings.Contains(got, `data-block="activity"`) {
+		t.Errorf("activity column should be omitted when activity disabled: %s", got)
+	}
+	if !strings.Contains(got, `data-block="community"`) {
+		t.Errorf("community column should render when community enabled: %s", got)
 	}
 }
 
@@ -220,10 +305,11 @@ func TestBaseRepositories_RendersCounts(t *testing.T) {
 	}
 }
 
-// TestBaseRepositories_PhaseOneFields anchors #429 Phase 1: with the
-// User payload carrying Watching and SponsorshipsAsMaintainer counts,
-// the partial surfaces "Watching N repositories" and "N sponsors"
-// rows alongside the existing count / stargazers / forks fields.
+// TestBaseRepositories_PhaseOneFields anchors #429 Phase 1 (amended by
+// #442): the "N sponsors" (sponsorshipsAsMaintainer) row stays in the
+// repositories section, while "Watching N repositories" moved to the
+// Community-stats column. The repositories partial must surface the
+// sponsors row but no longer render Watching.
 func TestBaseRepositories_PhaseOneFields(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
@@ -239,19 +325,18 @@ func TestBaseRepositories_PhaseOneFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
-	for _, marker := range []string{
-		"Watching 16 repositories",
-		"4 sponsors",
-	} {
-		if !strings.Contains(got, marker) {
-			t.Errorf("missing %q in %s", marker, got)
-		}
+	if !strings.Contains(got, "4 sponsors") {
+		t.Errorf("missing %q in %s", "4 sponsors", got)
+	}
+	if strings.Contains(got, "Watching") {
+		t.Errorf("Watching moved to Community stats; must not render in repositories: %s", got)
 	}
 }
 
-// TestBaseRepositories_WatchingSingular anchors the "Watching 1
-// repository" branch (singular noun when N == 1).
-func TestBaseRepositories_WatchingSingular(t *testing.T) {
+// TestBaseRepositories_SponsorSingular anchors the "1 sponsor"
+// singular branch (sponsorshipsAsMaintainer == 1). Watching is no
+// longer rendered here (#442).
+func TestBaseRepositories_SponsorSingular(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	d.Computed.Repositories.Count = 1
@@ -260,11 +345,11 @@ func TestBaseRepositories_WatchingSingular(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
-	if !strings.Contains(got, "Watching 1 repository") {
-		t.Errorf("singular Watching label missing: %s", got)
-	}
 	if !strings.Contains(got, "1 sponsor</div>") {
 		t.Errorf("singular sponsor label missing: %s", got)
+	}
+	if strings.Contains(got, "Watching") {
+		t.Errorf("Watching moved to Community stats; must not render in repositories: %s", got)
 	}
 }
 
