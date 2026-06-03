@@ -19,10 +19,19 @@ query OrganizationRepositories($login: String!, $first: Int!, $after: String) {
         url
         isPrivate
         isFork
+        createdAt
         pushedAt
         updatedAt
         stargazerCount
         forkCount
+        # #466: per-card issue / PR counters rendered by the repositories
+        # plugin's info row (upstream repositories.ejs).
+        issues {
+          totalCount
+        }
+        pullRequests {
+          totalCount
+        }
         watchers {
           totalCount
         }
@@ -56,6 +65,8 @@ query OrganizationRepositories($login: String!, $first: Int!, $after: String) {
         licenseInfo {
           name
           key
+          nickname
+          spdxId
         }
       }
     }

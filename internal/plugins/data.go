@@ -270,13 +270,57 @@ type Repository struct {
 	Stars         int
 	Forks         int
 	Watchers      int
-	Language      *LanguageStat
+	// CreatedAt is the repository creation timestamp. The repositories
+	// plugin renders it as the humanised "created <date>" card label
+	// (#466). Zero value means the field was not fetched (e.g. starred
+	// repos sourced via REST).
+	CreatedAt time.Time
+	// Issues / PullRequests are the per-repository totalCount values the
+	// repositories card info row surfaces (#466). They mirror upstream
+	// repositories.ejs `repository.issues.totalCount` /
+	// `repository.pullRequests.totalCount`.
+	Issues       int
+	PullRequests int
+	// License is the per-repository license summary (#466). nil when the
+	// repository reports no LICENSE file.
+	License  *RepositoryLicense
+	Language *LanguageStat
 	// Languages is the per-language byte breakdown for this repository
 	// as reported by GraphQL `repository.languages(first: 8).edges`.
 	// Each entry has Size (bytes in this repo) and Name/Color from the
 	// linguist palette. Downstream plugins (languages standard mode,
 	// achievements) aggregate across all repositories.
 	Languages []LanguageStat
+}
+
+// RepositoryLicense is the per-repository license summary surfaced by
+// the repositories plugin card (#466). It mirrors the GitHub GraphQL
+// `licenseInfo` fields upstream `f.license` consumes: the human-friendly
+// Nickname is preferred, falling back to SpdxId then Name.
+type RepositoryLicense struct {
+	Name     string
+	SpdxID   string
+	Nickname string
+}
+
+// Label resolves the display string upstream `f.license` would render:
+// when SpdxID is the catch-all "NOASSERTION" it returns Name, otherwise
+// it prefers Nickname, then SpdxID, then Name. Returns "" only when all
+// three fields are empty.
+func (l *RepositoryLicense) Label() string {
+	if l == nil {
+		return ""
+	}
+	if l.SpdxID == "NOASSERTION" {
+		return l.Name
+	}
+	if l.Nickname != "" {
+		return l.Nickname
+	}
+	if l.SpdxID != "" {
+		return l.SpdxID
+	}
+	return l.Name
 }
 
 // LanguageStat is the primary-language summary surfaced per repository.
