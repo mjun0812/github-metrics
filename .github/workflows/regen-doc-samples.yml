@@ -197,8 +197,13 @@ jobs:
 
       - name: Commit and push branch
         if: steps.diff.outputs.changed == 'true'
+        env:
+          COMMIT_USER: ${{ inputs.user }}
+          COMMIT_REPO: ${{ inputs.repo }}
+          COMMIT_TAG: ${{ inputs.tag }}
+          COMMIT_COUNT: ${{ steps.diff.outputs.count }}
         run: |
-          short_sha="${GITHUB_SHA::7}"
+          short_sha="${GITHUB_SHA:0:7}"
           branch="chore/regen-doc-samples-${short_sha}"
           echo "branch=${branch}" >> "$GITHUB_ENV"
 
@@ -206,11 +211,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "${branch}"
           git add docs/examples/
-          git commit -m "chore(docs): regenerate doc samples
-
-Triggered by workflow_dispatch on ${GITHUB_SHA::7}.
-User: ${{ inputs.user }} / Repo: ${{ inputs.repo }} / Tag: ${{ inputs.tag }}
-Changed files: ${{ steps.diff.outputs.count }}"
+          commit_msg=$(printf 'chore(docs): regenerate doc samples\n\nTriggered by workflow_dispatch on %s.\nUser: %s / Repo: %s / Tag: %s\nChanged files: %s' \
+            "${short_sha}" "${COMMIT_USER}" "${COMMIT_REPO}" "${COMMIT_TAG}" "${COMMIT_COUNT}")
+          git commit -m "${commit_msg}"
           git push origin "${branch}"
 
       - name: Create pull request
