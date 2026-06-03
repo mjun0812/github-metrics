@@ -70,11 +70,16 @@ func run(t *testing.T, scopes string) *sponsors.Result {
 	return out.(*sponsors.Result)
 }
 
-func TestRun_NoScope_Skipped(t *testing.T) {
+// TestRun_NoOAuthScopeGate verifies the plugin no longer gates on the
+// `read:user` / `read:org` OAuth scope (#451). Upstream
+// (org_repo/source/plugins/sponsors/index.mjs) renders the section
+// regardless of scope, so a token carrying only `repo` must still yield a
+// non-Skipped Result with the upstream default sections.
+func TestRun_NoOAuthScopeGate(t *testing.T) {
 	t.Parallel()
 	r := run(t, "repo")
-	if !r.Skipped {
-		t.Errorf("expected Skipped without read:user or read:org; got %+v", r)
+	if r.Skipped {
+		t.Errorf("sponsors must not gate on read:user/read:org; got Skipped (%s)", r.SkippedReason)
 	}
 }
 
@@ -82,7 +87,7 @@ func TestRun_ReadUserOnly_NotSkipped(t *testing.T) {
 	t.Parallel()
 	r := run(t, "read:user")
 	if r.Skipped {
-		t.Errorf("read:user alone should satisfy gate; got Skipped")
+		t.Errorf("read:user token should not be Skipped; got Skipped")
 	}
 }
 
@@ -90,15 +95,15 @@ func TestRun_ReadOrgOnly_NotSkipped(t *testing.T) {
 	t.Parallel()
 	r := run(t, "read:org")
 	if r.Skipped {
-		t.Errorf("read:org alone should satisfy gate; got Skipped")
+		t.Errorf("read:org token should not be Skipped; got Skipped")
 	}
 }
 
-func TestRun_BothScopes_NotSkipped(t *testing.T) {
+func TestRun_DefaultSections(t *testing.T) {
 	t.Parallel()
 	r := run(t, "read:user, read:org")
 	if r.Skipped {
-		t.Errorf("expected non-Skipped with both scopes; got %+v", r)
+		t.Errorf("expected non-Skipped; got %+v", r)
 	}
 	// Default sections mirror upstream
 	// assets/plugins/sponsors/metadata.yml (goal, list, about). Caller
@@ -115,13 +120,38 @@ func TestRun_BothScopes_NotSkipped(t *testing.T) {
 	}
 }
 
-func TestRun_NilREST_Skipped(t *testing.T) {
+// TestRun_NilREST_NotSkipped verifies the plugin renders even without a
+// REST client. The old scope gate called REST.Scopes() and Skipped on a
+// nil client; upstream never reads scopes, so a nil REST must not blank
+// the card (#451). With no GraphQL client the M4 baseline (empty,
+// non-Skipped) is returned so the partial still emits the heading + about
+// section.
+func TestRun_NilREST_NotSkipped(t *testing.T) {
 	t.Parallel()
 	pc := &plugins.PluginContext{Data: plugins.NewData(), Inputs: map[string]any{}}
 	out, _ := sponsors.Plugin.Run(context.Background(), pc)
 	r := out.(*sponsors.Result)
+	if r.Skipped {
+		t.Errorf("nil REST must not yield Skipped; got Skipped (%s)", r.SkippedReason)
+	}
+	want := []string{"goal", "list", "about"}
+	if len(r.Sections) != len(want) {
+		t.Fatalf("expected default Sections=%v; got %+v", want, r.Sections)
+	}
+}
+
+// TestRun_RepoMode_Skipped verifies the one remaining gate (RequireUserMode):
+// in repository mode the per-user sponsors section has nothing to render, so
+// it Skips. This is the mode gate, NOT an OAuth scope gate.
+func TestRun_RepoMode_Skipped(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.SetRepo(&plugins.Repo{Owner: "mjun0812", Name: "github-metrics"})
+	pc := &plugins.PluginContext{Data: data, Inputs: map[string]any{}}
+	out, _ := sponsors.Plugin.Run(context.Background(), pc)
+	r := out.(*sponsors.Result)
 	if !r.Skipped {
-		t.Errorf("nil REST should yield Skipped; got %+v", r)
+		t.Errorf("repository mode should Skip the user-mode sponsors section; got %+v", r)
 	}
 }
 
