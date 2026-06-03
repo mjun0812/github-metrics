@@ -1,0 +1,236 @@
+{
+  "data": {
+    "user": {
+      "followers": {
+        "totalCount": 59,
+        "nodes": [
+          {
+            "login": "PhysShell",
+            "name": null,
+            "avatarUrl": "https://avatars.githubusercontent.com/u/45852143?s=28&u=e4d7d9aca5aac2a997dc5d979580bb2004a1c67c&v=4"
+          },
+          {
+            "login": "nickiesprinklem-create",
+            "name": null,
+            "avatarUrl": "https://avatars.githubusercontent.com/u/271116994?s=28&v=4"
+          },
+          {
+            "login": "morshoto",
+            "name": "Shoto",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/103382369?s=28&u=bd0e6c6f32d7b69e6681038d9957e84b5247949f&v=4"
+          },
+          {
+            "login": "IanYeung",
+            "name": "Xi Yang",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/19669051?s=28&u=bd68b7b8324eb605c2151b7b2f49a168aae31776&v=4"
+          },
+          {
+            "login": "AryanZHL",
+            "name": "RyanZhang",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/58619733?s=28&u=4ec2b00e7c40407ea7d28ebad4a336a16ad07069&v=4"
+          },
+          {
+            "login": "algertc",
+            "name": "Charlie Algert",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/38013771?s=28&u=c4991d43ea3ec76dd3b621817df9c4a85bcfb289&v=4"
+          },
+          {
+            "login": "alexeyavb",
+            "name": "Alex",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/41807546?s=28&u=625612671c2c77b5f37a0964b7bd42af000c61a8&v=4"
+          },
+          {
+            "login": "cubist38",
+            "name": "Gia Huy Vuong",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/74866985?s=28&v=4"
+          },
+          {
+            "login": "ZorAttC",
+            "name": "Yuhao Cao",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/93999826?s=28&u=5ebd160775d97fb1ba83857c70182ac9712235c5&v=4"
+          },
+          {
+            "login": "animebing",
+            "name": "Bingbing",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/19849456?s=28&v=4"
+          },
+          {
+            "login": "asherish",
+            "name": "Asher-ish",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/92054603?s=28&u=29eefd27426ad066d923a8c4bdcf92fda567cf1d&v=4"
+          },
+          {
+            "login": "buzzjeux",
+            "name": "BuzzJeux",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/2104809?s=28&u=296f237a5c5937b98f0bfc135248948549377d7e&v=4"
+          },
+          {
+            "login": "kakkkarot",
+            "name": null,
+            "avatarUrl": "https://avatars.githubusercontent.com/u/179407131?s=28&u=57bfd74690b7804feba84443453d9653dc881468&v=4"
+          },
+          {
+            "login": "qiguchi",
+            "name": "Makoto Iguchi",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/26486618?s=28&v=4"
+          },
+          {
+            "login": "jehuty1980",
+            "name": null,
+            "avatarUrl": "https://avatars.githubusercontent.com/u/62032359?s=28&v=4"
+          },
+          {
+            "login": "StvLi",
+            "name": "Steven P.LI",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/85391078?s=28&u=d160b4c4114a96cb405f0249d64181f1556b200a&v=4"
+          },
+          {
+            "login": "RichardTang-Aden",
+            "name": null,
+            "avatarUrl": "https://avatars.githubusercontent.com/u/236647419?s=28&u=386245f6c29a9f5126f90c300a80e5ba954923b7&v=4"
+          },
+          {
+            "login": "TimothyZhang7",
+            "name": "Timothy @aden",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/19567494?s=28&u=ff156985022b4abd5acabbf1503f0f16eb97ea6f&v=4"
+          },
+          {
+            "login": "vincentjiang777",
+            "name": null,
+            "avatarUrl": "https://avatars.githubusercontent.com/u/17991268?s=28&u=de967d845e060edc3b22f185f85ea7925be0e9da&v=4"
+          },
+          {
+            "login": "adelburieva",
+            "name": "Adel Burieva",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/137014493?s=28&u=ed1ec2159d8eed64f66d431c878a8eb9fbbdc2cd&v=4"
+          },
+          {
+            "login": "bryanadenhq",
+            "name": "Bryan @ Aden",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/222145683?s=28&u=a6ad2e0d6fd434f21e540126393e36bdc0abd1a4&v=4"
+          },
+          {
+            "login": "charlesfranciscodev",
+            "name": "Charles-A. Francisco",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/12102640?s=28&u=9846c91150e82225b23e2e03d1a012bc9782ba9f&v=4"
+          },
+          {
+            "login": "vishvaRam",
+            "name": "Vishva R",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/44122284?s=28&u=185f24ef708b3a5ebfbc52f313331bb8209e7a6d&v=4"
+          },
+          {
+            "login": "zhangwei217245",
+            "name": "Zhang Wei",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/346451?s=28&u=a2831ab92904458143d3fdcc1a0f7de85eb67ad7&v=4"
+          }
+        ]
+      },
+      "following": {
+        "totalCount": 20,
+        "nodes": [
+          {
+            "login": "morshoto",
+            "name": "Shoto",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/103382369?s=28&u=bd0e6c6f32d7b69e6681038d9957e84b5247949f&v=4"
+          },
+          {
+            "login": "wodeyuzhou",
+            "name": "Janghwan Kim",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/104478598?s=28&u=122763c62b2807894ec199b229643397229c1647&v=4"
+          },
+          {
+            "login": "KiralyCraft",
+            "name": "Alex Kiraly",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/10259742?s=28&v=4"
+          },
+          {
+            "login": "tsukumijima",
+            "name": "tsukumi",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/39271166?s=28&u=97f8010632c6e57852e925c3073182dc2b9629c8&v=4"
+          },
+          {
+            "login": "kun432",
+            "name": "Kuniaki Shimizu",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/3592894?s=28&u=4c2b4b04a4926f63b99dbbfb28aad20f5d08d40f&v=4"
+          },
+          {
+            "login": "kzmszk",
+            "name": "kaz",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/3145632?s=28&u=06a74a7eedc8e2273fefb6b36eef51d7251a369a&v=4"
+          },
+          {
+            "login": "emar27181",
+            "name": "emar27181",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/122428459?s=28&u=08d623e38001db8e66e4afc25479d91657eae477&v=4"
+          },
+          {
+            "login": "salykova",
+            "name": "Aman Salykov",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/63703454?s=28&u=be29263511725629c707a6d0c31c5110f73937df&v=4"
+          },
+          {
+            "login": "PINTO0309",
+            "name": "Katsuya Hyodo",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/33194443?s=28&u=0019c57c227bbce13800d18c3b29c3465adbcefa&v=4"
+          },
+          {
+            "login": "BIG-A-K",
+            "name": "Kosuke Aoyagi",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/93465307?s=28&u=5c68bde1df585947f775457d096a4d3758c7c642&v=4"
+          },
+          {
+            "login": "hppRC",
+            "name": "Hayato Tsukagoshi",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/48990104?s=28&u=95b652270a2ed806e9e01e33e76cdb5fda5f7bcb&v=4"
+          },
+          {
+            "login": "rwightman",
+            "name": "Ross Wightman",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/5702664?s=28&u=df4f0a66cd454d176039c595bb197c7fcecfd8ba&v=4"
+          },
+          {
+            "login": "bubbliiiing",
+            "name": "Bubbliiiing",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/47347516?s=28&u=161160e78470c2af58a674be8b52cca5a8fb2577&v=4"
+          },
+          {
+            "login": "kuanhungchen",
+            "name": "Hank Chen",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/43292228?s=28&u=7761685def74c65e7b417abe403aaa11942a4657&v=4"
+          },
+          {
+            "login": "Tomy-Y",
+            "name": "Tomy_Y",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/63275053?s=28&u=e0fa05ff645b97871ee0b6481c4c2fcf64bdacf9&v=4"
+          },
+          {
+            "login": "shunk031",
+            "name": "Shunsuke KITADA",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/11523725?s=28&u=d313f1289d2fdd6bb84a3d4a65a27ca9b9be555f&v=4"
+          },
+          {
+            "login": "moskomule",
+            "name": "Ryuichiro Hataya",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/11806234?s=28&u=2ebac687ef8c906cfca5e350b8004c6d1d227b55&v=4"
+          },
+          {
+            "login": "supikiti",
+            "name": "Taiki Nakamura",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/37444351?s=28&u=153d5a1d9034d0dfbc53eae647ef8bdcfbdd8405&v=4"
+          },
+          {
+            "login": "holndal",
+            "name": null,
+            "avatarUrl": "https://avatars.githubusercontent.com/u/87344676?s=28&v=4"
+          },
+          {
+            "login": "MADONOKOUKI",
+            "name": "koki madono",
+            "avatarUrl": "https://avatars.githubusercontent.com/u/16716409?s=28&u=8aa82564f887f330c1e361d3b365e0522478e789&v=4"
+          }
+        ]
+      }
+    }
+  }
+}
