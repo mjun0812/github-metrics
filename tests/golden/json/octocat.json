@@ -267,15 +267,19 @@
         }
       },
       "goal": null,
-      "mode": "",
-      "past": null,
+      "mode": "user",
+      "past": [],
       "pastIncluded": false,
-      "sections": null,
-      "size": 0,
-      "skipped": true,
+      "sections": [
+        "goal",
+        "list",
+        "about"
+      ],
+      "size": 24,
+      "skipped": false,
       "sponsors": [],
-      "title": "",
-      "user": ""
+      "title": "Sponsor Me!",
+      "user": "octocat"
     },
     "sponsorships": {
       "active": [],

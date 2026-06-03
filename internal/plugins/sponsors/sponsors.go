@@ -100,10 +100,20 @@ type CountBucket struct {
 	Total int `json:"total"`
 }
 
-// Run requires `read:user` OR `read:org` scope (per upstream
-// behavior, either is sufficient because GitHub uses the broader of
-// the two). With neither, Skipped=true. With at least one the MVP
-// returns an empty (non-Skipped) Result.
+// Run renders the maintainer's GitHub Sponsors listing. Upstream
+// (org_repo/source/plugins/sponsors/index.mjs) gates only on the plugin
+// being enabled — it does NOT require any OAuth scope and renders the
+// `Sponsor Me!` heading + goal + about section even when the viewer has
+// zero active sponsors (see docs/reference_examples/metrics.plugin.sponsors.svg).
+// We mirror that: the only gate is RequireUserMode (the section is a
+// per-user signal with nothing to compute in repository mode).
+//
+// History (#451): an earlier implementation additionally required the
+// `read:user` / `read:org` OAuth scope (via REST.Scopes) and Skipped the
+// whole card when it was absent or unreadable. Doc-sample / CI tokens
+// routinely lack those scopes, so the card rendered as the empty wrapper
+// (height=8) even though upstream renders a full card on the same account.
+// The scope gate is removed here to restore upstream parity.
 func (p *sponsorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
@@ -112,29 +122,6 @@ func (p *sponsorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 		return &Result{
 			Skipped:       true,
 			SkippedReason: reason,
-			Sponsors:      []Sponsor{},
-		}, nil
-	}
-	if pc.REST == nil {
-		return &Result{
-			Skipped:       true,
-			SkippedReason: "REST client unavailable",
-			Sponsors:      []Sponsor{},
-		}, nil
-	}
-	scopes, err := pc.REST.Scopes(ctx)
-	if err != nil {
-		//nolint:nilerr // intentional: Scopes failure maps to Skipped
-		return &Result{
-			Skipped:       true,
-			SkippedReason: "could not determine token scopes",
-			Sponsors:      []Sponsor{},
-		}, nil
-	}
-	if !hasScope(scopes, "read:user") && !hasScope(scopes, "read:org") {
-		return &Result{
-			Skipped:       true,
-			SkippedReason: "missing read:user / read:org scope",
 			Sponsors:      []Sponsor{},
 		}, nil
 	}
@@ -220,7 +207,7 @@ func populateFromGraphQL(out *Result, resp *githubapi.ViewerSponsorsResponse, pa
 	}
 	v := resp.Viewer
 	if v.SponsorsListing != nil {
-		out.About = v.SponsorsListing.FullDescription
+		out.About = v.SponsorsListing.ShortDescription
 		if g := v.SponsorsListing.ActiveGoal; g != nil {
 			goalTitle := ""
 			if g.Title != nil {
@@ -317,13 +304,4 @@ func pluginEnabled(in map[string]any, key string) bool {
 		return false
 	}
 	return truthy(v)
-}
-
-func hasScope(scopes []string, want string) bool {
-	for _, s := range scopes {
-		if s == want {
-			return true
-		}
-	}
-	return false
 }

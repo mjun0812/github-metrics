@@ -237,6 +237,43 @@ func TestPartial_Starlists_Golden(t *testing.T) {
 	}
 }
 
+// TestPartial_Starlists_EmptyListRendersHeader guards against the
+// regression (issue #474) where a non-Skipped Result with zero star
+// lists produced a completely empty card. Upstream still renders the
+// "0 Star lists" section header at count zero, so the partial must emit
+// non-empty output containing that header even with an empty List.
+func TestPartial_Starlists_EmptyListRendersHeader(t *testing.T) {
+	t.Parallel()
+	for _, list := range [][]starlists.Starlist{
+		nil, // List == nil
+		{},  // List == empty (non-nil) slice
+	} {
+		r := &starlists.Result{List: list}
+		data := plugins.NewData()
+		data.SetPlugin(starlists.Name, r)
+		pc := &templates.PartialContext{Data: data}
+		got, err := starlists.Partial(context.Background(), pc)
+		if err != nil {
+			t.Fatalf("Partial: %v", err)
+		}
+		if got == "" {
+			t.Fatalf("Partial returned empty output for empty List; want rendered header")
+		}
+		// Header must reflect the zero count with plural "lists".
+		if !strings.Contains(got, "0 Star lists") {
+			t.Errorf("partial missing %q for empty List in:\n%s", "0 Star lists", got)
+		}
+		// The section wrapper is present but carries no <div class="starlist">
+		// because the for-loop does not run.
+		if !strings.Contains(got, `<section data-section="starlists">`) {
+			t.Errorf("partial missing section wrapper in:\n%s", got)
+		}
+		if strings.Contains(got, `<div class="starlist">`) {
+			t.Errorf("partial unexpectedly rendered a starlist entry for empty List:\n%s", got)
+		}
+	}
+}
+
 // TestPartial_Starlists_NoDuplicateMaskID guards against the regression
 // where multiple starlists with language bars all emitted the same
 // `<mask id="languages-bar">`, which made every list inherit the first

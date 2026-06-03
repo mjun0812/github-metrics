@@ -9,12 +9,14 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/projects"
+	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
 var updateGolden = flag.Bool("update", false, "update golden files")
@@ -130,5 +132,99 @@ func TestRun_GoldenShape(t *testing.T) {
 	}
 	if string(want) != string(got) {
 		t.Fatalf("golden mismatch\nwant:\n%s\ngot:\n%s", string(want), string(got))
+	}
+}
+
+// renderPartial wires a Result into a PartialContext and runs the
+// classic projects partial, returning its SVG fragment.
+func renderPartial(t *testing.T, r *projects.Result) string {
+	t.Helper()
+	data := plugins.NewData()
+	data.SetPlugin(projects.Name, r)
+	pc := &templates.PartialContext{Data: data, Inputs: map[string]any{}}
+	frag, err := projects.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	return frag
+}
+
+// TestPartial_EmptyList_RendersHeader pins issue #475: upstream gates the
+// projects section on `<% if (plugins.projects) { %>` (object presence)
+// and unconditionally prints the `<%= totalCount %> Project<s>` header, so
+// an enabled-but-empty projects result must still render a `0 Projects`
+// header instead of an empty card.
+func TestPartial_EmptyList_RendersHeader(t *testing.T) {
+	t.Parallel()
+	frag := renderPartial(t, &projects.Result{List: []projects.Project{}})
+	if frag == "" {
+		t.Fatalf("empty List must still render the section header; got empty fragment")
+	}
+	if !strings.Contains(frag, `data-section="projects"`) {
+		t.Errorf("fragment missing projects section wrapper: %q", frag)
+	}
+	if !strings.Contains(frag, `0 Projects`) {
+		t.Errorf("empty List must render `0 Projects` header; got %q", frag)
+	}
+	if !strings.Contains(frag, `<section class="project">`) {
+		t.Errorf("fragment missing empty project section; got %q", frag)
+	}
+}
+
+// TestPartial_Skipped_Empty ensures a Skipped result renders nothing even
+// though the empty-list guard was relaxed for #475.
+func TestPartial_Skipped_Empty(t *testing.T) {
+	t.Parallel()
+	frag := renderPartial(t, &projects.Result{Skipped: true, List: []projects.Project{}})
+	if frag != "" {
+		t.Errorf("Skipped result must render nothing; got %q", frag)
+	}
+}
+
+// TestPartial_SingularHeader checks the `s()` pluralization: exactly one
+// project must render `1 Project` (no trailing "s").
+func TestPartial_SingularHeader(t *testing.T) {
+	t.Parallel()
+	frag := renderPartial(t, &projects.Result{List: []projects.Project{
+		{Name: "Solo", URL: "https://github.com/users/u/projects/1"},
+	}})
+	if !strings.Contains(frag, `1 Project<`) {
+		t.Errorf("single project must render `1 Project` header; got %q", frag)
+	}
+	if strings.Contains(frag, `1 Projects`) {
+		t.Errorf("single project must not be pluralized; got %q", frag)
+	}
+}
+
+// TestPartial_WithProjects renders the project rows (name link, optional
+// description, updated date) and asserts the plural header.
+func TestPartial_WithProjects(t *testing.T) {
+	t.Parallel()
+	frag := renderPartial(t, &projects.Result{List: []projects.Project{
+		{
+			Name:        "Roadmap",
+			Description: "Q3 plan",
+			URL:         "https://github.com/users/u/projects/2",
+			UpdatedAt:   time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC),
+		},
+		{
+			Name: "Backlog",
+			URL:  "https://github.com/users/u/projects/3",
+		},
+	}})
+	if !strings.Contains(frag, `2 Projects`) {
+		t.Errorf("two projects must render `2 Projects` header; got %q", frag)
+	}
+	if !strings.Contains(frag, `href="https://github.com/users/u/projects/2"`) {
+		t.Errorf("project URL must be linked; got %q", frag)
+	}
+	if !strings.Contains(frag, `Roadmap`) || !strings.Contains(frag, `Backlog`) {
+		t.Errorf("project names must render; got %q", frag)
+	}
+	if !strings.Contains(frag, `Q3 plan`) {
+		t.Errorf("description must render when present; got %q", frag)
+	}
+	if !strings.Contains(frag, `Updated 2026-05-01`) {
+		t.Errorf("updated date must render; got %q", frag)
 	}
 }

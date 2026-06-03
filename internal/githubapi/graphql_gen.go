@@ -3995,13 +3995,13 @@ func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponso
 
 // ViewerSponsorsViewerUserSponsorsListing includes the requested fields of the GraphQL type SponsorsListing.
 type ViewerSponsorsViewerUserSponsorsListing struct {
-	FullDescription string                                                         `json:"fullDescription"`
-	ActiveGoal      *ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal `json:"activeGoal"`
+	ShortDescription string                                                         `json:"shortDescription"`
+	ActiveGoal       *ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal `json:"activeGoal"`
 }
 
-// GetFullDescription returns ViewerSponsorsViewerUserSponsorsListing.FullDescription, and is useful for accessing the field via an interface.
-func (v *ViewerSponsorsViewerUserSponsorsListing) GetFullDescription() string {
-	return v.FullDescription
+// GetShortDescription returns ViewerSponsorsViewerUserSponsorsListing.ShortDescription, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserSponsorsListing) GetShortDescription() string {
+	return v.ShortDescription
 }
 
 // GetActiveGoal returns ViewerSponsorsViewerUserSponsorsListing.ActiveGoal, and is useful for accessing the field via an interface.
@@ -5551,7 +5551,7 @@ const ViewerSponsors_Operation = `
 query ViewerSponsors ($activeFirst: Int!, $pastFirst: Int!) {
 	viewer {
 		sponsorsListing {
-			fullDescription
+			shortDescription
 			activeGoal {
 				title
 				description
