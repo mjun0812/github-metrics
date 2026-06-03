@@ -46,7 +46,7 @@ upstream に存在する各 plugin のサブモードについて、Go 実装の
 
 ## テンプレート / base
 
-upstream の参考表示と Go 実装側の対応サンプルを並べています。`classic 総合` は upstream の `metrics.classic.svg` (= 実質 base ヘッダのみ) に対し、Go 側は採用 19 plugin のうち `mjun0812` で非空となる主要 12 plugin (`isocalendar` / `calendar` / `languages` / `activity` / `achievements` / `notable` / `repositories` / `habits` / `stars` / `reactions` / `stargazers` / `traffic`) を合成した overview を表示します。`repository 総合` は `--template repository --repo mjun0812/flash-attention-prebuild-wheels` で、repository template の `_.json` に partial を持つ 5 plugin (`languages` / `contributors` / `people` / `stargazers` / `activity`) を合成した overview です。
+upstream の参考表示と Go 実装側の対応サンプルを並べています。`classic 総合` は upstream の `metrics.classic.svg` (= 実質 base ヘッダのみ) に揃え、Go 側も plugin トグルなしの classic/base 出力を表示します ([#463](https://github.com/mjun0812/github-metrics/issues/463): 以前は主要 12 plugin を合成した縦長 overview だったため、upstream の見た目と一致せず ~3200px に肥大化していた)。各採用 plugin の個別パネルは下のプラグイン別サンプルで確認できます。`repository 総合` は `--template repository --repo mjun0812/flash-attention-prebuild-wheels` で、repository template の `_.json` に partial を持つ 5 plugin (`languages` / `contributors` / `people` / `stargazers` / `activity`) を合成した overview です。
 
 | 種別               | upstream (lowlighter)                                            | upstream (mjun0812)                                               | Go 実装 (mjun0812)                                      |
 | ------------------ | ---------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
@@ -54,7 +54,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | classic 総合       | <img src="original_examples/metrics.classic.svg" width="420">    | <img src="reference_examples/metrics.classic.svg" width="420">    | <img src="examples/metrics-classic.svg" width="420">    |
 | repository 総合    | <img src="original_examples/metrics.repository.svg" width="420"> | <img src="reference_examples/metrics.repository.svg" width="420"> | <img src="examples/metrics-repository.svg" width="420"> |
 
-> ✅ Go サンプル `metrics-classic.svg` / `.png` は `scripts/gen-doc-samples.sh` の独立セクションで生成。主要 12 plugin (`isocalendar` / `calendar` / `languages` / `activity` / `achievements` / `notable` / `repositories` / `habits` / `stars` / `reactions` / `stargazers` / `traffic`) を 1 回の `render_one` で合成します。データ無しで空表示になる plugin (`contributors` / `projects` / `sponsors` / `sponsorships` / `starlists` / `topics`) と巨大化する `people` は除外。合成 SVG は複数セクションを積んだ縦長カードになります (具体的なサイズ / 高さは `make docs-samples` での再生成後に確定)。
+> ✅ Go サンプル `metrics-classic.svg` / `.png` は `scripts/gen-doc-samples.sh` の独立セクションで `render_one "metrics-classic" --template classic` (plugin トグルなし) として生成します。upstream `metrics.classic.svg` が実質 base ヘッダのみであるため、本サンプルも base セクション (header / activity / community / repositories / metadata) のみの出力となり、`plugin-base.svg` に近い高さ (~200px) になります ([#463](https://github.com/mjun0812/github-metrics/issues/463))。採用 plugin の個別パネルは下のプラグイン別サンプルを参照してください。
 > ✅ Go サンプル `metrics-repository.svg` / `.png` は同スクリプトの repository mode セクションで生成。`mjun0812/flash-attention-prebuild-wheels` を対象に、repository template の `_.json` に partial を持つ plugin だけを合成しています: languages / contributors (+ contributions) / people (stargazers + watchers + contributors) / stargazers (graph) / activity。`traffic` 等 partial を持たない plugin はトグルしても出力に反映されないため合成対象外（repository chrome のみ）。
 
 ### base partial parity (`base.header` / `base.repositories`)
@@ -100,6 +100,8 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
   | metrics-classic.svg | n/a     | 2190 px |
   | plugin-people.svg   | n/a     | 646 px  |
   | plugin-activity.svg | n/a     | 1176 px |
+
+  > 注: 上表の `metrics-classic.svg` (2190 px) は当時の 12 plugin 合成 overview の値です。[#463](https://github.com/mjun0812/github-metrics/issues/463) で `metrics-classic` は plugin トグルなしの base-only 出力に戻したため、現行サンプルは upstream `metrics.classic.svg` 同様 ~200px です。
 
 - **副作用**: License preference 行が `License preference: MIT License 50% / Apache License 2.0 22% / BSD 3-Clause "New" or "Revised" License 6%` だと 480 px キャンバス上で 758 px 幅まで overflow していたため、SPDX 短縮形式 + middle dot に圧縮 (`MIT 50% · Apache-2.0 22% · BSD-3-Clause 6%`)。`licenseShortName()` で SPDX マッピング。
 - **波及**: 全 35 sample (svg + png 約 70 ファイル) が `make docs-samples` で再生成されます。upstream parity が破壊されていないことは `tests/golden/*` と `tests/visual/*` の差分なし通過で担保。
