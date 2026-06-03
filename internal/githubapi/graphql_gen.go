@@ -5179,7 +5179,7 @@ query UserReactions ($login: String!, $issuesFirst: Int!, $commentsFirst: Int!) 
 		issues(first: $issuesFirst) {
 			totalCount
 			nodes {
-				reactions {
+				reactions(last: 100) {
 					totalCount
 					nodes {
 						content
@@ -5190,7 +5190,7 @@ query UserReactions ($login: String!, $issuesFirst: Int!, $commentsFirst: Int!) 
 		issueComments(first: $commentsFirst) {
 			totalCount
 			nodes {
-				reactions {
+				reactions(last: 100) {
 					totalCount
 					nodes {
 						content

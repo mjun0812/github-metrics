@@ -147,6 +147,30 @@ func TestGraphQL_User_PassesVariables(t *testing.T) {
 	}
 }
 
+// TestGraphQL_UserReactions_PaginatesReactionConnection guards against
+// the #472 regression: the reactions connection on issues / issue
+// comments must carry a `first`/`last` pagination argument. GitHub's
+// GraphQL API rejects a bare `reactions { nodes { content } }` selection
+// ("You must provide a `first` or `last` value to properly paginate the
+// `reactions` connection."), which made UserReactions error at runtime,
+// stored the error in the plugin slot, and collapsed the reactions card
+// to an empty <foreignObject> body. The local trimmed schema declared
+// the field without arguments, masking the requirement, so this asserts
+// the emitted operation string keeps the pagination arg.
+func TestGraphQL_UserReactions_PaginatesReactionConnection(t *testing.T) {
+	t.Parallel()
+
+	op := githubapi.UserReactions_Operation
+	if strings.Contains(op, "reactions {") {
+		t.Fatalf("UserReactions operation selects reactions without a pagination arg; "+
+			"GitHub requires first/last on a connection nodes selection:\n%s", op)
+	}
+	if n := strings.Count(op, "reactions(last: 100) {"); n != 2 {
+		t.Fatalf("UserReactions operation should paginate both reaction connections "+
+			"(issues + issueComments) with last: 100, got %d:\n%s", n, op)
+	}
+}
+
 func TestGraphQL_Organization_DecodesPayload(t *testing.T) {
 	t.Parallel()
 

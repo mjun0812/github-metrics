@@ -157,7 +157,7 @@ type IssueConnectionWithReactions {
 }
 
 type IssueWithReactions {
-  reactions: ReactionConnection
+  reactions(first: Int, last: Int): ReactionConnection
 }
 
 type IssueCommentConnection {
@@ -166,7 +166,7 @@ type IssueCommentConnection {
 }
 
 type IssueCommentWithReactions {
-  reactions: ReactionConnection
+  reactions(first: Int, last: Int): ReactionConnection
 }
 
 type ReactionConnection {
