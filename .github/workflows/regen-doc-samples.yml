@@ -57,20 +57,19 @@ jobs:
       - name: Emit matrix JSON
         id: gen
         run: |
-          matrix=$(jq -c '.' scripts/samples.json)
+          matrix=$(jq -c '{include: .}' scripts/samples.json)
           echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
 
   # ------------------------------------------------------------------ #
   # 2. Render one sample per job (parallel)                            #
   # ------------------------------------------------------------------ #
   render:
-    name: Render ${{ matrix.sample.name }}
+    name: Render ${{ matrix.name }}
     needs: setup
     runs-on: home-k3s-runner
     strategy:
       fail-fast: false
-      matrix:
-        sample: ${{ fromJSON(needs.setup.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v5
@@ -93,9 +92,9 @@ jobs:
       - name: Render SVG + PNG
         env:
           GITHUB_TOKEN: ${{ secrets.METRICS_TOKEN }}
-          SAMPLE_NAME: ${{ matrix.sample.name }}
-          SAMPLE_MODE: ${{ matrix.sample.mode }}
-          SAMPLE_EXTRA: ${{ matrix.sample.extra }}
+          SAMPLE_NAME: ${{ matrix.name }}
+          SAMPLE_MODE: ${{ matrix.mode }}
+          SAMPLE_EXTRA: ${{ matrix.extra }}
           INPUT_USER: ${{ inputs.user }}
           INPUT_REPO: ${{ inputs.repo }}
           INPUT_TAG: ${{ inputs.tag }}
@@ -155,7 +154,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sample-${{ matrix.sample.name }}
+          name: sample-${{ matrix.name }}
           path: ${{ runner.temp }}/out/
           retention-days: 3
 
