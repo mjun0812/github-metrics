@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/templates"
@@ -24,7 +25,6 @@ func TestBaseHeader_NilRepoSafe(t *testing.T) {
 }
 
 func TestBaseHeader_RepoNameAndOwner(t *testing.T) {
-	t.Parallel()
 	got, err := BaseHeader(context.Background(), newPC(&plugins.Repo{
 		Owner: "octocat", Name: "hello-world",
 		OwnerAvatar: "https://x/a.png", Description: "Test repo",
@@ -32,9 +32,65 @@ func TestBaseHeader_RepoNameAndOwner(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	for _, s := range []string{`data-template="repository"`, "octocat/hello-world", "Test repo", "https://x/a.png"} {
+	// Upstream base.header.ejs renders the repo identity span; the avatar
+	// + description belong to the introduction partial, not the header.
+	for _, s := range []string{`data-template="repository"`, "octocat/hello-world"} {
 		if !strings.Contains(got, s) {
 			t.Errorf("expected %q in %q", s, got)
+		}
+	}
+	for _, s := range []string{"Test repo", "https://x/a.png"} {
+		if strings.Contains(got, s) {
+			t.Errorf("did not expect %q in repository base.header %q", s, got)
+		}
+	}
+}
+
+// TestBaseHeader_UpstreamFields asserts the upstream base.header content
+// (Created / Deployed / disk usage / Environments / calendar) renders
+// from the repo payload. #464.
+func TestBaseHeader_UpstreamFields(t *testing.T) {
+	restore := SetNow(func() time.Time {
+		return time.Date(2026, 5, 31, 10, 0, 0, 0, time.UTC)
+	})
+	defer restore()
+
+	got, err := BaseHeader(context.Background(), newPC(&plugins.Repo{
+		Owner: "mjun0812", Name: "flash-attention-prebuild-wheels",
+		CreatedAt:    time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC),
+		DiskUsageKB:  18739, // ~18.3 MB
+		Deployments:  127,
+		Environments: 2,
+		Calendar: []plugins.ContributionDay{
+			{Color: "#9be9a8"}, {Color: "#40c463"},
+		},
+	}))
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	for _, s := range []string{
+		"Created 1 year ago",
+		"Deployed 127 times",
+		"used",
+		"2 Environments",
+		`class="field calendar"`,
+		`fill="#9be9a8"`,
+	} {
+		if !strings.Contains(got, s) {
+			t.Errorf("expected %q in %q", s, got)
+		}
+	}
+}
+
+// TestBaseHeader_Pluralization asserts the singular/plural toggles for
+// Deployed / Environments match upstream's `s()` helper. #464.
+func TestBaseHeader_Pluralization(t *testing.T) {
+	got, _ := BaseHeader(context.Background(), newPC(&plugins.Repo{
+		Owner: "o", Name: "n", Deployments: 1, Environments: 1,
+	}))
+	for _, s := range []string{"Deployed 1 time<", "1 Environment<"} {
+		if !strings.Contains(got, s) {
+			t.Errorf("expected singular %q in %q", s, got)
 		}
 	}
 }

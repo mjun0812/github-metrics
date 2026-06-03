@@ -76,11 +76,37 @@ func TestRun_EmitsValidSVGSkeleton(t *testing.T) {
 		`</svg>`,
 		`data-template="repository"`,
 		`octocat/hello-world`,
-		`My first repository`,
 	} {
 		if !strings.Contains(out, must) {
 			t.Errorf("Run output missing %q\nfull (truncated): %s", must, truncate(out, 400))
 		}
+	}
+	// #464: the repo description / introduction badges are NOT base.header
+	// chrome and only render via the `plugin_introduction` toggle (which
+	// is unset here), matching upstream's base-only repository output.
+	if strings.Contains(out, "My first repository") {
+		t.Errorf("base-only repository render should not include the description")
+	}
+}
+
+// TestRun_BaseEmptySuppressesChrome asserts `base=` strips the
+// base.header section, matching the classic template + upstream
+// per-plugin repository renders. #464.
+func TestRun_BaseEmptySuppressesChrome(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	d.Account = plugins.AccountRepository
+	d.Repo = &plugins.Repo{Owner: "octocat", Name: "hello-world", Deployments: 3}
+	pc := &templates.PartialContext{
+		Data:   d,
+		Inputs: map[string]any{"repo": "hello-world", "base": ""},
+	}
+	out, err := Template.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if strings.Contains(out, `data-section="header"`) {
+		t.Errorf("base= should suppress the base.header section; got %s", truncate(out, 400))
 	}
 }
 
@@ -114,8 +140,10 @@ func TestRun_RepositoryPeopleCard(t *testing.T) {
 		},
 	})
 	pc := &templates.PartialContext{
-		Data:   d,
-		Inputs: map[string]any{"repo": "hello-world"},
+		Data: d,
+		// #464: plugin partials are now gated by `plugin_<slug>`; the
+		// people section only renders when the toggle is on.
+		Inputs: map[string]any{"repo": "hello-world", "plugin_people": "yes"},
 	}
 
 	out, err := Template.Run(context.Background(), pc)

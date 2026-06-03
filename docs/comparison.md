@@ -46,7 +46,7 @@ upstream に存在する各 plugin のサブモードについて、Go 実装の
 
 ## テンプレート / base
 
-upstream の参考表示と Go 実装側の対応サンプルを並べています。`classic 総合` は upstream の `metrics.classic.svg` (= 実質 base ヘッダのみ) に揃え、Go 側も plugin トグルなしの classic/base 出力を表示します ([#463](https://github.com/mjun0812/github-metrics/issues/463): 以前は主要 12 plugin を合成した縦長 overview だったため、upstream の見た目と一致せず ~3200px に肥大化していた)。各採用 plugin の個別パネルは下のプラグイン別サンプルで確認できます。`repository 総合` は `--template repository --repo mjun0812/flash-attention-prebuild-wheels` で、repository template の `_.json` に partial を持つ 5 plugin (`languages` / `contributors` / `people` / `stargazers` / `activity`) を合成した overview です。
+upstream の参考表示と Go 実装側の対応サンプルを並べています。`classic 総合` は upstream の `metrics.classic.svg` (= 実質 base ヘッダのみ) に揃え、Go 側も plugin トグルなしの classic/base 出力を表示します ([#463](https://github.com/mjun0812/github-metrics/issues/463): 以前は主要 12 plugin を合成した縦長 overview だったため、upstream の見た目と一致せず ~3200px に肥大化していた)。各採用 plugin の個別パネルは下のプラグイン別サンプルで確認できます。`repository 総合` は `--template repository --repo mjun0812/flash-attention-prebuild-wheels` の **base 出力** で、upstream `metrics.repository.svg` と apples-to-apples になるよう plugin トグルなしの base chrome のみを描画します (issue #464)。repository `base.header` partial がリポジトリ名 + `Created` / `Deployed` / disk-usage / 貢献カレンダー / `Environments` を出します。
 
 | 種別               | upstream (lowlighter)                                            | upstream (mjun0812)                                               | Go 実装 (mjun0812)                                      |
 | ------------------ | ---------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
@@ -55,7 +55,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | repository 総合    | <img src="original_examples/metrics.repository.svg" width="420"> | <img src="reference_examples/metrics.repository.svg" width="420"> | <img src="examples/metrics-repository.svg" width="420"> |
 
 > ✅ Go サンプル `metrics-classic.svg` / `.png` は `scripts/gen-doc-samples.sh` の独立セクションで `render_one "metrics-classic" --template classic` (plugin トグルなし) として生成します。upstream `metrics.classic.svg` が実質 base ヘッダのみであるため、本サンプルも base セクション (header / activity / community / repositories / metadata) のみの出力となり、`plugin-base.svg` に近い高さ (~200px) になります ([#463](https://github.com/mjun0812/github-metrics/issues/463))。採用 plugin の個別パネルは下のプラグイン別サンプルを参照してください。
-> ✅ Go サンプル `metrics-repository.svg` / `.png` は同スクリプトの repository mode セクションで生成。`mjun0812/flash-attention-prebuild-wheels` を対象に、repository template の `_.json` に partial を持つ plugin だけを合成しています: languages / contributors (+ contributions) / people (stargazers + watchers + contributors) / stargazers (graph) / activity。`traffic` 等 partial を持たない plugin はトグルしても出力に反映されないため合成対象外（repository chrome のみ）。
+> ✅ Go サンプル `metrics-repository.svg` / `.png` は同スクリプトの repository mode セクションで生成。`mjun0812/flash-attention-prebuild-wheels` を対象に、plugin トグルなしの **base repository 出力** を描画します (issue #464)。upstream `metrics.repository.svg` と同じく base chrome (repository 名 + `Created` / `Deployed` / disk-usage / 貢献カレンダー / `Environments`) のみで、個別 plugin partial は repository template でも `plugin_<slug>` トグルで gate されます。各 plugin partial 単体のサンプルは `plugin-base-repo` / `plugin-people-repo` / `plugin-contributors-repo-contributions` / `plugin-people-repo-types` 側でカバーします。
 
 ### base partial parity (`base.header` / `base.repositories`)
 
@@ -364,7 +364,7 @@ level=WARN msg="plugin contributors is only supported in repository mode (curren
 
 | sample                            | 内容                                                                                                                                                                                                                   |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `examples/metrics-repository.svg` | repository template overview。`_.json` に partial を持つ 5 plugin を合成。<br>`languages` / `stargazers` (graph) / `people` (stargazers + watchers + contributors)<br>`activity` / `contributors` (with contributions) |
+| `examples/metrics-repository.svg` | repository template の base 出力 (issue #464)。plugin トグルなしで upstream `metrics.repository.svg` と同じ base chrome のみ。<br>repository 名 + `Created` / `Deployed` / disk-usage / 貢献カレンダー / `Environments` |
 
 ### repository mode の upstream(mjun0812) ↔ Go 実装 比較
 

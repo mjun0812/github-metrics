@@ -1,5 +1,7 @@
 package plugins
 
+import "time"
+
 // Repo carries the single-repository payload populated by the base
 // plugin when the engine resolves a `repository` template request. It
 // is the M7 analogue of [User] for the M2 classic template: nil when
@@ -19,6 +21,21 @@ type Repo struct {
 	Name string
 	// Description is the repo's about/description text (may be empty).
 	Description string
+	// CreatedAt is `repository.createdAt` — backs the base.header
+	// "Created N years ago" field (#464).
+	CreatedAt time.Time
+	// DiskUsageKB is `repository.diskUsage` (KiB, GitHub GraphQL
+	// convention) — backs the base.header "N MB used" field (#464).
+	DiskUsageKB int
+	// Deployments is `repository.deployments.totalCount` — backs the
+	// base.header "Deployed N times" field (#464).
+	Deployments int
+	// Environments is `repository.environments.totalCount` — backs the
+	// base.header "N Environments" field (#464).
+	Environments int
+	// Calendar holds the trailing contribution days (copied from the
+	// user payload) the base.header mini calendar renders (#464).
+	Calendar []ContributionDay
 	// Stargazers is `repository.stargazerCount`.
 	Stargazers int
 	// Forks is `repository.forkCount`.
