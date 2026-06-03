@@ -39,6 +39,15 @@ func pluralS(n int) string {
 // updatedAt, url). Progress bars + items rows are upstream-only until
 // the GraphQL fetch lands (see projects.go Run TODO).
 //
+// Empty state: upstream gates only on `<% if (plugins.projects) { %>`
+// (object presence) and unconditionally prints
+// `<%= plugins.projects.totalCount %> Project<s>` in the header, so a
+// `0 Projects` header is emitted whenever the plugin is enabled — even
+// with an empty project list. The dispatcher (classic.go) already gates
+// on `plugin_projects` truthy + non-Skipped, so the only guard here is
+// `r.Skipped`; an empty List still renders the header + empty
+// `<section class="project">`, matching sponsors (#451) / starlists.
+//
 // Output structure:
 //
 //	<section data-section="projects">
@@ -66,7 +75,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		return "", nil
 	}
 	r, ok := raw.(*Result)
-	if !ok || r == nil || r.Skipped || len(r.List) == 0 {
+	if !ok || r == nil || r.Skipped {
 		return "", nil
 	}
 
