@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/contributors"
@@ -167,7 +168,13 @@ func TestRun_RepositoryContributionsStats(t *testing.T) {
 }
 
 func TestRun_RepositoryStatsFailureKeepsMinimalStub(t *testing.T) {
-	t.Parallel()
+	// Override the 202 retry backoff so the bounded poll loop runs
+	// instantly. Cannot run in parallel because SetSleepFn mutates a
+	// package-level hook.
+	var slept int
+	restore := contributors.SetSleepFn(func(_ context.Context, _ time.Duration) { slept++ })
+	defer restore()
+
 	rest := mocks.NewRESTMux(t)
 	rest.OnBody("/repos/octocat/hello-world/stats/contributors", http.StatusAccepted, `{"message":"Accepted"}`)
 	data := plugins.NewData()
@@ -199,6 +206,76 @@ func TestRun_RepositoryStatsFailureKeepsMinimalStub(t *testing.T) {
 	// render "stats pending" instead of misleading ++0 --0.
 	if !r.StatsPending {
 		t.Fatalf("StatsPending should be true when /stats/contributors returns 202; got %+v", r)
+	}
+	// The bounded poll must have re-requested the endpoint and slept
+	// between attempts before giving up.
+	if got := rest.Calls("/repos/octocat/hello-world/stats/contributors"); got != contributors.StatsPendingMaxAttempts {
+		t.Fatalf("expected %d attempts on persistent 202; got %d", contributors.StatsPendingMaxAttempts, got)
+	}
+	if slept != contributors.StatsPendingMaxAttempts-1 {
+		t.Fatalf("expected %d backoff sleeps; got %d", contributors.StatsPendingMaxAttempts-1, slept)
+	}
+}
+
+// TestRun_RepositoryStatsRetriesPendingThenSucceeds pins #471: GitHub
+// returns 202 Accepted (empty body) while it warms the
+// /stats/contributors cache. We must poll, not give up immediately, so a
+// cold cache still yields the real per-contributor commits/additions/
+// deletions instead of the "stats pending" placeholder.
+func TestRun_RepositoryStatsRetriesPendingThenSucceeds(t *testing.T) {
+	restore := contributors.SetSleepFn(func(_ context.Context, _ time.Duration) {})
+	defer restore()
+
+	rest := mocks.NewRESTMux(t)
+	path := "/repos/octocat/hello-world/stats/contributors"
+	calls := 0
+	rest.OnFunc(path, func(_ *http.Request) (int, string, http.Header) {
+		calls++
+		if calls < 3 {
+			// First two requests: GitHub is still computing the cache.
+			return http.StatusAccepted, `{"message":"Accepted"}`, nil
+		}
+		return http.StatusOK, `[
+			{
+				"total": 7,
+				"weeks": [{"a": 30, "d": 11, "c": 4}, {"a": 5, "d": 2, "c": 3}],
+				"author": {"login": "octocat", "avatar_url": "https://avatars.example/octocat.png"}
+			}
+		]`, nil
+	})
+	data := plugins.NewData()
+	data.Account = plugins.AccountRepository
+	data.SetRepo(&plugins.Repo{
+		Owner:         "octocat",
+		OwnerAvatar:   "https://avatars.example/owner.png",
+		Name:          "hello-world",
+		Contributors:  1,
+		DefaultBranch: "main",
+	})
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithREST(rest),
+		mocks.WithData(data),
+		mocks.WithInputs(map[string]any{"plugin_contributors_contributions": true}),
+	)
+
+	out, err := contributors.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*contributors.Result)
+	if r.StatsPending {
+		t.Fatalf("StatsPending must clear once 202 resolves to 200; got %+v", r)
+	}
+	if calls != 3 {
+		t.Fatalf("expected 3 attempts (2x202 + 1x200); got %d", calls)
+	}
+	if len(r.List) != 1 {
+		t.Fatalf("expected one contributor after retry; got %+v", r.List)
+	}
+	got := r.List[0]
+	if got.Login != "octocat" || got.Commits != 7 || got.Additions != 35 || got.Deletions != 13 {
+		t.Fatalf("unexpected contributor stats after retry: %+v", got)
 	}
 }
 
