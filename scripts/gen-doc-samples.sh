@@ -6,7 +6,8 @@
 # variants (achievements compact + languages recent/indepth/details +
 # isocalendar full-year + stargazers graph + notable indepth + habits
 # facts + habits charts) + 1 foundational `plugin-base` render + 1
-# classic template overview (multi-plugin composite render) = 29
+# classic template sample (`metrics-classic`, base-only upstream-parity
+# render — see issue #463) = 29
 # user-mode
 # logical samples. (`contributors` is NOT rendered in user mode — it is a
 # repository-mode-only plugin and would emit an empty card; see issue #448
@@ -332,49 +333,33 @@ render_one "plugin-habits-charts" \
   --plugin "plugin_habits_charts=yes"
 
 echo
-echo "== classic template overview (multi-plugin composite) =="
-# `metrics-classic` is the classic-template overview card: it composes
-# the base chrome PLUS the major plugins that render non-empty content
-# for ${USER}, in a single render call. `render_one` forwards `"$@"`, so
-# multiple `--plugin plugin_<name>=yes` toggles can be passed.
+echo "== classic template overview (upstream-parity base render) =="
+# `metrics-classic` is the canonical classic-template sample. It renders
+# the classic template with NO extra `plugin_<name>=yes` toggles so the
+# output mirrors upstream `lowlighter/metrics` `metrics.classic.svg`,
+# which is itself essentially the base header card (the base sections
+# header / activity / community / repositories / metadata only).
 #
-# Composed set (matches docs/comparison.md "テンプレート / base"): the
-# adopted plugins that produce a non-empty panel for `mjun0812` —
-# isocalendar / calendar / languages / activity / achievements / notable
-# / repositories / habits / stars / reactions / stargazers / traffic.
-# Excluded from the composite:
-#   - contributors / projects / sponsors / sponsorships / starlists /
-#     topics: render empty for this user (no data / repo-mode only), so
-#     they would add empty sections.
-#   - people: produces a very tall panel that dominates the overview.
-#   - languages carries `plugin_languages_details=bytes-size,percentage`
-#     to match the standalone `plugin-languages` sample.
+# Why no plugin toggles (issue #463): this sample previously composed 12
+# adopted plugins (isocalendar / calendar / languages / activity /
+# achievements / notable / repositories / habits / stars / reactions /
+# stargazers / traffic) into a single render. That produced a ~3200px
+# card that did NOT match upstream's ~200px classic output, so the
+# "classic 総合" comparison row in docs/comparison.md was misleading.
+# Upstream's classic sample is base-only, so this sample is base-only too;
+# the per-plugin gallery samples already demonstrate each adopted
+# plugin's panel individually.
 #
-# Historical note: this sample previously passed ONLY `--plugin base=...`
-# with no plugin toggles, which made it byte-identical to `plugin-base`
-# (issue #443). It now composes the plugins above so the overview is a
-# tall, multi-section card as documented.
+# This naturally renders close to `plugin-base.svg` (both are the classic
+# base chrome). That is expected and correct, since upstream classic is
+# also effectively base-only.
 #
 # CSS is minified automatically: the metadata `optimize` default
 # ("css, xml") flows through the render pipeline (see
 # internal/engine/dispatch.go::optimizeEnabled), matching upstream's
 # single-line minified style block.
 render_one "metrics-classic" \
-  --template classic \
-  --plugin "plugin_isocalendar=yes" \
-  --plugin "plugin_calendar=yes" \
-  --plugin "plugin_languages=yes" \
-  --plugin "plugin_languages_details=bytes-size,percentage" \
-  --plugin "plugin_activity=yes" \
-  --plugin "plugin_achievements=yes" \
-  --plugin "plugin_notable=yes" \
-  --plugin "plugin_repositories=yes" \
-  --plugin "plugin_habits=yes" \
-  --plugin "plugin_stars=yes" \
-  --plugin "plugin_reactions=yes" \
-  --plugin "plugin_reactions_details=percentage" \
-  --plugin "plugin_stargazers=yes" \
-  --plugin "plugin_traffic=yes"
+  --template classic
 
 echo
 echo "== foundational base render =="
@@ -460,9 +445,11 @@ render_one_repo "plugin-base-repo"
 
 echo
 echo "== repository template overview (multi-plugin composite) =="
-# `metrics-repository` mirrors the role of `metrics-classic` for the
-# repository template: a single composite card showing every partial
-# whose toggle has visible effect on ${REPO}.
+# `metrics-repository` is the repository-template overview: a single
+# composite card showing every partial whose toggle has visible effect
+# on ${REPO}. (Unlike `metrics-classic`, which is base-only for
+# upstream parity — see issue #463 — the repository template genuinely
+# composes its `_.json` partials, so this composite is retained.)
 #
 # Plugin selection rationale:
 #   - Included: `plugin_people` (adds the people section with 3
