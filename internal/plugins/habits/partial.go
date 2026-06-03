@@ -110,11 +110,12 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 
 	hourIdx := dominantHourIdx(r.Charts.Hours)
 	dayName := dominantDayName(r.Charts.Days)
+	langAvailable := r.Linguist.Available && len(r.Linguist.Ordered) > 0
 	factsHasContent := r.Facts.IndentStyle != "" ||
 		r.Facts.CharsPerLine > 0 ||
 		hourIdx >= 0 ||
 		dayName != ""
-	chartsHasContent := hourIdx >= 0 || dayName != ""
+	chartsHasContent := hourIdx >= 0 || dayName != "" || langAvailable
 	if (!r.FactsEnabled || !factsHasContent) && (!r.ChartsEnabled || !chartsHasContent) {
 		return "", nil
 	}
@@ -158,15 +159,22 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		b.WriteString(`</section>`)
 	}
 
-	// ── Section 2: chart-bars (hour + day) ──────────────────────────
+	// ── Section 2: chart-bars (hour + day + language activity) ──────
 	if r.ChartsEnabled && chartsHasContent {
 		b.WriteString(`<section class="habits">`)
 		if hourIdx >= 0 {
 			writeHourChart(&b, r.Charts.Hours, r.Trim)
 		}
-		if dayName != "" {
+		// Upstream wraps the day chart and the language-activity chart in
+		// a single `<div class="row largeable">` so they sit side by side.
+		if dayName != "" || langAvailable {
 			b.WriteString(`<div class="row largeable">`)
-			writeDayChart(&b, r.Charts.Days)
+			if dayName != "" {
+				writeDayChart(&b, r.Charts.Days)
+			}
+			if langAvailable {
+				writeLanguageChart(&b, r.Linguist.Ordered)
+			}
 			b.WriteString(`</div>`)
 		}
 		b.WriteString(`</section>`)
@@ -216,6 +224,30 @@ func writeDayChart(b *strings.Builder, days [7]int) {
 	for d := 0; d < 7; d++ {
 		share := float64(days[d]) / float64(maxN)
 		writeBarEntry(b, dayNames[d], days[d], share)
+	}
+	b.WriteString(`</div>`)
+	b.WriteString(`</section>`)
+}
+
+// writeLanguageChart emits the "Language activity" chart-bars block
+// (EJS lines 91-110, `plugins.habits.linguist`). Unlike the hour/day
+// charts this uses the `horizontal` variant: each entry carries a
+// `<span class="name">` label, a width-scaled bar (share*80%), and a
+// `<span class="value">N%</span>` percentage. The literal heading
+// "Language activity" matches upstream's EJS exactly (singular).
+func writeLanguageChart(b *strings.Builder, langs []LanguageShare) {
+	b.WriteString(`<section class="column chart">`)
+	b.WriteString(`<h3>Language activity</h3>`)
+	b.WriteString(`<div class="chart-bars horizontal">`)
+	for _, ls := range langs {
+		width := ls.Share * 80
+		lvl := bgLevel(ls.Share)
+		pct := int(math.Round(100 * ls.Share))
+		fmt.Fprintf(
+			b,
+			`<div class="entry"><span class="name">%s</span><div class="bar" style="width: %g%%; background-color: var(--color-calendar-graph-day-L%d-bg)"></div><span class="value">%d%%</span></div>`,
+			partials.EscapeXML(ls.Name), width, lvl, pct,
+		)
 	}
 	b.WriteString(`</div>`)
 	b.WriteString(`</section>`)
