@@ -1,75 +1,184 @@
 name: Regen doc samples
 
-# Regenerates docs/examples/ (SVG + PNG) from the current codebase and
-# opens a pull request with the diff. Triggered manually by maintainers;
-# never runs on push/schedule to avoid unintended API calls or commits.
+# Regenerates docs/examples/ (SVG + PNG) in parallel and opens a draft
+# PR with the diff. Triggered manually by maintainers only.
 #
-# What it does:
-#   1. Builds the production Docker image from deploy/Dockerfile
-#      (tagged github-metrics:local — identical to the local workflow).
-#   2. Runs scripts/gen-doc-samples.sh to render all 35 logical samples
-#      (SVG + PNG) under docs/examples/.
-#   3. If any file changed, opens a draft PR on a fresh branch so the
-#      maintainer can review the visual diff before merging.
-#   4. If nothing changed, the job exits successfully with no PR.
+# Pipeline:
+#   setup   — reads scripts/samples.json and emits the render matrix
+#   render  — 35 parallel jobs, each pulling ghcr.io/mjun0812/github-metrics
+#             from GHCR and running one docker run; artifacts uploaded
+#   open-pr — collects all artifacts, commits to a branch, opens draft PR
 #
 # Requirements:
 #   - METRICS_TOKEN secret: classic PAT with read:user + repo scopes.
-#     (The workflow's GITHUB_TOKEN is used for PR creation / git push;
-#     METRICS_TOKEN is passed to the docker run as GITHUB_TOKEN so the
-#     binary can call the GitHub API without hitting rate limits.)
-#   - The self-hosted runner labelled [self-hosted, Linux, X64] must have
-#     Docker and Go available (same runner used by release.yml).
+#     Passed to the container as GITHUB_TOKEN so the binary can call
+#     the GitHub API. The workflow's built-in GITHUB_TOKEN is used only
+#     for GHCR pull, git push, and gh pr create.
+#   - GHCR image ghcr.io/mjun0812/github-metrics:<tag> must exist.
+#     The image is published by release.yml on every semver tag push.
 
 on:
   workflow_dispatch:
     inputs:
       user:
-        description: 'GitHub user for sample renders (METRICS_DOC_USER)'
+        description: 'GitHub user for renders (METRICS_DOC_USER)'
         required: false
         default: 'mjun0812'
       repo:
         description: 'GitHub repo for repository-mode renders (METRICS_DOC_REPO)'
         required: false
         default: 'flash-attention-prebuild-wheels'
+      tag:
+        description: 'GHCR image tag (e.g. latest, v1.0.0)'
+        required: false
+        default: 'latest'
 
 permissions:
-  contents: write   # git push (branch + commit)
+  contents: write       # git push (new branch + commit)
   pull-requests: write  # gh pr create
+  packages: read        # GHCR pull
 
 env:
   GO_VERSION: "1.26.4"
+  IMAGE: ghcr.io/mjun0812/github-metrics
 
 jobs:
-  regen:
-    name: Regenerate and open PR
-    runs-on: [self-hosted, Linux, X64]
-    timeout-minutes: 60
+  # ------------------------------------------------------------------ #
+  # 1. Build the render matrix from scripts/samples.json               #
+  # ------------------------------------------------------------------ #
+  setup:
+    name: Build render matrix
+    runs-on: home-k3s-runner
+    outputs:
+      matrix: ${{ steps.gen.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Emit matrix JSON
+        id: gen
+        run: |
+          matrix=$(jq -c '.' scripts/samples.json)
+          echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+
+  # ------------------------------------------------------------------ #
+  # 2. Render one sample per job (parallel)                            #
+  # ------------------------------------------------------------------ #
+  render:
+    name: Render ${{ matrix.sample.name }}
+    needs: setup
+    runs-on: home-k3s-runner
+    strategy:
+      fail-fast: false
+      matrix:
+        sample: ${{ fromJSON(needs.setup.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
-      - name: Build github-metrics:local
-        run: |
-          DOCKER_BUILDKIT=0 docker build \
-            -f deploy/Dockerfile \
-            -t github-metrics:local \
-            .
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate doc samples
+      - name: Pull image
+        run: docker pull ${{ env.IMAGE }}:${{ inputs.tag }}
+
+      - name: Render SVG + PNG
         env:
           GITHUB_TOKEN: ${{ secrets.METRICS_TOKEN }}
-          METRICS_DOC_USER: ${{ inputs.user }}
-          METRICS_DOC_REPO: ${{ inputs.repo }}
-          METRICS_DOC_IMAGE: github-metrics:local
-        run: bash scripts/gen-doc-samples.sh
+          SAMPLE_NAME: ${{ matrix.sample.name }}
+          SAMPLE_MODE: ${{ matrix.sample.mode }}
+          SAMPLE_EXTRA: ${{ matrix.sample.extra }}
+          INPUT_USER: ${{ inputs.user }}
+          INPUT_REPO: ${{ inputs.repo }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/out"
+
+          if [[ "$SAMPLE_MODE" == "user" ]]; then
+            BASE_ARGS=(--user "$INPUT_USER")
+          else
+            BASE_ARGS=(--user "$INPUT_USER" --repo "$INPUT_REPO" --template repository)
+          fi
+
+          read -ra extra_arr <<< "$SAMPLE_EXTRA"
+
+          for fmt in svg png; do
+            out="$RUNNER_TEMP/out/${SAMPLE_NAME}.${fmt}"
+            ok=0
+            for attempt in 1 2 3; do
+              rm -f "$out"
+              RUN_ARGS=(
+                "${BASE_ARGS[@]}"
+                --token-env GITHUB_TOKEN
+                --output "$fmt"
+                --filename "/out/${SAMPLE_NAME}.${fmt}"
+                --dryrun
+              )
+              if [[ "${#extra_arr[@]}" -gt 0 ]]; then
+                RUN_ARGS+=("${extra_arr[@]}")
+              fi
+              if docker run --rm \
+                  -e GITHUB_TOKEN \
+                  -e HTTP_PROXY="" \
+                  -e HTTPS_PROXY="" \
+                  -e http_proxy="" \
+                  -e https_proxy="" \
+                  -e NO_PROXY="*" \
+                  -e no_proxy="*" \
+                  -v "$RUNNER_TEMP/out:/out" \
+                  "${{ env.IMAGE }}:$INPUT_TAG" \
+                  "${RUN_ARGS[@]}" && [[ -s "$out" ]]; then
+                ok=1; break
+              fi
+              [[ "$attempt" -lt 3 ]] && echo "retry ${attempt}/3 ${fmt}"
+            done
+            if [[ "$ok" -eq 0 ]]; then
+              echo "FAIL: ${SAMPLE_NAME}.${fmt}" >&2
+              exit 1
+            fi
+            if [[ "$fmt" == "svg" ]]; then
+              go run ./internal/tools/normalize-svg-stream < "$out" > "${out}.norm"
+              mv "${out}.norm" "$out"
+            fi
+            echo "OK: ${SAMPLE_NAME}.${fmt} ($(wc -c < "$out" | tr -d ' ') bytes)"
+          done
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sample-${{ matrix.sample.name }}
+          path: ${{ runner.temp }}/out/
+          retention-days: 3
+
+  # ------------------------------------------------------------------ #
+  # 3. Collect artifacts and open a draft PR                           #
+  # ------------------------------------------------------------------ #
+  open-pr:
+    name: Open draft PR
+    needs: render
+    runs-on: home-k3s-runner
+    if: ${{ !cancelled() && needs.render.result == 'success' }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download all sample artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: docs/examples/
+          pattern: sample-*
+          merge-multiple: true
 
       - name: Check for changes
         id: diff
@@ -77,9 +186,9 @@ jobs:
           if git diff --quiet HEAD -- docs/examples/; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
-            changed=$(git diff --name-only HEAD -- docs/examples/ | wc -l | tr -d ' ')
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "count=${changed}" >> "$GITHUB_OUTPUT"
+            count=$(git diff --name-only HEAD -- docs/examples/ | wc -l | tr -d ' ')
+            echo "changed=true"  >> "$GITHUB_OUTPUT"
+            echo "count=${count}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: No changes — skip PR
@@ -100,7 +209,7 @@ jobs:
           git commit -m "chore(docs): regenerate doc samples
 
 Triggered by workflow_dispatch on ${GITHUB_SHA::7}.
-User: ${{ inputs.user }} / Repo: ${{ inputs.repo }}
+User: ${{ inputs.user }} / Repo: ${{ inputs.repo }} / Tag: ${{ inputs.tag }}
 Changed files: ${{ steps.diff.outputs.count }}"
           git push origin "${branch}"
 
@@ -120,6 +229,7 @@ Changed files: ${{ steps.diff.outputs.count }}"
 Automated regeneration of \`docs/examples/\` triggered via **Regen doc samples** workflow.
 
 - Triggered on: \`${{ github.sha }}\`
+- Image tag: \`${{ inputs.tag }}\`
 - User: \`${{ inputs.user }}\`
 - Repo: \`${{ inputs.repo }}\`
 - Changed files: ${{ steps.diff.outputs.count }}
@@ -128,8 +238,7 @@ Automated regeneration of \`docs/examples/\` triggered via **Regen doc samples**
 
 - [ ] SVG/PNG diffs look correct (no rendering regressions)
 - [ ] No unexpected files added or removed
-- [ ] CI passes on this branch
 
-🤖 Generated by the `regen-doc-samples` workflow
+🤖 Generated by the \`regen-doc-samples\` workflow
 EOF
 )"
