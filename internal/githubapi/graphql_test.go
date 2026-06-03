@@ -125,6 +125,25 @@ func TestGraphQL_User_SendsAuthorizationHeader(t *testing.T) {
 	}
 }
 
+// TestGraphQL_User_SendsUserAgent guards against regressing to the Go
+// default User-Agent ("Go-http-client/1.1"), which GitHub rejects as
+// bot/abuse traffic with a 403 (empty {"data":null} body). genqlient's
+// transport sends no UA on its own, so graphqlAuthTransport must set it.
+func TestGraphQL_User_SendsUserAgent(t *testing.T) {
+	t.Parallel()
+
+	transport := &graphqlMockTransport{body: `{"data":{"user":null}}`}
+	g := newGraphQLWithMock(t, transport)
+	_, _ = g.User(context.Background(), "octocat")
+
+	if transport.captured == nil {
+		t.Fatalf("transport saw no request")
+	}
+	if got := transport.captured.Header.Get("User-Agent"); got != httpx.DefaultUserAgent {
+		t.Errorf("User-Agent = %q, want %q", got, httpx.DefaultUserAgent)
+	}
+}
+
 func TestGraphQL_User_PassesVariables(t *testing.T) {
 	t.Parallel()
 

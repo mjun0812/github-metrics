@@ -207,6 +207,15 @@ func (t *graphqlAuthTransport) RoundTrip(req *http.Request) (*http.Response, err
 	if req2.Header.Get("Accept") == "" {
 		req2.Header.Set("Accept", "application/vnd.github+json")
 	}
+	// GitHub rejects requests carrying the Go default User-Agent
+	// ("Go-http-client/1.1") as bot/abuse traffic with a 403 (no GraphQL
+	// errors body, just {"data":null}). The REST client sets a real UA
+	// via httpx, but genqlient's GraphQL transport otherwise sends none —
+	// so every base/plugin GraphQL call went out unidentified and got
+	// blocked. Set the project UA here to match the REST client.
+	if req2.Header.Get("User-Agent") == "" {
+		req2.Header.Set("User-Agent", httpx.DefaultUserAgent)
+	}
 	if t.kind == TokenClassic || t.kind == TokenMocked {
 		if req2.Header.Get("Authorization") == "" {
 			req2.Header.Set("Authorization", "bearer "+t.token.Reveal())
