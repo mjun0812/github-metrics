@@ -376,6 +376,11 @@ func TestCompliance_M9_TestInfraInvariant(t *testing.T) {
 	want := map[string]struct{}{
 		"mocks":  {},
 		"golden": {},
+		// svgcontent: content-level SVG extraction helper backing the
+		// tests/content/ verification suite (semantic / query-field /
+		// recorded-fixture layers behind issues #463–#472). Added as
+		// an explicit M9 amendment — it carries no production code.
+		"svgcontent": {},
 	}
 	have := map[string]struct{}{}
 	for _, e := range entries {
