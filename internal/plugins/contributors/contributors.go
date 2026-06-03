@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
@@ -171,21 +172,63 @@ const (
 	statsStatusPending
 )
 
+// statsPendingMaxAttempts bounds how many times we re-request
+// /stats/contributors while GitHub returns 202 Accepted (cache warm-up).
+// GitHub recomputes contributor statistics asynchronously the first time
+// they are requested and answers 202 with an empty body until the cache
+// is ready; mirroring upstream metrics we poll a handful of times before
+// giving up and surfacing the "stats pending" placeholder.
+const statsPendingMaxAttempts = 5
+
+// statsPendingBackoff is the wait between 202 retries. Upstream uses a
+// few seconds; we keep it modest so a warm cache (the common case) costs
+// at most one extra round trip and a cold cache resolves within a couple
+// of attempts without blocking the run for long.
+const statsPendingBackoff = 2 * time.Second
+
+// sleepFn is indirected so unit tests can drive the 202 retry loop
+// without real wall-clock delays. Production uses time.Sleep.
+var sleepFn = func(ctx context.Context, d time.Duration) {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+	case <-timer.C:
+	}
+}
+
 func fetchContributorStats(ctx context.Context, pc *plugins.PluginContext, owner, repo string, ignored map[string]struct{}) ([]Contributor, statsStatus) {
 	path := fmt.Sprintf("/repos/%s/%s/stats/contributors", url.PathEscape(owner), url.PathEscape(repo))
-	body, resp, err := pc.REST.Get(ctx, path, nil)
-	if err != nil || resp == nil {
-		return nil, statsStatusFailed
+
+	var body []byte
+	for attempt := 0; ; attempt++ {
+		var resp *http.Response
+		var err error
+		body, resp, err = pc.REST.Get(ctx, path, nil)
+		if err != nil || resp == nil {
+			return nil, statsStatusFailed
+		}
+		// 202 Accepted: GitHub is asynchronously computing the
+		// statistics and returns an empty body. Poll a bounded number
+		// of times before giving up so a cold cache (which warms within
+		// seconds) still yields real per-contributor commits/diffs
+		// instead of the misleading "stats pending" placeholder.
+		if resp.StatusCode == http.StatusAccepted {
+			if attempt >= statsPendingMaxAttempts-1 {
+				return nil, statsStatusPending
+			}
+			sleepFn(ctx, statsPendingBackoff)
+			if ctx.Err() != nil {
+				return nil, statsStatusPending
+			}
+			continue
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, statsStatusFailed
+		}
+		break
 	}
-	// 202 Accepted: GitHub is computing the statistics. Surface this
-	// to the caller so the partial can show "stats pending" instead
-	// of synthesising ++0 --0 from the empty body.
-	if resp.StatusCode == http.StatusAccepted {
-		return nil, statsStatusPending
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, statsStatusFailed
-	}
+
 	var rows []rawContributorStat
 	if err := json.Unmarshal(body, &rows); err != nil {
 		return nil, statsStatusFailed
