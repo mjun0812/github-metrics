@@ -45,6 +45,15 @@ func eventOcticonAndVerb(eventType string) (string, string) {
 	return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M3.05 3.05a7 7 0 000 9.9.75.75 0 11-1.06 1.06c-3.32-3.32-3.32-8.7 0-12.02a.75.75 0 011.06 1.06zm9.9-1.06a.75.75 0 011.06 0c3.32 3.32 3.32 8.7 0 12.02a.75.75 0 11-1.06-1.06 7 7 0 000-9.9.75.75 0 010-1.06zM5.879 5.879a3 3 0 000 4.243.75.75 0 11-1.061 1.06 4.5 4.5 0 010-6.364.75.75 0 011.06 1.06zm5.303-1.061a.75.75 0 011.06 0 4.5 4.5 0 010 6.364.75.75 0 11-1.06-1.06 3 3 0 000-4.243.75.75 0 010-1.061zM8 9a1 1 0 100-2 1 1 0 000 2z"></path></svg>`, eventType
 }
 
+// pluralSuffix returns "s" unless n == 1, mirroring upstream's `s()`
+// helper used for "file"/"files" pluralization in activity.ejs.
+func pluralSuffix(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
+}
+
 // Partial renders the classic SVG fragment for the activity plugin.
 // Mirrors upstream org_repo/source/templates/classic/partials/activity.ejs.
 //
@@ -107,6 +116,18 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 			partials.EscapeXML(verb),
 			partials.EscapeXML(e.Repo),
 		)
+		// Mirror upstream activity.ejs line 79: PR events show the diff
+		// stats ("N file(s) changed ++A --D") in a details block.
+		if e.Files != nil && e.Lines != nil {
+			fmt.Fprintf(
+				&b,
+				`<div class="details"><div>%d file%s changed <span class="code">++%d --%d</span></div></div>`,
+				e.Files.Changed,
+				pluralSuffix(e.Files.Changed),
+				e.Lines.Added,
+				e.Lines.Deleted,
+			)
+		}
 		if dateStr != "" {
 			fmt.Fprintf(&b, `<div class="timestamp">%s</div>`, partials.EscapeXML(dateStr))
 		}

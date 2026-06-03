@@ -43,7 +43,14 @@ func fixedResult() *activity.Result {
 	return &activity.Result{
 		Events: []activity.ActivityEvent{
 			{Type: "PushEvent", Repo: "octocat/alpha", Date: when, Visibility: "public"},
-			{Type: "PullRequestEvent", Repo: "octocat/beta", Date: when.Add(-1 * time.Hour), Visibility: "public"},
+			{
+				Type:       "PullRequestEvent",
+				Repo:       "octocat/beta",
+				Date:       when.Add(-1 * time.Hour),
+				Visibility: "public",
+				Files:      &activity.EventFiles{Changed: 2},
+				Lines:      &activity.EventLines{Added: 34, Deleted: 5},
+			},
 		},
 		Days: 14,
 	}

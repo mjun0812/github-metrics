@@ -95,6 +95,14 @@ var allowedFiles = map[string]struct{}{
 	// shape as partial.go above — "lines" is the upstream details
 	// column name, not the unadopted upstream plugin slug.
 	"internal/plugins/languages/languages.go": {},
+	// activity plugin exposes PR diff stats as
+	// `Lines *EventLines json:"lines"` mirroring upstream
+	// data.plugins.activity.events[].lines (#465). The word "lines"
+	// overlaps the unadopted upstream "lines" plugin name; this
+	// allow-list entry preserves the upstream JSON shape and the
+	// "N files changed ++A --D" render (activity.ejs line 79).
+	"internal/plugins/activity/activity.go": {},
+	"internal/plugins/activity/partial.go":  {},
 }
 
 // TestNoUnadoptedPluginReference walks scanRoots and asserts that no

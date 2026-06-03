@@ -10,7 +10,14 @@
       "type": "PullRequestEvent",
       "repo": "octocat/beta",
       "date": "2026-05-15T11:00:00Z",
-      "visibility": "public"
+      "visibility": "public",
+      "files": {
+        "changed": 2
+      },
+      "lines": {
+        "added": 34,
+        "deleted": 5
+      }
     }
   ],
   "days": 14

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -16,6 +17,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/activity"
+	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
 // restMux is a tiny HTTP transport that returns canned responses keyed
@@ -126,6 +128,18 @@ func boolStr(b bool) string {
 		return "true"
 	}
 	return "false"
+}
+
+// prEv renders a PullRequestEvent JSON entry carrying the diff-stat
+// payload (additions/deletions/changed_files) GitHub embeds under
+// payload.pull_request.
+func prEv(repo string, when time.Time, public bool, additions, deletions, changed int) string {
+	return `{"type":"PullRequestEvent","repo":{"name":"` + repo +
+		`"},"created_at":"` + when.UTC().Format(time.RFC3339) +
+		`","public":` + boolStr(public) +
+		`,"payload":{"pull_request":{"additions":` + strconv.Itoa(additions) +
+		`,"deletions":` + strconv.Itoa(deletions) +
+		`,"changed_files":` + strconv.Itoa(changed) + `}}}`
 }
 
 // TestRun_Normal — single page of mixed events, default inputs.
@@ -268,6 +282,90 @@ func TestRun_4xxNotRetryable(t *testing.T) {
 				t.Errorf("%d wrapped as *RetryableError; should be permanent. err=%v", tc.status, err)
 			}
 		})
+	}
+}
+
+// TestRun_PullRequestStats asserts a PullRequestEvent surfaces the diff
+// stats (files changed / additions / deletions) from
+// payload.pull_request, while non-PR events leave Files/Lines nil.
+func TestRun_PullRequestStats(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	mux := newRESTMux()
+	mux.on(
+		"/users/octocat/events",
+		http.StatusOK,
+		eventsBody(
+			prEv("octocat/beta", now.Add(-1*time.Hour), true, 34, 5, 2),
+			ev("PushEvent", "octocat/alpha", now.Add(-2*time.Hour), true),
+		),
+	)
+	pc := newPC(t, mux, nil)
+	out, err := activity.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*activity.Result)
+	if len(r.Events) != 2 {
+		t.Fatalf("Events len = %d, want 2", len(r.Events))
+	}
+
+	var pr, push *activity.ActivityEvent
+	for i := range r.Events {
+		switch r.Events[i].Type {
+		case "PullRequestEvent":
+			pr = &r.Events[i]
+		case "PushEvent":
+			push = &r.Events[i]
+		}
+	}
+	if pr == nil || push == nil {
+		t.Fatalf("missing expected events: %+v", r.Events)
+	}
+	if pr.Files == nil || pr.Lines == nil {
+		t.Fatalf("PR event missing diff stats: %+v", pr)
+	}
+	if pr.Files.Changed != 2 {
+		t.Errorf("Files.Changed = %d, want 2", pr.Files.Changed)
+	}
+	if pr.Lines.Added != 34 || pr.Lines.Deleted != 5 {
+		t.Errorf("Lines = %+v, want {Added:34 Deleted:5}", pr.Lines)
+	}
+	if push.Files != nil || push.Lines != nil {
+		t.Errorf("non-PR event should have nil Files/Lines; got Files=%+v Lines=%+v", push.Files, push.Lines)
+	}
+}
+
+// TestPartial_PullRequestStats asserts the rendered partial includes the
+// upstream "N files changed ++A --D" details line for a PR event.
+func TestPartial_PullRequestStats(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.SetPlugin(activity.Name, &activity.Result{
+		Events: []activity.ActivityEvent{
+			{
+				Type:       "PullRequestEvent",
+				Repo:       "octocat/beta",
+				Date:       time.Date(2026, 5, 15, 12, 0, 0, 0, time.UTC),
+				Visibility: "public",
+				Files:      &activity.EventFiles{Changed: 2},
+				Lines:      &activity.EventLines{Added: 34, Deleted: 5},
+			},
+		},
+		Days: 14,
+	})
+	got, err := activity.Partial(context.Background(), &templates.PartialContext{Data: data})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	for _, want := range []string{
+		`<div class="details">`,
+		`2 files changed`,
+		`++34 --5`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("partial missing %q in:\n%s", want, got)
+		}
 	}
 }
 
