@@ -1,0 +1,54 @@
+package content
+
+import (
+	"testing"
+
+	"github.com/mjun0812/github-metrics/internal/testutil/svgcontent"
+)
+
+// legitimatelyEmpty allowlists example SVGs that may correctly render
+// to an empty body, keyed to the rationale. Populate this ONLY after
+// confirming against docs/reference_examples/ that upstream also
+// renders nothing for the same account — most "empty" cards are bugs.
+//
+// Confirmed NOT to belong here (upstream renders content for the
+// mjun0812 account, so an empty output is a real regression):
+//   - plugin-reactions.svg  upstream shows the "❤️ 0% 👍 0% …" gauge (#472)
+//   - plugin-sponsors.svg    upstream shows the "Sponsor Me!" bio panel
+//   - plugin-starlists.svg   upstream shows "0 Star lists"
+var legitimatelyEmpty = map[string]string{}
+
+// minVisibleTokens is the blanket floor every example SVG must clear.
+// A correctly-rendered metrics card always carries at least a label
+// or two of visible text; a card that renders to fewer tokens has
+// almost certainly collapsed to an empty <foreignObject> body — the
+// #472 (reactions) bug class. Two is deliberately conservative so the
+// net flags only genuine emptiness, never a legitimately terse card
+// (e.g. people's "24 followers 20 followed").
+const minVisibleTokens = 2
+
+// TestExampleCardsNotEmpty is the cheapest, broadest layer (D): it
+// asserts that no committed example SVG renders to an empty card.
+// It needs no upstream reference, so it guards every plugin at once —
+// including ones a future regression could silently blank out.
+func TestExampleCardsNotEmpty(t *testing.T) {
+	for _, name := range exampleSVGs(t) {
+		t.Run(name, func(t *testing.T) {
+			if reason, ok := legitimatelyEmpty[name]; ok {
+				t.Skipf("allowlisted as legitimately empty: %s", reason)
+			}
+			raw := readExample(t, name)
+			tokens, err := svgcontent.Tokens(raw)
+			if err != nil {
+				t.Fatalf("extract tokens: %v", err)
+			}
+			if len(tokens) < minVisibleTokens {
+				text, _ := svgcontent.VisibleText(raw)
+				t.Errorf("card rendered (near-)empty: %d visible token(s) < %d\n"+
+					"  visible text: %q\n"+
+					"  → the plugin produced no content; check data fetch / empty-guard / template partial",
+					len(tokens), minVisibleTokens, text)
+			}
+		})
+	}
+}
