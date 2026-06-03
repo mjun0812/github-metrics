@@ -319,8 +319,7 @@ func readBaseInput(in map[string]any) (string, bool) {
 // other `_.json` entry is a plugin partial that passes through (its
 // `plugin_<slug>` toggle is applied separately by the caller). #464.
 func PartialEnabledByBase(name string, sections map[string]struct{}) bool {
-	switch name {
-	case "base.header":
+	if name == "base.header" {
 		_, ok := sections["header"]
 		return ok
 	}
