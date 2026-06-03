@@ -124,6 +124,10 @@
       },
       "factsEnabled": true,
       "from": 0,
+      "linguist": {
+        "available": false,
+        "ordered": null
+      },
       "skipped": true,
       "trim": false
     },
@@ -192,6 +196,7 @@
       "skipped": true
     },
     "people": {
+      "counts": null,
       "mode": "",
       "size": 0,
       "skipped": true,
@@ -214,24 +219,32 @@
     "repositories": {
       "featured": [
         {
+          "createdAt": "0001-01-01T00:00:00Z",
           "description": "",
           "forks": 10,
           "isFork": false,
+          "issues": 0,
           "language": null,
           "languages": null,
+          "license": null,
           "nameWithOwner": "octocat/alpha",
+          "pullRequests": 0,
           "stars": 100,
           "uRL": "https://github.com/octocat/alpha",
           "visibility": "public",
           "watchers": 5
         },
         {
+          "createdAt": "0001-01-01T00:00:00Z",
           "description": "",
           "forks": 3,
           "isFork": false,
+          "issues": 0,
           "language": null,
           "languages": null,
+          "license": null,
           "nameWithOwner": "octocat/beta",
+          "pullRequests": 0,
           "stars": 50,
           "uRL": "https://github.com/octocat/beta",
           "visibility": "public",

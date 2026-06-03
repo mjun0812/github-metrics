@@ -12,8 +12,9 @@ permissions:
 env:
   # Track the latest stable Go release. Keep in lockstep with the
   # GOLANGCI_LINT_VERSION pin so the lint binary can fully type-check
-  # the modules we ship.
-  GO_VERSION: "1.26.3"
+  # the modules we ship. Pinned to 1.26.4 for the net/textproto
+  # (GO-2026-5039) and crypto/x509 (GO-2026-5037) stdlib fixes.
+  GO_VERSION: "1.26.4"
   # Built against Go 1.26; matches the runner pin above.
   GOLANGCI_LINT_VERSION: "v2.12.2"
 

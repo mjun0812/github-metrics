@@ -91,6 +91,16 @@ func (p *reactionsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 	// plugin_reactions_limit_issues=100, plugin_reactions_days=0.
 	commentsLimit := readIntDefault(pc.Inputs, "plugin_reactions_limit", 200)
 	issuesLimit := readIntDefault(pc.Inputs, "plugin_reactions_limit_issues", 100)
+	// GitHub's GraphQL connections reject first > 100 with
+	// EXCESSIVE_PAGINATION, which fails the entire UserReactions query
+	// and blanks the card. The upstream plugin_reactions_limit default
+	// is 200, so clamp both connection sizes to GitHub's 100 ceiling. (#472)
+	if commentsLimit > 100 {
+		commentsLimit = 100
+	}
+	if issuesLimit > 100 {
+		issuesLimit = 100
+	}
 	days := readIntDefault(pc.Inputs, "plugin_reactions_days", 0)
 	display := readDisplay(pc.Inputs)
 	details := readDetails(pc.Inputs)

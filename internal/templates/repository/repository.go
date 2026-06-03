@@ -180,11 +180,7 @@ func (t *repositoryTemplate) Run(ctx context.Context, pc *templates.PartialConte
 // plugin slug, so it is gated by `plugin_introduction` like any other
 // plugin entry.
 func pluginPartialName(name string) bool {
-	switch name {
-	case "base.header":
-		return false
-	}
-	return true
+	return name != "base.header"
 }
 
 // pluginEnabled reports whether the plugin partial named `slug` should

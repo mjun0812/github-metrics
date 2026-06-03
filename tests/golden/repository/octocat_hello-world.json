@@ -102,6 +102,10 @@
       },
       "factsEnabled": true,
       "from": 0,
+      "linguist": {
+        "available": false,
+        "ordered": null
+      },
       "skipped": true,
       "trim": false
     },
@@ -181,6 +185,7 @@
       "skipped": true
     },
     "people": {
+      "counts": null,
       "mode": "",
       "size": 0,
       "skipped": true,
