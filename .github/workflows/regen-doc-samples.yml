@@ -57,7 +57,7 @@ jobs:
       - name: Emit matrix JSON
         id: gen
         run: |
-          matrix=$(jq -c '{include: .}' scripts/samples.json)
+          matrix=$(jq -c '.' scripts/samples.json)
           echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
 
   # ------------------------------------------------------------------ #
@@ -69,7 +69,8 @@ jobs:
     runs-on: home-k3s-runner
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
+      matrix:
+        include: ${{ fromJSON(needs.setup.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v5
