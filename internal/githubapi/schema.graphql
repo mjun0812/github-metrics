@@ -233,6 +233,9 @@ type Repository {
   # `organization` avatar CSS class and to honor `plugin_notable_from`
   # (organization / user / all owner-type filtering).
   isInOrganization: Boolean!
+  # #466: repository creation timestamp rendered as the "created <date>"
+  # label on each repositories-plugin card.
+  createdAt: DateTime!
   pushedAt: DateTime
   updatedAt: DateTime
   stargazerCount: Int!
@@ -268,6 +271,10 @@ type License {
   # multiple repos report the same license. `key` is the short SPDX-ish
   # slug GitHub returns (e.g. "mit", "apache-2.0").
   key: String
+  # #466: per-repository license label. Upstream `f.license` prefers the
+  # human-friendly nickname (e.g. "Modified BSD License") over spdxId /
+  # name; null for licenses without a nickname.
+  nickname: String
 }
 
 # 429 Phase 2: Release + Package connections. Only totalCount is read.

@@ -270,9 +270,23 @@ func repositoryFromUserNode(n *userRepoNode) plugins.Repository {
 		IsFork:        n.IsFork,
 		Stars:         n.StargazerCount,
 		Forks:         n.ForkCount,
+		CreatedAt:     n.CreatedAt,
 	}
 	if n.Watchers != nil {
 		r.Watchers = n.Watchers.TotalCount
+	}
+	if n.Issues != nil {
+		r.Issues = n.Issues.TotalCount
+	}
+	if n.PullRequests != nil {
+		r.PullRequests = n.PullRequests.TotalCount
+	}
+	if n.LicenseInfo != nil {
+		r.License = &plugins.RepositoryLicense{
+			Name:     n.LicenseInfo.Name,
+			SpdxID:   derefString(n.LicenseInfo.SpdxId),
+			Nickname: derefString(n.LicenseInfo.Nickname),
+		}
 	}
 	if n.PrimaryLanguage != nil {
 		r.Language = &plugins.LanguageStat{
@@ -304,9 +318,23 @@ func repositoryFromOrgNode(n *orgRepoNode) plugins.Repository {
 		IsFork:        n.IsFork,
 		Stars:         n.StargazerCount,
 		Forks:         n.ForkCount,
+		CreatedAt:     n.CreatedAt,
 	}
 	if n.Watchers != nil {
 		r.Watchers = n.Watchers.TotalCount
+	}
+	if n.Issues != nil {
+		r.Issues = n.Issues.TotalCount
+	}
+	if n.PullRequests != nil {
+		r.PullRequests = n.PullRequests.TotalCount
+	}
+	if n.LicenseInfo != nil {
+		r.License = &plugins.RepositoryLicense{
+			Name:     n.LicenseInfo.Name,
+			SpdxID:   derefString(n.LicenseInfo.SpdxId),
+			Nickname: derefString(n.LicenseInfo.Nickname),
+		}
 	}
 	if n.PrimaryLanguage != nil {
 		r.Language = &plugins.LanguageStat{
