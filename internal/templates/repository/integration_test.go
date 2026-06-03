@@ -34,8 +34,12 @@ func TestRun_PartialOrder_MatchesUnderscoreJsonIntersection(t *testing.T) {
 		Activity:             plugins.RepoActivity{RecentCommits: 1, OpenIssues: 1, OpenPullRequests: 1},
 	}
 	pc := &templates.PartialContext{
-		Data:   d,
-		Inputs: map[string]any{"repo": "hello-world"},
+		Data: d,
+		// #464: `introduction` is an unadopted plugin slug gated by
+		// `plugin_introduction`; enable it so this ordering test can assert
+		// header → introduction. A plain base render omits introduction
+		// entirely (matching upstream's base-only repository output).
+		Inputs: map[string]any{"repo": "hello-world", "plugin_introduction": "yes"},
 	}
 	out, err := Template.Run(context.Background(), pc)
 	if err != nil {

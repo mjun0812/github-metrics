@@ -10,9 +10,17 @@ query Repository($login: String!, $repo: String!) {
     name
     nameWithOwner
     description
+    createdAt
+    diskUsage
     stargazerCount
     forkCount
     isArchived
+    deployments {
+      totalCount
+    }
+    environments {
+      totalCount
+    }
     primaryLanguage {
       name
       color

@@ -91,6 +91,14 @@ func (p *basePlugin) runRepository(ctx context.Context, pc *plugins.PluginContex
 	if err != nil {
 		return nil, err
 	}
+	// #464: the repository base.header mini calendar mirrors upstream's
+	// `computed.calendar` (the user's trailing contribution days). The
+	// user fetch above already populated Data.User.RecentContributions
+	// via runUser; copy it onto the repo payload so the header partial
+	// stays a pure read of Data.Repo.
+	if pc.Data.User != nil {
+		r.Calendar = pc.Data.User.RecentContributions
+	}
 	pc.Data.SetRepo(r)
 
 	// Upstream `template.mjs:14-17` replaces `data.user.repositories.nodes`
@@ -229,6 +237,15 @@ func repositoriesLimit(s *config.Settings) int {
 func derefString(p *string) string {
 	if p == nil {
 		return ""
+	}
+	return *p
+}
+
+// derefInt returns *p or 0 when p is nil. Used for GraphQL nullable
+// Int fields (e.g. repository.diskUsage).
+func derefInt(p *int) int {
+	if p == nil {
+		return 0
 	}
 	return *p
 }
