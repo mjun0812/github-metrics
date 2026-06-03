@@ -126,8 +126,11 @@ func (g *GraphQL) UserStarredRepositories(ctx context.Context, login string, fir
 	return UserStarredRepositories(ctx, g.client, login, first)
 }
 
-// UserReactions aggregates reaction totalCount across the user's
-// issues and issue comments. Consumed by the "reactions" plugin.
+// UserReactions fetches the per-emoji reaction content (and totalCount)
+// across the user's issues and issue comments. Consumed by the
+// "reactions" plugin. The reactions connection is paginated with
+// last: 100 because GitHub rejects a bare nodes selection on a
+// connection without a first/last argument (see #472).
 func (g *GraphQL) UserReactions(ctx context.Context, login string, issuesFirst, commentsFirst int) (*UserReactionsResponse, error) {
 	return UserReactions(ctx, g.client, login, issuesFirst, commentsFirst)
 }
