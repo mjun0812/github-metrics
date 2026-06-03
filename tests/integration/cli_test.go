@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -173,13 +174,30 @@ func TestCLI_ConfigYAML_Equivalence(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			fromYAML := runCLIWithYAML(t, srv.URL, tc.yamlExtra)
-			fromFlags := runCLIWithFlags(t, srv.URL, tc.flagArgs)
+			fromYAML := stripVolatile(runCLIWithYAML(t, srv.URL, tc.yamlExtra))
+			fromFlags := stripVolatile(runCLIWithFlags(t, srv.URL, tc.flagArgs))
 			if fromYAML != fromFlags {
 				t.Errorf("equivalence broken (yaml vs flags): len yaml=%d, flags=%d", len(fromYAML), len(fromFlags))
 			}
 		})
 	}
+}
+
+// volatileLastUpdated matches the classic footer's "Last updated
+// <timestamp> ... with mjun0812/github-metrics@<ver>" span. The
+// timestamp is captured from the wall clock at render time
+// (classic.go uses time.Now()), so two back-to-back subprocesses can
+// straddle a one-second boundary and diverge on that byte range alone.
+var volatileLastUpdated = regexp.MustCompile(`Last updated [^<]+`)
+
+// stripVolatile masks the footer timestamp so the YAML-vs-flags
+// equivalence assertion compares only config-derived bytes. The
+// timestamp is config-independent, so masking it preserves the
+// equivalence check while removing the sole nondeterministic field —
+// mirroring the normalize-svg-stream tool the golden/content suites
+// already apply.
+func stripVolatile(svg string) string {
+	return volatileLastUpdated.ReplaceAllString(svg, "Last updated __MASKED__")
 }
 
 func runCLIWithYAML(t *testing.T, apiBase, yamlExtra string) string {
