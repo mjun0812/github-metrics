@@ -3,7 +3,9 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
+	"time"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/templates"
@@ -30,6 +32,18 @@ const rowStarOcticon11 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1
 // rowForkOcticon11 is the smaller 11x11 fork icon used in the infos row.
 const rowForkOcticon11 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path fill-rule="evenodd" d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 100-1.5.75.75 0 000 1.5z"></path></svg>`
 
+// rowLicenseOcticon11 is the smaller 11x11 license (law) icon used in the
+// infos row (upstream repositories.ejs line 41, `octicon "law"`).
+const rowLicenseOcticon11 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path fill-rule="evenodd" d="M8.75.75a.75.75 0 00-1.5 0V2h-.984c-.305 0-.604.08-.869.23l-1.288.737A.25.25 0 013.984 3H1.75a.75.75 0 000 1.5h.428L.066 9.192a.75.75 0 00.154.838l.53-.53-.53.53v.001l.002.002.002.002.006.006.016.015.045.04a3.514 3.514 0 00.686.45A4.492 4.492 0 003 11c.88 0 1.556-.22 2.023-.454a3.515 3.515 0 00.686-.45l.045-.04.016-.015.006-.006.002-.002.001-.002L5.25 9.5l.53.53a.75.75 0 00.154-.838L3.822 4.5h.162c.305 0 .604-.08.869-.23l1.289-.737a.25.25 0 01.124-.033h.984V13h-2.5a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-2.5V3.5h.984a.25.25 0 01.124.033l1.29.736c.264.152.563.231.868.231h.162l-2.112 4.692a.75.75 0 00.154.838l.53-.53-.53.53v.001l.002.002.002.002.006.006.016.015.045.04a3.517 3.517 0 00.686.45A4.492 4.492 0 0013 11c.88 0 1.556-.22 2.023-.454a3.512 3.512 0 00.686-.45l.045-.04.01-.01.006-.005.006-.006.002-.002.001-.002-.529-.531.53.53a.75.75 0 00.154-.838L13.823 4.5h.427a.75.75 0 000-1.5h-2.234a.25.25 0 01-.124-.033l-1.29-.736A1.75 1.75 0 009.735 2H8.75V.75zM1.695 9.227c.285.135.718.273 1.305.273s1.02-.138 1.305-.273L3 6.327l-1.305 2.9zm10 0c.285.135.718.273 1.305.273s1.02-.138 1.305-.273L13 6.327l-1.305 2.9z"></path></svg>`
+
+// rowIssueOcticon11 is the smaller 11x11 issue (issue-opened) icon used in
+// the infos row (upstream repositories.ejs line 54).
+const rowIssueOcticon11 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M8 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"></path><path fill-rule="evenodd" d="M8 0a8 8 0 100 16A8 8 0 008 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z"></path></svg>`
+
+// rowPullRequestOcticon11 is the smaller 11x11 pull-request icon used in the
+// infos row (upstream repositories.ejs line 58).
+const rowPullRequestOcticon11 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path fill-rule="evenodd" d="M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z"></path></svg>`
+
 // langDotOcticon returns the per-repo primary-language color dot icon.
 // Falls back to grey when no color is set (matches upstream's `#959DA5`).
 func langDotOcticon(color string) string {
@@ -55,21 +69,27 @@ func langDotOcticon(color string) string {
 //	        <section class="repository">
 //	          <div class="field"><svg repo|fork/><div class="name">
 //	            <span>${nameWithOwner}</span>
+//	            [if createdAt]: <span>created ${created}</span>
 //	          </div></div>
 //	          [if description]: <div class="field description">${description}</div>
 //	          <div class="field infos">
 //	            [if language]: <div class="language"><svg dot/>${name}</div>
+//	            [if license]:  <div><svg law/>${license}</div>
 //	            <div><svg star/>${stars}</div>
 //	            <div><svg fork/>${forks}</div>
+//	            <div><svg issue/>${issues}</div>
+//	            <div><svg pr/>${pullRequests}</div>
 //	          </div>
 //	        </section>
 //	      </div>
 //	  </section></div>
 //	</section>
 //
-// License / issues / PRs counts from upstream's full info row are
-// omitted — our plugins.Repository data model doesn't currently surface
-// those fields (would need a follow-up GraphQL fragment).
+// #466: the per-card "created <date>" label plus the license / issue /
+// pull-request counters mirror upstream repositories.ejs. The license
+// label follows upstream `f.license` (nickname → spdxId → name) via
+// plugins.RepositoryLicense.Label. REST-sourced starred repos leave
+// CreatedAt / License zero, so those fragments are simply skipped.
 func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil {
 		return "", nil
@@ -124,7 +144,11 @@ func writeRepoCard(b *strings.Builder, repo plugins.Repository) {
 	} else {
 		b.WriteString(partials.EscapeXML(repo.NameWithOwner))
 	}
-	b.WriteString(`</span></div></div>`)
+	b.WriteString(`</span>`)
+	if created := formatCreated(repo.CreatedAt, time.Now()); created != "" {
+		fmt.Fprintf(b, `<span>created %s</span>`, partials.EscapeXML(created))
+	}
+	b.WriteString(`</div></div>`)
 	if repo.Description != "" {
 		fmt.Fprintf(
 			b,
@@ -141,8 +165,56 @@ func writeRepoCard(b *strings.Builder, repo plugins.Repository) {
 			partials.EscapeXML(repo.Language.Name),
 		)
 	}
+	if label := repo.License.Label(); label != "" {
+		fmt.Fprintf(b, `<div>%s%s</div>`, rowLicenseOcticon11, partials.EscapeXML(label))
+	}
 	fmt.Fprintf(b, `<div>%s%d</div>`, rowStarOcticon11, repo.Stars)
 	fmt.Fprintf(b, `<div>%s%d</div>`, rowForkOcticon11, repo.Forks)
+	fmt.Fprintf(b, `<div>%s%d</div>`, rowIssueOcticon11, repo.Issues)
+	fmt.Fprintf(b, `<div>%s%d</div>`, rowPullRequestOcticon11, repo.PullRequests)
 	b.WriteString(`</div>`)
 	b.WriteString(`</section></div>`)
+}
+
+// formatCreated mirrors upstream repositories/index.mjs `format()` date
+// logic, producing the per-card "created <date>" label. now is injected
+// so the relative-age branches are deterministic in tests. A zero t
+// (e.g. REST-sourced starred repos that never fetched createdAt) returns
+// "" so the caller skips the span entirely.
+//
+// Branches (upstream parity):
+//   - < 1 day  → "N hour(s) ago"   (hours rounded up)
+//   - < 30 day → "N day(s) ago"    (days rounded down)
+//   - else     → "<Mon> <D> <YYYY>" (JS Date.toDateString().substring(4))
+func formatCreated(t, now time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	days := now.Sub(t).Hours() / 24
+	switch {
+	case days < 1:
+		hours := int(math.Ceil(days * 24))
+		if hours < 0 {
+			hours = 0
+		}
+		return fmt.Sprintf("%d hour%s ago", hours, plural(hours >= 2))
+	case days < 30:
+		n := int(math.Floor(days))
+		return fmt.Sprintf("%d day%s ago", n, plural(days >= 2))
+	default:
+		// Matches JS `new Date(...).toDateString().substring(4)`,
+		// e.g. "Oct 26 2024" (day zero-padded to two digits). GitHub
+		// timestamps are UTC.
+		return t.UTC().Format("Jan 02 2006")
+	}
+}
+
+// plural returns "s" when the count warrants a plural suffix. The caller
+// passes the upstream comparison directly so the singular/plural choice
+// matches repositories/index.mjs exactly.
+func plural(many bool) string {
+	if many {
+		return "s"
+	}
+	return ""
 }
