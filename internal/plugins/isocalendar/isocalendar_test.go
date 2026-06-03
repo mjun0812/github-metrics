@@ -140,6 +140,142 @@ func TestRun_OrganizationSkipped(t *testing.T) {
 	}
 }
 
+// TestRun_AggregationMatchesUpstream pins the contribution-count
+// aggregation to upstream's isocalendar algorithm (#467). Upstream
+// (source/plugins/isocalendar/index.mjs::statistics) iterates every
+// ContributionDay in the windowed contributionsCollection calendar and
+// computes:
+//
+//	values.push(day.contributionCount)
+//	max          = Math.max(max, day.contributionCount)        // highest single day
+//	streak.current = day.contributionCount ? current + 1 : 0   // trailing run
+//	streak.max   = Math.max(streak.max, streak.current)        // forward pass
+//	average      = sum(values) / values.length
+//
+// Our Run() must reproduce this exactly: Sum/Max/Average over every day
+// in the (truncated) window and the same streak definitions. The per-day
+// contributionCount is GitHub's own value (commits + issues + PRs +
+// reviews, including private contributions iff the user enabled "Include
+// private contributions on my profile"); the plugin does no reweighting,
+// so identical daily inputs yield identical aggregates to upstream.
+func TestRun_AggregationMatchesUpstream(t *testing.T) {
+	t.Parallel()
+	// 26 weeks so half-year keeps every day (no truncation), making the
+	// expected aggregates a closed-form function of dayFn.
+	// day count = weekIndex+1 (1..7 per week, week 0 has 1..7 → 0-based d).
+	cal := makeCalendar(26, func(w, d int) int { return d }) // 0..6 each week
+
+	r := run(t, cal, plugins.AccountUser, nil)
+	if r.Skipped {
+		t.Fatalf("unexpected Skipped: %+v", r)
+	}
+
+	// Recompute expected aggregates with the upstream algorithm.
+	wantSum, wantMax := 0, 0
+	wantStreakMax, cur := 0, 0
+	total := 0
+	for w := 0; w < 26; w++ {
+		for d := 0; d < 7; d++ {
+			c := d
+			wantSum += c
+			total++
+			if c > wantMax {
+				wantMax = c
+			}
+			if c > 0 {
+				cur++
+				if cur > wantStreakMax {
+					wantStreakMax = cur
+				}
+			} else {
+				cur = 0
+			}
+		}
+	}
+	wantAvg := float64(wantSum) / float64(total)
+	// Trailing run: each week ends at d=6 (>0) but the next week starts
+	// at d=0 (zero), so the only trailing non-zero run is the final
+	// week's days 1..6 → current = 6.
+	wantCurrent := 6
+
+	if r.Sum != wantSum {
+		t.Errorf("Sum = %d, want %d", r.Sum, wantSum)
+	}
+	if r.Max != wantMax {
+		t.Errorf("Max = %d, want %d", r.Max, wantMax)
+	}
+	if r.Average != wantAvg {
+		t.Errorf("Average = %v, want %v", r.Average, wantAvg)
+	}
+	if r.Streak.Max != wantStreakMax {
+		t.Errorf("Streak.Max = %d, want %d", r.Streak.Max, wantStreakMax)
+	}
+	if r.Streak.Current != wantCurrent {
+		t.Errorf("Streak.Current = %d, want %d", r.Streak.Current, wantCurrent)
+	}
+}
+
+// TestRun_PrivateContributionsCountedFromCalendar documents the
+// private-contribution policy (#467). The plugin consumes GitHub's
+// contributionsCollection.contributionCalendar daily counts verbatim —
+// it never inspects a separate public/private breakdown and applies no
+// filtering. Whatever GitHub places in ContributionCount (which already
+// folds in private contributions when the user's profile setting allows
+// it) flows straight into Sum/Max/Average. This test asserts that a day
+// whose count GitHub reports as N (regardless of its public/private
+// origin) contributes exactly N — no doubling, no dropping.
+func TestRun_PrivateContributionsCountedFromCalendar(t *testing.T) {
+	t.Parallel()
+	cal := makeCalendar(1, func(w, d int) int {
+		if d == 3 {
+			return 42 // e.g. a day dominated by private commits
+		}
+		return 0
+	})
+	r := run(t, cal, plugins.AccountUser, nil)
+	if r.Sum != 42 {
+		t.Errorf("Sum = %d, want 42 (GitHub-reported daily count passed through)", r.Sum)
+	}
+	if r.Max != 42 {
+		t.Errorf("Max = %d, want 42", r.Max)
+	}
+}
+
+// TestRun_DurationVariantWindow pins the only difference between the two
+// documented variants (#467): the duration input selects the window
+// width — half-year keeps the most-recent 26 weeks, full-year keeps 53.
+// Both variants run the identical aggregation over their window, so the
+// fullyear card legitimately reports a larger best-streak/different
+// average purely because it spans more days, not because of any
+// counting discrepancy. Daily counts are shared between the windows.
+func TestRun_DurationVariantWindow(t *testing.T) {
+	t.Parallel()
+	cal := makeCalendar(60, func(w, d int) int { return 1 })
+
+	half := run(t, cal, plugins.AccountUser, nil)
+	full := run(t, cal, plugins.AccountUser, map[string]any{
+		"plugin_isocalendar_duration": "full-year",
+	})
+	if len(half.Weeks) != 26 {
+		t.Errorf("half-year Weeks = %d, want 26", len(half.Weeks))
+	}
+	if len(full.Weeks) != 53 {
+		t.Errorf("full-year Weeks = %d, want 53", len(full.Weeks))
+	}
+	// Same daily value everywhere → full-year sum strictly larger
+	// because it spans more weeks (53*7 vs 26*7).
+	if full.Sum != 53*7 || half.Sum != 26*7 {
+		t.Errorf("Sum half=%d full=%d, want %d / %d", half.Sum, full.Sum, 26*7, 53*7)
+	}
+	// Per-day max and average are window-invariant here (constant 1).
+	if half.Max != 1 || full.Max != 1 {
+		t.Errorf("Max half=%d full=%d, want 1 / 1", half.Max, full.Max)
+	}
+	if half.Average != 1 || full.Average != 1 {
+		t.Errorf("Average half=%v full=%v, want 1 / 1", half.Average, full.Average)
+	}
+}
+
 // Golden tests.
 func TestPartial_Isocalendar_Golden(t *testing.T) {
 	r := &isocalendar.Result{
