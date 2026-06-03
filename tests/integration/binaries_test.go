@@ -1,6 +1,6 @@
-// Package integration_test exercises the metrics-action and metrics-cli
-// binaries end-to-end. The build is performed once in TestMain to keep the
-// individual cases independent and fast.
+// Package integration_test exercises the metrics-action binary end-to-end.
+// The build is performed once in TestMain to keep the individual cases
+// independent and fast.
 package integration_test
 
 import (
@@ -14,10 +14,7 @@ import (
 	"testing"
 )
 
-var (
-	actionBin string
-	cliBin    string
-)
+var actionBin string
 
 func TestMain(m *testing.M) {
 	// Use an indirection so that defer-based cleanup runs before we exit.
@@ -41,22 +38,13 @@ func runTests(m *testing.M) int {
 	}
 
 	actionBin = filepath.Join(tmp, "metrics-action"+exeSuffix())
-	cliBin = filepath.Join(tmp, "metrics-cli"+exeSuffix())
-
-	for _, b := range []struct {
-		out, pkg string
-	}{
-		{actionBin, "./cmd/metrics-action"},
-		{cliBin, "./cmd/metrics-cli"},
-	} {
-		cmd := exec.Command("go", "build", "-o", b.out, b.pkg) //nolint:gosec // package paths are constants
-		cmd.Dir = repoRoot
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			fmt.Fprintf(os.Stderr, "TestMain: build %s: %v\n", b.pkg, err)
-			return 2
-		}
+	cmd := exec.Command("go", "build", "-o", actionBin, "./cmd/metrics-action") //nolint:gosec // package path is a constant
+	cmd.Dir = repoRoot
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "TestMain: build ./cmd/metrics-action: %v\n", err)
+		return 2
 	}
 
 	return m.Run()
@@ -139,84 +127,54 @@ func asExitError(err error, target **exec.ExitError) bool {
 func TestBinariesHelpExitsZeroWithUsage(t *testing.T) {
 	t.Parallel()
 
-	cases := []struct {
-		name string
-		bin  string
-	}{
-		{"metrics-action", actionBin},
-		{"metrics-cli", cliBin},
-	}
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name+"_--help", func(t *testing.T) {
-			t.Parallel()
-			stdout, _, code := runBin(t, tc.bin, "--help")
-			if code != 0 {
-				t.Fatalf("%s --help exit code = %d, want 0", tc.name, code)
-			}
-			if !strings.Contains(stdout, "Usage:") {
-				t.Fatalf("%s --help stdout missing 'Usage:'\ngot: %q", tc.name, stdout)
-			}
-		})
-		t.Run(tc.name+"_default", func(t *testing.T) {
-			t.Parallel()
-			stdout, _, code := runBin(t, tc.bin)
-			if code != 0 {
-				t.Fatalf("%s (no args) exit code = %d, want 0", tc.name, code)
-			}
-			if !strings.Contains(stdout, "Usage:") {
-				t.Fatalf("%s (no args) stdout missing 'Usage:'\ngot: %q", tc.name, stdout)
-			}
-		})
-	}
+	t.Run("metrics-action_--help", func(t *testing.T) {
+		t.Parallel()
+		stdout, _, code := runBin(t, actionBin, "--help")
+		if code != 0 {
+			t.Fatalf("metrics-action --help exit code = %d, want 0", code)
+		}
+		if !strings.Contains(stdout, "Usage:") {
+			t.Fatalf("metrics-action --help stdout missing 'Usage:'\ngot: %q", stdout)
+		}
+	})
+	t.Run("metrics-action_default", func(t *testing.T) {
+		t.Parallel()
+		stdout, _, code := runBin(t, actionBin)
+		if code != 0 {
+			t.Fatalf("metrics-action (no args) exit code = %d, want 0", code)
+		}
+		if !strings.Contains(stdout, "Usage:") {
+			t.Fatalf("metrics-action (no args) stdout missing 'Usage:'\ngot: %q", stdout)
+		}
+	})
 }
 
 func TestBinariesVersionPrintsVersionString(t *testing.T) {
 	t.Parallel()
 
-	cases := []struct {
-		name string
-		bin  string
-	}{
-		{"metrics-action", actionBin},
-		{"metrics-cli", cliBin},
-	}
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name+"_--version", func(t *testing.T) {
-			t.Parallel()
-			stdout, _, code := runBin(t, tc.bin, "--version")
-			if code != 0 {
-				t.Fatalf("%s --version exit code = %d, want 0", tc.name, code)
-			}
-			// The version is overridden via -ldflags at release time. The
-			// integration test does not pass ldflags, so the default
-			// "dev" string applies.
-			if got := strings.TrimSpace(stdout); got != "dev" {
-				t.Fatalf("%s --version stdout = %q, want %q", tc.name, got, "dev")
-			}
-		})
-	}
+	t.Run("metrics-action_--version", func(t *testing.T) {
+		t.Parallel()
+		stdout, _, code := runBin(t, actionBin, "--version")
+		if code != 0 {
+			t.Fatalf("metrics-action --version exit code = %d, want 0", code)
+		}
+		// The version is overridden via -ldflags at release time. The
+		// integration test does not pass ldflags, so the default
+		// "dev" string applies.
+		if got := strings.TrimSpace(stdout); got != "dev" {
+			t.Fatalf("metrics-action --version stdout = %q, want %q", got, "dev")
+		}
+	})
 }
 
 func TestBinariesUnknownFlagExitsNonZero(t *testing.T) {
 	t.Parallel()
 
-	cases := []struct {
-		name string
-		bin  string
-	}{
-		{"metrics-action", actionBin},
-		{"metrics-cli", cliBin},
-	}
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name+"_unknown_flag", func(t *testing.T) {
-			t.Parallel()
-			_, _, code := runBin(t, tc.bin, "--nope")
-			if code == 0 {
-				t.Fatalf("%s --nope exit code = 0, want non-zero (flag parse error)", tc.name)
-			}
-		})
-	}
+	t.Run("metrics-action_unknown_flag", func(t *testing.T) {
+		t.Parallel()
+		_, _, code := runBin(t, actionBin, "--nope")
+		if code == 0 {
+			t.Fatalf("metrics-action --nope exit code = 0, want non-zero (flag parse error)")
+		}
+	})
 }

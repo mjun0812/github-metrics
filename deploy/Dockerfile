@@ -45,10 +45,7 @@ ARG VERSION=dev
 ENV CGO_ENABLED=0
 RUN go build -trimpath \
     -ldflags="-s -w -X main.version=${VERSION}" \
-    -o /out/metrics-action ./cmd/metrics-action \
-    && go build -trimpath \
-    -ldflags="-s -w -X main.version=${VERSION}" \
-    -o /out/metrics-cli ./cmd/metrics-cli
+    -o /out/metrics-action ./cmd/metrics-action
 
 # --- Runtime stage --------------------------------------------------
 FROM debian:bookworm-slim
@@ -73,7 +70,6 @@ ENV METRICS_CHROME_PATH=/usr/bin/chromium
 # Binaries land at /usr/local/bin/, owned by root and mode 0755 so
 # the non-root runtime user can execute but not modify.
 COPY --from=build /out/metrics-action /usr/local/bin/metrics-action
-COPY --from=build /out/metrics-cli    /usr/local/bin/metrics-cli
 
 # Non-root user. uid 10001 sits outside the system range (0-999) and
 # the GitHub Actions runner range (1000-1999), avoiding collisions
@@ -83,6 +79,4 @@ RUN groupadd --system --gid 10001 metrics \
 
 USER metrics
 
-# Default to the action binary; CLI is reachable via explicit
-# invocation (`docker run --entrypoint /usr/local/bin/metrics-cli`).
 ENTRYPOINT ["/usr/local/bin/metrics-action"]
