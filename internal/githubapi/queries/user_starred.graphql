@@ -8,11 +8,22 @@ query UserStarredRepositories($login: String!, $first: Int!) {
           nameWithOwner
           description
           url
+          isFork
           stargazerCount
           forkCount
           primaryLanguage {
             name
             color
+          }
+          licenseInfo {
+            name
+            spdxId
+          }
+          issues {
+            totalCount
+          }
+          pullRequests {
+            totalCount
           }
         }
       }

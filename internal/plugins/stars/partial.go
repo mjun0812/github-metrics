@@ -21,8 +21,37 @@ const starOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"
 // per-repository row icon (EJS line 16 — non-fork branch).
 const repoOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"></path></svg>`
 
-// rowStarOcticon is the smaller star icon used on per-row star counts.
-const rowStarOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path fill-rule="evenodd" d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"></path></svg>`
+// forkOcticon is the upstream non-fork repo icon reused for the fork
+// icon, plus the per-row fork count icon (EJS line 50).
+const forkOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 100-1.5.75.75 0 000 1.5z"></path></svg>`
+
+// rowStarOcticon is the star icon used on per-row star counts. Upstream
+// uses the full 16x16 glyph in the info row (EJS line 46).
+const rowStarOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25zm0 2.445L6.615 5.5a.75.75 0 01-.564.41l-3.097.45 2.24 2.184a.75.75 0 01.216.664l-.528 3.084 2.769-1.456a.75.75 0 01.698 0l2.77 1.456-.53-3.084a.75.75 0 01.216-.664l2.24-2.183-3.096-.45a.75.75 0 01-.564-.41L8 2.694v.001z"></path></svg>`
+
+// licenseOcticon is the upstream `<%- octicon "law" %>` icon shown next
+// to the SPDX license id in the info row (EJS line 41).
+const licenseOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M8.75.75a.75.75 0 00-1.5 0V2h-.984c-.305 0-.604.08-.869.23l-1.288.737A.25.25 0 013.984 3H1.75a.75.75 0 000 1.5h.428L.066 9.192a.75.75 0 00.154.838l.53-.53-.53.53v.001l.002.002.002.002.006.006.016.015.045.04a3.514 3.514 0 00.686.45A4.492 4.492 0 003 11c.88 0 1.556-.22 2.023-.454a3.515 3.515 0 00.686-.45l.045-.04.016-.015.006-.006.002-.002.001-.002L5.25 9.5l.53.53a.75.75 0 00.154-.838L3.822 4.5h.162c.305 0 .604-.08.869-.23l1.289-.737a.25.25 0 01.124-.033h.984V13h-2.5a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-2.5V3.5h.984a.25.25 0 01.124.033l1.29.736c.264.152.563.231.868.231h.162l-2.112 4.692a.75.75 0 00.154.838l.53-.53-.53.53v.001l.002.002.002.002.006.006.016.015.045.04a3.517 3.517 0 00.686.45A4.492 4.492 0 0013 11c.88 0 1.556-.22 2.023-.454a3.512 3.512 0 00.686-.45l.045-.04.01-.01.006-.005.006-.006.002-.002.001-.002-.529-.531.53.53a.75.75 0 00.154-.838L13.823 4.5h.427a.75.75 0 000-1.5h-2.234a.25.25 0 01-.124-.033l-1.29-.736A1.75 1.75 0 009.735 2H8.75V.75zM1.695 9.227c.285.135.718.273 1.305.273s1.02-.138 1.305-.273L3 6.327l-1.305 2.9zm10 0c.285.135.718.273 1.305.273s1.02-.138 1.305-.273L13 6.327l-1.305 2.9z"></path></svg>`
+
+// issueOcticon is the upstream `<%- octicon "issue-opened" %>` icon
+// shown next to the open-issue count in the info row (EJS line 54).
+const issueOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"></path><path fill-rule="evenodd" d="M8 0a8 8 0 100 16A8 8 0 008 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z"></path></svg>`
+
+// pullRequestOcticon is the upstream `<%- octicon "git-pull-request" %>`
+// icon shown next to the pull-request count in the info row (EJS line 58).
+const pullRequestOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z"></path></svg>`
+
+// langDotOcticon returns the per-repo primary-language color dot icon.
+// Falls back to grey when no color is set (matches upstream's `#959DA5`).
+func langDotOcticon(color string) string {
+	if color == "" {
+		color = "#959DA5"
+	}
+	return fmt.Sprintf(
+		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="%s" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"></path></svg>`,
+		partials.EscapeXML(color),
+	)
+}
 
 // Partial renders the classic SVG fragment for the stars plugin.
 // Mirrors upstream org_repo/source/templates/classic/partials/stars.ejs.
@@ -42,7 +71,12 @@ const rowStarOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 
 //	            </div></div>
 //	            <div class="field description">${description}</div>
 //	            <div class="field infos">
+//	              [if language]: <div class="language"><svg dot/>${name}</div>
+//	              [if license]:  <div><svg law/>${license}</div>
 //	              <div><svg star/>${stars}</div>
+//	              <div><svg fork/>${forks}</div>
+//	              <div><svg issue/>${issues}</div>
+//	              <div><svg pr/>${pullRequests}</div>
 //	            </div>
 //	          </section>
 //	        </div>
@@ -50,10 +84,9 @@ const rowStarOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 
 //	  </div>
 //	</section>
 //
-// Upstream's full info row (language color, license, forks, issues, PRs)
-// is omitted because our StarredRepo data model carries only
-// NameWithOwner/Description/Stars/StarredAt — extending it would need a
-// follow-up GraphQL fragment.
+// The full info row (language color, license, forks, open issues, PRs)
+// mirrors upstream EJS lines 32-61 — the data now comes from the
+// extended UserStarredRepositories GraphQL query (#469).
 func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil {
 		return "", nil
@@ -81,10 +114,14 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 			date = s.StarredAt.UTC().Format("2006-01-02")
 		}
 		b.WriteString(`<div class="row fill-width largeable-width-half">`)
+		icon := repoOcticon
+		if s.IsFork {
+			icon = forkOcticon
+		}
 		fmt.Fprintf(
 			&b,
-			`<section class="repository" data-stars="%d"><div class="field">%s<div class="name"><span>%s</span>`,
-			s.Stars, repoOcticon, partials.EscapeXML(s.NameWithOwner),
+			`<section class="repository" data-stars="%d" data-forks="%d"><div class="field">%s<div class="name"><span>%s</span>`,
+			s.Stars, s.Forks, icon, partials.EscapeXML(s.NameWithOwner),
 		)
 		if date != "" {
 			fmt.Fprintf(&b, `<span>starred %s</span>`, partials.EscapeXML(date))
@@ -97,11 +134,27 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 				partials.EscapeXML(s.Description),
 			)
 		}
-		fmt.Fprintf(
-			&b,
-			`<div class="field infos"><div>%s%d</div></div>`,
-			rowStarOcticon, s.Stars,
-		)
+		b.WriteString(`<div class="field infos">`)
+		if s.Language != nil && s.Language.Name != "" {
+			fmt.Fprintf(
+				&b,
+				`<div class="language">%s%s</div>`,
+				langDotOcticon(s.Language.Color),
+				partials.EscapeXML(s.Language.Name),
+			)
+		}
+		if s.License != "" {
+			fmt.Fprintf(
+				&b,
+				`<div>%s%s</div>`,
+				licenseOcticon, partials.EscapeXML(s.License),
+			)
+		}
+		fmt.Fprintf(&b, `<div>%s%s</div>`, rowStarOcticon, partials.FormatCount(int64(s.Stars)))
+		fmt.Fprintf(&b, `<div>%s%s</div>`, forkOcticon, partials.FormatCount(int64(s.Forks)))
+		fmt.Fprintf(&b, `<div>%s%s</div>`, issueOcticon, partials.FormatCount(int64(s.Issues)))
+		fmt.Fprintf(&b, `<div>%s%s</div>`, pullRequestOcticon, partials.FormatCount(int64(s.PullRequests)))
+		b.WriteString(`</div>`)
 		b.WriteString(`</section></div>`)
 	}
 	b.WriteString(`</section></div>`)
