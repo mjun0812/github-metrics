@@ -41,13 +41,18 @@ func repoRoot(t *testing.T) string {
 }
 
 type fixedMux struct {
-	mu   sync.Mutex
-	body string
+	mu      sync.Mutex
+	body    string
+	lastReq string
 }
 
 func (f *fixedMux) RoundTrip(req *http.Request) (*http.Response, error) {
 	f.mu.Lock()
 	body := f.body
+	if req.Body != nil {
+		raw, _ := io.ReadAll(req.Body)
+		f.lastReq = string(raw)
+	}
 	f.mu.Unlock()
 	h := http.Header{}
 	h.Set("Content-Type", "application/json")
@@ -112,6 +117,38 @@ func TestRun_AggregatesReactionContent(t *testing.T) {
 	// absolute display: score == percentage == value/total.
 	if got := r.List["HEART"].Score; got < 0.49 || got > 0.51 {
 		t.Errorf("HEART score = %v, want ~0.5", got)
+	}
+}
+
+// TestRun_ClampsConnectionLimitTo100 guards #472: GitHub rejects a
+// connection `first` above 100 with EXCESSIVE_PAGINATION, which fails
+// the entire UserReactions query and blanks the card. The upstream
+// plugin_reactions_limit default is 200, so the request must clamp it
+// to GitHub's 100 ceiling.
+func TestRun_ClampsConnectionLimitTo100(t *testing.T) {
+	t.Parallel()
+	mux := &fixedMux{body: `{"data":{"user":{"issues":{"totalCount":0,"nodes":[]},"issueComments":{"totalCount":0,"nodes":[]}}}}`}
+	gql, err := githubapi.NewGraphQL(
+		config.NewToken("MOCKED_TOKEN"),
+		"http://mock.localhost/graphql",
+		httpx.Options{Transport: mux, MaxRetries: 0},
+	)
+	if err != nil {
+		t.Fatalf("NewGraphQL: %v", err)
+	}
+	pc := &plugins.PluginContext{
+		Data:    plugins.NewData(),
+		Inputs:  map[string]any{"user": "octocat", "plugin_reactions": true, "plugin_reactions_limit": 200},
+		GraphQL: gql,
+	}
+	if _, err := reactions.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if strings.Contains(mux.lastReq, `"commentsFirst":200`) {
+		t.Errorf("commentsFirst must be clamped to 100, not 200 (EXCESSIVE_PAGINATION); req=%s", mux.lastReq)
+	}
+	if !strings.Contains(mux.lastReq, `"commentsFirst":100`) {
+		t.Errorf("commentsFirst should clamp to 100; req=%s", mux.lastReq)
 	}
 }
 

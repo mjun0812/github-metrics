@@ -105,13 +105,14 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 				`: <span class="contributions"><span class="commits">%d commit%s</span>`,
 				c.Commits, pluralS(c.Commits),
 			)
-			if r.StatsPending {
-				// /stats/contributors returned 202 Accepted; the per-
-				// contributor add/del buckets are not yet available.
-				// Show an explicit "stats pending" chip instead of
-				// the misleading ++0 --0 we used to emit.
-				b.WriteString(` <span class="diff"><span class="stats-pending">stats pending</span></span>`)
-			} else {
+			if !r.StatsPending {
+				// When /stats/contributors stays 202 Accepted for the
+				// repo (GitHub never warms its statistics cache — common
+				// on force-push-heavy repos), the per-contributor add/del
+				// buckets are unavailable. Omit the diff span entirely
+				// rather than emit a misleading "stats pending" chip or a
+				// false ++0 --0: the commit count above already carries
+				// the contribution signal. (#471)
 				fmt.Fprintf(
 					&b,
 					` <span class="diff"><span class="code">++%d --%d</span></span>`,

@@ -154,7 +154,7 @@ func capture(client *http.Client, token, root string, rec recording) error {
 	pretty.WriteByte('\n')
 
 	outPath := filepath.Join(root, "tests", "fixtures", rec.out)
-	if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(outPath), 0o750); err != nil {
 		return fmt.Errorf("mkdir: %w", err)
 	}
 	if err := os.WriteFile(outPath, pretty.Bytes(), 0o644); err != nil { //nolint:gosec // test fixture
