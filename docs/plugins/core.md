@@ -87,7 +87,7 @@ Global configuration and options
 ### CLI
 
 ```sh
-metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
+metrics-action --user <your-login> --token-env GITHUB_TOKEN \
   --template classic \
   --output svg --filename github-metrics.svg \
   --plugin config_timezone=Asia/Tokyo

@@ -40,7 +40,7 @@ This plugin displays the number of page views across affiliated repositories.
 ### CLI
 
 ```sh
-metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
+metrics-action --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_traffic=yes
 ```

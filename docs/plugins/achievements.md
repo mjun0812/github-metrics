@@ -44,7 +44,7 @@ This plugin displays several highlights about what an account has achieved on Gi
 ### CLI
 
 ```sh
-metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
+metrics-action --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_achievements=yes
 ```

@@ -46,7 +46,7 @@ This plugin can display relationships with users, such as followers, sponsors, c
 ### CLI
 
 ```sh
-metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
+metrics-action --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_people=yes
 ```
