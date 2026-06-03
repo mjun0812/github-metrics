@@ -20,6 +20,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/stars"
+	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
 var updateGolden = flag.Bool("update", false, "update golden files")
@@ -87,8 +88,8 @@ func newGQL(t *testing.T, mux *graphqlMux) *githubapi.GraphQL {
 func TestRun_Normal(t *testing.T) {
 	t.Parallel()
 	mux := &graphqlMux{body: `{"data":{"user":{"starredRepositories":{"totalCount":2,"edges":[
-		{"starredAt":"2026-05-10T00:00:00Z","node":{"nameWithOwner":"alice/x","description":"hi","url":"https://github.com/alice/x","stargazerCount":100,"forkCount":1}},
-		{"starredAt":"2026-05-09T00:00:00Z","node":{"nameWithOwner":"bob/y","description":null,"url":"https://github.com/bob/y","stargazerCount":50,"forkCount":2}}
+		{"starredAt":"2026-05-10T00:00:00Z","node":{"nameWithOwner":"alice/x","description":"hi","url":"https://github.com/alice/x","isFork":false,"stargazerCount":100,"forkCount":1,"primaryLanguage":{"name":"Go","color":"#00ADD8"},"licenseInfo":{"name":"MIT License","spdxId":"MIT"},"issues":{"totalCount":3},"pullRequests":{"totalCount":7}}},
+		{"starredAt":"2026-05-09T00:00:00Z","node":{"nameWithOwner":"bob/y","description":null,"url":"https://github.com/bob/y","isFork":true,"stargazerCount":50,"forkCount":2,"primaryLanguage":null,"licenseInfo":null,"issues":{"totalCount":0},"pullRequests":{"totalCount":0}}}
 	]}}}}`}
 	pc := &plugins.PluginContext{
 		Data:    plugins.NewData(),
@@ -106,8 +107,31 @@ func TestRun_Normal(t *testing.T) {
 	if len(r.List) != 2 {
 		t.Errorf("List len = %d, want 2", len(r.List))
 	}
-	if r.List[0].NameWithOwner != "alice/x" {
-		t.Errorf("first = %s, want alice/x", r.List[0].NameWithOwner)
+	first := r.List[0]
+	if first.NameWithOwner != "alice/x" {
+		t.Errorf("first = %s, want alice/x", first.NameWithOwner)
+	}
+	// #469: language / license / fork / issue / PR metadata must now be
+	// surfaced from the extended GraphQL query.
+	if first.Language == nil || first.Language.Name != "Go" || first.Language.Color != "#00ADD8" {
+		t.Errorf("first.Language = %+v, want Go/#00ADD8", first.Language)
+	}
+	if first.License != "MIT" {
+		t.Errorf("first.License = %q, want MIT (spdxId)", first.License)
+	}
+	if first.Forks != 1 || first.Issues != 3 || first.PullRequests != 7 {
+		t.Errorf("first counts = forks %d / issues %d / prs %d, want 1/3/7",
+			first.Forks, first.Issues, first.PullRequests)
+	}
+	second := r.List[1]
+	if !second.IsFork {
+		t.Errorf("second.IsFork = false, want true")
+	}
+	if second.Language != nil {
+		t.Errorf("second.Language = %+v, want nil", second.Language)
+	}
+	if second.License != "" {
+		t.Errorf("second.License = %q, want empty", second.License)
 	}
 }
 
@@ -187,6 +211,73 @@ func TestRun_NilGraphQL_Skipped(t *testing.T) {
 	r := out.(*stars.Result)
 	if !r.Skipped {
 		t.Errorf("nil GraphQL should yield Skipped")
+	}
+}
+
+// TestRun_LicenseNoAssertion verifies the upstream `format.license`
+// fallback: a "NOASSERTION" spdxId renders the full license name.
+func TestRun_LicenseNoAssertion(t *testing.T) {
+	t.Parallel()
+	mux := &graphqlMux{body: `{"data":{"user":{"starredRepositories":{"totalCount":1,"edges":[
+		{"starredAt":"2026-05-10T00:00:00Z","node":{"nameWithOwner":"alice/x","description":"hi","url":"https://github.com/alice/x","isFork":false,"stargazerCount":1,"forkCount":0,"primaryLanguage":null,"licenseInfo":{"name":"Other","spdxId":"NOASSERTION"},"issues":{"totalCount":0},"pullRequests":{"totalCount":0}}}
+	]}}}}`}
+	pc := &plugins.PluginContext{
+		Data:    plugins.NewData(),
+		Inputs:  map[string]any{"user": "octocat", "plugin_stars": true},
+		GraphQL: newGQL(t, mux),
+	}
+	out, err := stars.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*stars.Result)
+	if got := r.List[0].License; got != "Other" {
+		t.Errorf("License = %q, want Other (NOASSERTION falls back to name)", got)
+	}
+}
+
+// TestPartial_RendersRepoMetadata pins that the per-repo info row now
+// surfaces language, license, fork, issue and PR counts (#469).
+func TestPartial_RendersRepoMetadata(t *testing.T) {
+	t.Parallel()
+	r := &stars.Result{
+		List: []stars.StarredRepo{
+			{
+				NameWithOwner: "gin-gonic/gin",
+				Description:   "Gin is a web framework",
+				URL:           "https://github.com/gin-gonic/gin",
+				IsFork:        false,
+				Stars:         88500,
+				Forks:         8620,
+				Issues:        2390,
+				PullRequests:  2190,
+				Language:      &stars.Language{Name: "Go", Color: "#00ADD8"},
+				License:       "MIT",
+				StarredAt:     time.Date(2026, 5, 10, 0, 0, 0, 0, time.UTC),
+			},
+		},
+		Limit: 4,
+	}
+	data := plugins.NewData()
+	data.SetPlugin(stars.Name, r)
+	got, err := stars.Partial(context.Background(), &templates.PartialContext{Data: data})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	for _, want := range []string{
+		`class="language"`,
+		`fill="#00ADD8"`,
+		`>Go<`,
+		`>MIT<`,
+		`>88.5k<`, // FormatCount(88500)
+		`>8.6k<`,  // forks
+		`>2.4k<`,  // issues
+		`>2.2k<`,  // pull requests
+		`data-forks="8620"`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("partial output missing %q\n---\n%s", want, got)
+		}
 	}
 }
 

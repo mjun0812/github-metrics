@@ -2724,12 +2724,16 @@ func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnecti
 
 // UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository includes the requested fields of the GraphQL type Repository.
 type UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository struct {
-	NameWithOwner   string                                                                                                                            `json:"nameWithOwner"`
-	Description     *string                                                                                                                           `json:"description"`
-	Url             string                                                                                                                            `json:"url"`
-	StargazerCount  int                                                                                                                               `json:"stargazerCount"`
-	ForkCount       int                                                                                                                               `json:"forkCount"`
-	PrimaryLanguage *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPrimaryLanguage `json:"primaryLanguage"`
+	NameWithOwner   string                                                                                                                                              `json:"nameWithOwner"`
+	Description     *string                                                                                                                                             `json:"description"`
+	Url             string                                                                                                                                              `json:"url"`
+	IsFork          bool                                                                                                                                                `json:"isFork"`
+	StargazerCount  int                                                                                                                                                 `json:"stargazerCount"`
+	ForkCount       int                                                                                                                                                 `json:"forkCount"`
+	PrimaryLanguage *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPrimaryLanguage                   `json:"primaryLanguage"`
+	LicenseInfo     *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryLicenseInfoLicense                `json:"licenseInfo"`
+	Issues          *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryIssuesIssueConnection             `json:"issues"`
+	PullRequests    *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPullRequestsPullRequestConnection `json:"pullRequests"`
 }
 
 // GetNameWithOwner returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository.NameWithOwner, and is useful for accessing the field via an interface.
@@ -2747,6 +2751,11 @@ func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnecti
 	return v.Url
 }
 
+// GetIsFork returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository.IsFork, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository) GetIsFork() bool {
+	return v.IsFork
+}
+
 // GetStargazerCount returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository.StargazerCount, and is useful for accessing the field via an interface.
 func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository) GetStargazerCount() int {
 	return v.StargazerCount
@@ -2760,6 +2769,47 @@ func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnecti
 // GetPrimaryLanguage returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository.PrimaryLanguage, and is useful for accessing the field via an interface.
 func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository) GetPrimaryLanguage() *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPrimaryLanguage {
 	return v.PrimaryLanguage
+}
+
+// GetLicenseInfo returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository.LicenseInfo, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository) GetLicenseInfo() *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryLicenseInfoLicense {
+	return v.LicenseInfo
+}
+
+// GetIssues returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository.Issues, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository) GetIssues() *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryIssuesIssueConnection {
+	return v.Issues
+}
+
+// GetPullRequests returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository.PullRequests, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepository) GetPullRequests() *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPullRequestsPullRequestConnection {
+	return v.PullRequests
+}
+
+// UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryIssuesIssueConnection includes the requested fields of the GraphQL type IssueConnection.
+type UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryIssuesIssueConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryIssuesIssueConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryIssuesIssueConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryLicenseInfoLicense includes the requested fields of the GraphQL type License.
+type UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryLicenseInfoLicense struct {
+	Name   string  `json:"name"`
+	SpdxId *string `json:"spdxId"`
+}
+
+// GetName returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryLicenseInfoLicense.Name, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryLicenseInfoLicense) GetName() string {
+	return v.Name
+}
+
+// GetSpdxId returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryLicenseInfoLicense.SpdxId, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryLicenseInfoLicense) GetSpdxId() *string {
+	return v.SpdxId
 }
 
 // UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPrimaryLanguage includes the requested fields of the GraphQL type Language.
@@ -2776,6 +2826,16 @@ func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnecti
 // GetColor returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPrimaryLanguage.Color, and is useful for accessing the field via an interface.
 func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPrimaryLanguage) GetColor() *string {
 	return v.Color
+}
+
+// UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPullRequestsPullRequestConnection includes the requested fields of the GraphQL type PullRequestConnection.
+type UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPullRequestsPullRequestConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPullRequestsPullRequestConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnectionEdgesStarredRepositoryEdgeNodeRepositoryPullRequestsPullRequestConnection) GetTotalCount() int {
+	return v.TotalCount
 }
 
 // UserUser includes the requested fields of the GraphQL type User.
@@ -5279,11 +5339,22 @@ query UserStarredRepositories ($login: String!, $first: Int!) {
 					nameWithOwner
 					description
 					url
+					isFork
 					stargazerCount
 					forkCount
 					primaryLanguage {
 						name
 						color
+					}
+					licenseInfo {
+						name
+						spdxId
+					}
+					issues {
+						totalCount
+					}
+					pullRequests {
+						totalCount
 					}
 				}
 			}

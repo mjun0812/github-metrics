@@ -45,8 +45,21 @@ func (r *Result) IsSkipped() bool { return r != nil && r.Skipped }
 type StarredRepo struct {
 	NameWithOwner string    `json:"nameWithOwner"`
 	Description   string    `json:"description"`
+	URL           string    `json:"url,omitempty"`
+	IsFork        bool      `json:"isFork,omitempty"`
 	Stars         int       `json:"stars"`
+	Forks         int       `json:"forks"`
+	Issues        int       `json:"issues"`
+	PullRequests  int       `json:"pullRequests"`
+	Language      *Language `json:"language,omitempty"`
+	License       string    `json:"license,omitempty"`
 	StarredAt     time.Time `json:"starredAt"`
+}
+
+// Language is the per-repository primary language name + GitHub color.
+type Language struct {
+	Name  string `json:"name"`
+	Color string `json:"color,omitempty"`
 }
 
 // Run issues a single GraphQL call to fetch the user's most recently
@@ -88,18 +101,62 @@ func (p *starsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, 
 		if edge == nil || edge.Node == nil {
 			continue
 		}
+		node := edge.Node
 		desc := ""
-		if edge.Node.Description != nil {
-			desc = *edge.Node.Description
+		if node.Description != nil {
+			desc = *node.Description
+		}
+		var lang *Language
+		if node.PrimaryLanguage != nil && node.PrimaryLanguage.Name != "" {
+			color := ""
+			if node.PrimaryLanguage.Color != nil {
+				color = *node.PrimaryLanguage.Color
+			}
+			lang = &Language{Name: node.PrimaryLanguage.Name, Color: color}
+		}
+		license := ""
+		if node.LicenseInfo != nil {
+			license = formatLicense(node.LicenseInfo.Name, node.LicenseInfo.SpdxId)
+		}
+		issues := 0
+		if node.Issues != nil {
+			issues = node.Issues.TotalCount
+		}
+		prs := 0
+		if node.PullRequests != nil {
+			prs = node.PullRequests.TotalCount
 		}
 		list = append(list, StarredRepo{
-			NameWithOwner: edge.Node.NameWithOwner,
+			NameWithOwner: node.NameWithOwner,
 			Description:   desc,
-			Stars:         edge.Node.StargazerCount,
+			URL:           node.Url,
+			IsFork:        node.IsFork,
+			Stars:         node.StargazerCount,
+			Forks:         node.ForkCount,
+			Issues:        issues,
+			PullRequests:  prs,
+			Language:      lang,
+			License:       license,
 			StarredAt:     edge.StarredAt,
 		})
 	}
 	return &Result{List: list, Limit: limit}, nil
+}
+
+// formatLicense mirrors upstream `format.license`
+// (org_repo/source/app/metrics/utils.mjs): a "NOASSERTION" spdxId falls
+// back to the full name, otherwise the spdxId is preferred over the name.
+// Our schema's License type does not expose `nickname`, so the upstream
+// `nickname ?? spdxId ?? name` chain collapses to `spdxId ?? name`.
+func formatLicense(name string, spdxID *string) string {
+	spdx := ""
+	if spdxID != nil {
+		spdx = *spdxID
+	}
+	if spdx == "" || spdx == "NOASSERTION" {
+		return name
+	}
+	return spdx
 }
 
 func truthyInput(in map[string]any, key string) bool {
