@@ -96,6 +96,14 @@ func (p *isocalendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (a
 	}
 
 	weeks := truncateWeeks(cal.Weeks, weeksWanted)
+	// Aggregation mirrors upstream isocalendar (index.mjs::statistics):
+	// every ContributionDay in the window contributes its GitHub-reported
+	// ContributionCount verbatim to sum/avg/max and to the streak passes.
+	// That count already folds in private contributions when the user's
+	// "Include private contributions on my profile" setting allows it, so
+	// no public/private branching happens here — the half-year and
+	// full-year variants differ only by window width (weeksWanted), never
+	// by counting rule. See #467 and the matching unit tests.
 	iso := make([]ISOWeek, 0, len(weeks))
 	flat := make([]int, 0, len(weeks)*7)
 	sum := 0
