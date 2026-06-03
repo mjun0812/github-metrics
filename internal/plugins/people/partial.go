@@ -127,11 +127,19 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		if len(list) == 0 {
 			continue
 		}
+		// The label count is the true total (Counts[k], e.g. GraphQL
+		// followers.totalCount), not the fetched-and-clipped slice
+		// length (#470). Repo-mode REST types have no totalCount, so
+		// fall back to len(list).
+		count := len(list)
+		if c, ok := r.Counts[k]; ok {
+			count = c
+		}
 		b.WriteString(`<section>`)
 		fmt.Fprintf(
 			&b, `<h2 class="field">%s%s</h2>`,
 			peopleOcticon,
-			partials.EscapeXML(labelForType(k, len(list))),
+			partials.EscapeXML(labelForType(k, count)),
 		)
 		b.WriteString(`<div class="row">`)
 		fmt.Fprintf(&b, `<section class="people" data-type="%s">`, partials.EscapeXML(k))
