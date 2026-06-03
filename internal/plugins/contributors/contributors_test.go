@@ -383,7 +383,7 @@ func TestPartial_LoginWithDigitsHasExplicitDelimiter(t *testing.T) {
 	}
 }
 
-func TestPartial_StatsPendingShowsIndicator(t *testing.T) {
+func TestPartial_StatsPendingOmitsDiffSpan(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	d.SetPlugin(contributors.Name, &contributors.Result{
@@ -399,14 +399,18 @@ func TestPartial_StatsPendingShowsIndicator(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
-	if !strings.Contains(got, `<span class="stats-pending">stats pending</span>`) {
-		t.Fatalf("expected stats-pending indicator; got %q", got)
+	// When /stats/contributors stays 202 (StatsPending), the add/del
+	// diff span is omitted entirely. The earlier "stats pending" chip
+	// was a misleading placeholder, not data the viewer can act on, so
+	// tests/content/dom_contract_test.go forbids it for #471.
+	if strings.Contains(got, "stats pending") {
+		t.Fatalf("StatsPending must not emit a 'stats pending' chip; got %q", got)
 	}
-	// Must not emit the misleading "++0 --0" chip when stats are
-	// still warming up.
-	if strings.Contains(got, "++0 --0") {
-		t.Fatalf("stats-pending result must not show ++0 --0; got %q", got)
+	// Neither the false "++0 --0" nor any add/del diff span may appear.
+	if strings.Contains(got, "++") || strings.Contains(got, `class="diff"`) {
+		t.Fatalf("StatsPending must omit the add/del diff span; got %q", got)
 	}
+	// The commit count still carries the contribution signal.
 	if !strings.Contains(got, "3 commits") {
 		t.Fatalf("commit count from minimal stub should still render; got %q", got)
 	}
