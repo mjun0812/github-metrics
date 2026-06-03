@@ -80,9 +80,13 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		return "", nil
 	}
 	r, ok := raw.(*Result)
-	if !ok || r == nil || r.Skipped || len(r.List) == 0 {
+	if !ok || r == nil || r.Skipped {
 		return "", nil
 	}
+	// Note: an empty List is NOT a skip condition. Upstream renders the
+	// section header ("0 Star lists") even when the account has no star
+	// lists; the for-loop below simply does not run, so only the header
+	// (and an empty <section>) is emitted. See issue #474.
 
 	var b strings.Builder
 	b.WriteString(`<section data-section="starlists">`)
