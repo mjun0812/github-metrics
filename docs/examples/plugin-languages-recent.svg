@@ -23,7 +23,7 @@
               Recently used languages
             </h3>
             <small>
-              activity from 97 repositories analysed over last 30 days
+              activity from 80 repositories analysed over last 30 days
             </small>
             <svg xmlns="http://www.w3.org/2000/svg" class="bar" width="460" height="8" role="img" aria-label="Recently used languages distribution">
               <title>
@@ -34,12 +34,12 @@
               </mask>
               <rect mask="url(#languages-bar-recent)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-recent">
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="396.12" height="8" fill="#f1e05a" data-language="JavaScript"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="396.12" y="0" width="53.62" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="449.73" y="0" width="4.34" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="454.08" y="0" width="3.36" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="457.44" y="0" width="2.45" height="8" fill="#000080" data-language="Lua"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.89" y="0" width="0.11" height="8" fill="#384d54" data-language="Dockerfile"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="380.46" height="8" fill="#f1e05a" data-language="JavaScript"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="380.46" y="0" width="72.49" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="452.95" y="0" width="2.58" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="455.54" y="0" width="2.35" height="8" fill="#000080" data-language="Lua"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="457.89" y="0" width="2.10" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.99" y="0" width="0.01" height="8" fill="#384d54" data-language="Dockerfile"/>
               </g>
             </svg>
             <div class="row fill-width">
@@ -56,7 +56,23 @@
                       81.6 kB
                     </div>
                     <div>
-                      86.1%
+                      82.7%
+                    </div>
+                  </small>
+                </div>
+                <div class="field language details" data-language="Shell">
+                  <div class="field">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                      <path fill="#89e051" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                    </svg>
+                    Shell
+                  </div>
+                  <small>
+                    <div>
+                      567 B
+                    </div>
+                    <div>
+                      0.6%
                     </div>
                   </small>
                 </div>
@@ -69,10 +85,28 @@
                   </div>
                   <small>
                     <div>
-                      916 B
+                      462 B
                     </div>
                     <div>
-                      0.9%
+                      0.5%
+                    </div>
+                  </small>
+                </div>
+              </section>
+              <section>
+                <div class="field language details" data-language="Go">
+                  <div class="field">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                      <path fill="#00ADD8" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                    </svg>
+                    Go
+                  </div>
+                  <small>
+                    <div>
+                      15.5 kB
+                    </div>
+                    <div>
+                      15.8%
                     </div>
                   </small>
                 </div>
@@ -92,40 +126,6 @@
                     </div>
                   </small>
                 </div>
-              </section>
-              <section>
-                <div class="field language details" data-language="Go">
-                  <div class="field">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#00ADD8" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
-                    </svg>
-                    Go
-                  </div>
-                  <small>
-                    <div>
-                      11.0 kB
-                    </div>
-                    <div>
-                      11.7%
-                    </div>
-                  </small>
-                </div>
-                <div class="field language details" data-language="Shell">
-                  <div class="field">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#89e051" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
-                    </svg>
-                    Shell
-                  </div>
-                  <small>
-                    <div>
-                      709 B
-                    </div>
-                    <div>
-                      0.7%
-                    </div>
-                  </small>
-                </div>
                 <div class="field language details" data-language="Dockerfile">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -135,7 +135,7 @@
                   </div>
                   <small>
                     <div>
-                      24 B
+                      2 B
                     </div>
                     <div>
                       0.0%
