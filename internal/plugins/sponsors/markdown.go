@@ -10,7 +10,7 @@ import (
 )
 
 // renderMarkdown converts the small subset of Markdown that GitHub
-// Sponsors `fullDescription` fields use into the HTML the classic
+// Sponsors `shortDescription` fields use into the HTML the classic
 // template emits inside `<div class="markdown">`. Upstream renders the
 // bio with `imports.markdown` and emits it unescaped (`<%- %>` in
 // sponsors.ejs); we mirror the resulting markup for the common cases

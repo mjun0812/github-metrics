@@ -18,15 +18,16 @@ env:
   # Built against Go 1.26; matches the runner pin above.
   GOLANGCI_LINT_VERSION: "v2.12.2"
 
-# Job placement: chromium-dependent and macOS jobs run on GitHub-hosted
-# runners (ubuntu-latest pre-installs Chrome; macos-latest is the only
-# Darwin capacity). Pure-Go static checks (vet / lint / vuln / compliance)
-# stay on the local self-hosted runner (hestia-x64-hestia, Linux/X64) to
-# keep hosted-minute usage down.
+# Job placement: every Linux/x86 job (test / vet / lint / vuln /
+# test-race / test-chromedp / test-heavy / compliance) runs on the
+# self-hosted ARC runner scale set `home-k3s-runner` (k3s cluster with
+# docker-in-docker, so the test-chromedp container job works) to keep
+# GitHub-hosted minute usage down. Only smoke-macos stays on a
+# GitHub-hosted macos-latest runner (the sole Darwin capacity).
 jobs:
   test:
     name: test
-    runs-on: ubuntu-latest
+    runs-on: home-k3s-runner
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
@@ -38,7 +39,7 @@ jobs:
 
   vet:
     name: vet
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: home-k3s-runner
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
@@ -50,7 +51,7 @@ jobs:
 
   lint:
     name: lint
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: home-k3s-runner
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
@@ -64,7 +65,7 @@ jobs:
 
   vuln:
     name: vuln
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: home-k3s-runner
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
@@ -78,7 +79,7 @@ jobs:
 
   test-race:
     name: test-race
-    runs-on: ubuntu-latest
+    runs-on: home-k3s-runner
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
@@ -90,7 +91,7 @@ jobs:
 
   test-chromedp:
     name: test-chromedp
-    runs-on: ubuntu-latest
+    runs-on: home-k3s-runner
     container:
       image: chromedp/headless-shell:latest
     env:
@@ -116,7 +117,7 @@ jobs:
 
   test-heavy:
     name: test-heavy
-    runs-on: ubuntu-latest
+    runs-on: home-k3s-runner
     # `heavy` build tag covers M4 plugins that pull in go-enry's
     # embedded language database and go-git's shallow clone path
     # (languages.recent, languages.indepth). Both are pure Go, so no
@@ -133,7 +134,7 @@ jobs:
 
   compliance:
     name: compliance
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: home-k3s-runner
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
