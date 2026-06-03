@@ -5,11 +5,8 @@
 // a missing label or a wrong number), these tests parse the rendered
 // SVG and assert on the *visible content a viewer actually sees*.
 //
-// Three layers, increasing specificity:
+// Two layers, increasing specificity:
 //
-//   - density_test.go    (D) every example SVG must not be an empty
-//     card — a cheap blanket safety net for the "rendered nothing"
-//     bug class (#472).
 //   - dom_contract_test.go (B) per-plugin required semantic elements
 //     ("files changed", "License", "Language activity", …), asserted
 //     even for plugins that have no upstream reference fixture.
@@ -61,21 +58,4 @@ func readRepo(t *testing.T, rel string) []byte {
 		t.Fatalf("read %s: %v", rel, err)
 	}
 	return b
-}
-
-// exampleSVGs lists every committed example SVG under docs/examples/.
-func exampleSVGs(t *testing.T) []string {
-	t.Helper()
-	dir := filepath.Join(repoRoot(t), "docs", "examples")
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		t.Fatalf("read examples dir: %v", err)
-	}
-	var out []string
-	for _, e := range entries {
-		if filepath.Ext(e.Name()) == ".svg" {
-			out = append(out, e.Name())
-		}
-	}
-	return out
 }
