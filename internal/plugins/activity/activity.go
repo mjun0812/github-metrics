@@ -56,19 +56,52 @@ type ActivityEvent struct {
 	Repo       string    `json:"repo"`
 	Date       time.Time `json:"date"`
 	Visibility string    `json:"visibility"`
+	// Files and Lines carry pull-request diff stats for
+	// PullRequestEvent entries, mirroring upstream
+	// data.plugins.activity.events[].{files,lines}. They stay nil for
+	// event types that do not expose diff stats so the template can
+	// decide whether to render the "N files changed ++A --D" line.
+	Files *EventFiles `json:"files,omitempty"`
+	Lines *EventLines `json:"lines,omitempty"`
+}
+
+// EventFiles mirrors upstream event.files (PR change counts).
+type EventFiles struct {
+	Changed int `json:"changed"`
+}
+
+// EventLines mirrors upstream event.lines (PR additions/deletions).
+type EventLines struct {
+	Added   int `json:"added"`
+	Deleted int `json:"deleted"`
 }
 
 // rawEvent matches the GitHub REST `/users/{login}/events` payload shape
 // for the fields this plugin consumes.
 type rawEvent struct {
-	Type      string    `json:"type"`
-	Repo      rawRepo   `json:"repo"`
-	CreatedAt time.Time `json:"created_at"`
-	Public    bool      `json:"public"`
+	Type      string     `json:"type"`
+	Repo      rawRepo    `json:"repo"`
+	CreatedAt time.Time  `json:"created_at"`
+	Public    bool       `json:"public"`
+	Payload   rawPayload `json:"payload"`
 }
 
 type rawRepo struct {
 	Name string `json:"name"`
+}
+
+// rawPayload covers the per-event-type `payload` object. Only the
+// PullRequestEvent's pull_request diff stats are consumed today.
+type rawPayload struct {
+	PullRequest *rawPullRequest `json:"pull_request"`
+}
+
+// rawPullRequest carries the PR diff stats GitHub embeds in a
+// PullRequestEvent payload.
+type rawPullRequest struct {
+	Additions    int `json:"additions"`
+	Deletions    int `json:"deletions"`
+	ChangedFiles int `json:"changed_files"`
 }
 
 type inputs struct {
@@ -125,12 +158,21 @@ func (p *activityPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 		if !raw.CreatedAt.IsZero() && raw.CreatedAt.Before(cutoff) {
 			continue
 		}
-		events = append(events, ActivityEvent{
+		ae := ActivityEvent{
 			Type:       raw.Type,
 			Repo:       raw.Repo.Name,
 			Date:       raw.CreatedAt,
 			Visibility: vis,
-		})
+		}
+		// PullRequestEvent carries diff stats in payload.pull_request.
+		// Surface them so the template can render upstream's
+		// "N files changed ++A --D" line (activity.ejs line 79).
+		if raw.Type == "PullRequestEvent" && raw.Payload.PullRequest != nil {
+			pr := raw.Payload.PullRequest
+			ae.Files = &EventFiles{Changed: pr.ChangedFiles}
+			ae.Lines = &EventLines{Added: pr.Additions, Deleted: pr.Deletions}
+		}
+		events = append(events, ae)
 	}
 	sort.SliceStable(events, func(i, j int) bool {
 		return events[i].Date.After(events[j].Date)
