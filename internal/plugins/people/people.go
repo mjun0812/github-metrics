@@ -38,12 +38,21 @@ func (p *peoplePlugin) Name() string                     { return Name }
 func (p *peoplePlugin) Metadata() *config.PluginMetadata { return nil }
 
 // Result is the JSON payload published under data.Plugins["people"].
+//
+// Counts carries the true total per type as reported by the API
+// (GraphQL UserConnection.totalCount for user-mode followers/following).
+// It is distinct from len(Types[t]), which is bounded by the fetched
+// page (plugin_people_limit). The header label must read the total
+// (#470), while the avatar list still renders the limited slice. Repo
+// mode is REST-based with no totalCount concept, so its entries are
+// omitted here and the partial falls back to len(list).
 type Result struct {
 	Skipped       bool                `json:"skipped,omitempty"`
 	SkippedReason string              `json:"-"`
 	Mode          string              `json:"mode,omitempty"`
 	Size          int                 `json:"size,omitempty"`
 	Types         map[string][]Person `json:"types"`
+	Counts        map[string]int      `json:"counts,omitempty"`
 }
 
 // Avatar size bounds mirror assets/plugins/people/metadata.yml
@@ -109,6 +118,7 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	shuffle := readBool(pc.Inputs, "plugin_people_shuffle")
 
 	out := make(map[string][]Person, len(types))
+	counts := make(map[string]int)
 	needFollowers := false
 	needFollowing := false
 	repoTypes := []string{}
@@ -147,9 +157,11 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		if resp != nil && resp.User != nil {
 			if needFollowers && resp.User.Followers != nil {
 				out["followers"] = followersToPeople(resp.User.Followers.Nodes)
+				counts["followers"] = resp.User.Followers.TotalCount
 			}
 			if needFollowing && resp.User.Following != nil {
 				out["following"] = followingToPeople(resp.User.Following.Nodes)
+				counts["following"] = resp.User.Following.TotalCount
 			}
 		}
 	}
@@ -180,7 +192,7 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		}
 	}
 
-	return &Result{Mode: plugins.AggregationMode(pc.Data), Size: size, Types: out}, nil
+	return &Result{Mode: plugins.AggregationMode(pc.Data), Size: size, Types: out, Counts: counts}, nil
 }
 
 func isRepositoryPeopleType(t string) bool {
