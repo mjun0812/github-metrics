@@ -10,7 +10,7 @@ GOFLAGS   ?=
 BIN_DIR   := bin
 LDFLAGS   := -s -w -X main.version=$(shell git describe --tags --dirty --always 2>/dev/null || echo dev)
 
-BINARIES := metrics-action metrics-cli
+BINARIES := metrics-action
 
 # Pin developer tooling so `make tools` produces a reproducible local
 # environment matching CI. Bump these together with the CI workflow.
@@ -30,7 +30,7 @@ all: build
 
 help:
 	@echo "Targets:"
-	@echo "  build               Build cmd/metrics-action and cmd/metrics-cli into bin/"
+	@echo "  build               Build cmd/metrics-action into bin/"
 	@echo "  build-action        Build only cmd/metrics-action (M6 shortcut)"
 	@echo "  gen-action-yml      Generate action.yml from assets/plugins/*/metadata.yml + core inputs (M6)"
 	@echo "  docker-build        Build the metrics-action Docker image from deploy/Dockerfile (tagged :dev)"

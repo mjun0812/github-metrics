@@ -49,7 +49,7 @@ This plugin display repositories contributors from a commit range along with add
 ### CLI
 
 ```sh
-metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
+metrics-action --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_contributors=yes
 ```
