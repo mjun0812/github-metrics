@@ -53,6 +53,27 @@ func newREST(t *testing.T, body string) *githubapi.REST {
 	return r
 }
 
+// newRESTWithRoutes builds a REST client whose mock transport serves the
+// given route -> JSON body map (method+path keys, wildcards supported via
+// trailing "*"). Used by the linguist tests that need commit/compare
+// endpoints alongside the events feed.
+func newRESTWithRoutes(t *testing.T, routes map[string]string) *githubapi.REST {
+	t.Helper()
+	mux := githubapi.NewMockTransport()
+	for path, body := range routes {
+		mux.SetJSON("GET", path, body)
+	}
+	r, err := githubapi.NewREST(
+		config.NewToken("MOCKED_TOKEN"),
+		"http://mock.localhost",
+		httpx.Options{Transport: mux, MaxRetries: 0},
+	)
+	if err != nil {
+		t.Fatalf("NewREST: %v", err)
+	}
+	return r
+}
+
 func pcWith(t *testing.T, body string, inputs map[string]any) *plugins.PluginContext {
 	t.Helper()
 	pc := &plugins.PluginContext{
@@ -304,6 +325,147 @@ func TestPartial_Habits_FactsOnly_Golden(t *testing.T) {
 		if strings.Contains(got, marker) {
 			t.Errorf("facts-only partial unexpectedly contains marker %q in:\n%s", marker, got)
 		}
+	}
+}
+
+// pcWithRoutes builds a PluginContext whose REST client serves the given
+// route map, for linguist tests that need commit/compare endpoints.
+func pcWithRoutes(t *testing.T, routes map[string]string, inputs map[string]any) *plugins.PluginContext {
+	t.Helper()
+	pc := &plugins.PluginContext{
+		Data:   plugins.NewData(),
+		Inputs: map[string]any{"user": "octocat"},
+		REST:   newRESTWithRoutes(t, routes),
+	}
+	for k, v := range inputs {
+		pc.Inputs[k] = v
+	}
+	return pc
+}
+
+func TestRun_LanguageActivity_FromCommits(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	// One in-window PushEvent carrying an explicit commit SHA. The commit
+	// touches Go (90 bytes) and a small JS file (10 bytes), so Go ~= 0.9.
+	events := `[{"type":"PushEvent","created_at":"` + now.Format(time.RFC3339) + `",` +
+		`"repo":{"name":"octocat/repo"},` +
+		`"payload":{"commits":[{"sha":"abc123"}]}}]`
+	commit := `{"files":[` +
+		`{"filename":"main.go","additions":60,"deletions":30},` +
+		`{"filename":"app.js","additions":7,"deletions":3}]}`
+	pc := pcWithRoutes(t, map[string]string{
+		"/users/octocat/events*":             events,
+		"/repos/octocat/repo/commits/abc123": commit,
+	}, nil)
+	out, err := habits.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*habits.Result)
+	if r.Skipped {
+		t.Fatalf("unexpected Skipped")
+	}
+	if !r.Linguist.Available {
+		t.Fatalf("Linguist.Available = false, want true")
+	}
+	if len(r.Linguist.Ordered) != 2 {
+		t.Fatalf("Ordered len = %d, want 2: %+v", len(r.Linguist.Ordered), r.Linguist.Ordered)
+	}
+	if r.Linguist.Ordered[0].Name != "Go" {
+		t.Errorf("dominant language = %q, want Go", r.Linguist.Ordered[0].Name)
+	}
+	if r.Linguist.Ordered[0].Share < 0.89 || r.Linguist.Ordered[0].Share > 0.91 {
+		t.Errorf("Go share = %f, want ~0.9", r.Linguist.Ordered[0].Share)
+	}
+	// Section must render with the upstream literal heading.
+	got := renderPartial(t, r)
+	for _, marker := range []string{`Language activity`, `chart-bars horizontal`, `<span class="name">Go</span>`, `90%`} {
+		if !strings.Contains(got, marker) {
+			t.Errorf("partial missing marker %q in:\n%s", marker, got)
+		}
+	}
+}
+
+func TestRun_LanguageActivity_ViaCompare(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	// PushEvent without payload.commits → resolve via the compare API.
+	events := `[{"type":"PushEvent","created_at":"` + now.Format(time.RFC3339) + `",` +
+		`"repo":{"name":"octocat/repo"},` +
+		`"payload":{"before":"aaa","head":"bbb"}}]`
+	compare := `{"files":[{"filename":"lib.py","additions":40,"deletions":0}]}`
+	pc := pcWithRoutes(t, map[string]string{
+		"/users/octocat/events*":                events,
+		"/repos/octocat/repo/compare/aaa...bbb": compare,
+	}, nil)
+	out, err := habits.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*habits.Result)
+	if !r.Linguist.Available || len(r.Linguist.Ordered) != 1 {
+		t.Fatalf("expected 1 ordered language, got available=%v %+v", r.Linguist.Available, r.Linguist.Ordered)
+	}
+	if r.Linguist.Ordered[0].Name != "Python" {
+		t.Errorf("language = %q, want Python", r.Linguist.Ordered[0].Name)
+	}
+}
+
+func TestRun_LanguageActivity_ThresholdAndLimit(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	events := `[{"type":"PushEvent","created_at":"` + now.Format(time.RFC3339) + `",` +
+		`"repo":{"name":"octocat/repo"},` +
+		`"payload":{"commits":[{"sha":"abc123"}]}}]`
+	// Go 95 bytes, JS 5 bytes (5%). A 10% threshold drops JS.
+	commit := `{"files":[` +
+		`{"filename":"main.go","additions":95,"deletions":0},` +
+		`{"filename":"app.js","additions":5,"deletions":0}]}`
+	pc := pcWithRoutes(t, map[string]string{
+		"/users/octocat/events*":             events,
+		"/repos/octocat/repo/commits/abc123": commit,
+	}, map[string]any{"plugin_habits_languages_threshold": "10%"})
+	out, _ := habits.Plugin.Run(context.Background(), pc)
+	r := out.(*habits.Result)
+	if len(r.Linguist.Ordered) != 1 || r.Linguist.Ordered[0].Name != "Go" {
+		t.Fatalf("threshold filter failed: %+v", r.Linguist.Ordered)
+	}
+}
+
+func TestRun_LanguageActivity_NoFiles_NotAvailable(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	events := `[{"type":"PushEvent","created_at":"` + now.Format(time.RFC3339) + `",` +
+		`"repo":{"name":"octocat/repo"},` +
+		`"payload":{"commits":[{"sha":"abc123"}]}}]`
+	commit := `{"files":[]}`
+	pc := pcWithRoutes(t, map[string]string{
+		"/users/octocat/events*":             events,
+		"/repos/octocat/repo/commits/abc123": commit,
+	}, nil)
+	out, _ := habits.Plugin.Run(context.Background(), pc)
+	r := out.(*habits.Result)
+	if r.Linguist.Available {
+		t.Errorf("Linguist.Available = true, want false when no analyzable files")
+	}
+}
+
+func TestRun_LanguageActivity_ChartsDisabled_Skipped(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	events := `[{"type":"PushEvent","created_at":"` + now.Format(time.RFC3339) + `",` +
+		`"repo":{"name":"octocat/repo"},` +
+		`"payload":{"commits":[{"sha":"abc123"}]}}]`
+	commit := `{"files":[{"filename":"main.go","additions":10,"deletions":0}]}`
+	pc := pcWithRoutes(t, map[string]string{
+		"/users/octocat/events*":             events,
+		"/repos/octocat/repo/commits/abc123": commit,
+	}, map[string]any{"plugin_habits_charts": "no"})
+	out, _ := habits.Plugin.Run(context.Background(), pc)
+	r := out.(*habits.Result)
+	if r.Linguist.Available {
+		t.Errorf("Linguist computed despite charts disabled")
 	}
 }
 
