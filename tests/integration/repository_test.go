@@ -72,11 +72,20 @@ func TestRepositoryTemplate_HelloWorld_SVG(t *testing.T) {
 		"</svg>",
 		`data-template="repository"`,
 		"octocat/hello-world",
-		"My first repository on GitHub.",
+		// #464: base.header renders the upstream chrome fields.
+		"Deployed",
+		"Environment",
 	} {
 		if !strings.Contains(out, must) {
 			t.Errorf("SVG output missing %q\nfirst 400 bytes: %s", must, out[:min(400, len(out))])
 		}
+	}
+	// #464: the repo description is introduction content (gated by
+	// `plugin_introduction`), not base.header chrome, so a plain base
+	// repository render must not surface it — matching upstream's
+	// base-only `metrics.repository.svg`.
+	if strings.Contains(out, "My first repository on GitHub.") {
+		t.Errorf("base-only repository SVG should not include the description")
 	}
 }
 

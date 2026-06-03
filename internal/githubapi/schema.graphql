@@ -225,6 +225,10 @@ type Repository {
   name: String!
   nameWithOwner: String!
   description: String
+  # #464: repository base.header surfaces the repo creation age
+  # ("Created N years ago"). #466: the same timestamp is rendered as
+  # the "created <date>" label on each repositories-plugin card.
+  createdAt: DateTime!
   url: URI!
   isPrivate: Boolean!
   isFork: Boolean!
@@ -233,9 +237,6 @@ type Repository {
   # `organization` avatar CSS class and to honor `plugin_notable_from`
   # (organization / user / all owner-type filtering).
   isInOrganization: Boolean!
-  # #466: repository creation timestamp rendered as the "created <date>"
-  # label on each repositories-plugin card.
-  createdAt: DateTime!
   pushedAt: DateTime
   updatedAt: DateTime
   stargazerCount: Int!
@@ -257,6 +258,10 @@ type Repository {
   diskUsage: Int
   releases: ReleaseConnection
   packages(first: Int): PackageConnection
+  # #464: repository base.header surfaces deployment + environment
+  # totals ("Deployed N times" / "N Environments").
+  deployments: DeploymentConnection
+  environments: EnvironmentConnection
 }
 
 interface RepositoryOwner {
@@ -283,6 +288,16 @@ type ReleaseConnection {
 }
 
 type PackageConnection {
+  totalCount: Int!
+}
+
+# #464: deployment / environment totals consumed by the repository
+# template base.header partial.
+type DeploymentConnection {
+  totalCount: Int!
+}
+
+type EnvironmentConnection {
   totalCount: Int!
 }
 

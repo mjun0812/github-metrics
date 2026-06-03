@@ -533,9 +533,13 @@ type RepositoryRepository struct {
 	Name             string                                                 `json:"name"`
 	NameWithOwner    string                                                 `json:"nameWithOwner"`
 	Description      *string                                                `json:"description"`
+	CreatedAt        time.Time                                              `json:"createdAt"`
+	DiskUsage        *int                                                   `json:"diskUsage"`
 	StargazerCount   int                                                    `json:"stargazerCount"`
 	ForkCount        int                                                    `json:"forkCount"`
 	IsArchived       bool                                                   `json:"isArchived"`
+	Deployments      *RepositoryRepositoryDeploymentsDeploymentConnection   `json:"deployments"`
+	Environments     *RepositoryRepositoryEnvironmentsEnvironmentConnection `json:"environments"`
 	PrimaryLanguage  *RepositoryRepositoryPrimaryLanguage                   `json:"primaryLanguage"`
 	LicenseInfo      *RepositoryRepositoryLicenseInfoLicense                `json:"licenseInfo"`
 	DefaultBranchRef *RepositoryRepositoryDefaultBranchRef                  `json:"defaultBranchRef"`
@@ -556,6 +560,12 @@ func (v *RepositoryRepository) GetNameWithOwner() string { return v.NameWithOwne
 // GetDescription returns RepositoryRepository.Description, and is useful for accessing the field via an interface.
 func (v *RepositoryRepository) GetDescription() *string { return v.Description }
 
+// GetCreatedAt returns RepositoryRepository.CreatedAt, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetDiskUsage returns RepositoryRepository.DiskUsage, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetDiskUsage() *int { return v.DiskUsage }
+
 // GetStargazerCount returns RepositoryRepository.StargazerCount, and is useful for accessing the field via an interface.
 func (v *RepositoryRepository) GetStargazerCount() int { return v.StargazerCount }
 
@@ -564,6 +574,16 @@ func (v *RepositoryRepository) GetForkCount() int { return v.ForkCount }
 
 // GetIsArchived returns RepositoryRepository.IsArchived, and is useful for accessing the field via an interface.
 func (v *RepositoryRepository) GetIsArchived() bool { return v.IsArchived }
+
+// GetDeployments returns RepositoryRepository.Deployments, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetDeployments() *RepositoryRepositoryDeploymentsDeploymentConnection {
+	return v.Deployments
+}
+
+// GetEnvironments returns RepositoryRepository.Environments, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetEnvironments() *RepositoryRepositoryEnvironmentsEnvironmentConnection {
+	return v.Environments
+}
 
 // GetPrimaryLanguage returns RepositoryRepository.PrimaryLanguage, and is useful for accessing the field via an interface.
 func (v *RepositoryRepository) GetPrimaryLanguage() *RepositoryRepositoryPrimaryLanguage {
@@ -635,11 +655,19 @@ type __premarshalRepositoryRepository struct {
 
 	Description *string `json:"description"`
 
+	CreatedAt time.Time `json:"createdAt"`
+
+	DiskUsage *int `json:"diskUsage"`
+
 	StargazerCount int `json:"stargazerCount"`
 
 	ForkCount int `json:"forkCount"`
 
 	IsArchived bool `json:"isArchived"`
+
+	Deployments *RepositoryRepositoryDeploymentsDeploymentConnection `json:"deployments"`
+
+	Environments *RepositoryRepositoryEnvironmentsEnvironmentConnection `json:"environments"`
 
 	PrimaryLanguage *RepositoryRepositoryPrimaryLanguage `json:"primaryLanguage"`
 
@@ -669,9 +697,13 @@ func (v *RepositoryRepository) __premarshalJSON() (*__premarshalRepositoryReposi
 	retval.Name = v.Name
 	retval.NameWithOwner = v.NameWithOwner
 	retval.Description = v.Description
+	retval.CreatedAt = v.CreatedAt
+	retval.DiskUsage = v.DiskUsage
 	retval.StargazerCount = v.StargazerCount
 	retval.ForkCount = v.ForkCount
 	retval.IsArchived = v.IsArchived
+	retval.Deployments = v.Deployments
+	retval.Environments = v.Environments
 	retval.PrimaryLanguage = v.PrimaryLanguage
 	retval.LicenseInfo = v.LicenseInfo
 	retval.DefaultBranchRef = v.DefaultBranchRef
@@ -699,6 +731,26 @@ type RepositoryRepositoryDefaultBranchRef struct {
 
 // GetName returns RepositoryRepositoryDefaultBranchRef.Name, and is useful for accessing the field via an interface.
 func (v *RepositoryRepositoryDefaultBranchRef) GetName() string { return v.Name }
+
+// RepositoryRepositoryDeploymentsDeploymentConnection includes the requested fields of the GraphQL type DeploymentConnection.
+type RepositoryRepositoryDeploymentsDeploymentConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns RepositoryRepositoryDeploymentsDeploymentConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryDeploymentsDeploymentConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// RepositoryRepositoryEnvironmentsEnvironmentConnection includes the requested fields of the GraphQL type EnvironmentConnection.
+type RepositoryRepositoryEnvironmentsEnvironmentConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns RepositoryRepositoryEnvironmentsEnvironmentConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryEnvironmentsEnvironmentConnection) GetTotalCount() int {
+	return v.TotalCount
+}
 
 // RepositoryRepositoryIssuesIssueConnection includes the requested fields of the GraphQL type IssueConnection.
 type RepositoryRepositoryIssuesIssueConnection struct {
@@ -4746,9 +4798,17 @@ query Repository ($login: String!, $repo: String!) {
 		name
 		nameWithOwner
 		description
+		createdAt
+		diskUsage
 		stargazerCount
 		forkCount
 		isArchived
+		deployments {
+			totalCount
+		}
+		environments {
+			totalCount
+		}
 		primaryLanguage {
 			name
 			color

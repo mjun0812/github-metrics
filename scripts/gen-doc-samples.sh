@@ -444,33 +444,25 @@ echo "== repository foundational base render =="
 render_one_repo "plugin-base-repo"
 
 echo
-echo "== repository template overview (multi-plugin composite) =="
-# `metrics-repository` is the repository-template overview: a single
-# composite card showing every partial whose toggle has visible effect
-# on ${REPO}. (Unlike `metrics-classic`, which is base-only for
-# upstream parity — see issue #463 — the repository template genuinely
-# composes its `_.json` partials, so this composite is retained.)
+echo "== repository template base overview =="
+# `metrics-repository` is the apples-to-apples counterpart of upstream's
+# `docs/reference_examples/metrics.repository.svg` (issue #464): a plain
+# base repository render with NO plugin toggles. The repository
+# `base.header` partial alone draws the upstream chrome — repository
+# name + Created / Deployed / disk-usage on the left, the contribution
+# mini-calendar / Environments on the right — so the section structure
+# matches the upstream reference exactly.
 #
-# Plugin selection rationale:
-#   - Included: `plugin_people` (adds the people section with 3
-#     repo-context types) and `plugin_contributors_contributions`
-#     (extends the chrome contributors rows with adds/dels columns).
-#     The other toggles (languages/activity/stargazers) are passed for
-#     documentation intent — they are no-ops on top of the chrome but
-#     make the recipe self-explanatory.
-#   - Excluded: every toggle that does not change the output on this
-#     sample repo (see the per-plugin comment above). Including them
-#     would not affect the rendered bytes.
-render_one_repo "metrics-repository" \
-  --plugin "plugin_languages=yes" \
-  --plugin "plugin_languages_details=bytes-size,percentage" \
-  --plugin "plugin_contributors=yes" \
-  --plugin "plugin_contributors_contributions=yes" \
-  --plugin "plugin_people=yes" \
-  --plugin "plugin_people_types=stargazers,watchers,contributors" \
-  --plugin "plugin_stargazers=yes" \
-  --plugin "plugin_stargazers_charts_type=graph" \
-  --plugin "plugin_activity=yes"
+# History: this sample previously enabled languages/contributors/people/
+# stargazers/activity toggles, producing a tall multi-section composite
+# that diverged from the upstream `metrics.repository.svg` reference
+# (issue #464). Plugin partials are now gated by `plugin_<slug>` in the
+# repository template dispatcher (internal/templates/repository/
+# repository.go), so a toggle-free render emits the base chrome only.
+# The per-plugin repository-mode samples above (plugin-base-repo,
+# plugin-people-repo, plugin-contributors-repo-contributions,
+# plugin-people-repo-types) still cover each plugin partial individually.
+render_one_repo "metrics-repository"
 
 echo
 echo "== Summary =="

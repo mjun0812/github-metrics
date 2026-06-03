@@ -53,10 +53,18 @@ func FetchRepo(ctx context.Context, login, repo string, rest *githubapi.REST, gq
 		Owner:         login,
 		Name:          r.Name,
 		Description:   derefString(r.Description),
+		CreatedAt:     r.CreatedAt,
+		DiskUsageKB:   derefInt(r.DiskUsage),
 		Stargazers:    r.StargazerCount,
 		Forks:         r.ForkCount,
 		IsArchived:    r.IsArchived,
 		DefaultBranch: refName(r.DefaultBranchRef),
+	}
+	if r.Deployments != nil {
+		out.Deployments = r.Deployments.TotalCount
+	}
+	if r.Environments != nil {
+		out.Environments = r.Environments.TotalCount
 	}
 	if r.Owner != nil {
 		out.Owner = r.Owner.GetLogin()

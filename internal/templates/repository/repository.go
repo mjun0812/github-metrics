@@ -133,10 +133,30 @@ func (t *repositoryTemplate) Run(ctx context.Context, pc *templates.PartialConte
 	b.WriteString(`<foreignObject x="0" y="0" width="100%" height="100%">`)
 	b.WriteString(`<div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper">`)
 
+	// Resolve which base.* sections are enabled. Mirrors the classic
+	// template: `base` is a CSV of section names. Absent → all on;
+	// present-but-empty → none (used by per-plugin / `base=` renders to
+	// strip the base.header chrome). #464.
+	baseSections := repopart.ResolveBaseSections(pc.Inputs)
+
 	// Dispatch partials in `_.json` order. Unknown / not-yet-adopted
 	// partial names are silently skipped (constitution III: zero
 	// unadopted code; the manifest stays full upstream parity).
+	//
+	// Gating (#464) brings the repository template in line with the
+	// classic dispatcher:
+	//   - `base.header` is gated by the resolved `base` sections.
+	//   - every other `_.json` entry is a plugin partial gated by its
+	//     `plugin_<slug>` toggle PLUS a non-Skipped plugin result, so a
+	//     plain `base` run renders only the repo chrome (matching
+	//     upstream `metrics.repository.svg`).
 	for _, name := range t.partials {
+		if !repopart.PartialEnabledByBase(name, baseSections) {
+			continue
+		}
+		if pluginPartialName(name) && !pluginEnabled(pc, name) {
+			continue
+		}
 		fn, ok := lookupPartial(name)
 		if !ok {
 			continue
@@ -151,6 +171,48 @@ func (t *repositoryTemplate) Run(ctx context.Context, pc *templates.PartialConte
 	b.WriteString(`<div id="metrics-end"></div>`)
 	b.WriteString(`</div></foreignObject></svg>`)
 	return b.String(), nil
+}
+
+// pluginPartialName reports whether a `_.json` entry is a plugin
+// partial (gated by `plugin_<slug>`) rather than a repository-owned
+// chrome partial (`base.header` / `introduction`). The repository
+// template owns only `base.header`; `introduction` is an unadopted
+// plugin slug, so it is gated by `plugin_introduction` like any other
+// plugin entry.
+func pluginPartialName(name string) bool {
+	switch name {
+	case "base.header":
+		return false
+	}
+	return true
+}
+
+// pluginEnabled reports whether the plugin partial named `slug` should
+// render: its `plugin_<slug>` input must be truthy AND its plugin
+// result (when present) must not be Skipped. Mirrors the classic
+// dispatcher's gate so a plain `base` run renders only the chrome.
+func pluginEnabled(pc *templates.PartialContext, slug string) bool {
+	if pc == nil || pc.Inputs == nil {
+		return false
+	}
+	if !repopart.TruthyInput(pc.Inputs, "plugin_"+slug) {
+		return false
+	}
+	if pc.Data == nil {
+		return false
+	}
+	raw, present := pc.Data.GetPlugin(slug)
+	if !present || raw == nil {
+		// Toggle is on but the plugin produced no result (e.g. unadopted
+		// slug). The Lookup miss below will drop it anyway; allow it
+		// through so adopted plugins whose result lands lazily still
+		// render.
+		return true
+	}
+	if sr, ok := raw.(interface{ IsSkipped() bool }); ok && sr.IsSkipped() {
+		return false
+	}
+	return true
 }
 
 // lookupPartial wraps the package-level registry lookup. Falls back
