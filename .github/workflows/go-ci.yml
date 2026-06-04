@@ -94,7 +94,9 @@ jobs:
           cache: true
       - name: go test -race
         # tests/visual requires chromium; exclude it here (covered by test-chromedp).
-        run: go list ./... | grep -v 'tests/visual' | xargs go test -race
+        # -buildvcs=false avoids git safe.directory errors inside the container.
+        # xargs -r skips execution if the package list is empty.
+        run: go list -buildvcs=false ./... | grep -v 'tests/visual' | xargs -r go test -race -buildvcs=false
 
   test-chromedp:
     name: test-chromedp
