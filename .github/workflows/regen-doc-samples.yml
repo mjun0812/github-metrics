@@ -69,10 +69,11 @@ jobs:
     runs-on: home-k3s-runner
     strategy:
       # Cap concurrency so 35 GraphQL-heavy renders don't trip the
-      # GitHub secondary rate limit (anti-abuse). 8 keeps wall time
-      # reasonable (~5 rounds) while staying well below the threshold
-      # that previously returned 403 for ~30 minutes.
-      max-parallel: 8
+      # GitHub secondary rate limit (anti-abuse). 8 still saw ~40% of
+      # jobs fail with HTTP 403 because every render runs the same
+      # user("mjun0812") query simultaneously; dropping to 4 keeps the
+      # burst rate well under the anti-abuse threshold.
+      max-parallel: 4
       fail-fast: false
       matrix:
         include: ${{ fromJSON(needs.setup.outputs.matrix) }}
@@ -146,7 +147,11 @@ jobs:
                 ok=1; rm -f "$tmplog"; break
               fi
               cat "$tmplog" >&2; rm -f "$tmplog"
-              [[ "$attempt" -lt 3 ]] && echo "retry ${attempt}/3 ${fmt}"
+              if [[ "$attempt" -lt 3 ]]; then
+                backoff=$(( attempt * 20 ))
+                echo "retry ${attempt}/3 ${fmt} in ${backoff}s (let secondary rate limit settle)"
+                sleep "$backoff"
+              fi
             done
             if [[ "$ok" -eq 0 ]]; then
               echo "FAIL: ${SAMPLE_NAME}.${fmt}" >&2
