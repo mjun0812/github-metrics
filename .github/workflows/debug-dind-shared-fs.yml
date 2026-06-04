@@ -1,18 +1,17 @@
 name: debug-dind-shared-fs
 
 # One-off probe to map which host-side paths on the ARC k3s runner are
-# actually visible to the DinD sidecar's docker daemon via `docker run -v`.
-#
-# Background: regen-doc-samples.yml had to switch from `-v RUNNER_TEMP:/out`
-# to `--filename -` (commit 822f3f7) because the mount silently failed.
-# This workflow figures out exactly which paths are inside the shared
-# emptyDir (containerMode.type: dind only shares /home/runner/_work) so
-# the workflow can be safely reverted to `-v`-based file output.
+# actually visible to the DinD sidecar's docker daemon via `docker run -v`,
+# AND to check inter-step file visibility within the runner container
+# (the second case is what actually broke regen-doc-samples.yml — the
+# render step wrote files that the very next upload-artifact step could
+# not see).
 #
 # How to read the output:
-#   - "runner-side write OK" + "dind-side read OK"      → path is shared, -v works
-#   - "runner-side write OK" + "dind-side read EMPTY"   → path is runner-only, -v fails silently
-#   - "runner-side write FAIL"                          → permission / FS issue on runner itself
+#   READ_OK    → -v mount path is shared with dind; file visible inside container
+#   READ_EMPTY → mount point exists but file disappeared (consistency loss)
+#   READ_MISS  → mount point empty (likely runner-only path, dind-side bind silent-fail)
+#   WRITE_FAIL → permission / FS issue on runner itself
 #
 # Run via Actions UI ▸ "debug-dind-shared-fs" ▸ Run workflow.
 
@@ -27,130 +26,133 @@ jobs:
     name: probe shared FS
     runs-on: home-k3s-runner
     steps:
-      - name: 1. Runner env + mount summary
+      # ---------------------------------------------------------------
+      # SECTION A — Runner env + mount summary
+      # ---------------------------------------------------------------
+      - name: A. Runner env + mount summary
         run: |
           set -u
-          echo "=========================================="
-          echo "RUNNER container env (paths workflows use)"
-          echo "=========================================="
+          echo "===== Runner env ====="
           echo "RUNNER_TEMP        = ${RUNNER_TEMP:-<unset>}"
           echo "RUNNER_TOOL_CACHE  = ${RUNNER_TOOL_CACHE:-<unset>}"
           echo "RUNNER_WORKSPACE   = ${RUNNER_WORKSPACE:-<unset>}"
           echo "GITHUB_WORKSPACE   = ${GITHUB_WORKSPACE:-<unset>}"
-          echo "HOME               = ${HOME:-<unset>}"
-          echo "PWD                = $(pwd)"
           echo
-          echo "=========================================="
-          echo "Runner-side filesystem mounts (_work / __w / tmp)"
-          echo "=========================================="
-          mount | grep -E '_work|__w|/tmp|emptyDir|tmpfs' || echo "(no matching mounts)"
+          echo "===== Filesystem mounts (interesting) ====="
+          mount | grep -E '_work|__w|/tmp|emptyDir|tmpfs|overlay' || echo "(no matching mounts)"
           echo
-          echo "=========================================="
-          echo "Top-level dirs that might be shared"
-          echo "=========================================="
-          for d in /home/runner /home/runner/_work /__w /runner /tmp; do
+          echo "===== Existence ====="
+          for d in /home/runner /home/runner/_work /__w /tmp; do
             if [ -d "$d" ]; then
-              echo "EXIST: $d  ($(stat -c '%a %U:%G' "$d" 2>/dev/null || echo '?'))"
+              echo "EXIST  $d  ($(stat -c '%a %U:%G' "$d" 2>/dev/null || echo '?'))"
             else
-              echo "MISS : $d"
+              echo "MISS   $d"
             fi
           done
 
-      - name: 2. Write probe markers on runner side
-        id: probe
+      # ---------------------------------------------------------------
+      # SECTION B — Inter-step file visibility (runner-only)
+      # The render step's bug: writes a file then the next step's
+      # action cannot see it. Reproduce in two steps.
+      # ---------------------------------------------------------------
+      - name: B1. Write file in step
         run: |
           set -u
-          # Candidate paths to test for runner <-> dind sharing.
-          # Layout: <label>|<host_path_on_runner>|<container_mount_in_dind>
-          cat > /tmp/probe-list.txt <<'EOF'
-          runner_temp|${RUNNER_TEMP}/probe|/p-runner-temp
-          github_workspace|${GITHUB_WORKSPACE}/.probe|/p-github-workspace
-          runner_tool_cache|${RUNNER_TOOL_CACHE}/.probe|/p-runner-tool-cache
-          home_runner_work|/home/runner/_work/_probe|/p-home-runner-work
-          slash_underscore_w|/__w/_probe|/p-slash-underscore-w
-          tmp|/tmp/_probe|/p-tmp
-          EOF
+          probe_dir="$GITHUB_WORKSPACE/.interstep-probe"
+          mkdir -p "$probe_dir"
+          for i in 1 2 3; do
+            echo "marker-$i from B1 at $(date -u +%H:%M:%S)" > "$probe_dir/marker-$i.txt"
+          done
+          echo "Wrote to $probe_dir:"
+          ls -la "$probe_dir"
+          echo "wc -c of marker-1.txt: $(wc -c < "$probe_dir/marker-1.txt")"
 
-          echo "=========================================="
-          echo "Writing markers from RUNNER side"
-          echo "=========================================="
-          # Re-expand the env-var refs in the table.
-          while IFS='|' read -r label raw_host mount; do
-            host=$(eval echo "$raw_host")
-            printf '%-22s host=%-50s ' "$label" "$host"
-            if mkdir -p "$host" 2>/dev/null && echo "from-runner-$(date -u +%H%M%S)" > "$host/marker.txt" 2>/dev/null; then
-              echo "WRITE_OK"
-            else
-              echo "WRITE_FAIL ($(ls -la "$(dirname "$host")" 2>&1 | head -1))"
-            fi
-          done < /tmp/probe-list.txt
-
-      - name: 3. Try to read markers from DIND side via docker run -v
+      - name: B2. Read file in NEXT step (runner-side shell)
         run: |
           set -u
-          echo "=========================================="
-          echo "Reading markers via docker run -v MOUNT"
-          echo "=========================================="
-
-          # Build a single docker run with every probe path mounted.
-          mounts=()
-          checks=""
-          while IFS='|' read -r label raw_host mount; do
-            host=$(eval echo "$raw_host")
-            # Skip mounts whose host path does not exist on runner — DinD
-            # would silently create empty dirs for them and obscure the signal.
-            if [ -d "$host" ]; then
-              mounts+=("-v" "$host:$mount")
-              checks="$checks $label|$mount"
-            fi
-          done < /tmp/probe-list.txt
-
-          echo "Mounts to test:"
-          for m in "${mounts[@]}"; do echo "  $m"; done
-          echo
-
-          # Run alpine and read each marker. Use sh -c with a long script.
-          docker run --rm "${mounts[@]}" alpine sh -c '
-            for spec in '"$checks"'; do
-              label=${spec%%|*}
-              mount=${spec##*|}
-              printf "%-22s mount=%-30s " "$label" "$mount"
-              if [ -f "$mount/marker.txt" ]; then
-                content=$(cat "$mount/marker.txt" 2>/dev/null)
-                if [ -n "$content" ]; then
-                  echo "READ_OK     content=\"$content\""
-                else
-                  echo "READ_EMPTY  (file exists but empty)"
-                fi
+          probe_dir="$GITHUB_WORKSPACE/.interstep-probe"
+          echo "Looking at $probe_dir from the next step:"
+          if [ -d "$probe_dir" ]; then
+            ls -la "$probe_dir" || true
+            for i in 1 2 3; do
+              if [ -f "$probe_dir/marker-$i.txt" ]; then
+                echo "READ_OK  marker-$i.txt: $(cat "$probe_dir/marker-$i.txt")"
               else
-                ls=$(ls -la "$mount" 2>/dev/null | head -3)
-                echo "READ_MISS   ls=\"$ls\""
+                echo "READ_MISS marker-$i.txt"
               fi
             done
-          '
+          else
+            echo "INTERSTEP_MISS: directory $probe_dir is GONE between steps"
+          fi
 
-      - name: 4. Print DIND container env + mounts (for cross-check)
+      - name: B3. Read same dir via upload-artifact (the regen failure mode)
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-interstep-probe
+          path: ${{ github.workspace }}/.interstep-probe/
+          if-no-files-found: warn
+          retention-days: 1
+
+      # ---------------------------------------------------------------
+      # SECTION C — Runner ↔ DinD sharing via docker run -v
+      # ---------------------------------------------------------------
+      - name: C1. Write probe files on runner side
         run: |
           set -u
-          echo "=========================================="
-          echo "DIND-side mount summary (from inside docker run)"
-          echo "=========================================="
-          docker run --rm alpine sh -c '
-            echo "mount table inside dind container view:"
-            mount | head -30
-            echo
-            echo "Existence of candidate dirs WITHOUT explicit -v:"
-            for d in /home/runner /home/runner/_work /__w /runner /tmp /var/run; do
-              if [ -d "$d" ]; then echo "EXIST: $d"; else echo "MISS : $d"; fi
-            done
-          '
+          for p in \
+            "$RUNNER_TEMP/dindprobe" \
+            "$GITHUB_WORKSPACE/.dindprobe" \
+            "$RUNNER_TOOL_CACHE/.dindprobe" \
+            "/home/runner/_work/_dindprobe" \
+            "/tmp/_dindprobe" ; do
+            mkdir -p "$p" 2>/dev/null && echo "from-runner" > "$p/m.txt" 2>/dev/null \
+              && echo "RUNNER_WRITE_OK   $p" \
+              || echo "RUNNER_WRITE_FAIL $p"
+          done
 
-      - name: 5. Cleanup probe markers
+      - name: C2. Read each probe from DinD (one docker run per path)
+        run: |
+          set -u
+          probe_one() {
+            local label="$1"; local host="$2"
+            if [ ! -d "$host" ]; then
+              echo "SKIP             $label (host dir $host missing)"
+              return
+            fi
+            local out
+            out=$(docker run --rm -v "$host:/probe" alpine sh -c 'cat /probe/m.txt 2>/dev/null || echo "(no file)"')
+            printf "%-18s host=%-50s dind-content=%q\n" "$label" "$host" "$out"
+          }
+
+          probe_one "runner_temp"        "$RUNNER_TEMP/dindprobe"
+          probe_one "github_workspace"   "$GITHUB_WORKSPACE/.dindprobe"
+          probe_one "runner_tool_cache"  "$RUNNER_TOOL_CACHE/.dindprobe"
+          probe_one "home_runner_work"   "/home/runner/_work/_dindprobe"
+          probe_one "tmp"                "/tmp/_dindprobe"
+
+      - name: C3. Reverse: write inside DinD, read on runner side
+        run: |
+          set -u
+          host_dir="$GITHUB_WORKSPACE/.dindprobe-reverse"
+          mkdir -p "$host_dir"
+          docker run --rm -v "$host_dir:/out" alpine sh -c 'echo "from-dind" > /out/m.txt'
+          echo "After docker run, runner side ls:"
+          ls -la "$host_dir" 2>&1
+          if [ -f "$host_dir/m.txt" ]; then
+            echo "RUNNER_READS_DIND_WRITE OK: $(cat "$host_dir/m.txt")"
+          else
+            echo "RUNNER_READS_DIND_WRITE MISS (file written by dind invisible to runner)"
+          fi
+
+      - name: D. Cleanup
         if: always()
         run: |
           set -u
-          while IFS='|' read -r label raw_host mount; do
-            host=$(eval echo "$raw_host")
-            rm -rf "$host" 2>/dev/null || true
-          done < /tmp/probe-list.txt
-          echo "Cleanup done."
+          rm -rf "$GITHUB_WORKSPACE/.interstep-probe" \
+                 "$GITHUB_WORKSPACE/.dindprobe" \
+                 "$GITHUB_WORKSPACE/.dindprobe-reverse" \
+                 "${RUNNER_TEMP:-/tmp}/dindprobe" \
+                 "${RUNNER_TOOL_CACHE:-/tmp}/.dindprobe" \
+                 "/home/runner/_work/_dindprobe" \
+                 "/tmp/_dindprobe" 2>/dev/null || true
+          echo "cleanup done"
