@@ -130,7 +130,7 @@ jobs:
           probe_one "home_runner_work"   "/home/runner/_work/_dindprobe"
           probe_one "tmp"                "/tmp/_dindprobe"
 
-      - name: C3. Reverse: write inside DinD, read on runner side
+      - name: "C3. Reverse - write inside DinD, read on runner side"
         run: |
           set -u
           host_dir="$GITHUB_WORKSPACE/.dindprobe-reverse"
