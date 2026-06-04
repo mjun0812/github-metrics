@@ -35,7 +35,9 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
       - name: go test
-        run: go test ./...
+        # tests/visual requires chromium; that is covered by test-chromedp.
+        # Exclude it here so the runner does not fail in CI strict mode.
+        run: go list ./... | grep -v 'tests/visual' | xargs go test
 
   vet:
     name: vet
@@ -80,6 +82,10 @@ jobs:
   test-race:
     name: test-race
     runs-on: home-k3s-runner
+    # golang:bookworm provides gcc so the race detector (which requires
+    # CGO) works. The k3s runner environment has CGO disabled by default.
+    container:
+      image: golang:1.26.4-bookworm
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
@@ -87,7 +93,8 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
       - name: go test -race
-        run: go test -race ./...
+        # tests/visual requires chromium; exclude it here (covered by test-chromedp).
+        run: go list ./... | grep -v 'tests/visual' | xargs go test -race
 
   test-chromedp:
     name: test-chromedp
@@ -130,7 +137,8 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
       - name: go test -tags=heavy
-        run: go test -tags=heavy ./...
+        # tests/visual requires chromium; exclude it here (covered by test-chromedp).
+        run: go list -tags=heavy ./... | grep -v 'tests/visual' | xargs go test -tags=heavy
 
   compliance:
     name: compliance
