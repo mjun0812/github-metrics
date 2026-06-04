@@ -86,6 +86,11 @@ jobs:
     # CGO) works. The k3s runner environment has CGO disabled by default.
     container:
       image: golang:1.26.4-bookworm
+    env:
+      # Propagates -buildvcs=false to every go command in this job,
+      # including the go build call inside tests/integration TestMain,
+      # which runs as a child process and does not inherit CLI flags.
+      GOFLAGS: -buildvcs=false
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
@@ -94,9 +99,8 @@ jobs:
           cache: true
       - name: go test -race
         # tests/visual requires chromium; exclude it here (covered by test-chromedp).
-        # -buildvcs=false avoids git safe.directory errors inside the container.
         # xargs -r skips execution if the package list is empty.
-        run: go list -buildvcs=false ./... | grep -v 'tests/visual' | xargs -r go test -race -buildvcs=false
+        run: go list ./... | grep -v 'tests/visual' | xargs -r go test -race
 
   test-chromedp:
     name: test-chromedp
