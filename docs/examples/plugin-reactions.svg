@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="100" class="">
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="117" class="">
   <defs>
     <style/>
   </defs>
@@ -28,6 +28,12 @@
                         ❤️
                       </text>
                     </svg>
+                    <span class="title nowrap">
+                      19
+                      <small>
+                        %
+                      </small>
+                    </span>
                   </div>
                   <div class="category column" data-reaction="THUMBS_UP">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="50" height="50" class="gauge info">
@@ -37,6 +43,12 @@
                         👍
                       </text>
                     </svg>
+                    <span class="title nowrap">
+                      63
+                      <small>
+                        %
+                      </small>
+                    </span>
                   </div>
                   <div class="category column" data-reaction="THUMBS_DOWN">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="50" height="50" class="gauge info">
@@ -45,6 +57,12 @@
                         👎
                       </text>
                     </svg>
+                    <span class="title nowrap">
+                      0
+                      <small>
+                        %
+                      </small>
+                    </span>
                   </div>
                   <div class="category column" data-reaction="LAUGH">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="50" height="50" class="gauge info">
@@ -54,6 +72,12 @@
                         😄
                       </text>
                     </svg>
+                    <span class="title nowrap">
+                      5
+                      <small>
+                        %
+                      </small>
+                    </span>
                   </div>
                   <div class="category column" data-reaction="CONFUSED">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="50" height="50" class="gauge info">
@@ -62,6 +86,12 @@
                         😕
                       </text>
                     </svg>
+                    <span class="title nowrap">
+                      0
+                      <small>
+                        %
+                      </small>
+                    </span>
                   </div>
                   <div class="category column" data-reaction="EYES">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="50" height="50" class="gauge info">
@@ -71,6 +101,12 @@
                         👀
                       </text>
                     </svg>
+                    <span class="title nowrap">
+                      7
+                      <small>
+                        %
+                      </small>
+                    </span>
                   </div>
                   <div class="category column" data-reaction="ROCKET">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="50" height="50" class="gauge info">
@@ -79,6 +115,12 @@
                         🚀
                       </text>
                     </svg>
+                    <span class="title nowrap">
+                      0
+                      <small>
+                        %
+                      </small>
+                    </span>
                   </div>
                   <div class="category column" data-reaction="HOORAY">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="50" height="50" class="gauge info">
@@ -88,6 +130,12 @@
                         🎉
                       </text>
                     </svg>
+                    <span class="title nowrap">
+                      7
+                      <small>
+                        %
+                      </small>
+                    </span>
                   </div>
                 </section>
               </div>
