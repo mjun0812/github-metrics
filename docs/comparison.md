@@ -152,6 +152,12 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 
 他バリアント (upstream / lowlighter): <img src="original_examples/metrics.plugin.achievements.compact.svg" width="420"> (compact)
 
+**variant: compact** — upstream `achievements.compact` ↔ Go `plugin-achievements-compact.svg`
+
+| upstream (lowlighter)                                                              | upstream (mjun0812)                     | Go 実装                                                          |
+| ---------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.achievements.compact.svg" width="420"> | — 該当なし（Projects classic API 廃止） | <img src="examples/plugin-achievements-compact.svg" width="420"> |
+
 > ✅ Go 側は `plugin_achievements_display=compact` に対応。Go サンプルは `scripts/gen-doc-samples.sh` で `plugin-achievements-compact.svg` / `.png` として生成。
 > ⚠ 中列 (mjun0812): GitHub が Projects (classic) API を廃止 ([2024-05 sunset](https://github.blog/changelog/2024-05-23-sunset-notice-projects-classic/)) したため、achievements が内部で classic projects を参照して GraphQL `NOT_FOUND` → `Unexpected error`。compact も同様で削除。
 
@@ -194,6 +200,16 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | <img src="original_examples/metrics.plugin.habits.charts.svg" width="420"> | — 該当なし（upstream v3.34 のバグ） | <img src="examples/plugin-habits.svg" width="420"> |
 
 他バリアント (upstream / lowlighter): <img src="original_examples/metrics.plugin.habits.facts.svg" width="420"> (facts)
+
+**variant: facts / charts** — upstream `habits.facts` / `habits.charts` ↔ Go `plugin-habits-facts.svg` / `plugin-habits-charts.svg`
+
+| upstream (lowlighter, facts)                                               | upstream (mjun0812)                 | Go 実装 (facts)                                           |
+| -------------------------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.habits.facts.svg" width="420"> | — 該当なし（upstream v3.34 のバグ） | <img src="examples/plugin-habits-facts.svg" width="420"> |
+
+| upstream (lowlighter, charts)                                               | upstream (mjun0812)                 | Go 実装 (charts)                                           |
+| --------------------------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.habits.charts.svg" width="420"> | — 該当なし（upstream v3.34 のバグ） | <img src="examples/plugin-habits-charts.svg" width="420"> |
 
 > ✅ Go 側は `plugin_habits_facts` / `plugin_habits_charts` で facts / charts を個別トグル。Go サンプル: `plugin-habits-facts.svg`（facts のみ）/ `plugin-habits-charts.svg`（charts のみ）。
 > ⚠ 中列 (mjun0812): upstream v3.34 のコードバグ (`TypeError: Cannot destructure property 'author' of 'undefined'`、`habits/index.mjs:51`) で charts / facts とも `Unexpected error` になり削除。
@@ -243,6 +259,12 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | <img src="original_examples/metrics.plugin.notable.svg" width="420"> | <img src="reference_examples/metrics.plugin.notable.svg" width="420"> | <img src="examples/plugin-notable.svg" width="420"> |
 
 他バリアント (upstream): <img src="original_examples/metrics.plugin.notable.indepth.svg" width="420"> (lowlighter, indepth) / <img src="reference_examples/metrics.plugin.notable.indepth.svg" width="420"> (mjun0812, indepth)
+
+**variant: indepth** — upstream `notable.indepth` ↔ Go `plugin-notable-indepth.svg`
+
+| upstream (lowlighter)                                                         | upstream (mjun0812)                                                          | Go 実装                                                         |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.notable.indepth.svg" width="420"> | <img src="reference_examples/metrics.plugin.notable.indepth.svg" width="420"> | <img src="examples/plugin-notable-indepth.svg" width="420"> |
 
 > ✅ Go 側は `plugin_notable_indepth` 対応済み。indepth は基本モードの組織単位 (`@org`) ではなくリポジトリ単位 (`@org/repo`) のチップを描画し、commits / stars / issues / pulls の統計ゲージを付与する（upstream `notable.ejs` と同一 DOM）。Go サンプル: `plugin-notable-indepth.svg`。
 
@@ -297,6 +319,12 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | <img src="original_examples/metrics.plugin.stargazers.svg" width="420"> | <img src="reference_examples/metrics.plugin.stargazers.svg" width="420"> | <img src="examples/plugin-stargazers.svg" width="420"> |
 
 他バリアント: <img src="original_examples/metrics.plugin.stargazers.graph.svg" width="420"> (lowlighter, graph) / <img src="reference_examples/metrics.plugin.stargazers.graph.svg" width="420"> (mjun0812, graph) / <img src="original_examples/metrics.plugin.stargazers.chartist.svg" width="420"> (lowlighter, chartist) / <img src="original_examples/metrics.plugin.stargazers.worldmap.svg" width="420"> (lowlighter, worldmap, 1.5 MB)
+
+**variant: graph** — upstream `stargazers.graph` ↔ Go `plugin-stargazers-graph.svg`
+
+| upstream (lowlighter) | upstream (mjun0812) | Go 実装 |
+| --- | --- | --- |
+| <img src="original_examples/metrics.plugin.stargazers.graph.svg" width="420"> | <img src="reference_examples/metrics.plugin.stargazers.graph.svg" width="420"> | <img src="examples/plugin-stargazers-graph.svg" width="420"> |
 
 > ✅ Go 側は `plugin_stargazers_charts_type=graph` 対応（`chartist` は graph の deprecated alias でバイト同一）。Go サンプル: `plugin-stargazers-graph.svg`。worldmap は Google Maps API 必須の backlog（Skipped path、未対応）。
 
