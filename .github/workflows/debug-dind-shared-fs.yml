@@ -85,11 +85,49 @@ jobs:
             echo "INTERSTEP_MISS: directory $probe_dir is GONE between steps"
           fi
 
-      - name: B3. Read same dir via upload-artifact (the regen failure mode)
+      - name: B3. Upload from HIDDEN dir, default include-hidden-files (reproduce regen failure)
         uses: actions/upload-artifact@v4
         with:
-          name: debug-interstep-probe
+          name: debug-b3-hidden-default
           path: ${{ github.workspace }}/.interstep-probe/
+          if-no-files-found: warn
+          retention-days: 1
+
+      # ---------- Hypothesis test: hidden-file exclusion is the cause ----------
+      - name: B4a. Write files to a NON-hidden dir
+        run: |
+          set -u
+          d="$GITHUB_WORKSPACE/nonhidden-probe"
+          mkdir -p "$d"
+          for i in 1 2 3; do
+            echo "control-$i" > "$d/marker-$i.txt"
+          done
+          ls -la "$d"
+
+      - name: B4b. Upload from NON-hidden dir, default include-hidden-files (control - should succeed)
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-b4-nonhidden-default
+          path: ${{ github.workspace }}/nonhidden-probe/
+          if-no-files-found: warn
+          retention-days: 1
+
+      - name: B5a. Write files to ANOTHER hidden dir
+        run: |
+          set -u
+          d="$GITHUB_WORKSPACE/.interstep-probe-hidden"
+          mkdir -p "$d"
+          for i in 1 2 3; do
+            echo "hidden-$i" > "$d/marker-$i.txt"
+          done
+          ls -la "$d"
+
+      - name: B5b. Upload from HIDDEN dir, include-hidden-files=true (should succeed)
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-b5-hidden-included
+          path: ${{ github.workspace }}/.interstep-probe-hidden/
+          include-hidden-files: true
           if-no-files-found: warn
           retention-days: 1
 
@@ -149,6 +187,8 @@ jobs:
         run: |
           set -u
           rm -rf "$GITHUB_WORKSPACE/.interstep-probe" \
+                 "$GITHUB_WORKSPACE/.interstep-probe-hidden" \
+                 "$GITHUB_WORKSPACE/nonhidden-probe" \
                  "$GITHUB_WORKSPACE/.dindprobe" \
                  "$GITHUB_WORKSPACE/.dindprobe-reverse" \
                  "${RUNNER_TEMP:-/tmp}/dindprobe" \
