@@ -41,7 +41,7 @@ This plugin displays progress of profile and repository projects.
 ### CLI
 
 ```sh
-metrics-action --user <your-login> --token-env GITHUB_TOKEN \
+metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_projects=yes
 ```

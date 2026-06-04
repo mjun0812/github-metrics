@@ -50,7 +50,7 @@ func PrintBanner(w io.Writer, info BannerInfo) {
 	const ruler = "──────────────────────────────────────────────────────────────"
 
 	_, _ = fmt.Fprintln(w, ruler)
-	_, _ = fmt.Fprintln(w, "── metrics-action — startup banner ──")
+	_, _ = fmt.Fprintln(w, "── metrics-cli — startup banner ──")
 	_, _ = fmt.Fprintf(w, "Version            │ %s\n", info.Version)
 	_, _ = fmt.Fprintf(w, "Mode               │ %s\n", mode)
 	_, _ = fmt.Fprintf(w, "Template           │ %s\n", template)

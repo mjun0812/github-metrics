@@ -1,4 +1,4 @@
-// Package main provides the metrics-action binary entrypoint.
+// Package main provides the metrics-cli binary entrypoint.
 //
 // This is the GitHub Action / CLI surface for the Go port of
 // lowlighter/metrics. The binary dispatches based on the
@@ -37,21 +37,21 @@ func init() {
 	engine.SetVersion(version)
 }
 
-const binaryName = "metrics-action"
+const binaryName = "metrics-cli"
 
-const usageText = `metrics-action: GitHub Action / CLI entry point for github-metrics.
+const usageText = `metrics-cli: GitHub Action / CLI entry point for github-metrics.
 
 Usage:
-  metrics-action [flags]
+  metrics-cli [flags]
 
 Action mode (set automatically by the GitHub Actions runner):
-  GITHUB_ACTIONS=true INPUT_USER=octocat INPUT_TOKEN=<PAT> metrics-action
+  GITHUB_ACTIONS=true INPUT_USER=octocat INPUT_TOKEN=<PAT> metrics-cli
 
 CLI mode (direct invocation):
-  metrics-action --user <login> --template classic [--config inputs.yaml]
-                 [--token <PAT> | --token-env <ENV_NAME>]
-                 [--plugin key=value ...] [--output svg|png|jpeg|json]
-                 [--filename <path-or-->] [--dryrun]
+  metrics-cli --user <login> --template classic [--config inputs.yaml]
+              [--token <PAT> | --token-env <ENV_NAME>]
+              [--plugin key=value ...] [--output svg|png|jpeg|json]
+              [--filename <path-or-->] [--dryrun]
 
 Common flags:
   -h, --help        Show this help message and exit.

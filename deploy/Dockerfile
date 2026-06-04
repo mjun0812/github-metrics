@@ -23,7 +23,7 @@
 # ~80 MB but breaking CJK repo-name rendering was rejected for v1.0.
 #
 # Build (local):  docker build -f deploy/Dockerfile -t github-metrics:dev .
-# Run   (local):  docker run --rm github-metrics:dev metrics-action --help
+# Run   (local):  docker run --rm github-metrics:dev metrics-cli --help
 
 # --- Build stage ----------------------------------------------------
 FROM golang:1.26-bookworm AS build
@@ -45,7 +45,7 @@ ARG VERSION=dev
 ENV CGO_ENABLED=0
 RUN go build -trimpath \
     -ldflags="-s -w -X main.version=${VERSION}" \
-    -o /out/metrics-action ./cmd/metrics-action
+    -o /out/metrics-cli ./cmd/metrics-cli
 
 # --- Runtime stage --------------------------------------------------
 FROM debian:bookworm-slim
@@ -69,7 +69,7 @@ ENV METRICS_CHROME_PATH=/usr/bin/chromium
 
 # Binaries land at /usr/local/bin/, owned by root and mode 0755 so
 # the non-root runtime user can execute but not modify.
-COPY --from=build /out/metrics-action /usr/local/bin/metrics-action
+COPY --from=build /out/metrics-cli /usr/local/bin/metrics-cli
 
 # Non-root user. uid 10001 sits outside the system range (0-999) and
 # the GitHub Actions runner range (1000-1999), avoiding collisions
@@ -79,4 +79,4 @@ RUN groupadd --system --gid 10001 metrics \
 
 USER metrics
 
-ENTRYPOINT ["/usr/local/bin/metrics-action"]
+ENTRYPOINT ["/usr/local/bin/metrics-cli"]

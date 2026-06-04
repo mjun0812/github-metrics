@@ -91,15 +91,15 @@ recent activity.
 ```sh
 # Install from a GitHub Release (linux/darwin × amd64/arm64).
 # Replace `linux_amd64` with your platform tag.
-curl -L -o metrics-action \
-  https://github.com/mjun0812/github-metrics/releases/download/v1.0.0/metrics-action_v1.0.0_linux_amd64
-chmod +x metrics-action
+curl -L -o metrics-cli \
+  https://github.com/mjun0812/github-metrics/releases/download/v1.0.0/metrics-cli_v1.0.0_linux_amd64
+chmod +x metrics-cli
 
 # …or via go install (requires Go 1.26+):
-go install github.com/mjun0812/github-metrics/cmd/metrics-action@v1.0.0
+go install github.com/mjun0812/github-metrics/cmd/metrics-cli@v1.0.0
 
 # Render an SVG to stdout. GITHUB_TOKEN must be set in your shell.
-metrics-action --user octocat --token-env GITHUB_TOKEN \
+metrics-cli --user octocat --token-env GITHUB_TOKEN \
   --output svg --dryrun --filename -
 ```
 
@@ -223,8 +223,8 @@ per-artifact `.sig`, `.cert`, and `.cosign.bundle` files. Verify a
 binary with `cosign verify-blob`:
 
 ```sh
-cosign verify-blob metrics-action_v1.0.0_linux_amd64 \
-  --bundle metrics-action_v1.0.0_linux_amd64.cosign.bundle \
+cosign verify-blob metrics-cli_v1.0.0_linux_amd64 \
+  --bundle metrics-cli_v1.0.0_linux_amd64.cosign.bundle \
   --certificate-identity-regexp \
     'https://github.com/mjun0812/github-metrics/.github/workflows/release.yml@refs/tags/v.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com

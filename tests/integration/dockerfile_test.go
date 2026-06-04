@@ -2,7 +2,7 @@
 
 // Package integration_test docker_smoke verifies the M10 production
 // Dockerfile at deploy/Dockerfile. The test builds the image,
-// invokes `metrics-action --help` inside a container, and asserts
+// invokes `metrics-cli --help` inside a container, and asserts
 // the M10 image-size budget.
 //
 // Gated by the `docker_smoke` build tag so default `make test` skips
@@ -43,18 +43,18 @@ const (
 	// bound is generous but not infinite.
 	dockerBuildTimeout = 10 * time.Minute
 
-	// dockerRunTimeout caps `metrics-action --help` invocation. Help
+	// dockerRunTimeout caps `metrics-cli --help` invocation. Help
 	// output is sub-second; this is just a generous safety net.
 	dockerRunTimeout = 30 * time.Second
 )
 
 // TestDockerfile_BuildRunHelp builds the deploy/Dockerfile image and
-// runs `metrics-action --help` inside it.
+// runs `metrics-cli --help` inside it.
 //
 // Verifies M10 acceptance criteria:
 //   - image builds cleanly
-//   - `metrics-action --help` exits 0
-//   - help output contains either "Usage:" or "metrics-action"
+//   - `metrics-cli --help` exits 0
+//   - help output contains either "Usage:" or "metrics-cli"
 //   - image size is ≤ 900 MB (per FR-006 escalation)
 func TestDockerfile_BuildRunHelp(t *testing.T) {
 	if _, err := exec.LookPath("docker"); err != nil {
@@ -86,7 +86,7 @@ func TestDockerfile_BuildRunHelp(t *testing.T) {
 		t.Fatalf("docker run --help failed: %v\n---\n%s", err, string(out))
 	}
 	helpOut := string(out)
-	if !strings.Contains(helpOut, "Usage:") && !strings.Contains(helpOut, "metrics-action") {
+	if !strings.Contains(helpOut, "Usage:") && !strings.Contains(helpOut, "metrics-cli") {
 		t.Errorf("help output missing expected markers; got:\n%s", helpOut)
 	}
 

@@ -55,7 +55,7 @@ This plugin can display which languages you use across all repositories you cont
 ### CLI
 
 ```sh
-metrics-action --user <your-login> --token-env GITHUB_TOKEN \
+metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_languages=yes
 ```

@@ -495,7 +495,7 @@ func TestCompliance_M7_TemplateInvariant(t *testing.T) {
 }
 
 // TestCompliance_M6_NoNewPlugins asserts the M6 invariant that the
-// Action / CLI surface code (internal/action/, cmd/metrics-action/)
+// Action / CLI surface code (internal/action/, cmd/metrics-cli/)
 // does NOT introduce new plugin or template subdirectories. M6 is a
 // delivery layer — it wires existing M1-M4 components together. New
 // adopted slugs must come through a separate spec to avoid silently
@@ -504,7 +504,7 @@ func TestCompliance_M6_NoNewPlugins(t *testing.T) {
 	root := mustRepoRoot(t)
 	for _, rel := range []string{
 		filepath.Join("internal", "action"),
-		filepath.Join("cmd", "metrics-action"),
+		filepath.Join("cmd", "metrics-cli"),
 	} {
 		path := filepath.Join(root, rel)
 		entries, err := os.ReadDir(path)

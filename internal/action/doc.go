@@ -1,5 +1,5 @@
 // Package action implements the GitHub Action / CLI entry-point logic
-// for the metrics-action binary.
+// for the metrics-cli binary.
 //
 // The package exposes two top-level dispatch functions:
 //
@@ -14,5 +14,5 @@
 //     produce byte-identical output for equivalent inputs (spec SC-009).
 //
 // The package is internal because there is no expectation of external
-// programmatic use — the metrics-action binary is the only consumer.
+// programmatic use — the metrics-cli binary is the only consumer.
 package action

@@ -45,7 +45,7 @@ This plugin displays badges for notable contributions on repositories.
 ### CLI
 
 ```sh
-metrics-action --user <your-login> --token-env GITHUB_TOKEN \
+metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_notable=yes
 ```
