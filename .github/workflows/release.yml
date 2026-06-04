@@ -13,7 +13,7 @@ name: Release
 #      Actions OIDC issuer (sigstore Rekor public transparency log).
 #
 # Pipeline ordering: a `docker-smoke` gate job builds the image
-# locally (amd64) and runs `metrics-action --help` + size-budget
+# locally (amd64) and runs `metrics-cli --help` + size-budget
 # assertion (FR-006). If it fails, release-docker and release-binary
 # do not start — nothing oversized lands on GHCR.
 #
@@ -246,7 +246,7 @@ jobs:
           fi
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
 
-      - name: Cross-compile metrics-action (linux/darwin × amd64/arm64)
+      - name: Cross-compile metrics-cli (linux/darwin × amd64/arm64)
         env:
           CGO_ENABLED: '0'
           TAG: ${{ steps.tag.outputs.tag }}
@@ -256,18 +256,18 @@ jobs:
           for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
             goos="${target%/*}"
             goarch="${target#*/}"
-            out="dist/metrics-action_${TAG}_${goos}_${goarch}"
+            out="dist/metrics-cli_${TAG}_${goos}_${goarch}"
             echo "==> building ${out}"
             GOOS="${goos}" GOARCH="${goarch}" go build -trimpath \
               -ldflags="-s -w -X main.version=${TAG}" \
-              -o "${out}" ./cmd/metrics-action
+              -o "${out}" ./cmd/metrics-cli
           done
 
       - name: Generate SHA256SUMS
         working-directory: dist
         run: |
           set -euo pipefail
-          sha256sum metrics-action_* > SHA256SUMS
+          sha256sum metrics-cli_* > SHA256SUMS
           cat SHA256SUMS
 
       - name: Install cosign
@@ -281,7 +281,7 @@ jobs:
           COSIGN_EXPERIMENTAL: '1'
         run: |
           set -euo pipefail
-          for f in metrics-action_* SHA256SUMS; do
+          for f in metrics-cli_* SHA256SUMS; do
             echo "==> signing ${f}"
             cosign sign-blob --yes \
               --output-signature "${f}.sig" \

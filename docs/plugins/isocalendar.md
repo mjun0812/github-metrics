@@ -39,7 +39,7 @@ This plugin displays an isometric view of a user commit calendar along with a fe
 ### CLI
 
 ```sh
-metrics-action --user <your-login> --token-env GITHUB_TOKEN \
+metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_isocalendar=yes
 ```

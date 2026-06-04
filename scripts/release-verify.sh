@@ -103,7 +103,7 @@ echo
 #
 # Two-layer defence:
 #   (a) Filename allowlist regex — every filename field in SHA256SUMS
-#       MUST match the canonical metrics-action binary shape. Rejects
+#       MUST match the canonical metrics-cli binary shape. Rejects
 #       crafted filenames containing '/', '..', or any characters
 #       that could be passed to `curl -o` to traverse paths.
 #       Always active, no cosign dependency.
@@ -119,7 +119,7 @@ echo "==> [2/4] SHA256SUMS provenance + binary integrity (SC-003)"
 # Canonical binary-name shape — see contracts/release-workflow.md §2.2
 # (matrix: linux|darwin × amd64|arm64; semver tag including optional
 # prerelease suffix). Update if the matrix expands in a future release.
-FILENAME_RE='^metrics-action_v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?_(linux|darwin)_(amd64|arm64)$'
+FILENAME_RE='^metrics-cli_v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?_(linux|darwin)_(amd64|arm64)$'
 
 if ! command -v curl >/dev/null 2>&1 || ! command -v sha256sum >/dev/null 2>&1; then
   echo "    SKIP: curl or sha256sum not on PATH"

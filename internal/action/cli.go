@@ -14,7 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// CLIFlags is the parsed result of `metrics-action <flags>` when the
+// CLIFlags is the parsed result of `metrics-cli <flags>` when the
 // binary runs outside GitHub Actions.
 //
 // The fields map 1:1 onto action.yml inputs so the merged
@@ -35,11 +35,11 @@ type CLIFlags struct {
 }
 
 // ParseFlags parses the supplied args (typically os.Args[1:] after
-// bootstrap flags are stripped in cmd/metrics-action) into a CLIFlags
+// bootstrap flags are stripped in cmd/metrics-cli) into a CLIFlags
 // struct. Errors come from flag.FlagSet (continue on error).
 func ParseFlags(args []string) (*CLIFlags, error) {
 	cf := &CLIFlags{Plugins: map[string]string{}}
-	fs := flag.NewFlagSet("metrics-action", flag.ContinueOnError)
+	fs := flag.NewFlagSet("metrics-cli", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 
 	fs.StringVar(&cf.Config, "config", "", "YAML config path (action.yml-equivalent inputs)")

@@ -266,7 +266,7 @@ into the gen path).
 ## Project layout
 
 ```
-cmd/metrics-action/   GitHub Action / CLI entry point
+cmd/metrics-cli/   GitHub Action / CLI entry point
 internal/             All non-public packages (logger, errors, ctxutil,
                       format, config, httpx, githubapi, plugins,
                       templates, plugins/core, ...)

@@ -8,7 +8,7 @@ import (
 
 // TestRun_NoArgs prints the banner + usage and returns nil. This is
 // the legacy M1 behavior preserved through M6 so anyone running
-// `metrics-action` with no args gets a friendly help screen.
+// `metrics-cli` with no args gets a friendly help screen.
 func TestRun_NoArgs(t *testing.T) {
 	t.Parallel()
 	var out, errOut bytes.Buffer
@@ -16,7 +16,7 @@ func TestRun_NoArgs(t *testing.T) {
 		t.Fatalf("run(nil): %v", err)
 	}
 	got := out.String()
-	if !strings.Contains(got, "metrics-action") {
+	if !strings.Contains(got, "metrics-cli") {
 		t.Errorf("stdout missing banner; got %q", got)
 	}
 	if !strings.Contains(got, "Usage") {

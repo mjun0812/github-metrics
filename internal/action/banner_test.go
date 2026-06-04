@@ -20,7 +20,7 @@ func TestPrintBanner_AllFieldsRendered(t *testing.T) {
 	})
 	out := buf.String()
 	for _, want := range []string{
-		"metrics-action — startup banner",
+		"metrics-cli — startup banner",
 		"Version            │ v1.2.3",
 		"Mode               │ action",
 		"Template           │ classic",

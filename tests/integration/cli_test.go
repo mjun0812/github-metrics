@@ -1,6 +1,6 @@
 // Package integration_test covers M6 User Story 3 (CLI mode).
 //
-// TestCLI_OctocatSVG_Stdout exercises SC-008: the `metrics-action`
+// TestCLI_OctocatSVG_Stdout exercises SC-008: the `metrics-cli`
 // binary run as a CLI with --dryrun --filename - against a mocked
 // GitHub backend MUST emit a valid SVG on stdout within 30 seconds.
 //
@@ -105,7 +105,7 @@ func TestCLI_OctocatSVG_Stdout(t *testing.T) {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("metrics-action run: %v\nstderr=%s", err, stderr.String())
+		t.Fatalf("metrics-cli run: %v\nstderr=%s", err, stderr.String())
 	}
 	out := stdout.String()
 	// Banner + the SVG share stdout; the SVG opens with <svg ...>.
@@ -251,7 +251,7 @@ func execCLI(t *testing.T, args ...string) string {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("metrics-action: %v\nstderr=%s", err, stderr.String())
+		t.Fatalf("metrics-cli: %v\nstderr=%s", err, stderr.String())
 	}
 	// Strip the banner so we compare just the SVG body. The banner
 	// is variable (timestamps not present, but process-level fields

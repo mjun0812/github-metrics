@@ -41,7 +41,7 @@ This plugin displays [starred topics](https://github.com/stars?filter=topics).
 ### CLI
 
 ```sh
-metrics-action --user <your-login> --token-env GITHUB_TOKEN \
+metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_topics=yes
 ```

@@ -47,7 +47,7 @@ This plugin displays coding habits based on recent activity, such as active hour
 ### CLI
 
 ```sh
-metrics-action --user <your-login> --token-env GITHUB_TOKEN \
+metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_habits=yes
 ```

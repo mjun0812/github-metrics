@@ -196,7 +196,7 @@ func TestRun_Dryrun_NoCommitterCall(t *testing.T) {
 	}
 
 	// Banner emitted to stdout.
-	if !strings.Contains(stdout.String(), "metrics-action — startup banner") {
+	if !strings.Contains(stdout.String(), "metrics-cli — startup banner") {
 		t.Errorf("banner missing in stdout: %s", stdout.String())
 	}
 
