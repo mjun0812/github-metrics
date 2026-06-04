@@ -68,6 +68,11 @@ jobs:
     needs: setup
     runs-on: home-k3s-runner
     strategy:
+      # Cap concurrency so 35 GraphQL-heavy renders don't trip the
+      # GitHub secondary rate limit (anti-abuse). 8 keeps wall time
+      # reasonable (~5 rounds) while staying well below the threshold
+      # that previously returned 403 for ~30 minutes.
+      max-parallel: 8
       fail-fast: false
       matrix:
         include: ${{ fromJSON(needs.setup.outputs.matrix) }}
