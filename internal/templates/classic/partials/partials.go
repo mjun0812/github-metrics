@@ -38,31 +38,18 @@ func SetNowForTest(now func() time.Time) func() {
 	return func() { nowFunc = prev }
 }
 
-// octiconPlaceholder is the empty SVG element used wherever a real
-// octicon path has not yet been substituted. Pinning width/height/viewBox
-// to 16×16 prevents Chrome from falling back to the default SVG viewport
-// (300×150 px). Without this, every `.field { display: flex; align-items:
-// center }` row would inflate to ~150 px and the base render would be
-// ~5.6× taller than upstream. CSS overrides cannot fix this because SVG
-// intrinsic size is governed by element attributes, not CSS properties
-// (legacy SVG coordinate-system spec). See also: .octicon rule in
-// style.css (belt-and-suspenders fallback for very old viewers).
-const octiconPlaceholder = `<svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>`
-
 // BaseHeader renders the avatar + display name block at the top of the
 // classic SVG. Returns "" when the User payload is absent.
 //
 // 429 Phase 1: also renders the upstream base.header.ejs sub-row with
 // "Joined GitHub <age>", "Followed by N users", and "Following N
-// users" when those fields are populated. Each row is rendered with an
-// octiconPlaceholder — a 16×16 SVG stub whose intrinsic size matches
-// @primer/octicons so the `.field` row height stays at ~17 px.
+// users" when those fields are populated. Each row field carries a
+// :octicon-<name>: text marker so the ReplaceOcticons() pipeline step
+// can inject the real SVG path.
 //
-// Earlier behaviour (#419): with no real data the partial emitted an
-// empty `<div class="row"><section/><section/></div>` placeholder
-// which caused a tall blank band. With the Phase 1 fields populated
-// the row carries real content, so the placeholder regression is
-// no longer relevant.
+// 493: Restructured to use the upstream two-column layout:
+// left <section> holds joined/followers/following, right <section>
+// holds the contribution calendar and contributed-to count.
 func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil || pc.Data.User == nil {
 		return "", nil
@@ -86,57 +73,70 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 	fmt.Fprintf(&b, `<span>%s</span>`, EscapeXML(display))
 	b.WriteString(`</h1>`)
 
-	// Upstream sub-row: Joined GitHub / Followed by / Following.
-	// Each field is suppressed when its source data is the zero value,
-	// so empty / freshly-created accounts do not gain blank rows.
-	var subRows []string
+	// 493: Two-column upstream layout:
+	//   Left  <section> — joined/followers/following fields.
+	//   Right <section> — contribution calendar + contributed-to count.
+	// This mirrors upstream base.header.ejs which uses
+	// `<div class="row"><section/><section/></div>` so that the
+	// `.row section { flex: 1 1 0 }` CSS rule activates the side-by-side
+	// layout. When either column is fully empty it is omitted so the
+	// section stays compact.
+
+	// Left column: Joined / Followed by / Following.
+	var leftRows []string
 	if age := format.RelativeAge(u.CreatedAt, nowFunc()); age != "" {
-		subRows = append(subRows, fmt.Sprintf(
-			`<div class="field">`+octiconPlaceholder+`Joined GitHub %s</div>`, age,
+		leftRows = append(leftRows, fmt.Sprintf(
+			`<div class="field">:octicon-clock:Joined GitHub %s</div>`, age,
 		))
 	}
 	if u.Followers > 0 {
-		subRows = append(subRows, fmt.Sprintf(
-			`<div class="field">`+octiconPlaceholder+`Followed by %s %s</div>`,
+		leftRows = append(leftRows, fmt.Sprintf(
+			`<div class="field">:octicon-people:Followed by %s %s</div>`,
 			FormatCount(int64(u.Followers)), pluralLabel("user", u.Followers),
 		))
 	}
 	if u.Following > 0 {
-		subRows = append(subRows, fmt.Sprintf(
-			`<div class="field">`+octiconPlaceholder+`Following %s %s</div>`,
+		leftRows = append(leftRows, fmt.Sprintf(
+			`<div class="field">:octicon-people:Following %s %s</div>`,
 			FormatCount(int64(u.Following)), pluralLabel("user", u.Following),
 		))
 	}
-	// 429 Phase 2: "Contributed to N repositories" sourced from
-	// user.repositoriesContributedTo.totalCount. Hidden when zero so
-	// fresh accounts (no external contributions) do not gain a noise
-	// row.
+
+	// Right column: contribution mini calendar + contributed-to count.
+	// 429 Phase 3: calendar rendered as a single horizontal SVG row.
+	// 429 Phase 2: "Contributed to N repositories".
+	var rightRows []string
+	if row := contributionRow(u.RecentContributions); row != "" {
+		rightRows = append(rightRows, row)
+	}
 	if u.ContributedTo > 0 {
 		noun := "repositories"
 		if u.ContributedTo == 1 {
 			noun = "repository"
 		}
-		subRows = append(subRows, fmt.Sprintf(
-			`<div class="field">`+octiconPlaceholder+`Contributed to %s %s</div>`,
+		rightRows = append(rightRows, fmt.Sprintf(
+			`<div class="field">:octicon-repo-push:Contributed to %s %s</div>`,
 			FormatCount(int64(u.ContributedTo)), noun,
 		))
 	}
-	if len(subRows) > 0 {
+
+	if len(leftRows) > 0 || len(rightRows) > 0 {
 		b.WriteString(`<div class="row" data-block="header-counters">`)
-		for _, row := range subRows {
-			b.WriteString(row)
+		if len(leftRows) > 0 {
+			b.WriteString(`<section>`)
+			for _, row := range leftRows {
+				b.WriteString(row)
+			}
+			b.WriteString(`</section>`)
+		}
+		if len(rightRows) > 0 {
+			b.WriteString(`<section>`)
+			for _, row := range rightRows {
+				b.WriteString(row)
+			}
+			b.WriteString(`</section>`)
 		}
 		b.WriteString(`</div>`)
-	}
-
-	// 429 Phase 3: contribution mini calendar embedded in BaseHeader.
-	// Renders the trailing 14 contribution days as a single-row SVG
-	// inside `<div class="field calendar">`, matching upstream
-	// `base.header.ejs`. Hidden when the data payload is empty (fresh
-	// account or a GraphQL failure) so the section stays clean for
-	// accounts with no signal.
-	if row := contributionRow(u.RecentContributions); row != "" {
-		b.WriteString(row)
 	}
 
 	b.WriteString(`</section>`)
@@ -270,32 +270,32 @@ func BaseActivityCommunity(_ context.Context, pc *templates.PartialContext) (str
 
 	if hasActivity {
 		b.WriteString(`<section data-block="activity">`)
-		b.WriteString(`<h2 class="field">` + octiconPlaceholder + `Activity</h2>`)
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s</div>`,
+		b.WriteString(`<h2 class="field">:octicon-graph:Activity</h2>`)
+		fmt.Fprintf(&b, `<div class="field">:octicon-git-commit:%s %s</div>`,
 			FormatCount(int64(u.Commits)), pluralLabel("Commit", u.Commits))
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s reviewed</div>`,
+		fmt.Fprintf(&b, `<div class="field">:octicon-code-review:%s %s reviewed</div>`,
 			FormatCount(int64(u.PullRequestsReviewed)), pluralLabel("Pull request", u.PullRequestsReviewed))
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s opened</div>`,
+		fmt.Fprintf(&b, `<div class="field">:octicon-git-pull-request:%s %s opened</div>`,
 			FormatCount(int64(u.PullRequestsOpened)), pluralLabel("Pull request", u.PullRequestsOpened))
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s opened</div>`,
+		fmt.Fprintf(&b, `<div class="field">:octicon-issue-opened:%s %s opened</div>`,
 			FormatCount(int64(u.IssuesOpened)), pluralLabel("Issue", u.IssuesOpened))
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s issue %s</div>`,
+		fmt.Fprintf(&b, `<div class="field">:octicon-comment:%s issue %s</div>`,
 			FormatCount(int64(u.IssueComments)), pluralLabel("comment", u.IssueComments))
 		b.WriteString(`</section>`)
 	}
 
 	if hasCommunity {
 		b.WriteString(`<section data-block="community">`)
-		b.WriteString(`<h2 class="field">` + octiconPlaceholder + `Community stats</h2>`)
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`Member of %s %s</div>`,
+		b.WriteString(`<h2 class="field">:octicon-organization:Community stats</h2>`)
+		fmt.Fprintf(&b, `<div class="field">:octicon-organization:Member of %s %s</div>`,
 			FormatCount(int64(u.Organizations)), pluralLabel("organization", u.Organizations))
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`Following %s %s</div>`,
+		fmt.Fprintf(&b, `<div class="field">:octicon-people:Following %s %s</div>`,
 			FormatCount(int64(u.Following)), pluralLabel("user", u.Following))
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`Sponsoring %s %s</div>`,
+		fmt.Fprintf(&b, `<div class="field">:octicon-heart:Sponsoring %s %s</div>`,
 			FormatCount(int64(u.Sponsoring)), pluralRepositoryLabel(u.Sponsoring))
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`Starred %s %s</div>`,
+		fmt.Fprintf(&b, `<div class="field">:octicon-star:Starred %s %s</div>`,
 			FormatCount(int64(u.Starred)), pluralRepositoryLabel(u.Starred))
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`Watching %s %s</div>`,
+		fmt.Fprintf(&b, `<div class="field">:octicon-eye:Watching %s %s</div>`,
 			FormatCount(int64(u.Watching)), pluralRepositoryLabel(u.Watching))
 		b.WriteString(`</section>`)
 	}
@@ -398,22 +398,22 @@ func BaseRepositories(_ context.Context, pc *templates.PartialContext) (string, 
 	var b strings.Builder
 	b.WriteString(`<section data-section="repositories">`)
 	b.WriteString(`<div class="row">`)
-	fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s repositories</div>`,
+	fmt.Fprintf(&b, `<div class="field">:octicon-repo:%s repositories</div>`,
 		FormatCount(int64(r.Count)))
-	fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s stargazers</div>`,
+	fmt.Fprintf(&b, `<div class="field">:octicon-star:%s stargazers</div>`,
 		FormatCount(int64(r.Stargazers)))
-	fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s forks</div>`,
+	fmt.Fprintf(&b, `<div class="field">:octicon-git-branch:%s forks</div>`,
 		FormatCount(int64(r.Forks)))
 	if r.Releases > 0 {
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s</div>`,
+		fmt.Fprintf(&b, `<div class="field">:octicon-tag:%s %s</div>`,
 			FormatCount(int64(r.Releases)), pluralLabel("release", r.Releases))
 	}
 	if r.Packages > 0 {
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s</div>`,
+		fmt.Fprintf(&b, `<div class="field">:octicon-package:%s %s</div>`,
 			FormatCount(int64(r.Packages)), pluralLabel("package", r.Packages))
 	}
 	if r.DiskUsage > 0 {
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s used</div>`,
+		fmt.Fprintf(&b, `<div class="field">:octicon-database:%s used</div>`,
 			format.FormatDiskKB(r.DiskUsage))
 	}
 	// 442: "Watching N repositories" moved to the Community-stats column
@@ -422,7 +422,7 @@ func BaseRepositories(_ context.Context, pc *templates.PartialContext) (string, 
 	// repositories row per upstream base.repositories.ejs.
 	if u := pc.Data.User; u != nil {
 		if u.SponsorshipsAsMaintainer > 0 {
-			fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s %s</div>`,
+			fmt.Fprintf(&b, `<div class="field">:octicon-heart:%s %s</div>`,
 				FormatCount(int64(u.SponsorshipsAsMaintainer)),
 				pluralLabel("sponsor", u.SponsorshipsAsMaintainer))
 		}
@@ -523,7 +523,7 @@ func licensePreferenceRow(shares []plugins.LicenseShare) string {
 		parts = append(parts, fmt.Sprintf("%s %d%%", EscapeXML(licenseShortName(s.Name)), pct))
 	}
 	return fmt.Sprintf(
-		`<div class="field">`+octiconPlaceholder+`%s</div>`,
+		`<div class="field">:octicon-law:%s</div>`,
 		strings.Join(parts, " · "),
 	)
 }

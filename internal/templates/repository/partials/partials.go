@@ -56,7 +56,7 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 	var b strings.Builder
 	b.WriteString(`<section data-section="header" data-template="repository">`)
 	b.WriteString(`<h1 class="field">`)
-	b.WriteString(octiconPlaceholder)
+	b.WriteString(`:octicon-repo:`)
 	fmt.Fprintf(&b, `<span>%s/%s</span>`,
 		classicpart.EscapeXML(r.Owner), classicpart.EscapeXML(r.Name))
 	b.WriteString(`</h1>`)
@@ -66,12 +66,12 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 	// Left column: Created / Deployed / disk usage.
 	b.WriteString(`<section>`)
 	if age := format.RelativeAge(r.CreatedAt, nowFunc()); age != "" {
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`Created %s</div>`, age)
+		fmt.Fprintf(&b, `<div class="field">:octicon-clock:Created %s</div>`, age)
 	}
-	fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`Deployed %d time%s</div>`,
+	fmt.Fprintf(&b, `<div class="field">:octicon-rocket:Deployed %d time%s</div>`,
 		r.Deployments, format.S(int64(r.Deployments), "s"))
 	if r.DiskUsageKB > 0 {
-		fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%s used</div>`,
+		fmt.Fprintf(&b, `<div class="field">:octicon-database:%s used</div>`,
 			format.FormatDiskKB(r.DiskUsageKB))
 	}
 	b.WriteString(`</section>`)
@@ -81,7 +81,7 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 	if row := contributionRow(r.Calendar); row != "" {
 		b.WriteString(row)
 	}
-	fmt.Fprintf(&b, `<div class="field">`+octiconPlaceholder+`%d Environment%s</div>`,
+	fmt.Fprintf(&b, `<div class="field">:octicon-server:%d Environment%s</div>`,
 		r.Environments, format.S(int64(r.Environments), "s"))
 	b.WriteString(`</section>`)
 
@@ -89,12 +89,6 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 	b.WriteString(`</section>`)
 	return b.String(), nil
 }
-
-// octiconPlaceholder is the 16×16 SVG stub used wherever a real octicon
-// path is not substituted. Pinning the intrinsic size keeps the
-// `.field` flex row height at ~17px (see the classic partials package
-// for the full rationale).
-const octiconPlaceholder = `<svg xmlns="http://www.w3.org/2000/svg" class="octicon" width="16" height="16" viewBox="0 0 16 16"/>`
 
 // contributionRow renders the BaseHeader mini contribution calendar as
 // a single horizontal row of `class="day"` cells, mirroring upstream
