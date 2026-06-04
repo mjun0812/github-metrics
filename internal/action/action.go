@@ -353,7 +353,13 @@ func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
 		}
 	}
 
-	PrintBanner(opts.Stdout, BannerInfo{
+	// Banner goes to stderr in CLI mode so it can never contaminate the
+	// rendered output. Specifically: `--filename -` streams the SVG/PNG
+	// payload to stdout, and a banner prepended to that stream would
+	// corrupt PNG bytes outright and pollute committed SVG diffs. stderr
+	// keeps the banner human-visible in a terminal while leaving the
+	// data path clean for redirection and pipelines.
+	PrintBanner(os.Stderr, BannerInfo{
 		Version:     engine.Version(),
 		Mode:        inv.Mode.String(),
 		Template:    inv.Template,
