@@ -10,7 +10,7 @@ GOFLAGS   ?=
 BIN_DIR   := bin
 LDFLAGS   := -s -w -X main.version=$(shell git describe --tags --dirty --always 2>/dev/null || echo dev)
 
-BINARIES := metrics-action
+BINARIES := metrics-cli
 
 # Pin developer tooling so `make tools` produces a reproducible local
 # environment matching CI. Bump these together with the CI workflow.
@@ -19,7 +19,7 @@ GOVULNCHECK_VERSION   := latest
 GOFUMPT_VERSION       := latest
 LEFTHOOK_VERSION      := latest
 
-.PHONY: all build build-action test test-chromedp test-heavy test-race lint vet bench gen \
+.PHONY: all build build-cli test test-chromedp test-heavy test-race lint vet bench gen \
         gen-octicons verify-octicons gen-action-yml docker docker-build docker-run-cli \
         docker-smoke release-dry-run \
         tools hooks-install hooks-run hooks-uninstall \
@@ -30,11 +30,11 @@ all: build
 
 help:
 	@echo "Targets:"
-	@echo "  build               Build cmd/metrics-action into bin/"
-	@echo "  build-action        Build only cmd/metrics-action (M6 shortcut)"
+	@echo "  build               Build cmd/metrics-cli into bin/"
+	@echo "  build-cli           Build only cmd/metrics-cli"
 	@echo "  gen-action-yml      Generate action.yml from assets/plugins/*/metadata.yml + core inputs (M6)"
-	@echo "  docker-build        Build the metrics-action Docker image from deploy/Dockerfile (tagged :dev)"
-	@echo "  docker-run-cli      Run the metrics-action Docker image in CLI mode against mocked octocat"
+	@echo "  docker-build        Build the metrics-cli Docker image from deploy/Dockerfile (tagged :dev)"
+	@echo "  docker-run-cli      Run the metrics-cli Docker image in CLI mode against mocked octocat"
 	@echo "  docker-smoke        Run the M10 docker-smoke integration test (requires docker)"
 	@echo "  release-dry-run     Trigger .github/workflows/release.yml in dry_run=true mode and watch (requires gh CLI)"
 	@echo "  test                Run unit tests (go test ./...)"
@@ -59,7 +59,7 @@ help:
 
 build: $(addprefix $(BIN_DIR)/, $(BINARIES))
 
-build-action: $(BIN_DIR)/metrics-action
+build-cli: $(BIN_DIR)/metrics-cli
 
 $(BIN_DIR)/%: cmd/%/main.go
 	@mkdir -p $(BIN_DIR)
@@ -72,14 +72,14 @@ $(BIN_DIR)/%: cmd/%/main.go
 gen-action-yml:
 	$(GO) run ./internal/tools/gen-action-yml --output ./action.yml
 
-# Build the metrics-action Docker image from deploy/Dockerfile. The
+# Build the metrics-cli Docker image from deploy/Dockerfile. The
 # image is multi-stage: builder produces the binary + runtime layer
 # adds chromium for SVG/PNG/JPEG rendering. Multi-arch build + size
 # budget assertion live in .github/workflows/release.yml (M10).
 docker-build:
 	docker build -f deploy/Dockerfile -t ghcr.io/mjun0812/github-metrics:dev .
 
-# Run the metrics-action Docker image in CLI mode against the
+# Run the metrics-cli Docker image in CLI mode against the
 # `octocat` mock fixture. Prints the rendered SVG to stdout. Use to
 # smoke-test the image without needing a real GitHub token.
 docker-run-cli:

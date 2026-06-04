@@ -34,7 +34,7 @@ func TestAction_BannerSnapshot(t *testing.T) {
 	// text so engineers can grep run logs without ANSI / JSON parsing.
 	gotStr := string(got)
 	for _, must := range []string{
-		"metrics-action — startup banner",
+		"metrics-cli — startup banner",
 		"Version", "v0.0.0-test",
 		"Mode", "action",
 		"Template", "classic",

@@ -39,7 +39,7 @@ This plugin can display commit calendar across several years.
 ### CLI
 
 ```sh
-metrics-action --user <your-login> --token-env GITHUB_TOKEN \
+metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_calendar=yes
 ```

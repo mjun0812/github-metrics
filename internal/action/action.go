@@ -112,7 +112,7 @@ func runWith(ctx context.Context, opts runOptions) error {
 	// 1. Skip detection.
 	if opts.Mode == ModeAction {
 		if skip, reason := shouldSkip(opts.EventPath); skip {
-			slog.Info("metrics-action skipped", "reason", reason)
+			slog.Info("metrics-cli skipped", "reason", reason)
 			return nil
 		}
 	}
@@ -176,7 +176,7 @@ func runWith(ctx context.Context, opts runOptions) error {
 			return verr
 		}
 		if !vRes.QuotaSufficient {
-			slog.Info("metrics-action skipped: insufficient GitHub API quota",
+			slog.Info("metrics-cli skipped: insufficient GitHub API quota",
 				"reset", vRes.RateState.REST.Reset)
 			return nil
 		}
@@ -343,7 +343,7 @@ func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
 			return verr
 		}
 		if !vRes.QuotaSufficient {
-			slog.Info("metrics-action skipped: insufficient GitHub API quota",
+			slog.Info("metrics-cli skipped: insufficient GitHub API quota",
 				"reset", vRes.RateState.REST.Reset)
 			return nil
 		}

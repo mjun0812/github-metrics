@@ -39,7 +39,7 @@ This plugin displays recently starred repositories.
 ### CLI
 
 ```sh
-metrics-action --user <your-login> --token-env GITHUB_TOKEN \
+metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_stars=yes
 ```
