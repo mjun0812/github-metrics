@@ -162,6 +162,10 @@ inputs:
 func TestLoad_MetadataLoadsUnder200ms(t *testing.T) {
 	t.Parallel()
 
+	if raceEnabled {
+		t.Skip("race detector overhead invalidates the 200ms budget (SC-003); covered by the non-race test jobs")
+	}
+
 	root, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("getwd: %v", err)

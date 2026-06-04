@@ -36,6 +36,10 @@ func TestEmbeddedMetadataLoads(t *testing.T) {
 func TestEmbeddedMetadataLoadsUnder200ms(t *testing.T) {
 	t.Parallel()
 
+	if raceEnabled {
+		t.Skip("race detector overhead invalidates the 200ms budget (SC-003); covered by the non-race test jobs")
+	}
+
 	fsys := assets.FS()
 
 	const budget = 200 * time.Millisecond
