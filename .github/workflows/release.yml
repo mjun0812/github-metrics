@@ -142,6 +142,16 @@ jobs:
       - name: Export digest
         if: ${{ github.event.inputs.dry_run != 'true' }}
         run: |
+          # Reset before touching the new digest: the build-image job
+          # also runs on a self-hosted ARC runner pod whose work tree
+          # is preserved across job invocations, so /tmp/digests/ would
+          # otherwise carry every prior release's digest file forward.
+          # The Upload digest artifact step uploads /tmp/digests/* into
+          # a single digests-${arch} artifact, so accumulation here
+          # would inflate the artifact and feed every old digest into
+          # the merge-manifest job's imagetools create source list.
+          # (Companion to the corresponding reset in merge-manifest.)
+          rm -rf /tmp/digests
           mkdir -p /tmp/digests
           digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
