@@ -174,6 +174,20 @@ jobs:
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
 
+      # Wipe any leftover digest files before downloading this run's
+      # artifacts. The merge-manifest job runs on a self-hosted ARC
+      # runner pod whose work tree is preserved across job invocations,
+      # so /tmp/digests/ accumulates per-arch digest files from every
+      # prior release. Without this reset, `docker buildx imagetools
+      # create ... $(printf '...@sha256:%s ' *)` ships an ever-growing
+      # multi-arch manifest containing every previous release's amd64
+      # and arm64 entries — v1.1.3 ended up with 4 amd64 + 4 arm64
+      # entries, and `docker pull :latest` deterministically resolved
+      # to the FIRST amd64 entry (which happened to be the v1.1.0
+      # binary), silently pinning every downstream consumer.
+      - name: Reset /tmp/digests (avoid cross-release accumulation)
+        run: rm -rf /tmp/digests && mkdir -p /tmp/digests
+
       - name: Download digests
         uses: actions/download-artifact@v4
         with:
