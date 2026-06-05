@@ -28,6 +28,10 @@
 | `config_timezone` | `Asia/Tokyo`（一部カード）                                                                                                                    |
 | 生成日            | 2026-05-31                                                                                                                                    |
 
+> 追補: `metrics.plugin.people.svg` は `docs/examples` の再生成で follower 数が 60
+> に更新されたため、2026-06-05 に `ghcr.io/lowlighter/metrics:v3.34` のローカル
+> Docker 実行で単独再生成しました。
+
 > ⚠️ これらは正規化していない **生の** upstream 出力です。フッターの生成タイムスタンプや
 > `Metrics` バージョン文字列など動的な部分は再生成ごとに変わります（`docs/examples`
 > 側は `normalize-svg-stream` でマスク済みなので、その点だけ差分が出ます）。
