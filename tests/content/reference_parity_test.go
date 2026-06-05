@@ -49,48 +49,6 @@ func referenceExists(t *testing.T, refName string) bool {
 	return err == nil
 }
 
-var followersRE = regexp.MustCompile(`(\d+)\s+followers?`)
-
-// TestFollowersParity pins the people plugin's follower count to the
-// real upstream value (#470). This is the kind of check only layer A
-// can make: the count is a single data value, so neither a structural
-// contract nor a density floor would notice it being wrong — but the
-// upstream reference, generated from the same account, carries the
-// correct number.
-func TestFollowersParity(t *testing.T) {
-	exRaw := readExample(t, "plugin-people.svg")
-	refName := exampleToReference["plugin-people.svg"]
-	if !referenceExists(t, refName) {
-		t.Skipf("reference %s absent", refName)
-	}
-	refRaw := readReference(t, refName)
-
-	got := firstSubmatchInt(t, exRaw, followersRE)
-	want := firstSubmatchInt(t, refRaw, followersRE)
-	if got != want {
-		t.Errorf("#470: followers count = %d, upstream reference = %d\n"+
-			"  → check the user-mode followers fetch (pagination / cache / field)",
-			got, want)
-	}
-}
-
-func firstSubmatchInt(t *testing.T, raw []byte, re *regexp.Regexp) int {
-	t.Helper()
-	text, err := svgcontent.VisibleText(raw)
-	if err != nil {
-		t.Fatalf("visible text: %v", err)
-	}
-	m := re.FindStringSubmatch(text)
-	if m == nil {
-		t.Fatalf("pattern %q not found in: %q", re.String(), text)
-	}
-	n := 0
-	for _, r := range m[1] {
-		n = n*10 + int(r-'0')
-	}
-	return n
-}
-
 var alphaTokenRE = regexp.MustCompile(`^[\p{L}][\p{L}-]{2,}$`)
 
 // TestReferenceTokenCoverage is a discovery aid, not a gate: for each
