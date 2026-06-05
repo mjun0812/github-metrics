@@ -159,8 +159,22 @@ jobs:
               fi
             done
             if [[ "$ok" -eq 0 ]]; then
-              echo "FAIL: ${SAMPLE_NAME}.${fmt}" >&2
-              exit 1
+              # SVG failure is fatal — the sample is unusable without
+              # its source vector. PNG failure is downgraded to a
+              # warning so the SVG can still ship: the PNG path goes
+              # through chromedp / chromium and is known to fail
+              # silently inside the container as of v1.1.5 (see issue
+              # tracked separately). Letting PNG-failed samples land
+              # as SVG-only keeps regen runs productive while that
+              # is investigated; the stale committed PNG stays in
+              # place until a real new one is generated.
+              if [[ "$fmt" == "svg" ]]; then
+                echo "FAIL: ${SAMPLE_NAME}.${fmt} (fatal — aborting this sample)" >&2
+                exit 1
+              fi
+              echo "::warning::regen-doc-samples: ${SAMPLE_NAME}.${fmt} failed after 3 retries; SVG was generated successfully, PNG will be missing from this run's artifact"
+              rm -f "$out"
+              continue
             fi
             if [[ "$fmt" == "svg" ]]; then
               go run ./internal/tools/normalize-svg-stream < "$out" > "${out}.norm"
