@@ -150,12 +150,10 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | ------------------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.achievements.svg" width="420"> | — 該当なし（Projects classic API 廃止） | <img src="examples/plugin-achievements.svg" width="420"> |
 
-他バリアント (upstream / lowlighter): <img src="original_examples/metrics.plugin.achievements.compact.svg" width="420"> (compact)
-
 **variant: compact** — upstream `achievements.compact` ↔ Go `plugin-achievements-compact.svg`
 
-| upstream (lowlighter)                                                              | upstream (mjun0812)                     | Go 実装                                                          |
-| ---------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------- |
+| upstream (lowlighter)                                                             | upstream (mjun0812)                     | Go 実装                                                          |
+| --------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.achievements.compact.svg" width="420"> | — 該当なし（Projects classic API 廃止） | <img src="examples/plugin-achievements-compact.svg" width="420"> |
 
 > ✅ Go 側は `plugin_achievements_display=compact` に対応。Go サンプルは `scripts/gen-doc-samples.sh` で `plugin-achievements-compact.svg` / `.png` として生成。
@@ -167,7 +165,11 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | ------------------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.repositories.svg" width="420"> | <img src="reference_examples/metrics.plugin.repositories.svg" width="420"> | <img src="examples/plugin-repositories.svg" width="420"> |
 
-他バリアント (upstream): <img src="original_examples/metrics.plugin.repositories.pinned.svg" width="420"> (lowlighter, pinned) / <img src="reference_examples/metrics.plugin.repositories.pinned.svg" width="420"> (mjun0812, pinned)
+**variant: pinned** — upstream `repositories.pinned`
+
+| upstream (lowlighter)                                                            | upstream (mjun0812)                                                               | Go 実装                                                |
+| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| <img src="original_examples/metrics.plugin.repositories.pinned.svg" width="420"> | <img src="reference_examples/metrics.plugin.repositories.pinned.svg" width="420"> | — 別サンプルなし（サンプルデータでは無印とバイト同一） |
 
 > ◐ Go 側は `plugin_repositories_pinned` を受け付けるが、サンプルデータでは無印と同一出力のため別サンプルなし。
 
@@ -189,7 +191,11 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | --------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.calendar.svg" width="420"> | <img src="reference_examples/metrics.plugin.calendar.svg" width="420"> | <img src="examples/plugin-calendar.svg" width="420"> |
 
-他バリアント (upstream): <img src="original_examples/metrics.plugin.calendar.full.svg" width="420"> (lowlighter, full) / <img src="reference_examples/metrics.plugin.calendar.full.svg" width="420"> (mjun0812, full)
+**variant: full** — upstream `calendar.full`
+
+| upstream (lowlighter)                                                      | upstream (mjun0812)                                                         | Go 実装                                                |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------ |
+| <img src="original_examples/metrics.plugin.calendar.full.svg" width="420"> | <img src="reference_examples/metrics.plugin.calendar.full.svg" width="420"> | — 別サンプルなし（サンプルデータでは無印とバイト同一） |
 
 > ◐ Go 側は `plugin_calendar_limit=0` を受け付けるが、サンプルデータでは無印と同一出力のため別サンプルなし。
 
@@ -199,16 +205,14 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | -------------------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.habits.charts.svg" width="420"> | — 該当なし（upstream v3.34 のバグ） | <img src="examples/plugin-habits.svg" width="420"> |
 
-他バリアント (upstream / lowlighter): <img src="original_examples/metrics.plugin.habits.facts.svg" width="420"> (facts)
-
 **variant: facts / charts** — upstream `habits.facts` / `habits.charts` ↔ Go `plugin-habits-facts.svg` / `plugin-habits-charts.svg`
 
-| upstream (lowlighter, facts)                                               | upstream (mjun0812)                 | Go 実装 (facts)                                           |
-| -------------------------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------- |
+| upstream (lowlighter, facts)                                              | upstream (mjun0812)                 | Go 実装 (facts)                                          |
+| ------------------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.habits.facts.svg" width="420"> | — 該当なし（upstream v3.34 のバグ） | <img src="examples/plugin-habits-facts.svg" width="420"> |
 
-| upstream (lowlighter, charts)                                               | upstream (mjun0812)                 | Go 実装 (charts)                                           |
-| --------------------------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------- |
+| upstream (lowlighter, charts)                                              | upstream (mjun0812)                 | Go 実装 (charts)                                          |
+| -------------------------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.habits.charts.svg" width="420"> | — 該当なし（upstream v3.34 のバグ） | <img src="examples/plugin-habits-charts.svg" width="420"> |
 
 > ✅ Go 側は `plugin_habits_facts` / `plugin_habits_charts` で facts / charts を個別トグル。Go サンプル: `plugin-habits-facts.svg`（facts のみ）/ `plugin-habits-charts.svg`（charts のみ）。
@@ -226,7 +230,11 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | ------------------------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.topics.svg" width="420"> | <img src="reference_examples/metrics.plugin.topics.svg" width="420"> | <img src="examples/plugin-topics.svg" width="420"> |
 
-他バリアント (upstream): <img src="original_examples/metrics.plugin.topics.icons.svg" width="420"> (lowlighter, icons) / <img src="reference_examples/metrics.plugin.topics.icons.svg" width="420"> (mjun0812, icons)
+**variant: icons** — upstream `topics.icons`
+
+| upstream (lowlighter)                                                     | upstream (mjun0812)                                                        | Go 実装                                                |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------ |
+| <img src="original_examples/metrics.plugin.topics.icons.svg" width="420"> | <img src="reference_examples/metrics.plugin.topics.icons.svg" width="420"> | — 別サンプルなし（サンプルユーザーに topics 無しで空） |
 
 > ○ Go 側は `plugin_topics_mode=icons` 対応だが、サンプルユーザーに topics 無しで空表示。
 > 実装メモ: upstream は puppeteer で `/stars/<user>/topics` をスクレイピングするが、Go 実装は公開 SSR ページを HTTP + goquery で取得する (chromium 不要)。
@@ -237,7 +245,11 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | ---------------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.starlists.svg" width="420"> | <img src="reference_examples/metrics.plugin.starlists.svg" width="420"> | <img src="examples/plugin-starlists.svg" width="420"> |
 
-他バリアント (upstream / lowlighter): <img src="original_examples/metrics.plugin.starlists.languages.svg" width="420"> (languages)
+**variant: languages** — upstream `starlists.languages`
+
+| upstream (lowlighter)                                                            | upstream (mjun0812) | Go 実装                                                     |
+| -------------------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.starlists.languages.svg" width="420"> | — 該当なし          | — 別サンプルなし（サンプルユーザーに starlists データ無し） |
 
 > ○ Go 側は `plugin_starlists_languages` 対応だが、サンプルユーザーにデータ無しで空表示。
 > 実装メモ: upstream は puppeteer で `/stars/<user>/lists` をスクレイピングするが、Go 実装は GitHub GraphQL の `user.lists` を 1 クエリで取得する (chromium 不要)。
@@ -248,7 +260,11 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | ----------------------------------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.people.followers.svg" width="420"> | <img src="reference_examples/metrics.plugin.people.svg" width="420"> | <img src="examples/plugin-people.svg" width="420"> |
 
-他バリアント (upstream / lowlighter): <img src="original_examples/metrics.plugin.people.repository.svg" width="420"> (repository, 4.0 MB)
+**variant: repository** — upstream `people.repository` ↔ Go repository mode
+
+| upstream (lowlighter, repository)                                              | upstream (mjun0812, repo)                                                       | Go 実装 (repo mode)                                           |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.people.repository.svg" width="420"> | <img src="reference_examples/metrics.repository.plugin.people.svg" width="420"> | <img src="examples/plugin-people-repo-types.svg" width="420"> |
 
 > ✅ Go 側は user mode (followers/following) に加え repository context types (contributors/stargazers/watchers) を実装済み。repository mode のサンプルは `plugin-people-repo.svg`（既定の stargazers + watchers）と `plugin-people-repo-types.svg`（3 種同時 = stargazers + watchers + contributors）。詳細は本ページ末尾の [repository mode サンプル一覧](#repository-mode-サンプル一覧) を参照。
 
@@ -258,12 +274,10 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | -------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.notable.svg" width="420"> | <img src="reference_examples/metrics.plugin.notable.svg" width="420"> | <img src="examples/plugin-notable.svg" width="420"> |
 
-他バリアント (upstream): <img src="original_examples/metrics.plugin.notable.indepth.svg" width="420"> (lowlighter, indepth) / <img src="reference_examples/metrics.plugin.notable.indepth.svg" width="420"> (mjun0812, indepth)
-
 **variant: indepth** — upstream `notable.indepth` ↔ Go `plugin-notable-indepth.svg`
 
-| upstream (lowlighter)                                                         | upstream (mjun0812)                                                          | Go 実装                                                         |
-| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| upstream (lowlighter)                                                        | upstream (mjun0812)                                                           | Go 実装                                                     |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.notable.indepth.svg" width="420"> | <img src="reference_examples/metrics.plugin.notable.indepth.svg" width="420"> | <img src="examples/plugin-notable-indepth.svg" width="420"> |
 
 > ✅ Go 側は `plugin_notable_indepth` 対応済み。indepth は基本モードの組織単位 (`@org`) ではなくリポジトリ単位 (`@org/repo`) のチップを描画し、commits / stars / issues / pulls の統計ゲージを付与する（upstream `notable.ejs` と同一 DOM）。Go サンプル: `plugin-notable-indepth.svg`。
@@ -278,7 +292,11 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.contributors.categories.svg" width="420"> | <img src="reference_examples/metrics.repository.plugin.contributors.svg" width="420"> | <img src="examples/plugin-contributors-repo-contributions.svg" width="420"> |
 
-他バリアント (upstream / lowlighter): <img src="original_examples/metrics.plugin.contributors.contributions.svg" width="420"> (contributions, 8.7 MB)
+**variant: contributions** — upstream `contributors.contributions` ↔ Go `plugin-contributors-repo-contributions.svg`
+
+| upstream (lowlighter, contributions)                                                    | upstream (mjun0812, repo)                                                             | Go 実装 (`plugin-contributors-repo-contributions.svg`, repo mode)           |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.contributors.contributions.svg" width="420"> | <img src="reference_examples/metrics.repository.plugin.contributors.svg" width="420"> | <img src="examples/plugin-contributors-repo-contributions.svg" width="420"> |
 
 > ✅ Go 側は `plugin_contributors_contributions` 対応済み（per-contributor commits / additions / deletions）。default mode の repository サンプルは base chrome の contributors セクションが担当し、adds/dels 列付きの変種は `plugin-contributors-repo-contributions.svg` を参照（既定 commits のみのサンプルは `plugin-base-repo.svg` と byte 同一になるため削除済み）。`stats pending` 警告は `/stats/contributors` の cache が暖まる前に 202 が返った場合に表示される（#424）。詳細は末尾の [repository mode サンプル一覧](#repository-mode-サンプル一覧) を参照。
 
@@ -302,7 +320,11 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | --------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.sponsors.svg" width="420"> | <img src="reference_examples/metrics.plugin.sponsors.svg" width="420"> | <img src="examples/plugin-sponsors.svg" width="420"> |
 
-他バリアント (upstream / lowlighter): <img src="original_examples/metrics.plugin.sponsors.full.svg" width="420"> (full)
+**variant: full** — upstream `sponsors.full`
+
+| upstream (lowlighter)                                                      | upstream (mjun0812) | Go 実装                                                    |
+| -------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.sponsors.full.svg" width="420"> | — 該当なし          | — 別サンプルなし（サンプルユーザーに sponsors データ無し） |
 
 > ○ Go 側は `plugin_sponsors_sections=goal,about,list` で full 相当を表現可能だが、サンプルユーザーにデータ無しで空表示。
 
@@ -318,13 +340,18 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------ |
 | <img src="original_examples/metrics.plugin.stargazers.svg" width="420"> | <img src="reference_examples/metrics.plugin.stargazers.svg" width="420"> | <img src="examples/plugin-stargazers.svg" width="420"> |
 
-他バリアント: <img src="original_examples/metrics.plugin.stargazers.graph.svg" width="420"> (lowlighter, graph) / <img src="reference_examples/metrics.plugin.stargazers.graph.svg" width="420"> (mjun0812, graph) / <img src="original_examples/metrics.plugin.stargazers.chartist.svg" width="420"> (lowlighter, chartist) / <img src="original_examples/metrics.plugin.stargazers.worldmap.svg" width="420"> (lowlighter, worldmap, 1.5 MB)
-
 **variant: graph** — upstream `stargazers.graph` ↔ Go `plugin-stargazers-graph.svg`
 
-| upstream (lowlighter) | upstream (mjun0812) | Go 実装 |
-| --- | --- | --- |
+| upstream (lowlighter)                                                         | upstream (mjun0812)                                                            | Go 実装                                                      |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------ |
 | <img src="original_examples/metrics.plugin.stargazers.graph.svg" width="420"> | <img src="reference_examples/metrics.plugin.stargazers.graph.svg" width="420"> | <img src="examples/plugin-stargazers-graph.svg" width="420"> |
+
+**variant: chartist / worldmap** — upstream `stargazers.chartist` / `stargazers.worldmap`
+
+| variant  | upstream (lowlighter)                                                            | upstream (mjun0812) | Go 実装                                                      |
+| -------- | -------------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------ |
+| chartist | <img src="original_examples/metrics.plugin.stargazers.chartist.svg" width="420"> | — 該当なし          | — 別サンプルなし（`graph` の deprecated alias でバイト同一） |
+| worldmap | <img src="original_examples/metrics.plugin.stargazers.worldmap.svg" width="420"> | — 該当なし          | — 未対応（Google Maps API 必須の backlog）                   |
 
 > ✅ Go 側は `plugin_stargazers_charts_type=graph` 対応（`chartist` は graph の deprecated alias でバイト同一）。Go サンプル: `plugin-stargazers-graph.svg`。worldmap は Google Maps API 必須の backlog（Skipped path、未対応）。
 
@@ -390,8 +417,8 @@ level=WARN msg="plugin contributors is only supported in repository mode (curren
 
 ### 総合サンプル
 
-| sample                            | 内容                                                                                                                                                                                                                   |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| sample                            | 内容                                                                                                                                                                                                                    |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `examples/metrics-repository.svg` | repository template の base 出力 (issue #464)。plugin トグルなしで upstream `metrics.repository.svg` と同じ base chrome のみ。<br>repository 名 + `Created` / `Deployed` / disk-usage / 貢献カレンダー / `Environments` |
 
 ### repository mode の upstream(mjun0812) ↔ Go 実装 比較
