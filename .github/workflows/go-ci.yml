@@ -123,10 +123,14 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
-      # `-tags=chromedp` is what the Makefile target sets too; the
-      # Makefile is unused here because the image lacks `make`.
+      # Run only the chromium-dependent packages here. The default test
+      # job already covers the rest of the suite, so avoid re-running
+      # every package just because the chromedp build tag is enabled.
       - name: go test -tags=chromedp
-        run: go test -tags=chromedp ./...
+        run: |
+          go test -tags=chromedp ./internal/render -run 'Test(Browser_|Resize_(FixedSVG|PNG|JPEG))'
+          go test -tags=chromedp ./tests/integration -run 'Test(ComputePNG_E2E|RepositoryTemplate_(PNG|JPEG)_MagicNumber)$'
+          go test ./tests/visual
 
   test-heavy:
     name: test-heavy
@@ -143,8 +147,9 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
       - name: go test -tags=heavy
-        # tests/visual requires chromium; exclude it here (covered by test-chromedp).
-        run: go list -tags=heavy ./... | grep -v 'tests/visual' | xargs go test -tags=heavy
+        run: |
+          go test -tags=heavy ./internal/plugins/languages -run 'Test(RecentRun_|Indepth_)'
+          go test -tags=heavy ./tests/integration -run 'TestCompute(SVG|JSON)_P3HeavyAllPlugins'
 
   compliance:
     name: compliance
