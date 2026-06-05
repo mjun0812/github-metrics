@@ -62,9 +62,21 @@ pre-commit:
       stage_fixed: true
 
 pre-push:
+  parallel: true
   jobs:
-    - name: tests
-      run: go test ./...
+    - name: gofumpt-check
+      run: |
+        unformatted=$(git ls-files '*.go' ':!:*graphql_gen.go' | xargs gofumpt -l)
+        if [ -n "$unformatted" ]; then
+          echo "$unformatted"
+          exit 1
+        fi
 
-    - name: tests-race
-      run: go test -race ./...
+    - name: go-vet
+      run: go vet ./...
+
+    - name: go-mod-tidy
+      run: go mod tidy -diff
+
+    - name: golangci-lint
+      run: golangci-lint run --timeout=5m
