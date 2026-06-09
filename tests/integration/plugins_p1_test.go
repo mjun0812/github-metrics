@@ -175,6 +175,36 @@ const p1UserIndepth = `{
 	}
 }`
 
+// p1UserIsocalendar answers the isocalendar plugin's windowed
+// contributionsCollection(from,to) query (#467). The fixture serves the
+// same single week for every 4-week chunk the plugin requests (7 chunks
+// for the default half-year window), which is fine for the DOM-marker
+// assertions below.
+const p1UserIsocalendar = `{
+	"data": {
+		"user": {
+			"contributionsCollection": {
+				"contributionCalendar": {
+					"weeks": [
+						{
+							"firstDay": "2026-W18",
+							"contributionDays": [
+								{"date": "2026-05-04", "contributionCount": 1, "weekday": 0, "color": "#9be9a8"},
+								{"date": "2026-05-05", "contributionCount": 2, "weekday": 1, "color": "#40c463"},
+								{"date": "2026-05-06", "contributionCount": 0, "weekday": 2, "color": "#ebedf0"},
+								{"date": "2026-05-07", "contributionCount": 3, "weekday": 3, "color": "#30a14e"},
+								{"date": "2026-05-08", "contributionCount": 4, "weekday": 4, "color": "#216e39"},
+								{"date": "2026-05-09", "contributionCount": 2, "weekday": 5, "color": "#40c463"},
+								{"date": "2026-05-10", "contributionCount": 1, "weekday": 6, "color": "#9be9a8"}
+							]
+						}
+					]
+				}
+			}
+		}
+	}
+}`
+
 // restEventsMux serves /users/{login}/events with a fixed payload.
 type restEventsMux struct{ body string }
 
@@ -214,6 +244,7 @@ func newP1Deps(t *testing.T) engine.Deps {
 	gqlFixture.On("User", p1UserOctocat)
 	gqlFixture.On("UserRepositories", p1UserRepositories)
 	gqlFixture.On("UserIndepth", p1UserIndepth)
+	gqlFixture.On("UserIsocalendar", p1UserIsocalendar)
 
 	gql, err := githubapi.NewGraphQL(
 		config.NewToken("MOCKED_TOKEN"),
