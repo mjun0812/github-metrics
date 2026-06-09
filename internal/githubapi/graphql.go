@@ -120,6 +120,15 @@ func (g *GraphQL) UserIndepth(ctx context.Context, login string, from, to *time.
 	return UserIndepth(ctx, g.client, login, from, to, reposFirst, reposAfter)
 }
 
+// UserIsocalendar fetches the contribution calendar for an explicit
+// from/to window. The isocalendar plugin issues it in 4-week chunks
+// (mirroring upstream) so GitHub normalizes each chunk's heatmap colors
+// against the chunk-local maximum instead of the whole-year maximum
+// (see #467).
+func (g *GraphQL) UserIsocalendar(ctx context.Context, login string, from, to time.Time) (*UserIsocalendarResponse, error) {
+	return UserIsocalendar(ctx, g.client, login, from, to)
+}
+
 // UserStarredRepositories fetches the user's most-recently starred
 // repositories (most-recent first). Consumed by the "stars" plugin.
 func (g *GraphQL) UserStarredRepositories(ctx context.Context, login string, first int) (*UserStarredRepositoriesResponse, error) {
