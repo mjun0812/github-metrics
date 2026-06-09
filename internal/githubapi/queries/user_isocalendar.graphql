@@ -1,0 +1,17 @@
+query UserIsocalendar($login: String!, $from: DateTime!, $to: DateTime!) {
+  user(login: $login) {
+    contributionsCollection(from: $from, to: $to) {
+      contributionCalendar {
+        weeks {
+          firstDay
+          contributionDays {
+            date
+            contributionCount
+            weekday
+            color
+          }
+        }
+      }
+    }
+  }
+}

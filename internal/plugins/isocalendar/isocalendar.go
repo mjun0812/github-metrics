@@ -6,6 +6,7 @@ package isocalendar
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/config"
@@ -61,7 +62,7 @@ type Streak struct {
 	Current int `json:"current"`
 }
 
-func (p *isocalendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any, error) {
+func (p *isocalendarPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
@@ -85,25 +86,39 @@ func (p *isocalendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (a
 		weeksWanted = 53
 	}
 
-	cal := pc.Data.Computed.ContributionCalendar
-	if cal == nil || len(cal.Weeks) == 0 {
-		return &Result{
-			Skipped:       true,
-			SkippedReason: "no contribution calendar",
-			Weeks:         []ISOWeek{},
-			Duration:      duration,
-		}, nil
+	// Primary path: fetch the upstream-parity window (half-year =
+	// now-180d, full-year = now-1y, both snapped to a UTC Sunday) in
+	// 4-week chunks so GitHub's per-range color normalization matches
+	// upstream's gradient (#467).
+	weeks, fetchErr := fetchWindowedWeeks(ctx, pc, duration)
+	if fetchErr != nil && pc.Logger != nil {
+		pc.Logger.Warn(
+			"isocalendar: windowed calendar fetch failed; falling back to shared calendar",
+			slog.String("error", fetchErr.Error()),
+		)
 	}
-
-	weeks := truncateWeeks(cal.Weeks, weeksWanted)
+	if len(weeks) == 0 {
+		// Degraded path (no GraphQL client / fetch failure): slice the
+		// most-recent weeks off the shared indepth calendar like before.
+		cal := pc.Data.Computed.ContributionCalendar
+		if cal == nil || len(cal.Weeks) == 0 {
+			return &Result{
+				Skipped:       true,
+				SkippedReason: "no contribution calendar",
+				Weeks:         []ISOWeek{},
+				Duration:      duration,
+			}, nil
+		}
+		weeks = truncateWeeks(cal.Weeks, weeksWanted)
+	}
 	// Aggregation mirrors upstream isocalendar (index.mjs::statistics):
 	// every ContributionDay in the window contributes its GitHub-reported
 	// ContributionCount verbatim to sum/avg/max and to the streak passes.
 	// That count already folds in private contributions when the user's
 	// "Include private contributions on my profile" setting allows it, so
 	// no public/private branching happens here — the half-year and
-	// full-year variants differ only by window width (weeksWanted), never
-	// by counting rule. See #467 and the matching unit tests.
+	// full-year variants differ only by window width, never by counting
+	// rule. See #467 and the matching unit tests.
 	iso := make([]ISOWeek, 0, len(weeks))
 	flat := make([]int, 0, len(weeks)*7)
 	sum := 0
