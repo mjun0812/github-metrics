@@ -39,15 +39,19 @@ jobs:
           output: svg
           dryrun: 'yes'
 
-  smoke-arm:
-    name: arm64 smoke (ubuntu-24.04-arm)
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 5
-    steps:
-      - uses: mjun0812/github-metrics@v1.0.0
-        with:
-          user: octocat
-          token: ${{ secrets.METRICS_TOKEN }}
-          template: classic
-          output: svg
-          dryrun: 'yes'
+  # smoke-arm is temporarily disabled to conserve GitHub-hosted Actions
+  # usage (ubuntu-24.04-arm is a GitHub-hosted runner). Re-enable by
+  # uncommenting once the rate-limit pressure subsides.
+  #
+  # smoke-arm:
+  #   name: arm64 smoke (ubuntu-24.04-arm)
+  #   runs-on: ubuntu-24.04-arm
+  #   timeout-minutes: 5
+  #   steps:
+  #     - uses: mjun0812/github-metrics@v1.0.0
+  #       with:
+  #         user: octocat
+  #         token: ${{ secrets.METRICS_TOKEN }}
+  #         template: classic
+  #         output: svg
+  #         dryrun: 'yes'
