@@ -23,7 +23,8 @@ env:
 # self-hosted ARC runner scale set `home-k3s-runner` (k3s cluster with
 # docker-in-docker, so the test-chromedp container job works) to keep
 # GitHub-hosted minute usage down. Only smoke-macos stays on a
-# GitHub-hosted macos-latest runner (the sole Darwin capacity).
+# GitHub-hosted macos-latest runner (the sole Darwin capacity) — it is
+# temporarily commented out below to conserve Actions minutes.
 jobs:
   test:
     name: test
@@ -163,21 +164,25 @@ jobs:
       - name: compliance (no unadopted plugin refs, no removed sentinels, org_repo ignored)
         run: go test ./tests/compliance/...
 
-  smoke-macos:
-    name: smoke-macos
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-      - name: go build
-        run: go build ./...
-      - name: go test (config subset, run when packages exist)
-        run: |
-          if [ -d internal/config ]; then
-            go test ./internal/config/...
-          else
-            echo "internal/config not present yet; smoke build only"
-          fi
+  # smoke-macos is temporarily disabled to conserve GitHub-hosted
+  # Actions minutes (macos-latest burns them at a 10x multiplier).
+  # Re-enable by uncommenting once the rate-limit pressure subsides.
+  #
+  # smoke-macos:
+  #   name: smoke-macos
+  #   runs-on: macos-latest
+  #   steps:
+  #     - uses: actions/checkout@v5
+  #     - uses: actions/setup-go@v6
+  #       with:
+  #         go-version: ${{ env.GO_VERSION }}
+  #         cache: true
+  #     - name: go build
+  #       run: go build ./...
+  #     - name: go test (config subset, run when packages exist)
+  #       run: |
+  #         if [ -d internal/config ]; then
+  #           go test ./internal/config/...
+  #         else
+  #           echo "internal/config not present yet; smoke build only"
+  #         fi
