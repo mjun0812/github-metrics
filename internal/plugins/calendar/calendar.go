@@ -6,6 +6,7 @@ package calendar
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -88,7 +89,9 @@ func (p *calendarPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 	limit := readIntDefault(pc.Inputs, "plugin_calendar_limit", 1)
 	cal := pc.Data.Computed.ContributionCalendar
 	weeks := []plugins.ContributionWeek{}
-	if fetched, err := fetchYearlyWeeks(ctx, pc, limit); err == nil && len(fetched) > 0 {
+	if fetched, err := fetchYearlyWeeks(ctx, pc, limit); err != nil {
+		pc.Data.AppendError(fmt.Errorf("calendar: yearly fetch: %w", err))
+	} else if len(fetched) > 0 {
 		weeks = fetched
 	}
 	if len(weeks) == 0 && cal != nil {

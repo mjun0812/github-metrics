@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -182,6 +183,117 @@ func TestRun_FetchesFullCalendarYears(t *testing.T) {
 	}
 	if seenTo[2] != "2026-06-10T12:00:00Z" {
 		t.Fatalf("current year should end at now; got %s", seenTo[2])
+	}
+}
+
+func TestRun_FetchesLimitedCalendarYears(t *testing.T) {
+	restore := calendar.SetNowForTest(func() time.Time {
+		return time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)
+	})
+	defer restore()
+
+	for _, tc := range []struct {
+		name          string
+		createdAt     time.Time
+		limit         int
+		wantCalls     int
+		wantFirstFrom string
+	}{
+		{
+			name:          "limit",
+			createdAt:     time.Date(2024, 3, 2, 9, 8, 7, 0, time.UTC),
+			limit:         2,
+			wantCalls:     2,
+			wantFirstFrom: "2025-01-01T00:00:00Z",
+		},
+		{
+			name:          "created-at-clamp",
+			createdAt:     time.Date(2024, 3, 2, 9, 8, 7, 0, time.UTC),
+			limit:         10,
+			wantCalls:     3,
+			wantFirstFrom: "2024-03-02T09:08:07Z",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			data := plugins.NewData()
+			data.User = &plugins.User{Login: "octocat", CreatedAt: tc.createdAt}
+			seenFrom := []string{}
+			mux := mocks.NewGraphQLMux(t)
+			mux.OnFunc("UserIsocalendar", func(vars map[string]any) (int, string) {
+				seenFrom = append(seenFrom, fmt.Sprint(vars["from"]))
+				year := 2026 - tc.wantCalls + len(seenFrom)
+				return 200, fmt.Sprintf(`{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[{"firstDay":"%[1]d-01-01","contributionDays":[{"date":"%[1]d-01-01","contributionCount":1,"weekday":1,"color":"#9be9a8"}]}]}}}}}`, year)
+			})
+			pc := mocks.NewPluginContext(
+				t,
+				mocks.WithGraphQL(mux),
+				mocks.WithData(data),
+				mocks.WithInputs(map[string]any{"user": "octocat", "plugin_calendar": true, "plugin_calendar_limit": tc.limit}),
+			)
+			if _, err := calendar.Plugin.Run(context.Background(), pc); err != nil {
+				t.Fatalf("Run: %v", err)
+			}
+			if got := mux.Calls("UserIsocalendar"); got != tc.wantCalls {
+				t.Fatalf("UserIsocalendar calls = %d, want %d", got, tc.wantCalls)
+			}
+			if seenFrom[0] != tc.wantFirstFrom {
+				t.Fatalf("first from = %s, want %s", seenFrom[0], tc.wantFirstFrom)
+			}
+		})
+	}
+}
+
+func TestRun_FetchedCalendarOverridesComputedCalendar(t *testing.T) {
+	data := plugins.NewData()
+	data.User = &plugins.User{
+		Login:     "octocat",
+		CreatedAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+	data.Computed.ContributionCalendar = makeCal([]int{2020})
+	mux := mocks.NewGraphQLMux(t)
+	mux.OnBody("UserIsocalendar", 200, `{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[{"firstDay":"2026-01-01","contributionDays":[{"date":"2026-01-01","contributionCount":7,"weekday":4,"color":"#40c463"}]}]}}}}}`)
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithGraphQL(mux),
+		mocks.WithData(data),
+		mocks.WithInputs(map[string]any{"user": "octocat", "plugin_calendar": true, "plugin_calendar_limit": 1}),
+	)
+	out, err := calendar.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*calendar.Result)
+	if len(r.Years) != 1 || r.Years[0].Year != 2026 || r.Years[0].Total != 7 {
+		t.Fatalf("fetched calendar should override computed calendar; got %+v", r.Years)
+	}
+}
+
+func TestRun_FetchErrorFallsBackToComputedCalendar(t *testing.T) {
+	data := plugins.NewData()
+	data.User = &plugins.User{
+		Login:     "octocat",
+		CreatedAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+	data.Computed.ContributionCalendar = makeCal([]int{2025})
+	mux := mocks.NewGraphQLMux(t)
+	mux.OnBody("UserIsocalendar", 200, `{"errors":[{"message":"calendar blip"}]}`)
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithGraphQL(mux),
+		mocks.WithData(data),
+		mocks.WithInputs(map[string]any{"user": "octocat", "plugin_calendar": true, "plugin_calendar_limit": 1}),
+	)
+	out, err := calendar.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*calendar.Result)
+	if len(r.Years) != 1 || r.Years[0].Year != 2025 {
+		t.Fatalf("computed calendar fallback should render; got %+v", r.Years)
+	}
+	errs := pc.Data.SnapshotErrors()
+	if len(errs) == 0 || !strings.Contains(errs[0].Error(), "yearly fetch") {
+		t.Fatalf("expected yearly fetch error to be recorded; got %v", errs)
 	}
 }
 

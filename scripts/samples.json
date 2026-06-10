@@ -27,7 +27,7 @@
   {"name": "plugin-stargazers-graph",                "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_stargazers=yes --plugin plugin_stargazers_charts_type=graph"},
   {"name": "plugin-habits-facts",                    "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_habits=yes --plugin plugin_habits_facts=yes --plugin plugin_habits_charts=no"},
   {"name": "plugin-habits-charts",                   "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_habits=yes --plugin plugin_habits_facts=no --plugin plugin_habits_charts=yes"},
-  {"name": "metrics-classic",                        "mode": "user", "extra": "--template classic --plugin \"base=header, repositories\""},
+  {"name": "metrics-classic",                        "mode": "user", "extra": "--template classic --plugin base=header,repositories"},
   {"name": "plugin-base",                            "mode": "user", "extra": "--template classic"},
   {"name": "plugin-people-repo",                     "mode": "repo", "extra": "--plugin base= --plugin plugin_people=yes"},
   {"name": "plugin-contributors-repo-contributions", "mode": "repo", "extra": "--plugin base= --plugin plugin_contributors=yes --plugin plugin_contributors_contributions=yes"},

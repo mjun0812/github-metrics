@@ -140,6 +140,7 @@ func TestIndepth_DegradedPath(t *testing.T) {
 	pc.Data.Account = plugins.AccountUser
 	pc.Inputs = map[string]any{
 		"user":               "octocat",
+		"base":               "header",
 		"plugin_isocalendar": true,
 	}
 
