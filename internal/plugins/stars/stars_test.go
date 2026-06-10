@@ -281,6 +281,36 @@ func TestPartial_RendersRepoMetadata(t *testing.T) {
 	}
 }
 
+func TestPartial_RendersRelativeStarredDates(t *testing.T) {
+	restore := stars.SetNowForTest(func() time.Time {
+		return time.Date(2026, 5, 10, 12, 0, 0, 0, time.UTC)
+	})
+	defer restore()
+
+	r := &stars.Result{
+		List: []stars.StarredRepo{
+			{NameWithOwner: "alice/hourly", URL: "https://github.com/alice/hourly", StarredAt: time.Date(2026, 5, 10, 10, 30, 0, 0, time.UTC)},
+			{NameWithOwner: "alice/daily", URL: "https://github.com/alice/daily", StarredAt: time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC)},
+			{NameWithOwner: "alice/old", URL: "https://github.com/alice/old", StarredAt: time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)},
+		},
+	}
+	data := plugins.NewData()
+	data.SetPlugin(stars.Name, r)
+	got, err := stars.Partial(context.Background(), &templates.PartialContext{Data: data})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	for _, want := range []string{
+		"starred 2 hours ago",
+		"starred 3 days ago",
+		"starred Mar 01 2026",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("missing %q in %s", want, got)
+		}
+	}
+}
+
 func TestRun_GoldenShape(t *testing.T) {
 	r := &stars.Result{
 		List: []stars.StarredRepo{

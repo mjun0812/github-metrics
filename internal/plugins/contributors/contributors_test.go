@@ -217,6 +217,49 @@ func TestRun_RepositoryStatsFailureKeepsMinimalStub(t *testing.T) {
 	}
 }
 
+func TestRun_RepositoryStatsPendingFallsBackToContributorList(t *testing.T) {
+	restore := contributors.SetSleepFn(func(_ context.Context, _ time.Duration) {})
+	defer restore()
+
+	rest := mocks.NewRESTMux(t)
+	rest.OnBody("/repos/octocat/hello-world/stats/contributors", http.StatusAccepted, `{"message":"Accepted"}`)
+	rest.OnBody("/repos/octocat/hello-world/contributors", http.StatusOK, `[
+		{"login":"alice","avatar_url":"https://avatars.example/alice.png","contributions":8},
+		{"login":"bob","avatar_url":"https://avatars.example/bob.png","contributions":3}
+	]`)
+	data := plugins.NewData()
+	data.Account = plugins.AccountRepository
+	data.SetRepo(&plugins.Repo{
+		Owner:         "octocat",
+		OwnerAvatar:   "https://avatars.example/owner.png",
+		Name:          "hello-world",
+		Contributors:  2,
+		DefaultBranch: "main",
+		Activity:      plugins.RepoActivity{RecentCommits: 1},
+	})
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithREST(rest),
+		mocks.WithData(data),
+		mocks.WithInputs(map[string]any{"plugin_contributors_contributions": true}),
+	)
+
+	out, err := contributors.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*contributors.Result)
+	if !r.StatsPending {
+		t.Fatalf("StatsPending should remain true for stats 202; got %+v", r)
+	}
+	if got := rest.Calls("/repos/octocat/hello-world/contributors"); got != 1 {
+		t.Fatalf("contributors fallback calls = %d, want 1", got)
+	}
+	if len(r.List) != 2 || r.List[0].Login != "alice" || r.List[0].Commits != 8 {
+		t.Fatalf("fallback contributor list not used/sorted: %+v", r.List)
+	}
+}
+
 // TestRun_RepositoryStatsRetriesPendingThenSucceeds pins #471: GitHub
 // returns 202 Accepted (empty body) while it warms the
 // /stats/contributors cache. We must poll, not give up immediately, so a
@@ -328,13 +371,9 @@ func TestPartial_ContributionsDisplayMode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
-	// Regression coverage for #421: ensure login and commit count are
-	// separated by ": " (mirroring plugin-traffic #416) so they cannot
-	// fuse into a single token like "octocat2 commits" in SVG.
 	for _, want := range []string{
 		"contributor-contributions",
-		`<span class="login">octocat</span>: <span class="contributions">`,
-		"2 commits",
+		`<span class="login">octocat</span><span class="label-right">2</span>`,
 		"++15 --5",
 	} {
 		if !strings.Contains(got, want) {
@@ -346,12 +385,10 @@ func TestPartial_ContributionsDisplayMode(t *testing.T) {
 	}
 }
 
-// TestPartial_LoginWithDigitsHasExplicitDelimiter pins #421 directly:
+// TestPartial_LoginWithDigitsUsesSeparateBadge pins #421 directly:
 // the bug surfaced with login "mjun0812" because the rendered SVG
-// dropped the whitespace between the login span and the commits chip,
-// producing "mjun081267 commits". An explicit ": " separator keeps
-// the two tokens visually distinct regardless of SVG whitespace
-// collapsing.
+// dropped the whitespace between the login span and the commits chip.
+// The chip layout keeps the count in a separate label-right badge.
 func TestPartial_LoginWithDigitsHasExplicitDelimiter(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
@@ -370,13 +407,13 @@ func TestPartial_LoginWithDigitsHasExplicitDelimiter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
-	if !strings.Contains(got, `<span class="login">mjun0812</span>: <span class="contributions">`) {
-		t.Fatalf("expected ': ' delimiter between login and contributions; got %q", got)
+	if !strings.Contains(got, `<span class="login">mjun0812</span><span class="label-right">67</span>`) {
+		t.Fatalf("expected separate count badge; got %q", got)
 	}
 	if strings.Contains(got, "mjun081267") {
 		t.Fatalf("regression: login and commit count fused into %q", "mjun081267")
 	}
-	for _, want := range []string{"67 commits", "++1234 --56"} {
+	for _, want := range []string{`label-right">67</span>`, "++1234 --56"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("expected %q in %q", want, got)
 		}
@@ -407,11 +444,11 @@ func TestPartial_StatsPendingOmitsDiffSpan(t *testing.T) {
 		t.Fatalf("StatsPending must not emit a 'stats pending' chip; got %q", got)
 	}
 	// Neither the false "++0 --0" nor any add/del diff span may appear.
-	if strings.Contains(got, "++") || strings.Contains(got, `class="diff"`) {
+	if strings.Contains(got, "++") {
 		t.Fatalf("StatsPending must omit the add/del diff span; got %q", got)
 	}
 	// The commit count still carries the contribution signal.
-	if !strings.Contains(got, "3 commits") {
+	if !strings.Contains(got, `label-right">3</span>`) {
 		t.Fatalf("commit count from minimal stub should still render; got %q", got)
 	}
 }
@@ -437,6 +474,9 @@ func TestPartial_DefaultDisplayHidesContributionNumbers(t *testing.T) {
 		if strings.Contains(got, notWant) {
 			t.Fatalf("did not expect %q in %q", notWant, got)
 		}
+	}
+	if strings.Contains(got, `class="label-right"`) {
+		t.Fatalf("default display should hide numeric chips; got %q", got)
 	}
 	if !strings.Contains(got, "octocat") {
 		t.Fatalf("default display should keep contributor row: %q", got)

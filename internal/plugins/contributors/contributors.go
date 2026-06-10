@@ -84,12 +84,14 @@ func (p *contributorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 			case statsStatusOK:
 				list = loaded
 			case statsStatusPending:
-				// /stats/contributors returned 202 Accepted — GitHub
-				// is recomputing the cache. Keep the minimal stub
-				// (so the row still names the contributor) but flag
-				// the result so partial renders "stats pending"
-				// instead of misleading ++0 --0.
+				if fallback, ok := fetchContributorList(ctx, pc, r.Owner, r.Name, in.ignored); ok {
+					list = fallback
+				}
 				statsPending = true
+			case statsStatusFailed:
+				if fallback, ok := fetchContributorList(ctx, pc, r.Owner, r.Name, in.ignored); ok {
+					list = fallback
+				}
 			}
 		}
 		return &Result{
@@ -114,6 +116,45 @@ func (p *contributorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 		List:          []Contributor{},
 		Sections:      []string{},
 	}, nil
+}
+
+type rawContributor struct {
+	Login         string `json:"login"`
+	AvatarURL     string `json:"avatar_url"`
+	Contributions int    `json:"contributions"`
+}
+
+func fetchContributorList(ctx context.Context, pc *plugins.PluginContext, owner, repo string, ignored map[string]struct{}) ([]Contributor, bool) {
+	if pc == nil || pc.REST == nil {
+		return nil, false
+	}
+	path := fmt.Sprintf("/repos/%s/%s/contributors?per_page=100&anon=true", url.PathEscape(owner), url.PathEscape(repo))
+	body, resp, err := pc.REST.Get(ctx, path, nil)
+	if err != nil || resp == nil || resp.StatusCode != http.StatusOK {
+		return nil, false
+	}
+	var rows []rawContributor
+	if err := json.Unmarshal(body, &rows); err != nil {
+		return nil, false
+	}
+	out := make([]Contributor, 0, len(rows))
+	for _, row := range rows {
+		if row.Login == "" || ignoredLogin(row.Login, ignored) {
+			continue
+		}
+		out = append(out, Contributor{
+			Login:     row.Login,
+			AvatarURL: row.AvatarURL,
+			Commits:   row.Contributions,
+		})
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Commits != out[j].Commits {
+			return out[i].Commits > out[j].Commits
+		}
+		return out[i].Login < out[j].Login
+	})
+	return out, len(out) > 0
 }
 
 type inputs struct {

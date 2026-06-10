@@ -95,6 +95,9 @@ var allowedFiles = map[string]struct{}{
 	// shape as partial.go above — "lines" is the upstream details
 	// column name, not the unadopted upstream plugin slug.
 	"internal/plugins/languages/languages.go": {},
+	// languages.indepth now computes the same details column from cloned
+	// repository contents, so it shares the false-positive shape above.
+	"internal/plugins/languages/indepth.go": {},
 	// activity plugin exposes PR diff stats as
 	// `Lines *EventLines json:"lines"` mirroring upstream
 	// data.plugins.activity.events[].lines (#465). The word "lines"

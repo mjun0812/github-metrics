@@ -60,6 +60,25 @@ func FetchRepo(ctx context.Context, login, repo string, rest *githubapi.REST, gq
 		IsArchived:    r.IsArchived,
 		DefaultBranch: refName(r.DefaultBranchRef),
 	}
+	if r.Watchers != nil {
+		out.Watchers = r.Watchers.TotalCount
+	}
+	if r.Languages != nil {
+		for _, edge := range r.Languages.Edges {
+			if edge == nil || edge.Node == nil {
+				continue
+			}
+			color := ""
+			if edge.Node.Color != nil {
+				color = *edge.Node.Color
+			}
+			out.Languages = append(out.Languages, plugins.LanguageStat{
+				Name:  edge.Node.Name,
+				Color: color,
+				Size:  edge.Size,
+			})
+		}
+	}
 	if r.Deployments != nil {
 		out.Deployments = r.Deployments.TotalCount
 	}

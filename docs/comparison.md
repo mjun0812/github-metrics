@@ -27,7 +27,7 @@ upstream に存在する各 plugin のサブモードについて、Go 実装の
 | `languages.details`              | ✅ 比較可              | `plugin-languages-details.svg`（本対応で追加）                                                                          |
 | `achievements.compact`           | ✅ 比較可              | `plugin-achievements-compact.svg`（本対応で追加）                                                                       |
 | `isocalendar.fullyear`           | ✅ 比較可              | `plugin-isocalendar-fullyear.svg`（本対応で追加）                                                                       |
-| `calendar.full`                  | ◐ 対応・差分なし       | `plugin_calendar_limit=0` を受け付けるが、このサンプルデータでは無印とバイト同一                                        |
+| `calendar.full`                  | ◐ 実装済み・生成待ち   | `plugin_calendar_limit=0` で全期間を取得。サンプルは次回 `make docs-samples` で生成                                     |
 | `repositories.pinned`            | ◐ 対応・差分なし       | `plugin_repositories_pinned` を受け付けるが、このサンプルデータでは無印とバイト同一                                     |
 | `topics.icons`                   | ○ データ無し           | `plugin_topics_mode=icons` 対応。サンプルユーザーに topics 無しで空                                                     |
 | `starlists.languages`            | ○ データ無し           | `plugin_starlists_languages` 対応。サンプルユーザーにデータ無しで空                                                     |
@@ -54,7 +54,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | classic 総合       | <img src="original_examples/metrics.classic.svg" width="420">    | <img src="reference_examples/metrics.classic.svg" width="420">    | <img src="examples/metrics-classic.svg" width="420">    |
 | repository 総合    | <img src="original_examples/metrics.repository.svg" width="420"> | <img src="reference_examples/metrics.repository.svg" width="420"> | <img src="examples/metrics-repository.svg" width="420"> |
 
-> ✅ Go サンプル `metrics-classic.svg` / `.png` は `scripts/gen-doc-samples.sh` の独立セクションで `render_one "metrics-classic" --template classic` (plugin トグルなし) として生成します。upstream `metrics.classic.svg` が実質 base ヘッダのみであるため、本サンプルも base セクション (header / activity / community / repositories / metadata) のみの出力となり、`plugin-base.svg` に近い高さ (~200px) になります ([#463](https://github.com/mjun0812/github-metrics/issues/463))。採用 plugin の個別パネルは下のプラグイン別サンプルを参照してください。
+> ✅ Go サンプル `metrics-classic.svg` / `.png` は `scripts/gen-doc-samples.sh` / `scripts/samples.json` で `base=header, repositories` を指定して生成します。upstream `metrics.classic.svg` が実質 header + repositories であるため、本サンプルもその 2 セクションのみの出力となります。採用 plugin の個別パネルは下のプラグイン別サンプルを参照してください。
 > ✅ Go サンプル `metrics-repository.svg` / `.png` は同スクリプトの repository mode セクションで生成。`mjun0812/flash-attention-prebuild-wheels` を対象に、plugin トグルなしの **base repository 出力** を描画します (issue #464)。upstream `metrics.repository.svg` と同じく base chrome (repository 名 + `Created` / `Deployed` / disk-usage / 貢献カレンダー / `Environments`) のみで、個別 plugin partial は repository template でも `plugin_<slug>` トグルで gate されます。各 plugin partial 単体のサンプルは `plugin-base-repo` / `plugin-people-repo` / `plugin-contributors-repo-contributions` / `plugin-people-repo-types` 側でカバーします。
 
 ### base partial parity (`base.header` / `base.repositories`)
@@ -193,11 +193,11 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 
 **variant: full** — upstream `calendar.full`
 
-| upstream (lowlighter)                                                      | upstream (mjun0812)                                                         | Go 実装                                                |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------ |
-| <img src="original_examples/metrics.plugin.calendar.full.svg" width="420"> | <img src="reference_examples/metrics.plugin.calendar.full.svg" width="420"> | — 別サンプルなし（サンプルデータでは無印とバイト同一） |
+| upstream (lowlighter)                                                      | upstream (mjun0812)                                                         | Go 実装                                                          |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.calendar.full.svg" width="420"> | <img src="reference_examples/metrics.plugin.calendar.full.svg" width="420"> | — 生成待ち（`GITHUB_TOKEN` 付き `make docs-samples` で生成予定） |
 
-> ◐ Go 側は `plugin_calendar_limit=0` を受け付けるが、サンプルデータでは無印と同一出力のため別サンプルなし。
+> ◐ Go 側は `plugin_calendar_limit=0` でアカウント作成年から現在年までを年単位で再取得する。`scripts/samples.json` / `scripts/gen-doc-samples.sh` には `plugin-calendar-full` を追加済みだが、この環境では `GITHUB_TOKEN` が未設定のため SVG/PNG は未生成。
 
 ### habits
 
@@ -298,7 +298,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.contributors.contributions.svg" width="420"> | <img src="reference_examples/metrics.repository.plugin.contributors.svg" width="420"> | <img src="examples/plugin-contributors-repo-contributions.svg" width="420"> |
 
-> ✅ Go 側は `plugin_contributors_contributions` 対応済み（per-contributor commits / additions / deletions）。default mode の repository サンプルは base chrome の contributors セクションが担当し、adds/dels 列付きの変種は `plugin-contributors-repo-contributions.svg` を参照（既定 commits のみのサンプルは `plugin-base-repo.svg` と byte 同一になるため削除済み）。`stats pending` 警告は `/stats/contributors` の cache が暖まる前に 202 が返った場合に表示される（#424）。詳細は末尾の [repository mode サンプル一覧](#repository-mode-サンプル一覧) を参照。
+> ✅ Go 側は `plugin_contributors_contributions` 対応済み（per-contributor commits / additions / deletions）。default mode の repository サンプルは base chrome の contributors セクションが担当し、adds/dels 列付きの変種は `plugin-contributors-repo-contributions.svg` を参照（既定 commits のみのサンプルは `plugin-base-repo.svg` と byte 同一になるため削除済み）。`/stats/contributors` が 202 / 空で返った場合は `/repos/{owner}/{repo}/contributors` にフォールバックし、commit 数付きチップを描画する。詳細は末尾の [repository mode サンプル一覧](#repository-mode-サンプル一覧) を参照。
 
 ### reactions
 
@@ -353,7 +353,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | chartist | <img src="original_examples/metrics.plugin.stargazers.chartist.svg" width="420"> | — 該当なし          | — 別サンプルなし（`graph` の deprecated alias でバイト同一） |
 | worldmap | <img src="original_examples/metrics.plugin.stargazers.worldmap.svg" width="420"> | — 該当なし          | — 未対応（Google Maps API 必須の backlog）                   |
 
-> ✅ Go 側は `plugin_stargazers_charts_type=graph` 対応（`chartist` は graph の deprecated alias でバイト同一）。Go サンプル: `plugin-stargazers-graph.svg`。worldmap は Google Maps API 必須の backlog（Skipped path、未対応）。
+> ✅ Go 側は `plugin_stargazers_charts_type=graph` 対応（`chartist` は graph の deprecated alias でバイト同一）。`graph` は累積 stargazers と直近 14 日の日次 new stargazers を上下 2 段で描画する。Go サンプル: `plugin-stargazers-graph.svg`。worldmap は Google Maps API 必須の backlog（Skipped path、未対応）。
 
 ### traffic
 
@@ -361,7 +361,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | -------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.traffic.svg" width="420"> | <img src="reference_examples/metrics.plugin.traffic.svg" width="420"> | <img src="examples/plugin-traffic.svg" width="420"> |
 
-> ✅ Go 側: user mode は token owner が admin の全 repo に対して `/traffic/views` を並列取得して合計表示。`--template repository` 単体では traffic partial が `_.json` に登録されていないため出力が `plugin-base-repo.svg` と byte 同一になり、専用サンプルは生成していない（plugin の Run() 自体は単一 repo の views を計算するが描画される partial がない）。upstream の `metrics.repository.svg` も同様に traffic を含まないため parity 維持。admin 権限の有無で Run() が "missing repo scope" で Skipped になる挙動は user-mode サンプルでカバー済み。
+> ✅ Go 側: user mode は token owner が admin の全 repo に対して `/traffic/views` を並列取得し、`base.repositories` の右列に合計 views を統合表示する。traffic plugin 単体 partial は空文字列を返すため、`plugin-traffic.svg` は `base=repositories` と組み合わせて生成する。`--template repository` 単体では traffic partial が `_.json` に登録されていないため出力が `plugin-base-repo.svg` と byte 同一になり、専用サンプルは生成していない。admin 権限の有無で Run() が "missing repo scope" で Skipped になる挙動は user-mode サンプルでカバー済み。
 > ⚠ 中列 (mjun0812): user テンプレートの `metrics.plugin.traffic.svg` は traffic セクション自体はデータ無しですが、カードは描画されるため保持しています。repository テンプレートの traffic は空 (高さ ~8px) だったため reference からは削除済み。
 
 ---

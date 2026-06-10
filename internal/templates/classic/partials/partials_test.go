@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/traffic"
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
@@ -172,7 +173,7 @@ func TestBaseActivityCommunity_RendersActivityAndCommunity(t *testing.T) {
 		`data-block="activity"`,
 		`data-block="community"`,
 		"Activity</h2>",
-		"7.3k Commits",
+		"7293 Commits",
 		"68 Pull requests reviewed",
 		"290 Pull requests opened",
 		"443 Issues opened",
@@ -292,16 +293,52 @@ func TestBaseRepositories_RendersCounts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
-	for _, marker := range []string{"250 repositories", "1.5k stargazers", "13 forks"} {
+	for _, marker := range []string{"250 Repositories", "1500 Stargazers", "13 Forkers", "0 Sponsors", "0 Watchers"} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("missing %q in %s", marker, got)
 		}
 	}
-	if strings.Contains(got, "Watching") {
-		t.Errorf("Watching row should be hidden when User.Watching = 0: %s", got)
+}
+
+func TestBaseRepositories_RendersTrafficViews(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	d.Computed.Repositories.Count = 1
+	d.SetPlugin(traffic.Name, &traffic.Result{
+		Total: traffic.TrafficView{Count: 1234, Uniques: 456},
+	})
+	got, err := partials.BaseRepositories(context.Background(), newPC(d))
+	if err != nil {
+		t.Fatalf("BaseRepositories: %v", err)
 	}
-	if strings.Contains(got, "sponsor") {
-		t.Errorf("sponsor row should be hidden when User.SponsorshipsAsMaintainer = 0: %s", got)
+	if !strings.Contains(got, "1.2k views in last two weeks") {
+		t.Fatalf("traffic views row missing: %s", got)
+	}
+}
+
+func TestBaseRepositories_HidesZeroOrSkippedTraffic(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name string
+		res  *traffic.Result
+	}{
+		{name: "zero", res: &traffic.Result{Total: traffic.TrafficView{Count: 0}}},
+		{name: "skipped", res: &traffic.Result{Skipped: true, Total: traffic.TrafficView{Count: 99}}},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			d := plugins.NewData()
+			d.Computed.Repositories.Count = 1
+			d.SetPlugin(traffic.Name, tc.res)
+			got, err := partials.BaseRepositories(context.Background(), newPC(d))
+			if err != nil {
+				t.Fatalf("BaseRepositories: %v", err)
+			}
+			if strings.Contains(got, "views in last two weeks") {
+				t.Fatalf("traffic views row should be hidden: %s", got)
+			}
+		})
 	}
 }
 
@@ -325,11 +362,11 @@ func TestBaseRepositories_PhaseOneFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
-	if !strings.Contains(got, "4 sponsors") {
-		t.Errorf("missing %q in %s", "4 sponsors", got)
+	if !strings.Contains(got, "4 Sponsors") {
+		t.Errorf("missing %q in %s", "4 Sponsors", got)
 	}
-	if strings.Contains(got, "Watching") {
-		t.Errorf("Watching moved to Community stats; must not render in repositories: %s", got)
+	if !strings.Contains(got, "0 Watchers") {
+		t.Errorf("watchers row should render in repositories: %s", got)
 	}
 }
 
@@ -345,11 +382,11 @@ func TestBaseRepositories_SponsorSingular(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
-	if !strings.Contains(got, "1 sponsor</div>") {
+	if !strings.Contains(got, "1 Sponsor</div>") {
 		t.Errorf("singular sponsor label missing: %s", got)
 	}
-	if strings.Contains(got, "Watching") {
-		t.Errorf("Watching moved to Community stats; must not render in repositories: %s", got)
+	if !strings.Contains(got, "0 Watchers") {
+		t.Errorf("watchers row should render in repositories: %s", got)
 	}
 }
 
@@ -432,12 +469,12 @@ func TestBaseRepositories_PhaseTwoFields(t *testing.T) {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
 	for _, marker := range []string{
-		"10 releases",
-		"2 packages",
+		"Prefers MIT license",
+		"10 Releases",
+		"2 Packages",
 		"5 GB used",
-		"MIT 60%",
-		"Apache-2.0 20%",
-		"GPL-3.0 10%",
+		"100 Stargazers",
+		"5 Forkers",
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("missing %q in %s", marker, got)
@@ -463,7 +500,7 @@ func TestBaseRepositories_PhaseTwoSingulars(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
-	for _, marker := range []string{"1 release</div>", "1 package</div>"} {
+	for _, marker := range []string{"1 Release</div>", "1 Package</div>"} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("missing singular %q in %s", marker, got)
 		}
@@ -519,13 +556,13 @@ func TestBaseRepositories_LicensePreference_TopN(t *testing.T) {
 		if err != nil {
 			t.Fatalf("BaseRepositories: %v", err)
 		}
-		for _, marker := range []string{"MIT 50%", "Apache-2.0 30%", "BSD-3-Clause 10%"} {
+		for _, marker := range []string{"Prefers MIT license"} {
 			if !strings.Contains(got, marker) {
 				t.Errorf("missing %q in %s", marker, got)
 			}
 		}
-		if strings.Contains(got, "ISC") {
-			t.Errorf("4th license entry should be capped out: %s", got)
+		if strings.Contains(got, "Apache-2.0") || strings.Contains(got, "BSD-3-Clause") || strings.Contains(got, "ISC") {
+			t.Errorf("only the top license preference should render: %s", got)
 		}
 	})
 	t.Run("empty slice hides the row", func(t *testing.T) {
@@ -543,10 +580,10 @@ func TestBaseRepositories_LicensePreference_TopN(t *testing.T) {
 	})
 }
 
-// TestBaseRepositories_PhaseTwoZerosHidden confirms that with zero
-// Phase 2 counters the partial does not gain any Phase 2 rows — the
-// Phase 1 fields stay the only visible content.
-func TestBaseRepositories_PhaseTwoZerosHidden(t *testing.T) {
+// TestBaseRepositories_ZeroDefaultsRendered confirms the upstream-style
+// repositories layout keeps zero Releases / Packages rows visible while
+// still hiding optional disk/license/traffic rows with no data.
+func TestBaseRepositories_ZeroDefaultsRendered(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	d.Computed.Repositories.Count = 1
@@ -554,15 +591,15 @@ func TestBaseRepositories_PhaseTwoZerosHidden(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
-	for _, marker := range []string{"releases", "packages", "used"} {
-		if strings.Contains(got, marker) {
-			t.Errorf("zero counter should hide %q in %s", marker, got)
+	for _, marker := range []string{"0 Releases", "0 Packages"} {
+		if !strings.Contains(got, marker) {
+			t.Errorf("zero default row should render %q in %s", marker, got)
 		}
 	}
-	// license-preference row collapses to a compact "<name> N%" form,
-	// so the absence of any "%</div>" sentinel proves the row is hidden.
-	if strings.Contains(got, "%</div>") {
-		t.Errorf("zero counter should hide license preference row in %s", got)
+	for _, hidden := range []string{"used", "Prefers", "views in last two weeks"} {
+		if strings.Contains(got, hidden) {
+			t.Errorf("optional zero row should hide %q in %s", hidden, got)
+		}
 	}
 }
 

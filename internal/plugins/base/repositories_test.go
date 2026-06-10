@@ -239,7 +239,7 @@ func TestPaging_BatchHalving(t *testing.T) {
 
 	pc := newPCWithGraphQL(t, mux)
 	pc.Data.Account = plugins.AccountUser
-	pc.Inputs = map[string]any{"user": "octocat"}
+	pc.Inputs = map[string]any{"user": "octocat", "base": "header, repositories"}
 
 	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
 		t.Fatalf("base.Run: %v", err)
@@ -301,7 +301,7 @@ func TestPopulateRepositories_AggregatesNewFields(t *testing.T) {
 
 	pc := newPCWithGraphQL(t, mux)
 	pc.Data.Account = plugins.AccountUser
-	pc.Inputs = map[string]any{"user": "octocat"}
+	pc.Inputs = map[string]any{"user": "octocat", "base": "header, repositories"}
 
 	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
 		t.Fatalf("base.Run: %v", err)
@@ -363,7 +363,7 @@ func TestPopulateRepositories_AllLicensesNil(t *testing.T) {
 
 	pc := newPCWithGraphQL(t, mux)
 	pc.Data.Account = plugins.AccountUser
-	pc.Inputs = map[string]any{"user": "octocat"}
+	pc.Inputs = map[string]any{"user": "octocat", "base": "header, repositories"}
 
 	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
 		t.Fatalf("base.Run: %v", err)
@@ -396,7 +396,7 @@ func TestPaging_PartialFailure(t *testing.T) {
 
 	pc := newPCWithGraphQL(t, mux)
 	pc.Data.Account = plugins.AccountUser
-	pc.Inputs = map[string]any{"user": "octocat"}
+	pc.Inputs = map[string]any{"user": "octocat", "base": "header, repositories"}
 
 	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
 		t.Fatalf("base.Run should not surface paging error: %v", err)

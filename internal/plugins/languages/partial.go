@@ -510,6 +510,7 @@ func writeDetailsRows(b *strings.Builder, bars []plugins.LanguageStat, details [
 	// "size" upstream uses). Falls back to bars[i].Size (the in-favorites
 	// byte count) when indepth isn't wired.
 	indepthBytes := indepthBytesByLanguage(pc)
+	indepthLines := indepthLinesByLanguage(pc)
 
 	b.WriteString(`<div class="row fill-width">`)
 	for _, row := range rows {
@@ -530,12 +531,7 @@ func writeDetailsRows(b *strings.Builder, bars []plugins.LanguageStat, details [
 			)
 			b.WriteString(`<small>`)
 			if showLines {
-				// Reached only when indepth is enabled (Run strips
-				// "lines" from details otherwise). Indepth's per-
-				// language line count would feed in via a future
-				// `LinesByLanguage` field; for now emit 0 to keep
-				// the column present.
-				b.WriteString(`<div>0 lines</div>`)
+				fmt.Fprintf(b, `<div>%s lines</div>`, partials.FormatCount(indepthLines[lang.Name]))
 			}
 			if showBytes {
 				fmt.Fprintf(b, `<div>%s</div>`, formatBytes(size))
@@ -568,6 +564,25 @@ func indepthBytesByLanguage(pc *templates.PartialContext) map[string]int64 {
 		return out
 	}
 	for name, n := range r.Total.Bytes {
+		out[name] = n
+	}
+	return out
+}
+
+func indepthLinesByLanguage(pc *templates.PartialContext) map[string]int64 {
+	out := map[string]int64{}
+	if pc == nil || pc.Data == nil {
+		return out
+	}
+	raw, ok := pc.Data.GetPlugin(IndepthName)
+	if !ok || raw == nil {
+		return out
+	}
+	r, ok := raw.(*IndepthResult)
+	if !ok || r == nil || r.Skipped {
+		return out
+	}
+	for name, n := range r.Total.Lines {
 		out[name] = n
 	}
 	return out

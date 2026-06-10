@@ -209,6 +209,7 @@
 
   .contribution.organization {
     display: flex;
+    align-items: center;
     border: 1px solid #959da5;
     border-radius: 6px;
     padding: 2px 6px;
@@ -216,6 +217,9 @@
     margin: 2px;
     font-size: 12px;
     background-color: #959da520;
+    max-width: 214px;
+    flex: 1 1 204px;
+    min-width: 0;
   }
   .contribution.organization.s {
     color: #EB355E;
@@ -246,16 +250,17 @@
     font-size: 13px;
   }
   .contribution .gauge {
-    margin: 0 6px;
+    flex: 0 0 16px;
+    margin: 0 4px;
     color: inherit;
-    transform: scale(1.4) translateY(1px);
   }
   .contribution .icon {
+    flex: 0 0 10px;
     fill: currentColor;
     width: 10px;
     height: 10px;
-    margin-left: -9px;
-    margin-top: 8px;
+    margin-left: -12px;
+    margin-top: 14px;
     color: inherit;
     filter: brightness(.5);
   }
@@ -412,7 +417,14 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 0 4px;
+    width: 440px;
+    padding: 0;
+    margin-left: auto;
+    overflow-wrap: anywhere;
+  }
+
+  footer span {
+    max-width: 440px;
   }
 
 /* Speed test categories */
@@ -773,15 +785,29 @@
     align-items: center;
     justify-content: space-between;
     width: 440px;
+    gap: 8px;
   }
 
   .repository .name span:first-child {
     color: #58a6ff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .repository .name span:last-child {
     color: #666666;
     font-size: 10px;
+    flex-shrink: 0;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .repository .name a {
+    color: inherit;
+    text-decoration: none;
   }
 
   .repository .description {
@@ -1713,4 +1739,4 @@
     animation-play-state: paused !important;
     caret-color: transparent !important;
   }
-</style><style></style><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper"><section data-section="header"><h1 class="field"><img class="avatar" src="https://avatars.githubusercontent.com/u/12345?v=4" width="20" height="20" /><span>The Octocat</span></h1><div class="row" data-block="header-counters"><section><div class="field">:octicon-people:Following 20 users</div></section></div></section><section data-section="activity-community"><section class="row"><section data-block="activity"><h2 class="field">:octicon-graph:Activity</h2><div class="field">:octicon-git-commit:3.2k Commits</div><div class="field">:octicon-code-review:9 Pull requests reviewed</div><div class="field">:octicon-git-pull-request:17 Pull requests opened</div><div class="field">:octicon-issue-opened:42 Issues opened</div><div class="field">:octicon-comment:88 issue comments</div></section><section data-block="community"><h2 class="field">:octicon-organization:Community stats</h2><div class="field">:octicon-organization:Member of 3 organizations</div><div class="field">:octicon-people:Following 20 users</div><div class="field">:octicon-heart:Sponsoring 0 repositories</div><div class="field">:octicon-star:Starred 120 repositories</div><div class="field">:octicon-eye:Watching 32 repositories</div></section></section></section><section data-section="repositories"><div class="row"><div class="field">:octicon-repo:51 repositories</div><div class="field">:octicon-star:1.5k stargazers</div><div class="field">:octicon-git-branch:81 forks</div></div></section><div id="metrics-end"></div><section data-section="metadata"><footer><span>These metrics include private contributions</span><span>Last updated 2026-06-04T10:03:59Z with mjun0812/github-metrics@test-version</span></footer></section></div></foreignObject></svg>
+</style><style></style><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper"><section data-section="header"><h1 class="field"><img class="avatar" src="https://avatars.githubusercontent.com/u/12345?v=4" width="20" height="20" /><span>The Octocat</span></h1><div class="row" data-block="header-counters"><section><div class="field">:octicon-people:Following 20 users</div></section></div></section><section data-section="activity-community"><section class="row"><section data-block="activity"><h2 class="field">:octicon-graph:Activity</h2><div class="field">:octicon-git-commit:3214 Commits</div><div class="field">:octicon-code-review:9 Pull requests reviewed</div><div class="field">:octicon-git-pull-request:17 Pull requests opened</div><div class="field">:octicon-issue-opened:42 Issues opened</div><div class="field">:octicon-comment:88 issue comments</div></section><section data-block="community"><h2 class="field">:octicon-organization:Community stats</h2><div class="field">:octicon-organization:Member of 3 organizations</div><div class="field">:octicon-people:Following 20 users</div><div class="field">:octicon-heart:Sponsoring 0 repositories</div><div class="field">:octicon-star:Starred 120 repositories</div><div class="field">:octicon-eye:Watching 32 repositories</div></section></section></section><section data-section="repositories"><h2 class="field">:octicon-repo:51 Repositories</h2><div class="row"><section><div class="field">:octicon-tag:0 Releases</div><div class="field">:octicon-package:0 Packages</div></section><section><div class="field">:octicon-heart:0 Sponsors</div><div class="field">:octicon-star:1500 Stargazers</div><div class="field">:octicon-repo-forked:81 Forkers</div><div class="field">:octicon-eye:0 Watchers</div></section></div></section><div id="metrics-end"></div><section data-section="metadata"><footer><span>These metrics include private contributions</span><span>Last updated 2026-06-10T12:12:53Z with mjun0812/github-metrics@test-version</span></footer></section></div></foreignObject></svg>

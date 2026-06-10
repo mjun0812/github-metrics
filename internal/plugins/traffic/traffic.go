@@ -51,6 +51,15 @@ type Result struct {
 // IsSkipped lets the classic dispatcher detect the skipped path.
 func (r *Result) IsSkipped() bool { return r != nil && r.Skipped }
 
+// TotalViews exposes the aggregate view count without forcing base
+// partials to import this package and create an init-time cycle.
+func (r *Result) TotalViews() int {
+	if r == nil {
+		return 0
+	}
+	return r.Total.Count
+}
+
 // TrafficView mirrors the upstream {count, uniques} pair.
 type TrafficView struct {
 	Count   int `json:"count"`

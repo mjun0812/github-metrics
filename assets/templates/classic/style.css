@@ -209,6 +209,7 @@
 
   .contribution.organization {
     display: flex;
+    align-items: center;
     border: 1px solid #959da5;
     border-radius: 6px;
     padding: 2px 6px;
@@ -216,6 +217,9 @@
     margin: 2px;
     font-size: 12px;
     background-color: #959da520;
+    max-width: 214px;
+    flex: 1 1 204px;
+    min-width: 0;
   }
   .contribution.organization.s {
     color: #EB355E;
@@ -246,16 +250,17 @@
     font-size: 13px;
   }
   .contribution .gauge {
-    margin: 0 6px;
+    flex: 0 0 16px;
+    margin: 0 4px;
     color: inherit;
-    transform: scale(1.4) translateY(1px);
   }
   .contribution .icon {
+    flex: 0 0 10px;
     fill: currentColor;
     width: 10px;
     height: 10px;
-    margin-left: -9px;
-    margin-top: 8px;
+    margin-left: -12px;
+    margin-top: 14px;
     color: inherit;
     filter: brightness(.5);
   }
@@ -412,7 +417,14 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 0 4px;
+    width: 440px;
+    padding: 0;
+    margin-left: auto;
+    overflow-wrap: anywhere;
+  }
+
+  footer span {
+    max-width: 440px;
   }
 
 /* Speed test categories */
@@ -773,15 +785,29 @@
     align-items: center;
     justify-content: space-between;
     width: 440px;
+    gap: 8px;
   }
 
   .repository .name span:first-child {
     color: #58a6ff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .repository .name span:last-child {
     color: #666666;
     font-size: 10px;
+    flex-shrink: 0;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .repository .name a {
+    color: inherit;
+    text-decoration: none;
   }
 
   .repository .description {

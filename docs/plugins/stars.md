@@ -1,7 +1,9 @@
 <!-- AUTOGEN_START: title-and-description -->
+
 # Plugin: stars
 
 This plugin displays recently starred repositories.
+
 <!-- AUTOGEN_END: title-and-description -->
 
 ## サンプル出力
@@ -15,15 +17,18 @@ This plugin displays recently starred repositories.
 <!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
 
 <!-- AUTOGEN_START: config-table -->
+
 ## 設定 (inputs)
 
-| Input | 説明 | デフォルト | 必須 | 型 |
-|-------|------|------------|------|----|
-| `plugin_stars` | Enable stars plugin | `no` | no | boolean |
-| `plugin_stars_limit` | Display limit | `4` | no | number |
+| Input                | 説明                | デフォルト | 必須 | 型      |
+| -------------------- | ------------------- | ---------- | ---- | ------- |
+| `plugin_stars`       | Enable stars plugin | `no`       | no   | boolean |
+| `plugin_stars_limit` | Display limit       | `4`        | no   | number  |
+
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
+
 ## 使い方
 
 ### GitHub Action
@@ -43,6 +48,7 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_stars=yes
 ```
+
 <!-- AUTOGEN_END: usage-snippet -->
 
 ## Requirements
@@ -51,7 +57,7 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 
 ## 既知の制約 / 注意点
 
-<!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->
+- Starred dates are rendered as relative labels (`3 days ago`, `2 hours ago`) when recent, and fall back to the absolute date for older entries.
 
 ## 参照
 

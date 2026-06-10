@@ -3,7 +3,10 @@ package stars
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
@@ -11,6 +14,31 @@ import (
 
 func init() {
 	partials.Register("plugin."+Name, Partial)
+}
+
+var (
+	nowMu   sync.RWMutex
+	nowFunc = time.Now
+)
+
+// SetNowForTest overrides the stars partial clock and returns a restore function.
+func SetNowForTest(fn func() time.Time) func() {
+	nowMu.Lock()
+	old := nowFunc
+	nowFunc = fn
+	nowMu.Unlock()
+	return func() {
+		nowMu.Lock()
+		nowFunc = old
+		nowMu.Unlock()
+	}
+}
+
+func currentNow() time.Time {
+	nowMu.RLock()
+	fn := nowFunc
+	nowMu.RUnlock()
+	return fn()
 }
 
 // starOcticon is the upstream `<%- octicon "star" %>` 16x16 path used
@@ -111,7 +139,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	for _, s := range r.List {
 		date := ""
 		if !s.StarredAt.IsZero() {
-			date = s.StarredAt.UTC().Format("2006-01-02")
+			date = formatStarredAt(s.StarredAt, currentNow())
 		}
 		b.WriteString(`<div class="row fill-width largeable-width-half">`)
 		icon := repoOcticon
@@ -160,4 +188,31 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	b.WriteString(`</section></div>`)
 	b.WriteString(`</section>`)
 	return b.String(), nil
+}
+
+func formatStarredAt(t, now time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	days := now.Sub(t).Hours() / 24
+	switch {
+	case days < 1:
+		hours := int(math.Ceil(days * 24))
+		if hours < 0 {
+			hours = 0
+		}
+		return fmt.Sprintf("%d hour%s ago", hours, pluralSuffix(hours >= 2))
+	case days < 30:
+		n := int(math.Floor(days))
+		return fmt.Sprintf("%d day%s ago", n, pluralSuffix(days >= 2))
+	default:
+		return t.UTC().Format("Jan 02 2006")
+	}
+}
+
+func pluralSuffix(many bool) string {
+	if many {
+		return "s"
+	}
+	return ""
 }

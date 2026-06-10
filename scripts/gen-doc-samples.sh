@@ -2,12 +2,12 @@
 # scripts/gen-doc-samples.sh — generate the docs/examples/ sample SVG
 # set for the README plugins gallery + per-plugin doc pages.
 #
-# Runs the 19 adopted plugins (mjun0812 user by default) + 9 sub-mode
+# Runs the 19 adopted plugins (mjun0812 user by default) + 10 sub-mode
 # variants (achievements compact + languages recent/indepth/details +
-# isocalendar full-year + stargazers graph + notable indepth + habits
-# facts + habits charts) + 1 foundational `plugin-base` render + 1
+# isocalendar full-year + calendar full + stargazers graph + notable
+# indepth + habits facts + habits charts) + 1 foundational `plugin-base` render + 1
 # classic template sample (`metrics-classic`, base-only upstream-parity
-# render — see issue #463) = 29
+# render — see issue #463) = 30
 # user-mode
 # logical samples. (`contributors` is NOT rendered in user mode — it is a
 # repository-mode-only plugin and would emit an empty card; see issue #448
@@ -65,13 +65,13 @@ OUTDIR="${METRICS_DOC_OUTDIR:-docs/examples}"
 
 # Pre-conditions ----------------------------------------------------
 if [[ -z "${GITHUB_TOKEN:-}" ]]; then
-  echo "FATAL: GITHUB_TOKEN env var is empty or unset" >&2
-  exit 1
+	echo "FATAL: GITHUB_TOKEN env var is empty or unset" >&2
+	exit 1
 fi
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
-  echo "FATAL: docker image '$IMAGE' not found." >&2
-  echo "Build it first: docker build -f deploy/Dockerfile -t github-metrics:local ." >&2
-  exit 1
+	echo "FATAL: docker image '$IMAGE' not found." >&2
+	echo "Build it first: docker build -f deploy/Dockerfile -t github-metrics:local ." >&2
+	exit 1
 fi
 mkdir -p "$OUTDIR"
 
@@ -94,142 +94,150 @@ trap 'rm -rf "$WORKDIR"' EXIT
 # contributors sample is the repo-mode `plugin-contributors-repo-contributions`
 # render below.
 PLUGINS=(
-  achievements activity calendar habits isocalendar
-  notable people projects repositories sponsors
-  sponsorships stargazers starlists stars topics traffic
+	achievements activity calendar habits isocalendar
+	notable people projects repositories sponsors
+	sponsorships stargazers starlists stars topics traffic
 )
 
 # Track failures so the script can exit non-zero at the end.
 FAILURES=()
 
 render_one() {
-  # render_one <basename-without-ext> <extra-args...>
-  # User-mode render: `--user ${USER}` is injected automatically. The
-  # caller passes `--template classic` (or nothing — classic is the
-  # default) and any `--plugin key=value` overrides. Renders BOTH .svg
-  # and .png variants under OUTDIR. SVG is piped through
-  # normalize-svg-stream for idempotency; PNG is binary deterministic
-  # so the docker output is moved directly.
-  local base="$1"; shift
+	# render_one <basename-without-ext> <extra-args...>
+	# User-mode render: `--user ${USER}` is injected automatically. The
+	# caller passes `--template classic` (or nothing — classic is the
+	# default) and any `--plugin key=value` overrides. Renders BOTH .svg
+	# and .png variants under OUTDIR. SVG is piped through
+	# normalize-svg-stream for idempotency; PNG is binary deterministic
+	# so the docker output is moved directly.
+	local base="$1"
+	shift
 
-  echo "  → ${base}"
-  local fmt
-  for fmt in svg png; do
-    local outfile="${base}.${fmt}"
-    local tmp_raw="${WORKDIR}/${outfile}"
-    local final="${OUTDIR}/${outfile}"
+	echo "  → ${base}"
+	local fmt
+	for fmt in svg png; do
+		local outfile="${base}.${fmt}"
+		local tmp_raw="${WORKDIR}/${outfile}"
+		local final="${OUTDIR}/${outfile}"
 
-    local attempt ok=0
-    for attempt in 1 2 3; do
-      rm -f "$tmp_raw"
-      if docker run --rm \
-          -e GITHUB_TOKEN \
-          -e HTTP_PROXY="" \
-          -e HTTPS_PROXY="" \
-          -e http_proxy="" \
-          -e https_proxy="" \
-          -e NO_PROXY="*" \
-          -e no_proxy="*" \
-          -v "${WORKDIR}:/out" \
-          "$IMAGE" \
-          --user "$USER" \
-          --token-env GITHUB_TOKEN \
-          --output "$fmt" \
-          --filename "/out/${outfile}" \
-          --dryrun \
-          "$@" >/dev/null 2>"${WORKDIR}/${outfile}.log" && [[ -s "$tmp_raw" ]]; then
-        ok=1; break
-      fi
-      [[ "$attempt" -lt 3 ]] && echo "    retry ${attempt}/3 ${fmt} ..."
-    done
-    if [[ "$ok" -eq 0 ]]; then
-      echo "    FAIL ${fmt} (see ${WORKDIR}/${outfile}.log)"
-      FAILURES+=("$outfile")
-      continue
-    fi
-    if [[ "$fmt" == "svg" ]]; then
-      local tmp_norm="${WORKDIR}/${outfile}.norm"
-      if ! go run ./internal/tools/normalize-svg-stream <"$tmp_raw" >"$tmp_norm" 2>"${WORKDIR}/${outfile}.norm.log"; then
-        echo "    FAIL ${fmt} (normalize)"
-        FAILURES+=("$outfile")
-        continue
-      fi
-      mv "$tmp_norm" "$final"
-    else
-      mv "$tmp_raw" "$final"
-    fi
-    echo "    OK ${fmt} ($(wc -c <"$final" | tr -d ' ') bytes)"
-  done
+		local attempt ok=0
+		for attempt in 1 2 3; do
+			rm -f "$tmp_raw"
+			if docker run --rm \
+				-e GITHUB_TOKEN \
+				-e HTTP_PROXY="" \
+				-e HTTPS_PROXY="" \
+				-e http_proxy="" \
+				-e https_proxy="" \
+				-e NO_PROXY="*" \
+				-e no_proxy="*" \
+				-v "${WORKDIR}:/out" \
+				"$IMAGE" \
+				--user "$USER" \
+				--token-env GITHUB_TOKEN \
+				--output "$fmt" \
+				--filename "/out/${outfile}" \
+				--dryrun \
+				"$@" >/dev/null 2>"${WORKDIR}/${outfile}.log" && [[ -s "$tmp_raw" ]]; then
+				ok=1
+				break
+			fi
+			[[ "$attempt" -lt 3 ]] && echo "    retry ${attempt}/3 ${fmt} ..."
+		done
+		if [[ "$ok" -eq 0 ]]; then
+			echo "    FAIL ${fmt} (see ${WORKDIR}/${outfile}.log)"
+			FAILURES+=("$outfile")
+			continue
+		fi
+		if [[ "$fmt" == "svg" ]]; then
+			local tmp_norm="${WORKDIR}/${outfile}.norm"
+			if ! go run ./internal/tools/normalize-svg-stream <"$tmp_raw" >"$tmp_norm" 2>"${WORKDIR}/${outfile}.norm.log"; then
+				echo "    FAIL ${fmt} (normalize)"
+				FAILURES+=("$outfile")
+				continue
+			fi
+			mv "$tmp_norm" "$final"
+		else
+			mv "$tmp_raw" "$final"
+		fi
+		echo "    OK ${fmt} ($(wc -c <"$final" | tr -d ' ') bytes)"
+	done
 }
 
 render_one_repo() {
-  # render_one_repo <basename-without-ext> <extra-args...>
-  # Repository-mode render: `--user ${USER} --repo ${REPO} --template
-  # repository` are injected automatically. The caller passes
-  # `--plugin key=value` overrides (typically `--plugin base=` to
-  # suppress the default base sections + `--plugin plugin_<slug>=yes`
-  # to enable a single plugin). Output handling is identical to
-  # render_one (svg + png, normalize-svg-stream for svg).
-  local base="$1"; shift
+	# render_one_repo <basename-without-ext> <extra-args...>
+	# Repository-mode render: `--user ${USER} --repo ${REPO} --template
+	# repository` are injected automatically. The caller passes
+	# `--plugin key=value` overrides (typically `--plugin base=` to
+	# suppress the default base sections + `--plugin plugin_<slug>=yes`
+	# to enable a single plugin). Output handling is identical to
+	# render_one (svg + png, normalize-svg-stream for svg).
+	local base="$1"
+	shift
 
-  echo "  → ${base}"
-  local fmt
-  for fmt in svg png; do
-    local outfile="${base}.${fmt}"
-    local tmp_raw="${WORKDIR}/${outfile}"
-    local final="${OUTDIR}/${outfile}"
+	echo "  → ${base}"
+	local fmt
+	for fmt in svg png; do
+		local outfile="${base}.${fmt}"
+		local tmp_raw="${WORKDIR}/${outfile}"
+		local final="${OUTDIR}/${outfile}"
 
-    local attempt ok=0
-    for attempt in 1 2 3; do
-      rm -f "$tmp_raw"
-      if docker run --rm \
-          -e GITHUB_TOKEN \
-          -e HTTP_PROXY="" \
-          -e HTTPS_PROXY="" \
-          -e http_proxy="" \
-          -e https_proxy="" \
-          -e NO_PROXY="*" \
-          -e no_proxy="*" \
-          -v "${WORKDIR}:/out" \
-          "$IMAGE" \
-          --user "$USER" \
-          --repo "$REPO" \
-          --template repository \
-          --token-env GITHUB_TOKEN \
-          --output "$fmt" \
-          --filename "/out/${outfile}" \
-          --dryrun \
-          "$@" >/dev/null 2>"${WORKDIR}/${outfile}.log" && [[ -s "$tmp_raw" ]]; then
-        ok=1; break
-      fi
-      [[ "$attempt" -lt 3 ]] && echo "    retry ${attempt}/3 ${fmt} ..."
-    done
-    if [[ "$ok" -eq 0 ]]; then
-      echo "    FAIL ${fmt} (see ${WORKDIR}/${outfile}.log)"
-      FAILURES+=("$outfile")
-      continue
-    fi
-    if [[ "$fmt" == "svg" ]]; then
-      local tmp_norm="${WORKDIR}/${outfile}.norm"
-      if ! go run ./internal/tools/normalize-svg-stream <"$tmp_raw" >"$tmp_norm" 2>"${WORKDIR}/${outfile}.norm.log"; then
-        echo "    FAIL ${fmt} (normalize)"
-        FAILURES+=("$outfile")
-        continue
-      fi
-      mv "$tmp_norm" "$final"
-    else
-      mv "$tmp_raw" "$final"
-    fi
-    echo "    OK ${fmt} ($(wc -c <"$final" | tr -d ' ') bytes)"
-  done
+		local attempt ok=0
+		for attempt in 1 2 3; do
+			rm -f "$tmp_raw"
+			if docker run --rm \
+				-e GITHUB_TOKEN \
+				-e HTTP_PROXY="" \
+				-e HTTPS_PROXY="" \
+				-e http_proxy="" \
+				-e https_proxy="" \
+				-e NO_PROXY="*" \
+				-e no_proxy="*" \
+				-v "${WORKDIR}:/out" \
+				"$IMAGE" \
+				--user "$USER" \
+				--repo "$REPO" \
+				--template repository \
+				--token-env GITHUB_TOKEN \
+				--output "$fmt" \
+				--filename "/out/${outfile}" \
+				--dryrun \
+				"$@" >/dev/null 2>"${WORKDIR}/${outfile}.log" && [[ -s "$tmp_raw" ]]; then
+				ok=1
+				break
+			fi
+			[[ "$attempt" -lt 3 ]] && echo "    retry ${attempt}/3 ${fmt} ..."
+		done
+		if [[ "$ok" -eq 0 ]]; then
+			echo "    FAIL ${fmt} (see ${WORKDIR}/${outfile}.log)"
+			FAILURES+=("$outfile")
+			continue
+		fi
+		if [[ "$fmt" == "svg" ]]; then
+			local tmp_norm="${WORKDIR}/${outfile}.norm"
+			if ! go run ./internal/tools/normalize-svg-stream <"$tmp_raw" >"$tmp_norm" 2>"${WORKDIR}/${outfile}.norm.log"; then
+				echo "    FAIL ${fmt} (normalize)"
+				FAILURES+=("$outfile")
+				continue
+			fi
+			mv "$tmp_norm" "$final"
+		else
+			mv "$tmp_raw" "$final"
+		fi
+		echo "    OK ${fmt} ($(wc -c <"$final" | tr -d ' ') bytes)"
+	done
 }
 
-echo "== 17 per-plugin single-panel renders (languages handled separately) =="
+echo "== 16 per-plugin single-panel renders (languages handled separately) =="
 for slug in "${PLUGINS[@]}"; do
-  render_one "plugin-${slug}" \
-    --template classic \
-    --plugin "base=" \
-    --plugin "plugin_${slug}=yes"
+	base_arg="base="
+	if [[ "${slug}" == "traffic" ]]; then
+		base_arg="base=repositories"
+	fi
+	render_one "plugin-${slug}" \
+		--template classic \
+		--plugin "${base_arg}" \
+		--plugin "plugin_${slug}=yes"
 done
 
 echo
@@ -239,34 +247,34 @@ echo "== languages default + 2 sub-mode variants =="
 # the colored bar. The dedicated `plugin-languages-details` variant
 # below adds `lines` on top for the "full numeric column" demo.
 render_one "plugin-languages" \
-  --template classic \
-  --plugin "base=" \
-  --plugin "plugin_languages=yes" \
-  --plugin "plugin_languages_details=bytes-size,percentage"
+	--template classic \
+	--plugin "base=" \
+	--plugin "plugin_languages=yes" \
+	--plugin "plugin_languages_details=bytes-size,percentage"
 
 render_one "plugin-languages-recent" \
-  --template classic \
-  --plugin "base=" \
-  --plugin "plugin_languages=yes" \
-  --plugin "plugin_languages_sections=recently-used" \
-  --plugin "plugin_languages_recent_load=300" \
-  --plugin "plugin_languages_recent_days=30" \
-  --plugin "plugin_languages_details=bytes-size,percentage"
+	--template classic \
+	--plugin "base=" \
+	--plugin "plugin_languages=yes" \
+	--plugin "plugin_languages_sections=recently-used" \
+	--plugin "plugin_languages_recent_load=300" \
+	--plugin "plugin_languages_recent_days=30" \
+	--plugin "plugin_languages_details=bytes-size,percentage"
 
 render_one "plugin-languages-indepth" \
-  --template classic \
-  --plugin "base=" \
-  --plugin "plugin_languages=yes" \
-  --plugin "plugin_languages_indepth=yes" \
-  --plugin "plugin_languages_analysis_timeout=30" \
-  --plugin "plugin_languages_details=bytes-size,percentage"
+	--template classic \
+	--plugin "base=" \
+	--plugin "plugin_languages=yes" \
+	--plugin "plugin_languages_indepth=yes" \
+	--plugin "plugin_languages_analysis_timeout=30" \
+	--plugin "plugin_languages_details=bytes-size,percentage"
 
 echo
 echo "== other upstream-parity sub-mode variants =="
 # Only variants where the Go implementation produces output that visibly
 # differs from the plain plugin (for the sample user) are kept here.
 # Intentionally omitted:
-#   - calendar.full (plugin_calendar_limit=0), repositories.pinned
+#   - repositories.pinned
 #       Go accepts the option but the output is byte-identical to the plain
 #       plugin for this sample user's data.
 #   - topics.icons, starlists.languages, sponsors.full
@@ -276,23 +284,23 @@ echo "== other upstream-parity sub-mode variants =="
 #   - stargazers.worldmap (Google Maps API, backlog),
 #     stargazers.chartist (deprecated alias, byte-identical to graph).
 render_one "plugin-achievements-compact" \
-  --template classic \
-  --plugin "base=" \
-  --plugin "plugin_achievements=yes" \
-  --plugin "plugin_achievements_display=compact"
+	--template classic \
+	--plugin "base=" \
+	--plugin "plugin_achievements=yes" \
+	--plugin "plugin_achievements_display=compact"
 
 render_one "plugin-notable-indepth" \
-  --template classic \
-  --plugin "base=" \
-  --plugin "plugin_notable=yes" \
-  --plugin "plugin_notable_indepth=yes" \
-  --plugin "plugin_notable_repositories=yes"
+	--template classic \
+	--plugin "base=" \
+	--plugin "plugin_notable=yes" \
+	--plugin "plugin_notable_indepth=yes" \
+	--plugin "plugin_notable_repositories=yes"
 
 render_one "plugin-languages-details" \
-  --template classic \
-  --plugin "base=" \
-  --plugin "plugin_languages=yes" \
-  --plugin "plugin_languages_details=bytes-size,percentage,lines"
+	--template classic \
+	--plugin "base=" \
+	--plugin "plugin_languages=yes" \
+	--plugin "plugin_languages_details=bytes-size,percentage,lines"
 
 # `reactions` is rendered separately so the sample carries the
 # `plugin_reactions_details=percentage` override, producing the
@@ -301,36 +309,42 @@ render_one "plugin-languages-details" \
 # `plugin_reactions_limit` is 200 (see metadata.yml), so the header
 # reads "from last <=200 comments".
 render_one "plugin-reactions" \
-  --template classic \
-  --plugin "base=" \
-  --plugin "plugin_reactions=yes" \
-  --plugin "plugin_reactions_details=percentage"
+	--template classic \
+	--plugin "base=" \
+	--plugin "plugin_reactions=yes" \
+	--plugin "plugin_reactions_details=percentage"
 
 render_one "plugin-isocalendar-fullyear" \
-  --template classic \
-  --plugin "base=" \
-  --plugin "plugin_isocalendar=yes" \
-  --plugin "plugin_isocalendar_duration=full-year"
+	--template classic \
+	--plugin "base=" \
+	--plugin "plugin_isocalendar=yes" \
+	--plugin "plugin_isocalendar_duration=full-year"
+
+render_one "plugin-calendar-full" \
+	--template classic \
+	--plugin "base=" \
+	--plugin "plugin_calendar=yes" \
+	--plugin "plugin_calendar_limit=0"
 
 render_one "plugin-stargazers-graph" \
-  --template classic \
-  --plugin "base=" \
-  --plugin "plugin_stargazers=yes" \
-  --plugin "plugin_stargazers_charts_type=graph"
+	--template classic \
+	--plugin "base=" \
+	--plugin "plugin_stargazers=yes" \
+	--plugin "plugin_stargazers_charts_type=graph"
 
 render_one "plugin-habits-facts" \
-  --template classic \
-  --plugin "base=" \
-  --plugin "plugin_habits=yes" \
-  --plugin "plugin_habits_facts=yes" \
-  --plugin "plugin_habits_charts=no"
+	--template classic \
+	--plugin "base=" \
+	--plugin "plugin_habits=yes" \
+	--plugin "plugin_habits_facts=yes" \
+	--plugin "plugin_habits_charts=no"
 
 render_one "plugin-habits-charts" \
-  --template classic \
-  --plugin "base=" \
-  --plugin "plugin_habits=yes" \
-  --plugin "plugin_habits_facts=no" \
-  --plugin "plugin_habits_charts=yes"
+	--template classic \
+	--plugin "base=" \
+	--plugin "plugin_habits=yes" \
+	--plugin "plugin_habits_facts=no" \
+	--plugin "plugin_habits_charts=yes"
 
 echo
 echo "== classic template overview (upstream-parity base render) =="
@@ -359,7 +373,8 @@ echo "== classic template overview (upstream-parity base render) =="
 # internal/engine/dispatch.go::optimizeEnabled), matching upstream's
 # single-line minified style block.
 render_one "metrics-classic" \
-  --template classic
+	--template classic \
+	--plugin "base=header, repositories"
 
 echo
 echo "== foundational base render =="
@@ -373,7 +388,7 @@ echo "== foundational base render =="
 # output (configuration + parallel runner only). See
 # docs/plugins/core.md.
 render_one "plugin-base" \
-  --template classic
+	--template classic
 
 echo
 echo "== per-plugin repository-mode renders (only plugins with visible delta) =="
@@ -401,8 +416,8 @@ echo "== per-plugin repository-mode renders (only plugins with visible delta) ==
 # bodies short-circuit to a descriptive SkippedReason instead of
 # silently returning empty data.
 render_one_repo "plugin-people-repo" \
-  --plugin "base=" \
-  --plugin "plugin_people=yes"
+	--plugin "base=" \
+	--plugin "plugin_people=yes"
 
 echo
 echo "== repository-mode sub-mode variants =="
@@ -411,9 +426,9 @@ echo "== repository-mode sub-mode variants =="
 # plain `plugin-contributors-repo` sample already covers commit
 # counts; this variant demonstrates the additions/deletions columns.
 render_one_repo "plugin-contributors-repo-contributions" \
-  --plugin "base=" \
-  --plugin "plugin_contributors=yes" \
-  --plugin "plugin_contributors_contributions=yes"
+	--plugin "base=" \
+	--plugin "plugin_contributors=yes" \
+	--plugin "plugin_contributors_contributions=yes"
 
 # `people.repository`: in repository mode the default people types
 # auto-switch to stargazers + watchers (see
@@ -421,9 +436,9 @@ render_one_repo "plugin-contributors-repo-contributions" \
 # full repo-context set (stargazers + watchers + contributors) so
 # every supported repo-mode type renders in one card.
 render_one_repo "plugin-people-repo-types" \
-  --plugin "base=" \
-  --plugin "plugin_people=yes" \
-  --plugin "plugin_people_types=stargazers,watchers,contributors"
+	--plugin "base=" \
+	--plugin "plugin_people=yes" \
+	--plugin "plugin_people_types=stargazers,watchers,contributors"
 
 echo
 echo "== repository foundational base render =="
@@ -485,17 +500,17 @@ echo "== Summary =="
 # emitted as repo-mode samples (see "per-plugin repository-mode
 # renders" section above for the rationale).
 REPO_LOGICAL=5
-TOTAL=$(( (${#PLUGINS[@]} + 3 + 7 + 1 + 1 + REPO_LOGICAL) * 2 ))
+TOTAL=$(((${#PLUGINS[@]} + 3 + 9 + 1 + 1 + REPO_LOGICAL) * 2))
 OK=$((TOTAL - ${#FAILURES[@]}))
 echo "  OK:   ${OK}/${TOTAL}"
-if (( ${#FAILURES[@]} > 0 )); then
-  echo "  FAIL: ${#FAILURES[@]}"
-  for f in "${FAILURES[@]}"; do
-    echo "    - $f"
-  done
-  echo
-  echo "Per-failure logs preserved in: $WORKDIR"
-  trap - EXIT  # keep workdir for inspection
-  exit 1
+if ((${#FAILURES[@]} > 0)); then
+	echo "  FAIL: ${#FAILURES[@]}"
+	for f in "${FAILURES[@]}"; do
+		echo "    - $f"
+	done
+	echo
+	echo "Per-failure logs preserved in: $WORKDIR"
+	trap - EXIT # keep workdir for inspection
+	exit 1
 fi
 echo "All ${TOTAL} sample files (svg + png) generated under ${OUTDIR}/"
