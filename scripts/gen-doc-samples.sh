@@ -46,7 +46,7 @@
 #     admin on ${REPO} is required for the traffic-repo sample to fetch
 #     real views/clones)
 #   - github-metrics:local docker image present
-#       (build with: docker build -f deploy/Dockerfile -t github-metrics:local .)
+#       (build with: docker build -t github-metrics:local .)
 #
 # Env overrides:
 #   METRICS_DOC_USER   default: mjun0812
@@ -70,7 +70,7 @@ if [[ -z "${GITHUB_TOKEN:-}" ]]; then
 fi
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
 	echo "FATAL: docker image '$IMAGE' not found." >&2
-	echo "Build it first: docker build -f deploy/Dockerfile -t github-metrics:local ." >&2
+	echo "Build it first: docker build -t github-metrics:local ." >&2
 	exit 1
 fi
 mkdir -p "$OUTDIR"

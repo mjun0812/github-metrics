@@ -929,4 +929,4 @@ runs:
   # from source. The release pipeline rewrites this line to a
   # docker:// reference pinned to the published vX.Y.Z tag when it
   # runs `VERSION=vX.Y.Z make gen-action-yml`.
-  image: 'deploy/Dockerfile'
+  image: 'Dockerfile'
