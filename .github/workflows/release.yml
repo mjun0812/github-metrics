@@ -121,7 +121,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./deploy/Dockerfile
+          file: ./Dockerfile
           platforms: ${{ matrix.platform }}
           build-args: |
             VERSION=${{ steps.tag.outputs.tag }}

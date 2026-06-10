@@ -33,7 +33,7 @@ help:
 	@echo "  build               Build cmd/metrics-cli into bin/"
 	@echo "  build-cli           Build only cmd/metrics-cli"
 	@echo "  gen-action-yml      Generate action.yml from assets/plugins/*/metadata.yml + core inputs (M6)"
-	@echo "  docker-build        Build the metrics-cli Docker image from deploy/Dockerfile (tagged :dev)"
+	@echo "  docker-build        Build the metrics-cli Docker image from Dockerfile (tagged :dev)"
 	@echo "  docker-run-cli      Run the metrics-cli Docker image in CLI mode against mocked octocat"
 	@echo "  docker-smoke        Run the M10 docker-smoke integration test (requires docker)"
 	@echo "  release-dry-run     Trigger .github/workflows/release.yml in dry_run=true mode and watch (requires gh CLI)"
@@ -72,12 +72,12 @@ $(BIN_DIR)/%: cmd/%/main.go
 gen-action-yml:
 	$(GO) run ./internal/tools/gen-action-yml --output ./action.yml
 
-# Build the metrics-cli Docker image from deploy/Dockerfile. The
-# image is multi-stage: builder produces the binary + runtime layer
-# adds chromium for SVG/PNG/JPEG rendering. Multi-arch build + size
-# budget assertion live in .github/workflows/release.yml (M10).
+# Build the metrics-cli Docker image. The image is multi-stage:
+# builder produces the binary + runtime layer adds chromium for
+# SVG/PNG/JPEG rendering. Multi-arch build + size budget assertion
+# live in .github/workflows/release.yml (M10).
 docker-build:
-	docker build -f deploy/Dockerfile -t ghcr.io/mjun0812/github-metrics:dev .
+	docker build -t ghcr.io/mjun0812/github-metrics:dev .
 
 # Run the metrics-cli Docker image in CLI mode against the
 # `octocat` mock fixture. Prints the rendered SVG to stdout. Use to
@@ -138,8 +138,7 @@ gen-octicons:
 verify-octicons: gen-octicons
 	git diff --exit-code assets/octicons/data.json
 
-# M10 production build alias — points at docker-build now that
-# deploy/Dockerfile is the canonical production Dockerfile (T-126).
+# M10 production build alias.
 docker: docker-build
 
 # Run the M10 docker-smoke integration test. The test is gated by the

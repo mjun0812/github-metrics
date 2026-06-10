@@ -153,7 +153,7 @@ plus the core inputs by `internal/tools/gen-action-yml`. The lefthook
 fails if the committed file would drift.
 
 ```sh
-make gen-action-yml          # default (image: 'deploy/Dockerfile')
+make gen-action-yml          # default (image: 'Dockerfile')
 VERSION=v1.0.0 make gen-action-yml   # release pin (image: 'docker://...')
 ```
 
@@ -193,7 +193,7 @@ output for release.
   Linux: `/usr/bin/chromium`).
 - Docker image `github-metrics:local` built from this checkout:
   ```sh
-  docker build -f deploy/Dockerfile -t github-metrics:local .
+  docker build -t github-metrics:local .
   ```
 
 **Markdown only (cheap, no token needed)**
