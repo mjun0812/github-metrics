@@ -1,7 +1,7 @@
 //go:build docker_smoke
 
 // Package integration_test docker_smoke verifies the M10 production
-// Dockerfile at deploy/Dockerfile. The test builds the image,
+// Dockerfile. The test builds the image,
 // invokes `metrics-cli --help` inside a container, and asserts
 // the M10 image-size budget.
 //
@@ -48,7 +48,7 @@ const (
 	dockerRunTimeout = 30 * time.Second
 )
 
-// TestDockerfile_BuildRunHelp builds the deploy/Dockerfile image and
+// TestDockerfile_BuildRunHelp builds the Dockerfile image and
 // runs `metrics-cli --help` inside it.
 //
 // Verifies M10 acceptance criteria:
@@ -67,7 +67,6 @@ func TestDockerfile_BuildRunHelp(t *testing.T) {
 	buildCtx, cancelBuild := context.WithTimeout(context.Background(), dockerBuildTimeout)
 	defer cancelBuild()
 	buildCmd := exec.CommandContext(buildCtx, "docker", "build",
-		"-f", "deploy/Dockerfile",
 		"-t", dockerSmokeImageTag,
 		".")
 	buildCmd.Dir = root

@@ -22,7 +22,7 @@
 # ~830 MB on GitHub-hosted ubuntu-latest runners. CJK fonts cost
 # ~80 MB but breaking CJK repo-name rendering was rejected for v1.0.
 #
-# Build (local):  docker build -f deploy/Dockerfile -t github-metrics:dev .
+# Build (local):  docker build -t github-metrics:dev .
 # Run   (local):  docker run --rm github-metrics:dev metrics-cli --help
 
 # --- Build stage ----------------------------------------------------

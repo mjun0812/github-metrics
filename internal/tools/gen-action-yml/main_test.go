@@ -21,10 +21,10 @@ func TestGenerate_HasRequiredSections(t *testing.T) {
 		"runs:",
 		"using: 'docker'",
 		// Local-dev / pre-release fallback: build from the M10
-		// production Dockerfile at deploy/Dockerfile. The release
+		// production Dockerfile at Dockerfile. The release
 		// pipeline rewrites this to docker:// when run with
 		// VERSION=vX.Y.Z.
-		"image: 'deploy/Dockerfile'",
+		"image: 'Dockerfile'",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("generated action.yml missing %q", want)
@@ -44,7 +44,7 @@ func TestGenerate_VersionedImageRef(t *testing.T) {
 	if !strings.Contains(body, want) {
 		t.Errorf("generated action.yml missing versioned image ref %q", want)
 	}
-	if strings.Contains(body, "image: 'deploy/Dockerfile'") {
+	if strings.Contains(body, "image: 'Dockerfile'") {
 		t.Errorf("generated action.yml still contains local Dockerfile fallback when VERSION set")
 	}
 }
@@ -57,8 +57,8 @@ func TestGenerate_DevVersionFallsBackToLocalDockerfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}
-	if !strings.Contains(body, "image: 'deploy/Dockerfile'") {
-		t.Errorf("VERSION=dev should emit deploy/Dockerfile fallback")
+	if !strings.Contains(body, "image: 'Dockerfile'") {
+		t.Errorf("VERSION=dev should emit Dockerfile fallback")
 	}
 }
 
