@@ -8,9 +8,11 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/calendar"
+	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 )
 
 var updateGolden = flag.Bool("update", false, "update golden files")
@@ -97,8 +99,8 @@ func TestRun_MultiYear(t *testing.T) {
 	if len(r.Years) != 4 {
 		t.Errorf("Years len = %d, want 4", len(r.Years))
 	}
-	if r.Years[0].Year != 2023 || r.Years[3].Year != 2026 {
-		t.Errorf("years not ascending: %+v", r.Years)
+	if r.Years[0].Year != 2026 || r.Years[3].Year != 2023 {
+		t.Errorf("years not newest-first: %+v", r.Years)
 	}
 }
 
@@ -130,9 +132,56 @@ func TestRun_LimitTruncates(t *testing.T) {
 	if len(r.Years) != 2 {
 		t.Errorf("Years len = %d, want 2", len(r.Years))
 	}
-	// Most-recent two: 2025, 2026
-	if r.Years[0].Year != 2025 || r.Years[1].Year != 2026 {
-		t.Errorf("limit should keep most-recent 2; got %+v", r.Years)
+	// Most-recent two, newest first: 2026, 2025.
+	if r.Years[0].Year != 2026 || r.Years[1].Year != 2025 {
+		t.Errorf("limit should keep most-recent 2 newest-first; got %+v", r.Years)
+	}
+}
+
+func TestRun_FetchesFullCalendarYears(t *testing.T) {
+	restore := calendar.SetNowForTest(func() time.Time {
+		return time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)
+	})
+	defer restore()
+
+	data := plugins.NewData()
+	data.User = &plugins.User{
+		Login:     "octocat",
+		CreatedAt: time.Date(2024, 3, 2, 9, 8, 7, 0, time.UTC),
+	}
+	seenFrom := []string{}
+	seenTo := []string{}
+	mux := mocks.NewGraphQLMux(t)
+	mux.OnFunc("UserIsocalendar", func(vars map[string]any) (int, string) {
+		seenFrom = append(seenFrom, fmt.Sprint(vars["from"]))
+		seenTo = append(seenTo, fmt.Sprint(vars["to"]))
+		return 200, fmt.Sprintf(`{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[{"firstDay":"%[1]d-01-01","contributionDays":[{"date":"%[1]d-01-01","contributionCount":1,"weekday":1,"color":"#9be9a8"}]}]}}}}}`, 2024+len(seenFrom)-1)
+	})
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithGraphQL(mux),
+		mocks.WithData(data),
+		mocks.WithInputs(map[string]any{"user": "octocat", "plugin_calendar": true, "plugin_calendar_limit": 0}),
+	)
+	out, err := calendar.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*calendar.Result)
+	if got := mux.Calls("UserIsocalendar"); got != 3 {
+		t.Fatalf("UserIsocalendar calls = %d, want 3", got)
+	}
+	if len(r.Years) != 3 || r.Years[0].Year != 2026 || r.Years[2].Year != 2024 {
+		t.Fatalf("fetched years should render newest-first; got %+v", r.Years)
+	}
+	if seenFrom[0] != "2024-03-02T09:08:07Z" {
+		t.Fatalf("first year should start at account creation; got %s", seenFrom[0])
+	}
+	if seenTo[1] != "2025-12-31T23:59:59.999999999Z" {
+		t.Fatalf("middle year should end at final nanosecond; got %s", seenTo[1])
+	}
+	if seenTo[2] != "2026-06-10T12:00:00Z" {
+		t.Fatalf("current year should end at now; got %s", seenTo[2])
 	}
 }
 

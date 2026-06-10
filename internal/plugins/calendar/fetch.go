@@ -3,10 +3,36 @@ package calendar
 import (
 	"context"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
+
+var (
+	nowMu   sync.RWMutex
+	nowFunc = func() time.Time { return time.Now().UTC() }
+)
+
+// SetNowForTest overrides the calendar clock and returns a restore function.
+func SetNowForTest(fn func() time.Time) func() {
+	nowMu.Lock()
+	old := nowFunc
+	nowFunc = fn
+	nowMu.Unlock()
+	return func() {
+		nowMu.Lock()
+		nowFunc = old
+		nowMu.Unlock()
+	}
+}
+
+func currentNow() time.Time {
+	nowMu.RLock()
+	fn := nowFunc
+	nowMu.RUnlock()
+	return fn()
+}
 
 func fetchYearlyWeeks(ctx context.Context, pc *plugins.PluginContext, limit int) ([]plugins.ContributionWeek, error) {
 	if pc == nil || pc.Data == nil || pc.GraphQL == nil || !truthyInput(pc.Inputs, "plugin_calendar") {
@@ -16,7 +42,7 @@ func fetchYearlyWeeks(ctx context.Context, pc *plugins.PluginContext, limit int)
 	if login == "" || pc.Data.User == nil || pc.Data.User.CreatedAt.IsZero() {
 		return nil, nil
 	}
-	now := time.Now().UTC()
+	now := currentNow().UTC()
 	startYear := pc.Data.User.CreatedAt.UTC().Year()
 	if limit > 0 {
 		startYear = now.Year() - limit + 1
@@ -31,7 +57,7 @@ func fetchYearlyWeeks(ctx context.Context, pc *plugins.PluginContext, limit int)
 		if year == pc.Data.User.CreatedAt.UTC().Year() && pc.Data.User.CreatedAt.After(from) {
 			from = pc.Data.User.CreatedAt.UTC()
 		}
-		to := time.Date(year, time.December, 31, 23, 59, 59, int(time.Millisecond-time.Nanosecond), time.UTC)
+		to := time.Date(year, time.December, 31, 23, 59, 59, int(time.Second-time.Nanosecond), time.UTC)
 		if year == now.Year() {
 			to = now
 		}

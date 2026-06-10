@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/templates"
@@ -13,6 +14,31 @@ import (
 
 func init() {
 	partials.Register("plugin."+Name, Partial)
+}
+
+var (
+	nowMu   sync.RWMutex
+	nowFunc = time.Now
+)
+
+// SetNowForTest overrides the stars partial clock and returns a restore function.
+func SetNowForTest(fn func() time.Time) func() {
+	nowMu.Lock()
+	old := nowFunc
+	nowFunc = fn
+	nowMu.Unlock()
+	return func() {
+		nowMu.Lock()
+		nowFunc = old
+		nowMu.Unlock()
+	}
+}
+
+func currentNow() time.Time {
+	nowMu.RLock()
+	fn := nowFunc
+	nowMu.RUnlock()
+	return fn()
 }
 
 // starOcticon is the upstream `<%- octicon "star" %>` 16x16 path used
@@ -113,7 +139,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	for _, s := range r.List {
 		date := ""
 		if !s.StarredAt.IsZero() {
-			date = formatStarredAt(s.StarredAt, time.Now())
+			date = formatStarredAt(s.StarredAt, currentNow())
 		}
 		b.WriteString(`<div class="row fill-width largeable-width-half">`)
 		icon := repoOcticon

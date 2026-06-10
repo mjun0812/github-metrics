@@ -27,7 +27,7 @@ upstream に存在する各 plugin のサブモードについて、Go 実装の
 | `languages.details`              | ✅ 比較可              | `plugin-languages-details.svg`（本対応で追加）                                                                          |
 | `achievements.compact`           | ✅ 比較可              | `plugin-achievements-compact.svg`（本対応で追加）                                                                       |
 | `isocalendar.fullyear`           | ✅ 比較可              | `plugin-isocalendar-fullyear.svg`（本対応で追加）                                                                       |
-| `calendar.full`                  | ✅ 比較可              | `plugin_calendar_limit=0` で全期間を取得。<br>`plugin-calendar-full.svg`                                                |
+| `calendar.full`                  | ◐ 実装済み・生成待ち   | `plugin_calendar_limit=0` で全期間を取得。サンプルは次回 `make docs-samples` で生成                                     |
 | `repositories.pinned`            | ◐ 対応・差分なし       | `plugin_repositories_pinned` を受け付けるが、このサンプルデータでは無印とバイト同一                                     |
 | `topics.icons`                   | ○ データ無し           | `plugin_topics_mode=icons` 対応。サンプルユーザーに topics 無しで空                                                     |
 | `starlists.languages`            | ○ データ無し           | `plugin_starlists_languages` 対応。サンプルユーザーにデータ無しで空                                                     |
@@ -54,7 +54,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | classic 総合       | <img src="original_examples/metrics.classic.svg" width="420">    | <img src="reference_examples/metrics.classic.svg" width="420">    | <img src="examples/metrics-classic.svg" width="420">    |
 | repository 総合    | <img src="original_examples/metrics.repository.svg" width="420"> | <img src="reference_examples/metrics.repository.svg" width="420"> | <img src="examples/metrics-repository.svg" width="420"> |
 
-> ✅ Go サンプル `metrics-classic.svg` / `.png` は `scripts/gen-doc-samples.sh` の独立セクションで `render_one "metrics-classic" --template classic` (plugin トグルなし) として生成します。upstream `metrics.classic.svg` が実質 base ヘッダのみであるため、本サンプルも base セクション (header / activity / community / repositories / metadata) のみの出力となり、`plugin-base.svg` に近い高さ (~200px) になります ([#463](https://github.com/mjun0812/github-metrics/issues/463))。採用 plugin の個別パネルは下のプラグイン別サンプルを参照してください。
+> ✅ Go サンプル `metrics-classic.svg` / `.png` は `scripts/gen-doc-samples.sh` / `scripts/samples.json` で `base=header, repositories` を指定して生成します。upstream `metrics.classic.svg` が実質 header + repositories であるため、本サンプルもその 2 セクションのみの出力となります。採用 plugin の個別パネルは下のプラグイン別サンプルを参照してください。
 > ✅ Go サンプル `metrics-repository.svg` / `.png` は同スクリプトの repository mode セクションで生成。`mjun0812/flash-attention-prebuild-wheels` を対象に、plugin トグルなしの **base repository 出力** を描画します (issue #464)。upstream `metrics.repository.svg` と同じく base chrome (repository 名 + `Created` / `Deployed` / disk-usage / 貢献カレンダー / `Environments`) のみで、個別 plugin partial は repository template でも `plugin_<slug>` トグルで gate されます。各 plugin partial 単体のサンプルは `plugin-base-repo` / `plugin-people-repo` / `plugin-contributors-repo-contributions` / `plugin-people-repo-types` 側でカバーします。
 
 ### base partial parity (`base.header` / `base.repositories`)
@@ -193,11 +193,11 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 
 **variant: full** — upstream `calendar.full`
 
-| upstream (lowlighter)                                                      | upstream (mjun0812)                                                         | Go 実装                                                   |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------- |
-| <img src="original_examples/metrics.plugin.calendar.full.svg" width="420"> | <img src="reference_examples/metrics.plugin.calendar.full.svg" width="420"> | <img src="examples/plugin-calendar-full.svg" width="420"> |
+| upstream (lowlighter)                                                      | upstream (mjun0812)                                                         | Go 実装                                                          |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.calendar.full.svg" width="420"> | <img src="reference_examples/metrics.plugin.calendar.full.svg" width="420"> | — 生成待ち（`GITHUB_TOKEN` 付き `make docs-samples` で生成予定） |
 
-> ✅ Go 側は `plugin_calendar_limit=0` でアカウント作成年から現在年までを年単位で再取得し、`plugin-calendar-full.svg` として別サンプルを生成。
+> ◐ Go 側は `plugin_calendar_limit=0` でアカウント作成年から現在年までを年単位で再取得する。`scripts/samples.json` / `scripts/gen-doc-samples.sh` には `plugin-calendar-full` を追加済みだが、この環境では `GITHUB_TOKEN` が未設定のため SVG/PNG は未生成。
 
 ### habits
 

@@ -109,6 +109,43 @@ func TestRun_ChartsTypeGraphInput(t *testing.T) {
 	}
 }
 
+func TestRun_ChartsUseLast14DailyBuckets(t *testing.T) {
+	restore := stargazers.SetNowForTest(func() time.Time {
+		return time.Date(2026, 5, 14, 10, 0, 0, 0, time.UTC)
+	})
+	defer restore()
+
+	mux := mocks.NewGraphQLMux(t)
+	mux.OnBody("ViewerStargazersRepos", http.StatusOK, `{"data":{"viewer":{"repositories":{"totalCount":1,"nodes":[{"nameWithOwner":"octocat/hello-world","stargazerCount":10,"stargazers":{"totalCount":10,"edges":[{"starredAt":"2026-05-01T23:59:59Z"},{"starredAt":"2026-05-02T00:00:00Z"},{"starredAt":"2026-05-14T09:00:00Z"},{"starredAt":"2026-05-15T00:00:00Z"}]}}]}}}}`)
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithGraphQL(mux),
+		mocks.WithInputs(map[string]any{"plugin_stargazers": true}),
+	)
+	out, err := stargazers.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*stargazers.Result)
+	if len(r.Charts.Series) != 14 {
+		t.Fatalf("Series len = %d, want 14", len(r.Charts.Series))
+	}
+	first := r.Charts.Series[0]
+	if got := first.Date.Format("2006-01-02"); got != "2026-05-01" {
+		t.Fatalf("first date = %s, want 2026-05-01", got)
+	}
+	if first.New != 1 || first.Count != 8 {
+		t.Fatalf("first bucket = %+v, want New=1 Count=8", first)
+	}
+	last := r.Charts.Series[13]
+	if got := last.Date.Format("2006-01-02"); got != "2026-05-14" {
+		t.Fatalf("last date = %s, want 2026-05-14", got)
+	}
+	if last.New != 1 || last.Count != 10 {
+		t.Fatalf("last bucket = %+v, want New=1 Count=10", last)
+	}
+}
+
 func TestRun_ChartsTypeDefaultsToClassic(t *testing.T) {
 	t.Parallel()
 	r := runWith(t, nil)
