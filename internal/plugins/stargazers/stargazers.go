@@ -9,6 +9,7 @@ import (
 	"context"
 	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
@@ -74,6 +75,31 @@ type ChartPoint struct {
 
 const stargazersWindowDays = 14
 
+var (
+	nowMu   sync.RWMutex
+	nowFunc = func() time.Time { return time.Now().UTC() }
+)
+
+// SetNowForTest overrides the stargazers clock and returns a restore function.
+func SetNowForTest(fn func() time.Time) func() {
+	nowMu.Lock()
+	old := nowFunc
+	nowFunc = fn
+	nowMu.Unlock()
+	return func() {
+		nowMu.Lock()
+		nowFunc = old
+		nowMu.Unlock()
+	}
+}
+
+func currentNow() time.Time {
+	nowMu.RLock()
+	fn := nowFunc
+	nowMu.RUnlock()
+	return fn()
+}
+
 // StargazersWorldmap is a placeholder that always serializes to null
 // in M4 per R-012.
 type StargazersWorldmap struct{}
@@ -135,7 +161,7 @@ func buildSeries(resp *githubapi.ViewerStargazersReposResponse) []ChartPoint {
 	if resp == nil || resp.Viewer == nil || resp.Viewer.Repositories == nil {
 		return []ChartPoint{}
 	}
-	return buildSeriesAt(resp, time.Now().UTC())
+	return buildSeriesAt(resp, currentNow().UTC())
 }
 
 func buildSeriesAt(resp *githubapi.ViewerStargazersReposResponse, now time.Time) []ChartPoint {

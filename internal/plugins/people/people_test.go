@@ -267,7 +267,13 @@ func TestRun_RepositoryTypesFetchREST(t *testing.T) {
 		{"login":"dave","avatar_url":"https://avatars.example/dave.png"}
 	]`)
 	d := plugins.NewData()
-	d.SetRepo(&plugins.Repo{Owner: "octocat", Name: "hello-world"})
+	d.SetRepo(&plugins.Repo{
+		Owner:        "octocat",
+		Name:         "hello-world",
+		Contributors: 42,
+		Stargazers:   100,
+		Watchers:     77,
+	})
 	pc := mocks.NewPluginContext(
 		t,
 		mocks.WithREST(rest),
@@ -293,6 +299,15 @@ func TestRun_RepositoryTypesFetchREST(t *testing.T) {
 	} {
 		if got := loginAt(r, typ, 0); got != want {
 			t.Errorf("%s[0].Login = %q, want %q (all=%+v)", typ, got, want, r.Types[typ])
+		}
+	}
+	for typ, want := range map[string]int{
+		"contributors": 42,
+		"stargazers":   100,
+		"watchers":     77,
+	} {
+		if got := r.Counts[typ]; got != want {
+			t.Errorf("Counts[%s] = %d, want %d", typ, got, want)
 		}
 	}
 	for _, path := range []string{

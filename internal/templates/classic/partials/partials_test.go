@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/traffic"
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
@@ -299,6 +300,48 @@ func TestBaseRepositories_RendersCounts(t *testing.T) {
 	}
 }
 
+func TestBaseRepositories_RendersTrafficViews(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	d.Computed.Repositories.Count = 1
+	d.SetPlugin(traffic.Name, &traffic.Result{
+		Total: traffic.TrafficView{Count: 1234, Uniques: 456},
+	})
+	got, err := partials.BaseRepositories(context.Background(), newPC(d))
+	if err != nil {
+		t.Fatalf("BaseRepositories: %v", err)
+	}
+	if !strings.Contains(got, "1.2k views in last two weeks") {
+		t.Fatalf("traffic views row missing: %s", got)
+	}
+}
+
+func TestBaseRepositories_HidesZeroOrSkippedTraffic(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name string
+		res  *traffic.Result
+	}{
+		{name: "zero", res: &traffic.Result{Total: traffic.TrafficView{Count: 0}}},
+		{name: "skipped", res: &traffic.Result{Skipped: true, Total: traffic.TrafficView{Count: 99}}},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			d := plugins.NewData()
+			d.Computed.Repositories.Count = 1
+			d.SetPlugin(traffic.Name, tc.res)
+			got, err := partials.BaseRepositories(context.Background(), newPC(d))
+			if err != nil {
+				t.Fatalf("BaseRepositories: %v", err)
+			}
+			if strings.Contains(got, "views in last two weeks") {
+				t.Fatalf("traffic views row should be hidden: %s", got)
+			}
+		})
+	}
+}
+
 // TestBaseRepositories_PhaseOneFields anchors #429 Phase 1 (amended by
 // #442): the "N sponsors" (sponsorshipsAsMaintainer) row stays in the
 // repositories section, while "Watching N repositories" moved to the
@@ -537,10 +580,10 @@ func TestBaseRepositories_LicensePreference_TopN(t *testing.T) {
 	})
 }
 
-// TestBaseRepositories_PhaseTwoZerosHidden confirms that with zero
-// Phase 2 counters the partial does not gain any Phase 2 rows — the
-// Phase 1 fields stay the only visible content.
-func TestBaseRepositories_PhaseTwoZerosHidden(t *testing.T) {
+// TestBaseRepositories_ZeroDefaultsRendered confirms the upstream-style
+// repositories layout keeps zero Releases / Packages rows visible while
+// still hiding optional disk/license/traffic rows with no data.
+func TestBaseRepositories_ZeroDefaultsRendered(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	d.Computed.Repositories.Count = 1
@@ -548,15 +591,15 @@ func TestBaseRepositories_PhaseTwoZerosHidden(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
-	for _, marker := range []string{"releases", "packages", "used"} {
-		if strings.Contains(got, marker) {
-			t.Errorf("zero counter should hide %q in %s", marker, got)
+	for _, marker := range []string{"0 Releases", "0 Packages"} {
+		if !strings.Contains(got, marker) {
+			t.Errorf("zero default row should render %q in %s", marker, got)
 		}
 	}
-	// license-preference row collapses to a compact "<name> N%" form,
-	// so the absence of any "%</div>" sentinel proves the row is hidden.
-	if strings.Contains(got, "%</div>") {
-		t.Errorf("zero counter should hide license preference row in %s", got)
+	for _, hidden := range []string{"used", "Prefers", "views in last two weeks"} {
+		if strings.Contains(got, hidden) {
+			t.Errorf("optional zero row should hide %q in %s", hidden, got)
+		}
 	}
 }
 

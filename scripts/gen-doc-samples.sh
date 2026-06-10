@@ -274,7 +274,7 @@ echo "== other upstream-parity sub-mode variants =="
 # Only variants where the Go implementation produces output that visibly
 # differs from the plain plugin (for the sample user) are kept here.
 # Intentionally omitted:
-#   - calendar.full (plugin_calendar_limit=0), repositories.pinned
+#   - repositories.pinned
 #       Go accepts the option but the output is byte-identical to the plain
 #       plugin for this sample user's data.
 #   - topics.icons, starlists.languages, sponsors.full

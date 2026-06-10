@@ -217,6 +217,49 @@ func TestRun_RepositoryStatsFailureKeepsMinimalStub(t *testing.T) {
 	}
 }
 
+func TestRun_RepositoryStatsPendingFallsBackToContributorList(t *testing.T) {
+	restore := contributors.SetSleepFn(func(_ context.Context, _ time.Duration) {})
+	defer restore()
+
+	rest := mocks.NewRESTMux(t)
+	rest.OnBody("/repos/octocat/hello-world/stats/contributors", http.StatusAccepted, `{"message":"Accepted"}`)
+	rest.OnBody("/repos/octocat/hello-world/contributors", http.StatusOK, `[
+		{"login":"alice","avatar_url":"https://avatars.example/alice.png","contributions":8},
+		{"login":"bob","avatar_url":"https://avatars.example/bob.png","contributions":3}
+	]`)
+	data := plugins.NewData()
+	data.Account = plugins.AccountRepository
+	data.SetRepo(&plugins.Repo{
+		Owner:         "octocat",
+		OwnerAvatar:   "https://avatars.example/owner.png",
+		Name:          "hello-world",
+		Contributors:  2,
+		DefaultBranch: "main",
+		Activity:      plugins.RepoActivity{RecentCommits: 1},
+	})
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithREST(rest),
+		mocks.WithData(data),
+		mocks.WithInputs(map[string]any{"plugin_contributors_contributions": true}),
+	)
+
+	out, err := contributors.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*contributors.Result)
+	if !r.StatsPending {
+		t.Fatalf("StatsPending should remain true for stats 202; got %+v", r)
+	}
+	if got := rest.Calls("/repos/octocat/hello-world/contributors"); got != 1 {
+		t.Fatalf("contributors fallback calls = %d, want 1", got)
+	}
+	if len(r.List) != 2 || r.List[0].Login != "alice" || r.List[0].Commits != 8 {
+		t.Fatalf("fallback contributor list not used/sorted: %+v", r.List)
+	}
+}
+
 // TestRun_RepositoryStatsRetriesPendingThenSucceeds pins #471: GitHub
 // returns 202 Accepted (empty body) while it warms the
 // /stats/contributors cache. We must poll, not give up immediately, so a
@@ -431,6 +474,9 @@ func TestPartial_DefaultDisplayHidesContributionNumbers(t *testing.T) {
 		if strings.Contains(got, notWant) {
 			t.Fatalf("did not expect %q in %q", notWant, got)
 		}
+	}
+	if strings.Contains(got, `class="label-right"`) {
+		t.Fatalf("default display should hide numeric chips; got %q", got)
 	}
 	if !strings.Contains(got, "octocat") {
 		t.Fatalf("default display should keep contributor row: %q", got)

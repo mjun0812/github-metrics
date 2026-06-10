@@ -20,9 +20,9 @@ const contributorsOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 
 // Partial renders the classic SVG fragment for the contributors plugin.
 // Upstream classic does not ship a contributors.ejs — contributors is
 // rendered only in the repository template — so we emit a self-contained
-// section with header + per-contributor row (avatar + login, plus
-// commit count and ++/-- diff line counts when contributions mode is
-// enabled) using HTML inside <section>.
+// section with header + per-contributor chips. Each chip contains the
+// avatar and login; contributions mode adds a right-side commit count
+// badge and optional ++/-- diff badge.
 //
 // Returns "" until contributors.go's Run wires up data (M7 repo-mode
 // is the only path that currently populates List; user/org modes stay
@@ -31,26 +31,16 @@ const contributorsOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 
 // Output structure:
 //
 //	<section data-section="contributors">
-//	  <h2 class="field"><svg/>N Contributor(s)</h2>
-//	  <div class="row"><section>
+//	  <h2 class="field"><svg/>Contributors of ${base}</h2>
+//	  <div class="row"><section class="field center horizontal-wrap fill-width">
 //	    [for each contributor]:
-//	      <div class="field contributor[ contributor-contributions]" data-login="...">
-//	        <img class="avatar" src="..."/>
-//	        <span class="login">${login}</span>: <span class="contributions">
-//	          <span class="commits">${commits} commit(s)</span>
-//	          <span class="diff">++${additions} --${deletions}</span>
-//	            (or <span class="stats-pending">stats pending</span>
-//	             when /stats/contributors returned 202 Accepted)
-//	        </span>
-//	      </div>
+//	      <span class="label label-flex contributor[ contributor-contributions]">
+//	        <img class="avatar" src="..."/><span class="login">${login}</span>
+//	        [contributions only]: <span class="label-right">${commits}</span>
+//	        [contributions only]: <span class="label-right">++A --D</span>
+//	      </span>
 //	  </section></div>
 //	</section>
-//
-// Note the explicit ": " separator between the login span and the
-// contributions span — without it, an SVG-aware renderer collapses
-// whitespace and the login fuses with the commit count (see #421:
-// "mjun081267 commits" where the "67" is the commit count attached
-// to the avatar label).
 func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil {
 		return "", nil
@@ -88,8 +78,8 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 			)
 		}
 		fmt.Fprintf(&b, `<span class="login">%s</span>`, partials.EscapeXML(c.Login))
-		fmt.Fprintf(&b, `<span class="label-right">%d</span>`, c.Commits)
 		if r.Contributions {
+			fmt.Fprintf(&b, `<span class="label-right">%d</span>`, c.Commits)
 			if !r.StatsPending {
 				fmt.Fprintf(
 					&b,

@@ -148,15 +148,17 @@ func (p *calendarPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 		}
 	}
 
-	// Years sorted ascending by year (oldest first), then truncated by
-	// limit (keep the most-recent N when limit > 0).
+	// Years sorted descending by year (newest first), matching upstream
+	// calendar.full. Apply limit before reversing semantics: keep the
+	// most-recent N when limit > 0.
 	sortInts(yearsOrder)
-	years := make([]YearCalendar, 0, len(yearsOrder))
-	for _, y := range yearsOrder {
-		years = append(years, *byYear[y])
+	if limit > 0 && len(yearsOrder) > limit {
+		yearsOrder = yearsOrder[len(yearsOrder)-limit:]
 	}
-	if limit > 0 && len(years) > limit {
-		years = years[len(years)-limit:]
+	years := make([]YearCalendar, 0, len(yearsOrder))
+	for i := len(yearsOrder) - 1; i >= 0; i-- {
+		y := yearsOrder[i]
+		years = append(years, *byYear[y])
 	}
 	return &Result{Years: years, Limit: limit}, nil
 }
