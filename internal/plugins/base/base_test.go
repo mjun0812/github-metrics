@@ -157,6 +157,15 @@ func TestRun_User_RecordsLifetimeCommitErrors(t *testing.T) {
 	if !strings.Contains(pc.Data.Errors[0].Error(), "lifetime commits") {
 		t.Fatalf("unexpected error: %v", pc.Data.Errors[0])
 	}
+	// On the error path populateLifetimeCommits early-returns without
+	// touching Data.User.Commits, so the base-query contributionCommits
+	// value (7293 from userOctocatBody) must be retained, not zeroed.
+	if pc.Data.User == nil {
+		t.Fatalf("Data.User is nil")
+	}
+	if pc.Data.User.Commits != 7293 {
+		t.Errorf("Data.User.Commits = %d, want 7293 (base-query value retained on lifetime error)", pc.Data.User.Commits)
+	}
 }
 
 func orgRepositoriesPage(count int, hasNext bool, endCursor string) string {

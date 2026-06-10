@@ -442,6 +442,36 @@ func TestPartial_RepositoryGolden(t *testing.T) {
 	}
 }
 
+// TestPartial_HeadingPrefersCountsOverFetchedLen pins #470/#517: the
+// per-type section header must show the true total (Result.Counts[type],
+// e.g. GraphQL followers.totalCount) rather than the fetched-and-clipped
+// slice length. The regression class is reverting to a len(list)-based
+// heading once the avatar list is capped below the real count.
+func TestPartial_HeadingPrefersCountsOverFetchedLen(t *testing.T) {
+	t.Parallel()
+	r := &people.Result{
+		Counts: map[string]int{"contributors": 42},
+		Types: map[string][]people.Person{
+			"contributors": {
+				{Login: "alice", AvatarURL: "https://avatars.example/alice.png"},
+				{Login: "bob", AvatarURL: "https://avatars.example/bob.png"},
+			},
+		},
+	}
+	data := plugins.NewData()
+	data.SetPlugin(people.Name, r)
+	got, err := people.Partial(context.Background(), &templates.PartialContext{Data: data})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	if !strings.Contains(got, ">42 contributors</h2>") {
+		t.Fatalf("heading must show true total '42 contributors'; got:\n%s", got)
+	}
+	if strings.Contains(got, ">2 contributors</h2>") {
+		t.Fatalf("heading must not fall back to fetched len '2 contributors'; got:\n%s", got)
+	}
+}
+
 func loginAt(out any, typ string, idx int) string {
 	r, ok := out.(*people.Result)
 	if !ok || r == nil {
