@@ -211,6 +211,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		case "about":
 			b.WriteString(`<div class="row fill-width">`)
 			b.WriteString(`<section class="sponsors">`)
+			b.WriteString(`<h2 class="field">About Me</h2>`)
 			if r.About != "" {
 				// Upstream emits the bio unescaped (`<%- %>` in
 				// sponsors.ejs) after running it through `imports.markdown`.

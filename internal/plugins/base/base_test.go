@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	basepkg "github.com/mjun0812/github-metrics/internal/plugins/base"
@@ -51,6 +52,111 @@ func orgMembersPage(count int, hasNext bool, endCursor string) string {
 			}
 		}
 	}`, hasNext, cursor, strings.Join(parts, ","))
+}
+
+func TestRun_User_PopulatesLifetimeCommitsWhenActivityRequested(t *testing.T) {
+	restore := basepkg.SetNowForTest(func() time.Time {
+		return time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)
+	})
+	defer restore()
+
+	mux := newGraphQLMux()
+	mux.OnSequence("User", gqlResp{Body: userOctocatBody})
+	mux.OnFunc("UserCommitContributions", func(vars map[string]any) gqlResp {
+		from := fmt.Sprint(vars["from"])
+		switch {
+		case strings.Contains(from, "2008-01-14"):
+			return gqlResp{Body: `{"data":{"user":{"contributionsCollection":{"totalCommitContributions":10}}}}`}
+		case strings.Contains(from, "2026-01-01"):
+			return gqlResp{Body: `{"data":{"user":{"contributionsCollection":{"totalCommitContributions":26}}}}`}
+		default:
+			return gqlResp{Body: `{"data":{"user":{"contributionsCollection":{"totalCommitContributions":1}}}}`}
+		}
+	})
+	mux.OnSequence("UserRepositories", gqlResp{Body: trivialRepositoryPage})
+
+	pc := newPCWithGraphQL(t, mux)
+	pc.Data.Account = plugins.AccountUser
+	pc.Inputs = map[string]any{"user": "octocat", "base": "activity"}
+
+	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("base.Run user: %v", err)
+	}
+	if got := mux.Calls("UserCommitContributions"); got != 19 {
+		t.Fatalf("UserCommitContributions calls = %d, want 19", got)
+	}
+	if got := pc.Data.User.Commits; got != 53 {
+		t.Fatalf("lifetime commits = %d, want 53", got)
+	}
+}
+
+func TestRun_User_SkipsLifetimeCommitsWhenActivityNotRequested(t *testing.T) {
+	mux := newGraphQLMux()
+	mux.OnSequence("User", gqlResp{Body: userOctocatBody})
+	mux.OnSequence("UserRepositories", gqlResp{Body: trivialRepositoryPage})
+
+	pc := newPCWithGraphQL(t, mux)
+	pc.Data.Account = plugins.AccountUser
+	pc.Inputs = map[string]any{"user": "octocat", "base": "header, repositories"}
+
+	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("base.Run user: %v", err)
+	}
+	if got := mux.Calls("UserCommitContributions"); got != 0 {
+		t.Fatalf("UserCommitContributions calls = %d, want 0", got)
+	}
+	if got := pc.Data.User.Commits; got != 7293 {
+		t.Fatalf("commits should keep base query total; got %d", got)
+	}
+}
+
+func TestRun_User_PopulatesLifetimeCommitsWhenBaseAbsent(t *testing.T) {
+	restore := basepkg.SetNowForTest(func() time.Time {
+		return time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)
+	})
+	defer restore()
+
+	mux := newGraphQLMux()
+	mux.OnSequence("User", gqlResp{Body: userOctocatBody})
+	mux.OnFunc("UserCommitContributions", func(_ map[string]any) gqlResp {
+		return gqlResp{Body: `{"data":{"user":{"contributionsCollection":{"totalCommitContributions":2}}}}`}
+	})
+	mux.OnSequence("UserRepositories", gqlResp{Body: trivialRepositoryPage})
+
+	pc := newPCWithGraphQL(t, mux)
+	pc.Data.Account = plugins.AccountUser
+	pc.Inputs = map[string]any{"user": "octocat"}
+
+	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("base.Run user: %v", err)
+	}
+	if got := mux.Calls("UserCommitContributions"); got != 19 {
+		t.Fatalf("UserCommitContributions calls = %d, want 19", got)
+	}
+	if got := pc.Data.User.Commits; got != 38 {
+		t.Fatalf("lifetime commits = %d, want 38", got)
+	}
+}
+
+func TestRun_User_RecordsLifetimeCommitErrors(t *testing.T) {
+	mux := newGraphQLMux()
+	mux.OnSequence("User", gqlResp{Body: userOctocatBody})
+	mux.OnSequence("UserCommitContributions", gqlResp{Body: `{"errors":[{"message":"boom"}]}`})
+	mux.OnSequence("UserRepositories", gqlResp{Body: trivialRepositoryPage})
+
+	pc := newPCWithGraphQL(t, mux)
+	pc.Data.Account = plugins.AccountUser
+	pc.Inputs = map[string]any{"user": "octocat", "base": "activity"}
+
+	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("base.Run user: %v", err)
+	}
+	if len(pc.Data.Errors) == 0 {
+		t.Fatalf("expected lifetime commit error to be recorded")
+	}
+	if !strings.Contains(pc.Data.Errors[0].Error(), "lifetime commits") {
+		t.Fatalf("unexpected error: %v", pc.Data.Errors[0])
+	}
 }
 
 func orgRepositoriesPage(count int, hasNext bool, endCursor string) string {
@@ -157,7 +263,7 @@ func TestRun_User(t *testing.T) {
 
 	pc := newPCWithGraphQL(t, mux)
 	pc.Data.Account = plugins.AccountUser
-	pc.Inputs = map[string]any{"user": "octocat"}
+	pc.Inputs = map[string]any{"user": "octocat", "base": "header, repositories"}
 
 	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
 		t.Fatalf("base.Run user: %v", err)
@@ -251,7 +357,7 @@ func TestRun_User_PopulatesRecentContributions(t *testing.T) {
 
 	pc := newPCWithGraphQL(t, mux)
 	pc.Data.Account = plugins.AccountUser
-	pc.Inputs = map[string]any{"user": "octocat"}
+	pc.Inputs = map[string]any{"user": "octocat", "base": "header, repositories"}
 
 	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
 		t.Fatalf("base.Run user: %v", err)

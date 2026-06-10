@@ -34,6 +34,7 @@ const repositoryHelloWorld = `{
       "description": "My first repository on GitHub.",
       "stargazerCount": 80,
       "forkCount": 9,
+      "watchers": { "totalCount": 7 },
       "isArchived": false,
       "primaryLanguage": { "name": "Go", "color": "#00ADD8" },
       "licenseInfo": { "name": "MIT License", "spdxId": "MIT" },

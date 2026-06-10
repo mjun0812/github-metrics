@@ -104,8 +104,45 @@ func TestRun_ChartsTypeGraphInput(t *testing.T) {
 	if r.Charts.Type != "graph" {
 		t.Fatalf("Charts.Type = %q, want graph", r.Charts.Type)
 	}
-	if len(r.Charts.Series) != 2 {
-		t.Fatalf("Series len = %d, want 2", len(r.Charts.Series))
+	if len(r.Charts.Series) != 14 {
+		t.Fatalf("Series len = %d, want 14", len(r.Charts.Series))
+	}
+}
+
+func TestRun_ChartsUseLast14DailyBuckets(t *testing.T) {
+	restore := stargazers.SetNowForTest(func() time.Time {
+		return time.Date(2026, 5, 14, 10, 0, 0, 0, time.UTC)
+	})
+	defer restore()
+
+	mux := mocks.NewGraphQLMux(t)
+	mux.OnBody("ViewerStargazersRepos", http.StatusOK, `{"data":{"viewer":{"repositories":{"totalCount":1,"nodes":[{"nameWithOwner":"octocat/hello-world","stargazerCount":10,"stargazers":{"totalCount":10,"edges":[{"starredAt":"2026-05-01T23:59:59Z"},{"starredAt":"2026-05-02T00:00:00Z"},{"starredAt":"2026-05-14T09:00:00Z"},{"starredAt":"2026-05-15T00:00:00Z"}]}}]}}}}`)
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithGraphQL(mux),
+		mocks.WithInputs(map[string]any{"plugin_stargazers": true}),
+	)
+	out, err := stargazers.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*stargazers.Result)
+	if len(r.Charts.Series) != 14 {
+		t.Fatalf("Series len = %d, want 14", len(r.Charts.Series))
+	}
+	first := r.Charts.Series[0]
+	if got := first.Date.Format("2006-01-02"); got != "2026-05-01" {
+		t.Fatalf("first date = %s, want 2026-05-01", got)
+	}
+	if first.New != 1 || first.Count != 8 {
+		t.Fatalf("first bucket = %+v, want New=1 Count=8", first)
+	}
+	last := r.Charts.Series[13]
+	if got := last.Date.Format("2006-01-02"); got != "2026-05-14" {
+		t.Fatalf("last date = %s, want 2026-05-14", got)
+	}
+	if last.New != 1 || last.Count != 10 {
+		t.Fatalf("last bucket = %+v, want New=1 Count=10", last)
 	}
 }
 
@@ -273,11 +310,10 @@ func TestPartial_ClassicTwoColumns(t *testing.T) {
 	got := renderPartial(t, "classic")
 	for _, marker := range []string{
 		`<h3>Total stargazers</h3>`,
-		`<h3>New stargazers per month</h3>`,
+		`<h3>New stargazers per day</h3>`,
 		// Month labels are emitted as bare text after the bar (upstream
 		// style), NOT as the blue pill `<span class="label">` badge.
-		`</div>Apr</div>`,
-		`</div>May</div>`,
+		`</div>1</div>`,
 	} {
 		if !strings.Contains(got, marker) {
 			t.Fatalf("classic partial missing %q:\n%s", marker, got)
@@ -304,9 +340,10 @@ func TestPartial_GraphChart(t *testing.T) {
 	for _, marker := range []string{
 		`class="stargazers-graph"`,
 		`aria-label="Total stargazers graph"`,
+		`aria-label="New stargazers per day graph"`,
 		`stroke="#87ceeb"`,
-		`Apr 2026`,
-		`May 2026`,
+		`Apr 1`,
+		`May 1`,
 	} {
 		if !strings.Contains(got, marker) {
 			t.Fatalf("graph partial missing %q:\n%s", marker, got)
@@ -326,8 +363,8 @@ func renderPartial(t *testing.T, chartsType string) string {
 		Charts: stargazers.StargazersCharts{
 			Type: chartsType,
 			Series: []stargazers.ChartPoint{
-				{Date: time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC), Count: 1},
-				{Date: time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC), Count: 3},
+				{Date: time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC), Count: 1, New: 1},
+				{Date: time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC), Count: 3, New: 2},
 			},
 		},
 	})

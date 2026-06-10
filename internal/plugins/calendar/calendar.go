@@ -6,6 +6,7 @@ package calendar
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -70,7 +71,7 @@ type ContributionCell struct {
 // Run aggregates ContributionCalendar.Weeks into per-year × per-month
 // totals. Limit caps the number of most-recent years returned (0 =
 // unlimited).
-func (p *calendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any, error) {
+func (p *calendarPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
@@ -81,23 +82,32 @@ func (p *calendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any,
 			Years:         []YearCalendar{},
 		}, nil
 	}
+	// plugin_calendar_limit defaults to 1 per assets/plugins/calendar/metadata.yml
+	// (display the last year only). The key is absent unless the user sets it
+	// explicitly, so apply the metadata default here instead of falling back to
+	// the Go zero value (0 = "all years"), matching upstream's index.mjs.
+	limit := readIntDefault(pc.Inputs, "plugin_calendar_limit", 1)
 	cal := pc.Data.Computed.ContributionCalendar
-	if cal == nil || len(cal.Weeks) == 0 {
+	weeks := []plugins.ContributionWeek{}
+	if fetched, err := fetchYearlyWeeks(ctx, pc, limit); err != nil {
+		pc.Data.AppendError(fmt.Errorf("calendar: yearly fetch: %w", err))
+	} else if len(fetched) > 0 {
+		weeks = fetched
+	}
+	if len(weeks) == 0 && cal != nil {
+		weeks = cal.Weeks
+	}
+	if len(weeks) == 0 {
 		return &Result{
 			Skipped:       true,
 			SkippedReason: "no contribution calendar",
 			Years:         []YearCalendar{},
 		}, nil
 	}
-	// plugin_calendar_limit defaults to 1 per assets/plugins/calendar/metadata.yml
-	// (display the last year only). The key is absent unless the user sets it
-	// explicitly, so apply the metadata default here instead of falling back to
-	// the Go zero value (0 = "all years"), matching upstream's index.mjs.
-	limit := readIntDefault(pc.Inputs, "plugin_calendar_limit", 1)
 
 	byYear := map[int]*YearCalendar{}
 	yearsOrder := []int{}
-	for _, w := range cal.Weeks {
+	for _, w := range weeks {
 		// A week may span 2 years at year boundaries. Group its days by
 		// year so a Dec/Jan boundary week appears in BOTH years' weeks
 		// list — each year gets the days that fall within it. This is
@@ -141,15 +151,17 @@ func (p *calendarPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any,
 		}
 	}
 
-	// Years sorted ascending by year (oldest first), then truncated by
-	// limit (keep the most-recent N when limit > 0).
+	// Years sorted descending by year (newest first), matching upstream
+	// calendar.full. Apply limit before reversing semantics: keep the
+	// most-recent N when limit > 0.
 	sortInts(yearsOrder)
-	years := make([]YearCalendar, 0, len(yearsOrder))
-	for _, y := range yearsOrder {
-		years = append(years, *byYear[y])
+	if limit > 0 && len(yearsOrder) > limit {
+		yearsOrder = yearsOrder[len(yearsOrder)-limit:]
 	}
-	if limit > 0 && len(years) > limit {
-		years = years[len(years)-limit:]
+	years := make([]YearCalendar, 0, len(yearsOrder))
+	for i := len(yearsOrder) - 1; i >= 0; i-- {
+		y := yearsOrder[i]
+		years = append(years, *byYear[y])
 	}
 	return &Result{Years: years, Limit: limit}, nil
 }

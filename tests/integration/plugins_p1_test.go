@@ -244,6 +244,7 @@ func newP1Deps(t *testing.T) engine.Deps {
 	gqlFixture.On("User", p1UserOctocat)
 	gqlFixture.On("UserRepositories", p1UserRepositories)
 	gqlFixture.On("UserIndepth", p1UserIndepth)
+	gqlFixture.On("UserCommitContributions", userCommitContributionsZero)
 	gqlFixture.On("UserIsocalendar", p1UserIsocalendar)
 
 	gql, err := githubapi.NewGraphQL(

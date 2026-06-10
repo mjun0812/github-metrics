@@ -538,6 +538,8 @@ type RepositoryRepository struct {
 	StargazerCount   int                                                    `json:"stargazerCount"`
 	ForkCount        int                                                    `json:"forkCount"`
 	IsArchived       bool                                                   `json:"isArchived"`
+	Watchers         *RepositoryRepositoryWatchersWatcherConnection         `json:"watchers"`
+	Languages        *RepositoryRepositoryLanguagesLanguageConnection       `json:"languages"`
 	Deployments      *RepositoryRepositoryDeploymentsDeploymentConnection   `json:"deployments"`
 	Environments     *RepositoryRepositoryEnvironmentsEnvironmentConnection `json:"environments"`
 	PrimaryLanguage  *RepositoryRepositoryPrimaryLanguage                   `json:"primaryLanguage"`
@@ -574,6 +576,16 @@ func (v *RepositoryRepository) GetForkCount() int { return v.ForkCount }
 
 // GetIsArchived returns RepositoryRepository.IsArchived, and is useful for accessing the field via an interface.
 func (v *RepositoryRepository) GetIsArchived() bool { return v.IsArchived }
+
+// GetWatchers returns RepositoryRepository.Watchers, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetWatchers() *RepositoryRepositoryWatchersWatcherConnection {
+	return v.Watchers
+}
+
+// GetLanguages returns RepositoryRepository.Languages, and is useful for accessing the field via an interface.
+func (v *RepositoryRepository) GetLanguages() *RepositoryRepositoryLanguagesLanguageConnection {
+	return v.Languages
+}
 
 // GetDeployments returns RepositoryRepository.Deployments, and is useful for accessing the field via an interface.
 func (v *RepositoryRepository) GetDeployments() *RepositoryRepositoryDeploymentsDeploymentConnection {
@@ -666,6 +678,10 @@ type __premarshalRepositoryRepository struct {
 
 	IsArchived bool `json:"isArchived"`
 
+	Watchers *RepositoryRepositoryWatchersWatcherConnection `json:"watchers"`
+
+	Languages *RepositoryRepositoryLanguagesLanguageConnection `json:"languages"`
+
 	Deployments *RepositoryRepositoryDeploymentsDeploymentConnection `json:"deployments"`
 
 	Environments *RepositoryRepositoryEnvironmentsEnvironmentConnection `json:"environments"`
@@ -703,6 +719,8 @@ func (v *RepositoryRepository) __premarshalJSON() (*__premarshalRepositoryReposi
 	retval.StargazerCount = v.StargazerCount
 	retval.ForkCount = v.ForkCount
 	retval.IsArchived = v.IsArchived
+	retval.Watchers = v.Watchers
+	retval.Languages = v.Languages
 	retval.Deployments = v.Deployments
 	retval.Environments = v.Environments
 	retval.PrimaryLanguage = v.PrimaryLanguage
@@ -762,6 +780,48 @@ type RepositoryRepositoryIssuesIssueConnection struct {
 
 // GetTotalCount returns RepositoryRepositoryIssuesIssueConnection.TotalCount, and is useful for accessing the field via an interface.
 func (v *RepositoryRepositoryIssuesIssueConnection) GetTotalCount() int { return v.TotalCount }
+
+// RepositoryRepositoryLanguagesLanguageConnection includes the requested fields of the GraphQL type LanguageConnection.
+type RepositoryRepositoryLanguagesLanguageConnection struct {
+	Edges []*RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdge `json:"edges"`
+}
+
+// GetEdges returns RepositoryRepositoryLanguagesLanguageConnection.Edges, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryLanguagesLanguageConnection) GetEdges() []*RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdge {
+	return v.Edges
+}
+
+// RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdge includes the requested fields of the GraphQL type LanguageEdge.
+type RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdge struct {
+	Size int                                                                           `json:"size"`
+	Node *RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage `json:"node"`
+}
+
+// GetSize returns RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdge.Size, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdge) GetSize() int {
+	return v.Size
+}
+
+// GetNode returns RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdge.Node, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdge) GetNode() *RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage {
+	return v.Node
+}
+
+// RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage includes the requested fields of the GraphQL type Language.
+type RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage struct {
+	Name  string  `json:"name"`
+	Color *string `json:"color"`
+}
+
+// GetName returns RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage.Name, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage) GetName() string {
+	return v.Name
+}
+
+// GetColor returns RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage.Color, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryLanguagesLanguageConnectionEdgesLanguageEdgeNodeLanguage) GetColor() *string {
+	return v.Color
+}
 
 // RepositoryRepositoryLicenseInfoLicense includes the requested fields of the GraphQL type License.
 type RepositoryRepositoryLicenseInfoLicense struct {
@@ -907,6 +967,14 @@ func (v *RepositoryRepositoryPullRequestsPullRequestConnection) GetTotalCount() 
 	return v.TotalCount
 }
 
+// RepositoryRepositoryWatchersWatcherConnection includes the requested fields of the GraphQL type WatcherConnection.
+type RepositoryRepositoryWatchersWatcherConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns RepositoryRepositoryWatchersWatcherConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *RepositoryRepositoryWatchersWatcherConnection) GetTotalCount() int { return v.TotalCount }
+
 // RepositoryResponse is returned by Repository on success.
 type RepositoryResponse struct {
 	Repository *RepositoryRepository `json:"repository"`
@@ -925,6 +993,34 @@ const (
 var AllSponsorsGoalKind = []SponsorsGoalKind{
 	SponsorsGoalKindTotalSponsorsCount,
 	SponsorsGoalKindMonthlySponsorshipAmount,
+}
+
+// UserCommitContributionsResponse is returned by UserCommitContributions on success.
+type UserCommitContributionsResponse struct {
+	User *UserCommitContributionsUser `json:"user"`
+}
+
+// GetUser returns UserCommitContributionsResponse.User, and is useful for accessing the field via an interface.
+func (v *UserCommitContributionsResponse) GetUser() *UserCommitContributionsUser { return v.User }
+
+// UserCommitContributionsUser includes the requested fields of the GraphQL type User.
+type UserCommitContributionsUser struct {
+	ContributionsCollection *UserCommitContributionsUserContributionsCollection `json:"contributionsCollection"`
+}
+
+// GetContributionsCollection returns UserCommitContributionsUser.ContributionsCollection, and is useful for accessing the field via an interface.
+func (v *UserCommitContributionsUser) GetContributionsCollection() *UserCommitContributionsUserContributionsCollection {
+	return v.ContributionsCollection
+}
+
+// UserCommitContributionsUserContributionsCollection includes the requested fields of the GraphQL type ContributionsCollection.
+type UserCommitContributionsUserContributionsCollection struct {
+	TotalCommitContributions int `json:"totalCommitContributions"`
+}
+
+// GetTotalCommitContributions returns UserCommitContributionsUserContributionsCollection.TotalCommitContributions, and is useful for accessing the field via an interface.
+func (v *UserCommitContributionsUserContributionsCollection) GetTotalCommitContributions() int {
+	return v.TotalCommitContributions
 }
 
 // UserFollowersResponse is returned by UserFollowers on success.
@@ -4132,12 +4228,18 @@ func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponso
 // ViewerSponsorsViewerUserSponsorsListing includes the requested fields of the GraphQL type SponsorsListing.
 type ViewerSponsorsViewerUserSponsorsListing struct {
 	ShortDescription string                                                         `json:"shortDescription"`
+	FullDescription  string                                                         `json:"fullDescription"`
 	ActiveGoal       *ViewerSponsorsViewerUserSponsorsListingActiveGoalSponsorsGoal `json:"activeGoal"`
 }
 
 // GetShortDescription returns ViewerSponsorsViewerUserSponsorsListing.ShortDescription, and is useful for accessing the field via an interface.
 func (v *ViewerSponsorsViewerUserSponsorsListing) GetShortDescription() string {
 	return v.ShortDescription
+}
+
+// GetFullDescription returns ViewerSponsorsViewerUserSponsorsListing.FullDescription, and is useful for accessing the field via an interface.
+func (v *ViewerSponsorsViewerUserSponsorsListing) GetFullDescription() string {
+	return v.FullDescription
 }
 
 // GetActiveGoal returns ViewerSponsorsViewerUserSponsorsListing.ActiveGoal, and is useful for accessing the field via an interface.
@@ -4564,6 +4666,22 @@ func (v *__RepositoryInput) GetLogin() string { return v.Login }
 // GetRepo returns __RepositoryInput.Repo, and is useful for accessing the field via an interface.
 func (v *__RepositoryInput) GetRepo() string { return v.Repo }
 
+// __UserCommitContributionsInput is used internally by genqlient
+type __UserCommitContributionsInput struct {
+	Login string    `json:"login"`
+	From  time.Time `json:"from"`
+	To    time.Time `json:"to"`
+}
+
+// GetLogin returns __UserCommitContributionsInput.Login, and is useful for accessing the field via an interface.
+func (v *__UserCommitContributionsInput) GetLogin() string { return v.Login }
+
+// GetFrom returns __UserCommitContributionsInput.From, and is useful for accessing the field via an interface.
+func (v *__UserCommitContributionsInput) GetFrom() time.Time { return v.From }
+
+// GetTo returns __UserCommitContributionsInput.To, and is useful for accessing the field via an interface.
+func (v *__UserCommitContributionsInput) GetTo() time.Time { return v.To }
+
 // __UserFollowersInput is used internally by genqlient
 type __UserFollowersInput struct {
 	Login string `json:"login"`
@@ -4961,6 +5079,18 @@ query Repository ($login: String!, $repo: String!) {
 		stargazerCount
 		forkCount
 		isArchived
+		watchers {
+			totalCount
+		}
+		languages(first: 8) {
+			edges {
+				size
+				node {
+					name
+					color
+				}
+			}
+		}
 		deployments {
 			totalCount
 		}
@@ -5105,6 +5235,46 @@ func User(
 	}
 
 	data_ = &UserResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by UserCommitContributions.
+const UserCommitContributions_Operation = `
+query UserCommitContributions ($login: String!, $from: DateTime!, $to: DateTime!) {
+	user(login: $login) {
+		contributionsCollection(from: $from, to: $to) {
+			totalCommitContributions
+		}
+	}
+}
+`
+
+func UserCommitContributions(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	login string,
+	from time.Time,
+	to time.Time,
+) (data_ *UserCommitContributionsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UserCommitContributions",
+		Query:  UserCommitContributions_Operation,
+		Variables: &__UserCommitContributionsInput{
+			Login: login,
+			From:  from,
+			To:    to,
+		},
+	}
+
+	data_ = &UserCommitContributionsResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -5760,6 +5930,7 @@ query ViewerSponsors ($activeFirst: Int!, $pastFirst: Int!) {
 	viewer {
 		sponsorsListing {
 			shortDescription
+			fullDescription
 			activeGoal {
 				title
 				description
