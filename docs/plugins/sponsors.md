@@ -1,7 +1,9 @@
 <!-- AUTOGEN_START: title-and-description -->
+
 # Plugin: sponsors
 
 This plugin displays sponsors and introduction text from [GitHub sponsors](https://github.com/sponsors/).
+
 <!-- AUTOGEN_END: title-and-description -->
 
 ## サンプル出力
@@ -15,18 +17,21 @@ This plugin displays sponsors and introduction text from [GitHub sponsors](https
 <!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
 
 <!-- AUTOGEN_START: config-table -->
+
 ## 設定 (inputs)
 
-| Input | 説明 | デフォルト | 必須 | 型 |
-|-------|------|------------|------|----|
-| `plugin_sponsors` | Enable sponsors plugin | `no` | no | boolean |
-| `plugin_sponsors_sections` | Displayed sections | `goal, list, about` | no | array |
-| `plugin_sponsors_past` | Past sponsorships | `no` | no | boolean |
-| `plugin_sponsors_size` | Profile picture display size | `24` | no | number |
-| `plugin_sponsors_title` | Title caption | `Sponsor Me!` | no | string |
+| Input                      | 説明                         | デフォルト          | 必須 | 型      |
+| -------------------------- | ---------------------------- | ------------------- | ---- | ------- |
+| `plugin_sponsors`          | Enable sponsors plugin       | `no`                | no   | boolean |
+| `plugin_sponsors_sections` | Displayed sections           | `goal, list, about` | no   | array   |
+| `plugin_sponsors_past`     | Past sponsorships            | `no`                | no   | boolean |
+| `plugin_sponsors_size`     | Profile picture display size | `24`                | no   | number  |
+| `plugin_sponsors_title`    | Title caption                | `Sponsor Me!`       | no   | string  |
+
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
+
 ## 使い方
 
 ### GitHub Action
@@ -46,6 +51,7 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_sponsors=yes
 ```
+
 <!-- AUTOGEN_END: usage-snippet -->
 
 ## Requirements
@@ -54,7 +60,7 @@ The user must be **sponsored via GitHub Sponsors** (incoming sponsorships) for a
 
 ## 既知の制約 / 注意点
 
-<!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->
+- The `about` section uses GitHub Sponsors `fullDescription` when available and renders it under an `About Me` heading.
 
 ## 参照
 

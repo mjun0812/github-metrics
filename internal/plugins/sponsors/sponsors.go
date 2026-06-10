@@ -208,6 +208,9 @@ func populateFromGraphQL(out *Result, resp *githubapi.ViewerSponsorsResponse, pa
 	v := resp.Viewer
 	if v.SponsorsListing != nil {
 		out.About = v.SponsorsListing.ShortDescription
+		if v.SponsorsListing.FullDescription != "" {
+			out.About = v.SponsorsListing.FullDescription
+		}
 		if g := v.SponsorsListing.ActiveGoal; g != nil {
 			goalTitle := ""
 			if g.Title != nil {

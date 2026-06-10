@@ -1,7 +1,9 @@
 <!-- AUTOGEN_START: title-and-description -->
+
 # Plugin: contributors
 
 This plugin display repositories contributors from a commit range along with additional stats.
+
 <!-- AUTOGEN_END: title-and-description -->
 
 ## サンプル出力
@@ -15,25 +17,29 @@ This plugin display repositories contributors from a commit range along with add
 <!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
 
 <!-- AUTOGEN_START: config-table -->
+
 ## 設定 (inputs)
 
-| Input | 説明 | デフォルト | 必須 | 型 |
-|-------|------|------------|------|----|
-| `plugin_contributors` | Enable contributors plugin | `no` | no | boolean |
-| `plugin_contributors_base` | Base reference | `` | no | string |
-| `plugin_contributors_head` | Head reference | `master` | no | string |
-| `plugin_contributors_ignored` | Ignored users | `` | no | array |
-| `plugin_contributors_contributions` | Contributions count | `no` | no | boolean |
-| `plugin_contributors_sections` | Displayed sections | `contributors` | no | array |
-| `plugin_contributors_categories` | Contribution categories | `{
-  "📚 Documentation": ["README.md", "docs/**"],
-  "💻 Code": ["source/**", "src/**"],
-  "#️⃣ Others": ["*"]
+| Input                               | 説明                       | デフォルト     | 必須 | 型      |
+| ----------------------------------- | -------------------------- | -------------- | ---- | ------- |
+| `plugin_contributors`               | Enable contributors plugin | `no`           | no   | boolean |
+| `plugin_contributors_base`          | Base reference             | ``             | no   | string  |
+| `plugin_contributors_head`          | Head reference             | `master`       | no   | string  |
+| `plugin_contributors_ignored`       | Ignored users              | ``             | no   | array   |
+| `plugin_contributors_contributions` | Contributions count        | `no`           | no   | boolean |
+| `plugin_contributors_sections`      | Displayed sections         | `contributors` | no   | array   |
+| `plugin_contributors_categories`    | Contribution categories    | `{             |
+
+"📚 Documentation": ["README.md", "docs/**"],
+"💻 Code": ["source/**", "src/**"],
+"#️⃣ Others": ["*"]
 }
 ` | no | json |
+
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
+
 ## 使い方
 
 ### GitHub Action
@@ -53,11 +59,12 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_contributors=yes
 ```
+
 <!-- AUTOGEN_END: usage-snippet -->
 
 ## Requirements
 
-**Repository context required.** Run with `--account=repository` and a target repository (`--repo owner/name`). The repo must have multiple contributors for a meaningful list. The `contributions` display mode (`plugin_contributors_contributions=yes`) additionally fetches per-contributor statistics via GitHub's stats API (`GET /repos/{owner}/{repo}/stats/contributors`).
+**Repository context required.** Run with `--account=repository` and a target repository (`--repo owner/name`). The repo must have multiple contributors for a meaningful list. The `contributions` display mode (`plugin_contributors_contributions=yes`) additionally fetches per-contributor statistics via GitHub's stats API (`GET /repos/{owner}/{repo}/stats/contributors`). If that stats endpoint is pending or empty, the plugin falls back to `GET /repos/{owner}/{repo}/contributors` and still renders contributor chips with commit counts.
 
 ## 既知の制約 / 注意点
 

@@ -170,6 +170,9 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		if pc.REST == nil {
 			return &Result{Skipped: true, SkippedReason: "REST client unavailable", Types: map[string][]Person{}}, nil
 		}
+		counts["contributors"] = repo.Contributors
+		counts["stargazers"] = repo.Stargazers
+		counts["watchers"] = repo.Watchers
 		for _, typ := range repoTypes {
 			people, err := fetchRepositoryPeople(ctx, pc.REST, repo.Owner, repo.Name, typ, limit)
 			if err != nil {

@@ -9,6 +9,7 @@
 package languages
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -59,9 +60,10 @@ type IndepthResult struct {
 // IsSkipped lets the classic dispatcher detect the skipped path.
 func (r *IndepthResult) IsSkipped() bool { return r != nil && r.Skipped }
 
-// LanguageBytes carries per-language byte totals.
+// LanguageBytes carries per-language byte and line totals.
 type LanguageBytes struct {
 	Bytes map[string]int64 `json:"bytes"`
+	Lines map[string]int64 `json:"lines,omitempty"`
 }
 
 // IndepthCloner abstracts the shallow-clone step so tests can substitute
@@ -114,7 +116,7 @@ func (p *indepthPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 			Skipped:       true,
 			SkippedReason: "plugin_languages not enabled",
 			Repositories:  map[string]LanguageBytes{},
-			Total:         LanguageBytes{Bytes: map[string]int64{}},
+			Total:         LanguageBytes{Bytes: map[string]int64{}, Lines: map[string]int64{}},
 			Analyzed:      []string{},
 		}, nil
 	}
@@ -123,7 +125,7 @@ func (p *indepthPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 			Skipped:       true,
 			SkippedReason: "plugin_languages_indepth not enabled",
 			Repositories:  map[string]LanguageBytes{},
-			Total:         LanguageBytes{Bytes: map[string]int64{}},
+			Total:         LanguageBytes{Bytes: map[string]int64{}, Lines: map[string]int64{}},
 			Analyzed:      []string{},
 		}, nil
 	}
@@ -134,7 +136,7 @@ func (p *indepthPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 			Skipped:       true,
 			SkippedReason: "indepth extras not satisfied",
 			Repositories:  map[string]LanguageBytes{},
-			Total:         LanguageBytes{Bytes: map[string]int64{}},
+			Total:         LanguageBytes{Bytes: map[string]int64{}, Lines: map[string]int64{}},
 			Analyzed:      []string{},
 		}, nil
 	}
@@ -143,7 +145,7 @@ func (p *indepthPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	if len(repos) == 0 {
 		return &IndepthResult{
 			Repositories: map[string]LanguageBytes{},
-			Total:        LanguageBytes{Bytes: map[string]int64{}},
+			Total:        LanguageBytes{Bytes: map[string]int64{}, Lines: map[string]int64{}},
 			Analyzed:     []string{},
 		}, nil
 	}
@@ -155,7 +157,8 @@ func (p *indepthPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 
 	var (
 		mu       sync.Mutex
-		totals   = map[string]int64{}
+		bytesSum = map[string]int64{}
+		linesSum = map[string]int64{}
 		perRepo  = map[string]LanguageBytes{}
 		errs     []string
 		analyzed []string
@@ -204,9 +207,12 @@ func (p *indepthPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 			}
 
 			mu.Lock()
-			perRepo[repo.NameWithOwner] = LanguageBytes{Bytes: langs}
-			for lang, n := range langs {
-				totals[lang] += n
+			perRepo[repo.NameWithOwner] = langs
+			for lang, n := range langs.Bytes {
+				bytesSum[lang] += n
+			}
+			for lang, n := range langs.Lines {
+				linesSum[lang] += n
 			}
 			analyzed = append(analyzed, repo.NameWithOwner)
 			mu.Unlock()
@@ -222,33 +228,33 @@ func (p *indepthPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	}
 	return &IndepthResult{
 		Repositories: perRepo,
-		Total:        LanguageBytes{Bytes: totals},
+		Total:        LanguageBytes{Bytes: bytesSum, Lines: linesSum},
 		Analyzed:     analyzed,
 		Errors:       errs,
 	}, nil
 }
 
 // analyzeRepository walks HEAD's tree of the given clone directory and
-// returns a language → byte map computed via go-enry over each blob.
-func analyzeRepository(ctx context.Context, dir string) (map[string]int64, error) {
+// returns language byte and line totals computed via go-enry over each blob.
+func analyzeRepository(ctx context.Context, dir string) (LanguageBytes, error) {
 	repo, err := gogit.PlainOpen(dir)
 	if err != nil {
-		return nil, fmt.Errorf("open repo: %w", err)
+		return LanguageBytes{}, fmt.Errorf("open repo: %w", err)
 	}
 	headRef, err := repo.Head()
 	if err != nil {
-		return nil, fmt.Errorf("head: %w", err)
+		return LanguageBytes{}, fmt.Errorf("head: %w", err)
 	}
 	commit, err := repo.CommitObject(headRef.Hash())
 	if err != nil {
-		return nil, fmt.Errorf("commit: %w", err)
+		return LanguageBytes{}, fmt.Errorf("commit: %w", err)
 	}
 	tree, err := commit.Tree()
 	if err != nil {
-		return nil, fmt.Errorf("tree: %w", err)
+		return LanguageBytes{}, fmt.Errorf("tree: %w", err)
 	}
 
-	langs := map[string]int64{}
+	langs := LanguageBytes{Bytes: map[string]int64{}, Lines: map[string]int64{}}
 	err = tree.Files().ForEach(func(f *object.File) error {
 		select {
 		case <-ctx.Done():
@@ -261,7 +267,7 @@ func analyzeRepository(ctx context.Context, dir string) (map[string]int64, error
 		if f.Size > 1<<20 {
 			lang, _ := enry.GetLanguageByExtension(f.Name)
 			if lang != "" {
-				langs[lang] += f.Size
+				langs.Bytes[lang] += f.Size
 			}
 			return nil
 		}
@@ -276,13 +282,25 @@ func analyzeRepository(ctx context.Context, dir string) (map[string]int64, error
 		if lang == "" {
 			return nil
 		}
-		langs[lang] += int64(len(content))
+		langs.Bytes[lang] += int64(len(content))
+		langs.Lines[lang] += countLines(content)
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return LanguageBytes{}, err
 	}
 	return langs, nil
+}
+
+func countLines(content string) int64 {
+	if content == "" {
+		return 0
+	}
+	n := int64(bytes.Count([]byte(content), []byte{'\n'}))
+	if !strings.HasSuffix(content, "\n") {
+		n++
+	}
+	return n
 }
 
 // repoCloneURL returns the HTTPS clone URL the indepth path uses for

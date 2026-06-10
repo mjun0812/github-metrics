@@ -271,16 +271,16 @@ func BaseActivityCommunity(_ context.Context, pc *templates.PartialContext) (str
 	if hasActivity {
 		b.WriteString(`<section data-block="activity">`)
 		b.WriteString(`<h2 class="field">:octicon-graph:Activity</h2>`)
-		fmt.Fprintf(&b, `<div class="field">:octicon-git-commit:%s %s</div>`,
-			FormatCount(int64(u.Commits)), pluralLabel("Commit", u.Commits))
-		fmt.Fprintf(&b, `<div class="field">:octicon-code-review:%s %s reviewed</div>`,
-			FormatCount(int64(u.PullRequestsReviewed)), pluralLabel("Pull request", u.PullRequestsReviewed))
-		fmt.Fprintf(&b, `<div class="field">:octicon-git-pull-request:%s %s opened</div>`,
-			FormatCount(int64(u.PullRequestsOpened)), pluralLabel("Pull request", u.PullRequestsOpened))
-		fmt.Fprintf(&b, `<div class="field">:octicon-issue-opened:%s %s opened</div>`,
-			FormatCount(int64(u.IssuesOpened)), pluralLabel("Issue", u.IssuesOpened))
-		fmt.Fprintf(&b, `<div class="field">:octicon-comment:%s issue %s</div>`,
-			FormatCount(int64(u.IssueComments)), pluralLabel("comment", u.IssueComments))
+		fmt.Fprintf(&b, `<div class="field">:octicon-git-commit:%d %s</div>`,
+			u.Commits, pluralLabel("Commit", u.Commits))
+		fmt.Fprintf(&b, `<div class="field">:octicon-code-review:%d %s reviewed</div>`,
+			u.PullRequestsReviewed, pluralLabel("Pull request", u.PullRequestsReviewed))
+		fmt.Fprintf(&b, `<div class="field">:octicon-git-pull-request:%d %s opened</div>`,
+			u.PullRequestsOpened, pluralLabel("Pull request", u.PullRequestsOpened))
+		fmt.Fprintf(&b, `<div class="field">:octicon-issue-opened:%d %s opened</div>`,
+			u.IssuesOpened, pluralLabel("Issue", u.IssuesOpened))
+		fmt.Fprintf(&b, `<div class="field">:octicon-comment:%d issue %s</div>`,
+			u.IssueComments, pluralLabel("comment", u.IssueComments))
 		b.WriteString(`</section>`)
 	}
 
@@ -312,6 +312,13 @@ func pluralRepositoryLabel(count int) string {
 		return "repository"
 	}
 	return "repositories"
+}
+
+func repositoryWord(count int) string {
+	if count == 1 {
+		return "Repository"
+	}
+	return "Repositories"
 }
 
 // baseSectionEnabled reports whether the named base section (e.g.
@@ -397,51 +404,70 @@ func BaseRepositories(_ context.Context, pc *templates.PartialContext) (string, 
 	}
 	var b strings.Builder
 	b.WriteString(`<section data-section="repositories">`)
+	fmt.Fprintf(&b, `<h2 class="field">:octicon-repo:%d %s</h2>`,
+		r.Count, repositoryWord(r.Count))
 	b.WriteString(`<div class="row">`)
-	fmt.Fprintf(&b, `<div class="field">:octicon-repo:%s repositories</div>`,
-		FormatCount(int64(r.Count)))
-	fmt.Fprintf(&b, `<div class="field">:octicon-star:%s stargazers</div>`,
-		FormatCount(int64(r.Stargazers)))
-	fmt.Fprintf(&b, `<div class="field">:octicon-git-branch:%s forks</div>`,
-		FormatCount(int64(r.Forks)))
-	if r.Releases > 0 {
-		fmt.Fprintf(&b, `<div class="field">:octicon-tag:%s %s</div>`,
-			FormatCount(int64(r.Releases)), pluralLabel("release", r.Releases))
+	b.WriteString(`<section>`)
+	if top := licensePreferenceTop(r.LicensePreference); top != "" {
+		fmt.Fprintf(&b, `<div class="field">:octicon-law:Prefers %s license</div>`,
+			EscapeXML(top))
 	}
-	if r.Packages > 0 {
-		fmt.Fprintf(&b, `<div class="field">:octicon-package:%s %s</div>`,
-			FormatCount(int64(r.Packages)), pluralLabel("package", r.Packages))
-	}
+	fmt.Fprintf(&b, `<div class="field">:octicon-tag:%d %s</div>`,
+		r.Releases, pluralLabel("Release", r.Releases))
+	fmt.Fprintf(&b, `<div class="field">:octicon-package:%d %s</div>`,
+		r.Packages, pluralLabel("Package", r.Packages))
 	if r.DiskUsage > 0 {
 		fmt.Fprintf(&b, `<div class="field">:octicon-database:%s used</div>`,
 			format.FormatDiskKB(r.DiskUsage))
 	}
-	// 442: "Watching N repositories" moved to the Community-stats column
-	// (base.activity+community.ejs) to match upstream's layout — only the
-	// "N sponsors" (sponsorshipsAsMaintainer) counter belongs to the
-	// repositories row per upstream base.repositories.ejs.
+	b.WriteString(`</section><section>`)
+	sponsors := 0
 	if u := pc.Data.User; u != nil {
-		if u.SponsorshipsAsMaintainer > 0 {
-			fmt.Fprintf(&b, `<div class="field">:octicon-heart:%s %s</div>`,
-				FormatCount(int64(u.SponsorshipsAsMaintainer)),
-				pluralLabel("sponsor", u.SponsorshipsAsMaintainer))
-		}
+		sponsors = u.SponsorshipsAsMaintainer
 	}
-	if row := licensePreferenceRow(r.LicensePreference); row != "" {
-		b.WriteString(row)
+	fmt.Fprintf(&b, `<div class="field">:octicon-heart:%d %s</div>`,
+		sponsors, pluralLabel("Sponsor", sponsors))
+	fmt.Fprintf(&b, `<div class="field">:octicon-star:%d %s</div>`,
+		r.Stargazers, pluralLabel("Stargazer", r.Stargazers))
+	fmt.Fprintf(&b, `<div class="field">:octicon-repo-forked:%d %s</div>`,
+		r.Forks, pluralLabel("Forker", r.Forks))
+	fmt.Fprintf(&b, `<div class="field">:octicon-eye:%d %s</div>`,
+		r.Watchers, pluralLabel("Watcher", r.Watchers))
+	if views := trafficViews(pc); views > 0 {
+		fmt.Fprintf(&b, `<div class="field">:octicon-book:%s views in last two weeks</div>`,
+			FormatCount(int64(views)))
 	}
-	b.WriteString(`</div></section>`)
+	b.WriteString(`</section></div></section>`)
 	return b.String(), nil
 }
 
-// licensePreferenceTopRender caps the License-preference labels shown
-// inside the partial at the top three entries. The data model carries
-// up to 5 (see internal/plugins/base.licensePreferenceTopN) so future
-// renderers (e.g. a richer dashboard view) can opt into a longer
-// breakdown without re-aggregating. The classic field uses a compact
-// notation tuned for the 480px upstream-parity canvas width, so even
-// three entries fit on one line for typical license names.
-const licensePreferenceTopRender = 3
+type trafficViewTotaler interface {
+	TotalViews() int
+}
+
+func trafficViews(pc *templates.PartialContext) int {
+	if pc == nil || pc.Data == nil {
+		return 0
+	}
+	raw, ok := pc.Data.GetPlugin("traffic")
+	if !ok || raw == nil {
+		return 0
+	}
+	if sr, ok := raw.(interface{ IsSkipped() bool }); ok && sr.IsSkipped() {
+		return 0
+	}
+	if r, ok := raw.(trafficViewTotaler); ok {
+		return r.TotalViews()
+	}
+	return 0
+}
+
+func licensePreferenceTop(shares []plugins.LicenseShare) string {
+	if len(shares) == 0 {
+		return ""
+	}
+	return licenseShortName(shares[0].Name)
+}
 
 // licenseShortName collapses GitHub's verbose `licenseInfo.name`
 // labels into the SPDX-flavoured short form upstream renders for
@@ -495,37 +521,6 @@ func licenseShortName(name string) string {
 		return "BSL-1.0"
 	}
 	return name
-}
-
-// licensePreferenceRow renders the "MIT 50% · Apache-2.0 22% · BSD-3-Clause 6%"
-// field when at least one license bucket exists. Returns "" so callers
-// can skip emitting the row entirely. Percentages are rounded to whole
-// numbers — the upstream label trims fractional digits, and any drift
-// below 1 percentage point would not be visually meaningful.
-//
-// License names are normalised through licenseShortName so the row fits
-// on a single line at the 480px upstream-parity canvas width: the
-// previous verbose format ("License preference: MIT License 50% /
-// Apache License 2.0 22% / BSD 3-Clause \"New\" or \"Revised\" License
-// 6%") rendered ~758px wide and forced horizontal overflow.
-func licensePreferenceRow(shares []plugins.LicenseShare) string {
-	if len(shares) == 0 {
-		return ""
-	}
-	limit := len(shares)
-	if limit > licensePreferenceTopRender {
-		limit = licensePreferenceTopRender
-	}
-	parts := make([]string, 0, limit)
-	for _, s := range shares[:limit] {
-		// Round to nearest whole percent (banker-friendly via +0.5).
-		pct := int(s.Percent + 0.5)
-		parts = append(parts, fmt.Sprintf("%s %d%%", EscapeXML(licenseShortName(s.Name)), pct))
-	}
-	return fmt.Sprintf(
-		`<div class="field">:octicon-law:%s</div>`,
-		strings.Join(parts, " · "),
-	)
 }
 
 // registry maps partial names (e.g. "base.header" or "plugin.languages")

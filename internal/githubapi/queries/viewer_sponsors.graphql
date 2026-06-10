@@ -2,6 +2,7 @@ query ViewerSponsors($activeFirst: Int!, $pastFirst: Int!) {
   viewer {
     sponsorsListing {
       shortDescription
+      fullDescription
       activeGoal {
         title
         description

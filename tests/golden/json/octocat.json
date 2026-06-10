@@ -174,7 +174,8 @@
       "repositories": {},
       "skipped": true,
       "total": {
-        "bytes": {}
+        "bytes": {},
+        "lines": {}
       }
     },
     "languages.recent": {
