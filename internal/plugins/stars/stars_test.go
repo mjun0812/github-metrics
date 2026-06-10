@@ -311,6 +311,47 @@ func TestPartial_RendersRelativeStarredDates(t *testing.T) {
 	}
 }
 
+// TestPartial_RelativeStarredDateBoundaries pins the exact branch
+// boundaries of formatStarredAt (rendered through the partial via the
+// clock seam): the <1 day / <30 day / absolute-date cutoffs and the
+// negative-duration clamp for future timestamps.
+func TestPartial_RelativeStarredDateBoundaries(t *testing.T) {
+	now := time.Date(2026, 5, 10, 12, 0, 0, 0, time.UTC)
+	restore := stars.SetNowForTest(func() time.Time { return now })
+	defer restore()
+
+	r := &stars.Result{
+		List: []stars.StarredRepo{
+			// Exactly now-24h: crosses into the <30 day branch as "1 day ago"
+			// (singular, since days == 1).
+			{NameWithOwner: "alice/oneday", URL: "https://github.com/alice/oneday", StarredAt: now.Add(-24 * time.Hour)},
+			// Exactly now-30*24h: hits the default absolute-date branch.
+			{NameWithOwner: "alice/thirty", URL: "https://github.com/alice/thirty", StarredAt: now.Add(-30 * 24 * time.Hour)},
+			// Future timestamp (now+1h): negative duration clamps to zero
+			// and must read "0 hours ago" (plural), not "0 hour ago".
+			{NameWithOwner: "alice/future", URL: "https://github.com/alice/future", StarredAt: now.Add(1 * time.Hour)},
+		},
+	}
+	data := plugins.NewData()
+	data.SetPlugin(stars.Name, r)
+	got, err := stars.Partial(context.Background(), &templates.PartialContext{Data: data})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	for _, want := range []string{
+		"starred 1 day ago",
+		"starred Apr 10 2026",
+		"starred 0 hours ago",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("missing %q in %s", want, got)
+		}
+	}
+	if strings.Contains(got, "0 hour ago") {
+		t.Fatalf("clamped future timestamp must read '0 hours ago' (plural), got %s", got)
+	}
+}
+
 func TestRun_GoldenShape(t *testing.T) {
 	r := &stars.Result{
 		List: []stars.StarredRepo{
