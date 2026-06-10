@@ -71,7 +71,7 @@ func main() {
 
 	// VERSION env var (set by `make gen-action-yml VERSION=v1.0.0` or
 	// by the release pipeline) toggles the `runs.image:` line:
-	//   - empty / "dev" → local Dockerfile path (deploy/Dockerfile)
+	//   - empty / "dev" → local Dockerfile path (Dockerfile)
 	//   - vX.Y.Z         → docker://ghcr.io/.../...:vX.Y.Z (pinned)
 	version := os.Getenv("VERSION")
 
@@ -106,7 +106,7 @@ type inputDef struct {
 
 // generate walks the adopted plugin metadata + emits action.yml.
 // `version` toggles the `runs.image:` line:
-//   - empty / "dev" → relative path to deploy/Dockerfile
+//   - empty / "dev" → relative path to Dockerfile
 //   - vX.Y.Z (semver tag) → docker://ghcr.io/.../...:<version>
 func generate(assetsRoot, version string) (string, error) {
 	// Header.
@@ -187,7 +187,7 @@ runs:
 // comment.
 //
 // Pre-release (VERSION empty or "dev"): build from the local
-// deploy/Dockerfile so `uses: ./` works against the source tree.
+// Dockerfile so `uses: ./` works against the source tree.
 // Release (VERSION=vX.Y.Z): pin to the published GHCR tag so a
 // `uses: mjun0812/github-metrics@vX.Y.Z` invocation always resolves
 // to the exact image bytes published for that tag (M10 SC-006).
@@ -197,7 +197,7 @@ func imageDirective(version string) string {
   # from source. The release pipeline rewrites this line to a
   # docker:// reference pinned to the published vX.Y.Z tag when it
   # runs ` + "`VERSION=vX.Y.Z make gen-action-yml`" + `.
-  image: 'deploy/Dockerfile'
+  image: 'Dockerfile'
 `
 	}
 	return `  # Pinned to the published GHCR image so a
