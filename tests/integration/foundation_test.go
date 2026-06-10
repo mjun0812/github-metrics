@@ -131,6 +131,16 @@ const (
 		}
 	}`
 
+	userCommitContributionsZero = `{
+		"data": {
+			"user": {
+				"contributionsCollection": {
+					"totalCommitContributions": 0
+				}
+			}
+		}
+	}`
+
 	orgGithub = `{
 		"data": {
 			"organization": {
@@ -183,6 +193,9 @@ func newEngineDeps(t testing.TB, gqlBody map[string]string) (engine.Deps, *graph
 	fixture := newGraphQLFixture()
 	for op, body := range gqlBody {
 		fixture.On(op, body)
+	}
+	if _, ok := gqlBody["UserCommitContributions"]; !ok {
+		fixture.On("UserCommitContributions", userCommitContributionsZero)
 	}
 
 	gql, err := githubapi.NewGraphQL(

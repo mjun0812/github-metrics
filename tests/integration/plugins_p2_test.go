@@ -89,6 +89,8 @@ func newP2Deps(t *testing.T, scopes string) engine.Deps {
 	gqlFix.On("User", p1UserOctocat)
 	gqlFix.On("UserRepositories", p1UserRepositories)
 	gqlFix.On("UserIndepth", p1UserIndepth)
+	gqlFix.On("UserCommitContributions", userCommitContributionsZero)
+	gqlFix.On("UserIsocalendar", p1UserIsocalendar)
 	gqlFix.On("UserStarredRepositories", `{"data":{"user":{"starredRepositories":{"totalCount":0,"edges":[]}}}}`)
 	gqlFix.On("UserReactions", `{"data":{"user":{"issues":{"totalCount":0,"nodes":[]},"issueComments":{"totalCount":0,"nodes":[]}}}}`)
 	gqlFix.On("UserFollowers", `{"data":{"user":{"followers":{"totalCount":0,"nodes":[]},"following":{"totalCount":0,"nodes":[]}}}}`)

@@ -97,7 +97,7 @@ func populateLifetimeCommits(ctx context.Context, pc *plugins.PluginContext, log
 func lifetimeCommitsEnabled(inputs map[string]any) bool {
 	raw, ok := inputs["base"]
 	if !ok {
-		return false
+		return true
 	}
 	var value string
 	switch v := raw.(type) {

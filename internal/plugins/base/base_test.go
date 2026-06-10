@@ -110,6 +110,34 @@ func TestRun_User_SkipsLifetimeCommitsWhenActivityNotRequested(t *testing.T) {
 	}
 }
 
+func TestRun_User_PopulatesLifetimeCommitsWhenBaseAbsent(t *testing.T) {
+	restore := basepkg.SetNowForTest(func() time.Time {
+		return time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)
+	})
+	defer restore()
+
+	mux := newGraphQLMux()
+	mux.OnSequence("User", gqlResp{Body: userOctocatBody})
+	mux.OnFunc("UserCommitContributions", func(_ map[string]any) gqlResp {
+		return gqlResp{Body: `{"data":{"user":{"contributionsCollection":{"totalCommitContributions":2}}}}`}
+	})
+	mux.OnSequence("UserRepositories", gqlResp{Body: trivialRepositoryPage})
+
+	pc := newPCWithGraphQL(t, mux)
+	pc.Data.Account = plugins.AccountUser
+	pc.Inputs = map[string]any{"user": "octocat"}
+
+	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("base.Run user: %v", err)
+	}
+	if got := mux.Calls("UserCommitContributions"); got != 19 {
+		t.Fatalf("UserCommitContributions calls = %d, want 19", got)
+	}
+	if got := pc.Data.User.Commits; got != 38 {
+		t.Fatalf("lifetime commits = %d, want 38", got)
+	}
+}
+
 func TestRun_User_RecordsLifetimeCommitErrors(t *testing.T) {
 	mux := newGraphQLMux()
 	mux.OnSequence("User", gqlResp{Body: userOctocatBody})
@@ -235,7 +263,7 @@ func TestRun_User(t *testing.T) {
 
 	pc := newPCWithGraphQL(t, mux)
 	pc.Data.Account = plugins.AccountUser
-	pc.Inputs = map[string]any{"user": "octocat"}
+	pc.Inputs = map[string]any{"user": "octocat", "base": "header, repositories"}
 
 	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
 		t.Fatalf("base.Run user: %v", err)
@@ -329,7 +357,7 @@ func TestRun_User_PopulatesRecentContributions(t *testing.T) {
 
 	pc := newPCWithGraphQL(t, mux)
 	pc.Data.Account = plugins.AccountUser
-	pc.Inputs = map[string]any{"user": "octocat"}
+	pc.Inputs = map[string]any{"user": "octocat", "base": "header, repositories"}
 
 	if _, err := basepkg.Plugin.Run(context.Background(), pc); err != nil {
 		t.Fatalf("base.Run user: %v", err)
