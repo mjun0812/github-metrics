@@ -15,6 +15,18 @@ query Repository($login: String!, $repo: String!) {
     stargazerCount
     forkCount
     isArchived
+    watchers {
+      totalCount
+    }
+    languages(first: 8) {
+      edges {
+        size
+        node {
+          name
+          color
+        }
+      }
+    }
     deployments {
       totalCount
     }

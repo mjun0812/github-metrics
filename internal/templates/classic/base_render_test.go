@@ -100,10 +100,10 @@ func TestClassic_BaseRender_AllSections(t *testing.T) {
 		`data-block="community"`,
 		`data-section="repositories"`,
 		`data-section="metadata"`,
-		`51 repositories`,
-		`1.5k stargazers`,
-		`81 forks`,
-		`3.2k Commits`,
+		`51 Repositories`,
+		`1500 Stargazers`,
+		`81 Forkers`,
+		`3214 Commits`,
 		`9 Pull requests reviewed`,
 		`17 Pull requests opened`,
 		`42 Issues opened`,
@@ -188,9 +188,9 @@ func TestClassic_BaseRender_NoIndepthSkipsActivitySection(t *testing.T) {
 		`data-section="header"`,
 		`data-section="repositories"`,
 		`data-section="metadata"`,
-		`51 repositories`,
-		`1.5k stargazers`,
-		`81 forks`,
+		`51 Repositories`,
+		`1500 Stargazers`,
+		`81 Forkers`,
 	} {
 		if !strings.Contains(out, marker) {
 			t.Errorf("base render missing marker %q", marker)

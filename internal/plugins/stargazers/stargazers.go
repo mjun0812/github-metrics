@@ -8,7 +8,6 @@ package stargazers
 import (
 	"context"
 	"log/slog"
-	"sort"
 	"strings"
 	"time"
 
@@ -70,7 +69,10 @@ type StargazersCharts struct {
 type ChartPoint struct {
 	Date  time.Time `json:"date"`
 	Count int       `json:"count"`
+	New   int       `json:"new,omitempty"`
 }
+
+const stargazersWindowDays = 14
 
 // StargazersWorldmap is a placeholder that always serializes to null
 // in M4 per R-012.
@@ -126,42 +128,60 @@ func (p *stargazersPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (
 	return base, nil
 }
 
-// buildSeries flattens stargazers across all owned repos into month
-// buckets and accumulates into a cumulative count series.
+// buildSeries flattens stargazers across all owned repos into the
+// upstream last-14-days daily window and accumulates into a cumulative
+// count series.
 func buildSeries(resp *githubapi.ViewerStargazersReposResponse) []ChartPoint {
 	if resp == nil || resp.Viewer == nil || resp.Viewer.Repositories == nil {
 		return []ChartPoint{}
 	}
-	monthly := map[string]int{}
+	return buildSeriesAt(resp, time.Now().UTC())
+}
+
+func buildSeriesAt(resp *githubapi.ViewerStargazersReposResponse, now time.Time) []ChartPoint {
+	if resp == nil || resp.Viewer == nil || resp.Viewer.Repositories == nil {
+		return []ChartPoint{}
+	}
+	end := dayStart(now.UTC())
+	start := end.AddDate(0, 0, -(stargazersWindowDays - 1))
+	daily := map[string]int{}
+	total := 0
+	windowStars := 0
 	for _, repo := range resp.Viewer.Repositories.Nodes {
 		if repo == nil || repo.Stargazers == nil {
 			continue
 		}
+		total += repo.StargazerCount
 		for _, edge := range repo.Stargazers.Edges {
 			if edge == nil {
 				continue
 			}
-			key := monthKey(edge.StarredAt)
-			monthly[key]++
+			starred := dayStart(edge.StarredAt.UTC())
+			if starred.Before(start) || starred.After(end) {
+				continue
+			}
+			daily[dayKey(starred)]++
+			windowStars++
 		}
 	}
-	keys := make([]string, 0, len(monthly))
-	for k := range monthly {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	out := make([]ChartPoint, 0, len(keys))
-	cum := 0
-	for _, k := range keys {
-		cum += monthly[k]
-		t, _ := time.Parse("2006-01", k)
-		out = append(out, ChartPoint{Date: t, Count: cum})
+	out := make([]ChartPoint, 0, stargazersWindowDays)
+	cum := total - windowStars
+	for i := 0; i < stargazersWindowDays; i++ {
+		day := start.AddDate(0, 0, i)
+		newStars := daily[dayKey(day)]
+		cum += newStars
+		out = append(out, ChartPoint{Date: day, Count: cum, New: newStars})
 	}
 	return out
 }
 
-func monthKey(t time.Time) string {
-	return t.UTC().Format("2006-01")
+func dayStart(t time.Time) time.Time {
+	t = t.UTC()
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+}
+
+func dayKey(t time.Time) string {
+	return dayStart(t).Format("2006-01-02")
 }
 
 func isTruthy(v any) bool {

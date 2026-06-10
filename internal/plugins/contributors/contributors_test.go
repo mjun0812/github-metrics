@@ -328,13 +328,9 @@ func TestPartial_ContributionsDisplayMode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
-	// Regression coverage for #421: ensure login and commit count are
-	// separated by ": " (mirroring plugin-traffic #416) so they cannot
-	// fuse into a single token like "octocat2 commits" in SVG.
 	for _, want := range []string{
 		"contributor-contributions",
-		`<span class="login">octocat</span>: <span class="contributions">`,
-		"2 commits",
+		`<span class="login">octocat</span><span class="label-right">2</span>`,
 		"++15 --5",
 	} {
 		if !strings.Contains(got, want) {
@@ -346,12 +342,10 @@ func TestPartial_ContributionsDisplayMode(t *testing.T) {
 	}
 }
 
-// TestPartial_LoginWithDigitsHasExplicitDelimiter pins #421 directly:
+// TestPartial_LoginWithDigitsUsesSeparateBadge pins #421 directly:
 // the bug surfaced with login "mjun0812" because the rendered SVG
-// dropped the whitespace between the login span and the commits chip,
-// producing "mjun081267 commits". An explicit ": " separator keeps
-// the two tokens visually distinct regardless of SVG whitespace
-// collapsing.
+// dropped the whitespace between the login span and the commits chip.
+// The chip layout keeps the count in a separate label-right badge.
 func TestPartial_LoginWithDigitsHasExplicitDelimiter(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
@@ -370,13 +364,13 @@ func TestPartial_LoginWithDigitsHasExplicitDelimiter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
-	if !strings.Contains(got, `<span class="login">mjun0812</span>: <span class="contributions">`) {
-		t.Fatalf("expected ': ' delimiter between login and contributions; got %q", got)
+	if !strings.Contains(got, `<span class="login">mjun0812</span><span class="label-right">67</span>`) {
+		t.Fatalf("expected separate count badge; got %q", got)
 	}
 	if strings.Contains(got, "mjun081267") {
 		t.Fatalf("regression: login and commit count fused into %q", "mjun081267")
 	}
-	for _, want := range []string{"67 commits", "++1234 --56"} {
+	for _, want := range []string{`label-right">67</span>`, "++1234 --56"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("expected %q in %q", want, got)
 		}
@@ -407,11 +401,11 @@ func TestPartial_StatsPendingOmitsDiffSpan(t *testing.T) {
 		t.Fatalf("StatsPending must not emit a 'stats pending' chip; got %q", got)
 	}
 	// Neither the false "++0 --0" nor any add/del diff span may appear.
-	if strings.Contains(got, "++") || strings.Contains(got, `class="diff"`) {
+	if strings.Contains(got, "++") {
 		t.Fatalf("StatsPending must omit the add/del diff span; got %q", got)
 	}
 	// The commit count still carries the contribution signal.
-	if !strings.Contains(got, "3 commits") {
+	if !strings.Contains(got, `label-right">3</span>`) {
 		t.Fatalf("commit count from minimal stub should still render; got %q", got)
 	}
 }

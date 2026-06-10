@@ -18,9 +18,11 @@ import (
 	"io/fs"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/mjun0812/github-metrics/assets"
 	"github.com/mjun0812/github-metrics/internal/config"
+	"github.com/mjun0812/github-metrics/internal/engine"
 	"github.com/mjun0812/github-metrics/internal/templates"
 	classicpart "github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 	repopart "github.com/mjun0812/github-metrics/internal/templates/repository/partials"
@@ -168,9 +170,39 @@ func (t *repositoryTemplate) Run(ctx context.Context, pc *templates.PartialConte
 		b.WriteString(frag)
 	}
 
-	b.WriteString(`<div id="metrics-end"></div>`)
+	if footer := metadataFooter(pc, baseSections); footer != "" {
+		b.WriteString(`<div id="metrics-end"></div>`)
+		b.WriteString(footer)
+	} else {
+		b.WriteString(`<div id="metrics-end"></div>`)
+	}
 	b.WriteString(`</div></foreignObject></svg>`)
 	return b.String(), nil
+}
+
+func metadataFooter(pc *templates.PartialContext, sections map[string]struct{}) string {
+	_, enabledByBase := sections["metadata"]
+	if !enabledByBase && (pc == nil || pc.Inputs == nil || !repopart.TruthyInput(pc.Inputs, "base.metadata")) {
+		return ""
+	}
+	tz := ""
+	if pc != nil && pc.Data != nil {
+		tz = pc.Data.Config.Timezone.Name
+	}
+	var b strings.Builder
+	b.WriteString(`<section data-section="metadata">`)
+	b.WriteString(`<footer>`)
+	stamp := time.Now().UTC().Format(time.RFC3339)
+	if tz != "" && tz != "UTC" {
+		fmt.Fprintf(&b, `<span>Last updated %s (timezone %s) with mjun0812/github-metrics@%s</span>`,
+			stamp, classicpart.EscapeXML(tz), classicpart.EscapeXML(engine.Version()))
+	} else {
+		fmt.Fprintf(&b, `<span>Last updated %s with mjun0812/github-metrics@%s</span>`,
+			stamp, classicpart.EscapeXML(engine.Version()))
+	}
+	b.WriteString(`</footer>`)
+	b.WriteString(`</section>`)
+	return b.String()
 }
 
 // pluginPartialName reports whether a `_.json` entry is a plugin
@@ -190,6 +222,16 @@ func pluginPartialName(name string) bool {
 func pluginEnabled(pc *templates.PartialContext, slug string) bool {
 	if pc == nil || pc.Inputs == nil {
 		return false
+	}
+	if slug == "languages" && pc.Data != nil && pc.Data.RepoRef() != nil {
+		raw, present := pc.Data.GetPlugin(slug)
+		if !present || raw == nil {
+			return false
+		}
+		if sr, ok := raw.(interface{ IsSkipped() bool }); ok && sr.IsSkipped() {
+			return false
+		}
+		return true
 	}
 	if !repopart.TruthyInput(pc.Inputs, "plugin_"+slug) {
 		return false

@@ -129,6 +129,13 @@ func (g *GraphQL) UserIsocalendar(ctx context.Context, login string, from, to ti
 	return UserIsocalendar(ctx, g.client, login, from, to)
 }
 
+// UserCommitContributions fetches the commit-contribution total for an
+// explicit from/to window. The base plugin calls it once per account
+// year to reproduce upstream's lifetime Activity commit total.
+func (g *GraphQL) UserCommitContributions(ctx context.Context, login string, from, to time.Time) (*UserCommitContributionsResponse, error) {
+	return UserCommitContributions(ctx, g.client, login, from, to)
+}
+
 // UserStarredRepositories fetches the user's most-recently starred
 // repositories (most-recent first). Consumed by the "stars" plugin.
 func (g *GraphQL) UserStarredRepositories(ctx context.Context, login string, first int) (*UserStarredRepositoriesResponse, error) {

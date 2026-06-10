@@ -38,6 +38,8 @@ type Repo struct {
 	Calendar []ContributionDay
 	// Stargazers is `repository.stargazerCount`.
 	Stargazers int
+	// Watchers is `repository.watchers.totalCount`.
+	Watchers int
 	// Forks is `repository.forkCount`.
 	Forks int
 	// Contributors is the REST `listContributors` count (the GraphQL
@@ -52,6 +54,9 @@ type Repo struct {
 	// LicenseName is the GraphQL `licenseInfo.name` (e.g. "MIT
 	// License"); empty when no license is declared.
 	LicenseName string
+	// Languages is the full per-language byte breakdown for the
+	// repository as reported by GraphQL `repository.languages`.
+	Languages []LanguageStat
 	// DefaultBranch is `defaultBranchRef.name` (e.g. "main"); used by
 	// the committer when the workflow does not pin one explicitly.
 	DefaultBranch string

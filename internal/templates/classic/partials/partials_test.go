@@ -172,7 +172,7 @@ func TestBaseActivityCommunity_RendersActivityAndCommunity(t *testing.T) {
 		`data-block="activity"`,
 		`data-block="community"`,
 		"Activity</h2>",
-		"7.3k Commits",
+		"7293 Commits",
 		"68 Pull requests reviewed",
 		"290 Pull requests opened",
 		"443 Issues opened",
@@ -292,16 +292,10 @@ func TestBaseRepositories_RendersCounts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
-	for _, marker := range []string{"250 repositories", "1.5k stargazers", "13 forks"} {
+	for _, marker := range []string{"250 Repositories", "1500 Stargazers", "13 Forkers", "0 Sponsors", "0 Watchers"} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("missing %q in %s", marker, got)
 		}
-	}
-	if strings.Contains(got, "Watching") {
-		t.Errorf("Watching row should be hidden when User.Watching = 0: %s", got)
-	}
-	if strings.Contains(got, "sponsor") {
-		t.Errorf("sponsor row should be hidden when User.SponsorshipsAsMaintainer = 0: %s", got)
 	}
 }
 
@@ -325,11 +319,11 @@ func TestBaseRepositories_PhaseOneFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
-	if !strings.Contains(got, "4 sponsors") {
-		t.Errorf("missing %q in %s", "4 sponsors", got)
+	if !strings.Contains(got, "4 Sponsors") {
+		t.Errorf("missing %q in %s", "4 Sponsors", got)
 	}
-	if strings.Contains(got, "Watching") {
-		t.Errorf("Watching moved to Community stats; must not render in repositories: %s", got)
+	if !strings.Contains(got, "0 Watchers") {
+		t.Errorf("watchers row should render in repositories: %s", got)
 	}
 }
 
@@ -345,11 +339,11 @@ func TestBaseRepositories_SponsorSingular(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
-	if !strings.Contains(got, "1 sponsor</div>") {
+	if !strings.Contains(got, "1 Sponsor</div>") {
 		t.Errorf("singular sponsor label missing: %s", got)
 	}
-	if strings.Contains(got, "Watching") {
-		t.Errorf("Watching moved to Community stats; must not render in repositories: %s", got)
+	if !strings.Contains(got, "0 Watchers") {
+		t.Errorf("watchers row should render in repositories: %s", got)
 	}
 }
 
@@ -432,12 +426,12 @@ func TestBaseRepositories_PhaseTwoFields(t *testing.T) {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
 	for _, marker := range []string{
-		"10 releases",
-		"2 packages",
+		"Prefers MIT license",
+		"10 Releases",
+		"2 Packages",
 		"5 GB used",
-		"MIT 60%",
-		"Apache-2.0 20%",
-		"GPL-3.0 10%",
+		"100 Stargazers",
+		"5 Forkers",
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("missing %q in %s", marker, got)
@@ -463,7 +457,7 @@ func TestBaseRepositories_PhaseTwoSingulars(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BaseRepositories: %v", err)
 	}
-	for _, marker := range []string{"1 release</div>", "1 package</div>"} {
+	for _, marker := range []string{"1 Release</div>", "1 Package</div>"} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("missing singular %q in %s", marker, got)
 		}
@@ -519,13 +513,13 @@ func TestBaseRepositories_LicensePreference_TopN(t *testing.T) {
 		if err != nil {
 			t.Fatalf("BaseRepositories: %v", err)
 		}
-		for _, marker := range []string{"MIT 50%", "Apache-2.0 30%", "BSD-3-Clause 10%"} {
+		for _, marker := range []string{"Prefers MIT license"} {
 			if !strings.Contains(got, marker) {
 				t.Errorf("missing %q in %s", marker, got)
 			}
 		}
-		if strings.Contains(got, "ISC") {
-			t.Errorf("4th license entry should be capped out: %s", got)
+		if strings.Contains(got, "Apache-2.0") || strings.Contains(got, "BSD-3-Clause") || strings.Contains(got, "ISC") {
+			t.Errorf("only the top license preference should render: %s", got)
 		}
 	})
 	t.Run("empty slice hides the row", func(t *testing.T) {

@@ -113,6 +113,8 @@ func (p *basePlugin) runRepository(ctx context.Context, pc *plugins.PluginContex
 		Description:   r.Description,
 		Stars:         r.Stargazers,
 		Forks:         r.Forks,
+		Watchers:      r.Watchers,
+		Languages:     append([]plugins.LanguageStat(nil), r.Languages...),
 	}
 	if r.PrimaryLanguage != "" {
 		lang := plugins.LanguageStat{
@@ -120,23 +122,21 @@ func (p *basePlugin) runRepository(ctx context.Context, pc *plugins.PluginContex
 			Color: r.PrimaryLanguageColor,
 		}
 		syntheticRepo.Language = &lang
-		// languages.Run iterates `repo.Languages` exclusively — leaving
-		// the slice nil makes the plugin treat the synthetic repo as
-		// having zero-byte language data and return Skipped. Seed a
-		// single-language byte stat from PrimaryLanguage so the
-		// languages plugin renders the section (FR-005). Size = 1
-		// avoids zero-division; the displayed favorite is the primary
-		// language regardless of the absolute number.
-		syntheticRepo.Languages = []plugins.LanguageStat{{
-			Name:  r.PrimaryLanguage,
-			Color: r.PrimaryLanguageColor,
-			Size:  1,
-		}}
+		if len(syntheticRepo.Languages) == 0 {
+			// Fall back to primaryLanguage for older fixtures whose
+			// repository query does not carry the full language edges.
+			syntheticRepo.Languages = []plugins.LanguageStat{{
+				Name:  r.PrimaryLanguage,
+				Color: r.PrimaryLanguageColor,
+				Size:  1,
+			}}
+		}
 	}
 	pc.Data.Computed.RepositoryList = []plugins.Repository{syntheticRepo}
 	pc.Data.Computed.Repositories.Count = 1
 	pc.Data.Computed.Repositories.Stargazers = r.Stargazers
 	pc.Data.Computed.Repositories.Forks = r.Forks
+	pc.Data.Computed.Repositories.Watchers = r.Watchers
 	return nil, nil
 }
 
@@ -185,6 +185,7 @@ func (p *basePlugin) runUser(ctx context.Context, pc *plugins.PluginContext, log
 		Sponsoring:    sponsorshipsAsSponsorTotal(u),
 		Starred:       starredRepositoriesTotal(u),
 	}
+	populateLifetimeCommits(ctx, pc, login)
 
 	// M4: walk the entire repository connection with batch-halving on
 	// transient 5xx / timeout. Downstream plugins consume both the

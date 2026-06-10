@@ -27,7 +27,7 @@ upstream に存在する各 plugin のサブモードについて、Go 実装の
 | `languages.details`              | ✅ 比較可              | `plugin-languages-details.svg`（本対応で追加）                                                                          |
 | `achievements.compact`           | ✅ 比較可              | `plugin-achievements-compact.svg`（本対応で追加）                                                                       |
 | `isocalendar.fullyear`           | ✅ 比較可              | `plugin-isocalendar-fullyear.svg`（本対応で追加）                                                                       |
-| `calendar.full`                  | ◐ 対応・差分なし       | `plugin_calendar_limit=0` を受け付けるが、このサンプルデータでは無印とバイト同一                                        |
+| `calendar.full`                  | ✅ 比較可              | `plugin_calendar_limit=0` で全期間を取得。<br>`plugin-calendar-full.svg`                                                |
 | `repositories.pinned`            | ◐ 対応・差分なし       | `plugin_repositories_pinned` を受け付けるが、このサンプルデータでは無印とバイト同一                                     |
 | `topics.icons`                   | ○ データ無し           | `plugin_topics_mode=icons` 対応。サンプルユーザーに topics 無しで空                                                     |
 | `starlists.languages`            | ○ データ無し           | `plugin_starlists_languages` 対応。サンプルユーザーにデータ無しで空                                                     |
@@ -193,11 +193,11 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 
 **variant: full** — upstream `calendar.full`
 
-| upstream (lowlighter)                                                      | upstream (mjun0812)                                                         | Go 実装                                                |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------ |
-| <img src="original_examples/metrics.plugin.calendar.full.svg" width="420"> | <img src="reference_examples/metrics.plugin.calendar.full.svg" width="420"> | — 別サンプルなし（サンプルデータでは無印とバイト同一） |
+| upstream (lowlighter)                                                      | upstream (mjun0812)                                                         | Go 実装                                                   |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.calendar.full.svg" width="420"> | <img src="reference_examples/metrics.plugin.calendar.full.svg" width="420"> | <img src="examples/plugin-calendar-full.svg" width="420"> |
 
-> ◐ Go 側は `plugin_calendar_limit=0` を受け付けるが、サンプルデータでは無印と同一出力のため別サンプルなし。
+> ✅ Go 側は `plugin_calendar_limit=0` でアカウント作成年から現在年までを年単位で再取得し、`plugin-calendar-full.svg` として別サンプルを生成。
 
 ### habits
 
@@ -298,7 +298,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.contributors.contributions.svg" width="420"> | <img src="reference_examples/metrics.repository.plugin.contributors.svg" width="420"> | <img src="examples/plugin-contributors-repo-contributions.svg" width="420"> |
 
-> ✅ Go 側は `plugin_contributors_contributions` 対応済み（per-contributor commits / additions / deletions）。default mode の repository サンプルは base chrome の contributors セクションが担当し、adds/dels 列付きの変種は `plugin-contributors-repo-contributions.svg` を参照（既定 commits のみのサンプルは `plugin-base-repo.svg` と byte 同一になるため削除済み）。`stats pending` 警告は `/stats/contributors` の cache が暖まる前に 202 が返った場合に表示される（#424）。詳細は末尾の [repository mode サンプル一覧](#repository-mode-サンプル一覧) を参照。
+> ✅ Go 側は `plugin_contributors_contributions` 対応済み（per-contributor commits / additions / deletions）。default mode の repository サンプルは base chrome の contributors セクションが担当し、adds/dels 列付きの変種は `plugin-contributors-repo-contributions.svg` を参照（既定 commits のみのサンプルは `plugin-base-repo.svg` と byte 同一になるため削除済み）。`/stats/contributors` が 202 / 空で返った場合は `/repos/{owner}/{repo}/contributors` にフォールバックし、commit 数付きチップを描画する。詳細は末尾の [repository mode サンプル一覧](#repository-mode-サンプル一覧) を参照。
 
 ### reactions
 
@@ -353,7 +353,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | chartist | <img src="original_examples/metrics.plugin.stargazers.chartist.svg" width="420"> | — 該当なし          | — 別サンプルなし（`graph` の deprecated alias でバイト同一） |
 | worldmap | <img src="original_examples/metrics.plugin.stargazers.worldmap.svg" width="420"> | — 該当なし          | — 未対応（Google Maps API 必須の backlog）                   |
 
-> ✅ Go 側は `plugin_stargazers_charts_type=graph` 対応（`chartist` は graph の deprecated alias でバイト同一）。Go サンプル: `plugin-stargazers-graph.svg`。worldmap は Google Maps API 必須の backlog（Skipped path、未対応）。
+> ✅ Go 側は `plugin_stargazers_charts_type=graph` 対応（`chartist` は graph の deprecated alias でバイト同一）。`graph` は累積 stargazers と直近 14 日の日次 new stargazers を上下 2 段で描画する。Go サンプル: `plugin-stargazers-graph.svg`。worldmap は Google Maps API 必須の backlog（Skipped path、未対応）。
 
 ### traffic
 
@@ -361,7 +361,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 | -------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.traffic.svg" width="420"> | <img src="reference_examples/metrics.plugin.traffic.svg" width="420"> | <img src="examples/plugin-traffic.svg" width="420"> |
 
-> ✅ Go 側: user mode は token owner が admin の全 repo に対して `/traffic/views` を並列取得して合計表示。`--template repository` 単体では traffic partial が `_.json` に登録されていないため出力が `plugin-base-repo.svg` と byte 同一になり、専用サンプルは生成していない（plugin の Run() 自体は単一 repo の views を計算するが描画される partial がない）。upstream の `metrics.repository.svg` も同様に traffic を含まないため parity 維持。admin 権限の有無で Run() が "missing repo scope" で Skipped になる挙動は user-mode サンプルでカバー済み。
+> ✅ Go 側: user mode は token owner が admin の全 repo に対して `/traffic/views` を並列取得し、`base.repositories` の右列に合計 views を統合表示する。traffic plugin 単体 partial は空文字列を返すため、`plugin-traffic.svg` は `base=repositories` と組み合わせて生成する。`--template repository` 単体では traffic partial が `_.json` に登録されていないため出力が `plugin-base-repo.svg` と byte 同一になり、専用サンプルは生成していない。admin 権限の有無で Run() が "missing repo scope" で Skipped になる挙動は user-mode サンプルでカバー済み。
 > ⚠ 中列 (mjun0812): user テンプレートの `metrics.plugin.traffic.svg` は traffic セクション自体はデータ無しですが、カードは描画されるため保持しています。repository テンプレートの traffic は空 (高さ ~8px) だったため reference からは削除済み。
 
 ---

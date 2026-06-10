@@ -81,10 +81,12 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if len(series) > 0 {
 		b.WriteString(`<div class="row margin-bottom">`)
 		if r.Charts.Type == chartsTypeGraph {
-			// The graph chart is a single full-width line plot.
-			b.WriteString(`<section class="column chart">`)
+			totals, news := chartValues(series)
+			b.WriteString(`<section class="column chart fill-width">`)
 			b.WriteString(`<h3>Total stargazers</h3>`)
-			writeGraphChart(&b, series)
+			writeGraphChart(&b, series, totals, "Total stargazers graph")
+			b.WriteString(`<h3>New stargazers per day</h3>`)
+			writeGraphChart(&b, series, news, "New stargazers per day graph")
 			b.WriteString(`</section>`)
 		} else {
 			// The classic chart mirrors upstream's two side-by-side
@@ -105,27 +107,19 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 // and each bar's x-axis label is the month (the date is always the 1st
 // of its month, which previously rendered as a meaningless "1").
 func writeClassicCharts(b *strings.Builder, series []ChartPoint) {
+	totals, news := chartValues(series)
+	writeChartColumn(b, "Total stargazers", series, totals)
+	writeChartColumn(b, "New stargazers per day", series, news)
+}
+
+func chartValues(series []ChartPoint) ([]int, []int) {
 	totals := make([]int, len(series))
 	news := make([]int, len(series))
-	prev := 0
 	for i, pt := range series {
 		totals[i] = pt.Count
-		news[i] = pt.Count - prev
-		prev = pt.Count
+		news[i] = pt.New
 	}
-	// Keep only the most recent buckets so the two columns fit side by
-	// side at the 480px card width. Upstream charts a fixed recent
-	// window; the Go series spans a repo's whole star history (monthly),
-	// which would otherwise overflow a half-width column and wrap the
-	// second chart below the first. Increments are computed on the full
-	// series above so the first kept bar still reflects its true delta.
-	const maxBuckets = 15
-	if len(series) > maxBuckets {
-		start := len(series) - maxBuckets
-		series, totals, news = series[start:], totals[start:], news[start:]
-	}
-	writeChartColumn(b, "Total stargazers", series, totals)
-	writeChartColumn(b, "New stargazers per month", series, news)
+	return totals, news
 }
 
 // writeChartColumn emits one `<section class="column chart">` containing
@@ -175,7 +169,7 @@ func writeChartColumn(b *strings.Builder, title string, series []ChartPoint, val
 			if v != 0 {
 				valueStr = partials.FormatCount(int64(v))
 			}
-			label = pt.Date.UTC().Format("Jan") // month abbreviation, always safe ASCII
+			label = pt.Date.UTC().Format("2")
 		}
 		fmt.Fprintf(
 			b,
@@ -187,10 +181,10 @@ func writeChartColumn(b *strings.Builder, title string, series []ChartPoint, val
 	b.WriteString(`</section>`)
 }
 
-func writeGraphChart(b *strings.Builder, series []ChartPoint) {
+func writeGraphChart(b *strings.Builder, series []ChartPoint, values []int, label string) {
 	const (
 		width  = 480.0
-		height = 200.0
+		height = 180.0
 		left   = 32.0
 		top    = 12.0
 		right  = 14.0
@@ -198,13 +192,13 @@ func writeGraphChart(b *strings.Builder, series []ChartPoint) {
 	)
 	plotW := width - left - right
 	plotH := height - top - bottom
-	minV, maxV := series[0].Count, series[0].Count
-	for _, pt := range series[1:] {
-		if pt.Count < minV {
-			minV = pt.Count
+	minV, maxV := values[0], values[0]
+	for _, v := range values[1:] {
+		if v < minV {
+			minV = v
 		}
-		if pt.Count > maxV {
-			maxV = pt.Count
+		if v > maxV {
+			maxV = v
 		}
 	}
 	denom := maxV - minV
@@ -213,12 +207,12 @@ func writeGraphChart(b *strings.Builder, series []ChartPoint) {
 	}
 
 	points := make([][2]float64, len(series))
-	for i, pt := range series {
+	for i := range series {
 		x := left + plotW/2
 		if len(series) > 1 {
 			x = left + plotW*float64(i)/float64(len(series)-1)
 		}
-		y := top + plotH - plotH*float64(pt.Count-minV)/float64(denom)
+		y := top + plotH - plotH*float64(values[i]-minV)/float64(denom)
 		points[i] = [2]float64{x, y}
 	}
 
@@ -234,11 +228,13 @@ func writeGraphChart(b *strings.Builder, series []ChartPoint) {
 		return i == 0 || i == len(series)-1 || i%stride == 0
 	}
 
-	b.WriteString(`<svg class="stargazers-graph" xmlns="http://www.w3.org/2000/svg" width="480" height="200" viewBox="0 0 480 200" role="img" aria-label="Total stargazers graph">`)
+	fmt.Fprintf(b, `<svg class="stargazers-graph" xmlns="http://www.w3.org/2000/svg" width="480" height="180" viewBox="0 0 480 180" role="img" aria-label="%s">`, partials.EscapeXML(label))
 	// Y axis (dashed) + X axis (solid baseline), matching upstream's
 	// faint grey rgba(127,127,127) axis colors.
 	fmt.Fprintf(b, `<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"></line>`, left, top, left, top+plotH)
 	fmt.Fprintf(b, `<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="rgba(127, 127, 127, .8)"></line>`, left, top+plotH, left+plotW, top+plotH)
+	fmt.Fprintf(b, `<text x="%.1f" y="%.1f" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">%d</text>`, left-4, top+4, maxV)
+	fmt.Fprintf(b, `<text x="%.1f" y="%.1f" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">%d</text>`, left-4, top+plotH, minV)
 
 	// Area fill first so the line + markers paint on top of it.
 	b.WriteString(`<path d="`)
@@ -248,11 +244,17 @@ func writeGraphChart(b *strings.Builder, series []ChartPoint) {
 	writeLinePath(b, points)
 	b.WriteString(`" fill="transparent" stroke="#87ceeb" stroke-width="2"></path>`)
 
-	for i, pt := range series {
+	for i := range series {
 		p := points[i]
 		fmt.Fprintf(b, `<circle cx="%.1f" cy="%.1f" r="2" fill="#106cbc"></circle>`, p[0], p[1])
 		if labelAt(i) {
-			fmt.Fprintf(b, `<text x="%.1f" y="%.1f" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">%d</text>`, p[0], p[1]-6, pt.Count)
+			anchor := "middle"
+			if i == 0 {
+				anchor = "start"
+			} else if i == len(series)-1 {
+				anchor = "end"
+			}
+			fmt.Fprintf(b, `<text x="%.1f" y="%.1f" fill="rgba(127, 127, 127, .8)" text-anchor="%s" font-size="10">%d</text>`, p[0], p[1]-6, anchor, values[i])
 		}
 	}
 	// X-axis date labels rotated -45deg around their anchor to avoid
@@ -262,7 +264,7 @@ func writeGraphChart(b *strings.Builder, series []ChartPoint) {
 			continue
 		}
 		p := points[i]
-		label := pt.Date.UTC().Format("Jan 2006")
+		label := pt.Date.UTC().Format("Jan 2")
 		ly := top + plotH + 12
 		fmt.Fprintf(b, `<text x="%.1f" y="%.1f" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 %.1f %.1f)">%s</text>`, p[0], ly, p[0], ly, label)
 	}

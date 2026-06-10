@@ -1,7 +1,9 @@
 <!-- AUTOGEN_START: title-and-description -->
+
 # Plugin: calendar
 
 This plugin can display commit calendar across several years.
+
 <!-- AUTOGEN_END: title-and-description -->
 
 ## サンプル出力
@@ -15,15 +17,18 @@ This plugin can display commit calendar across several years.
 <!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
 
 <!-- AUTOGEN_START: config-table -->
+
 ## 設定 (inputs)
 
-| Input | 説明 | デフォルト | 必須 | 型 |
-|-------|------|------------|------|----|
-| `plugin_calendar` | Enable calendar plugin | `no` | no | boolean |
-| `plugin_calendar_limit` | Years to display | `1` | no | number |
+| Input                   | 説明                   | デフォルト | 必須 | 型      |
+| ----------------------- | ---------------------- | ---------- | ---- | ------- |
+| `plugin_calendar`       | Enable calendar plugin | `no`       | no   | boolean |
+| `plugin_calendar_limit` | Years to display       | `1`        | no   | number  |
+
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
+
 ## 使い方
 
 ### GitHub Action
@@ -43,11 +48,12 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_calendar=yes
 ```
+
 <!-- AUTOGEN_END: usage-snippet -->
 
 ## Requirements
 
-A non-empty **GitHub contribution calendar** — i.e. public contributions (commits to default branches, opened issues / pull requests, code reviews) within the past year. Empty contribution graphs produce an empty heatmap.
+A non-empty **GitHub contribution calendar** — i.e. public contributions (commits to default branches, opened issues / pull requests, code reviews). `plugin_calendar_limit=0` fetches all calendar years from the account creation year through the current year; positive values fetch that many recent years. Empty contribution graphs produce an empty heatmap.
 
 ## 既知の制約 / 注意点
 
