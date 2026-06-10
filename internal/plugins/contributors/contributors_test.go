@@ -353,6 +353,57 @@ func TestRun_RepositoryStatsErrorDoesNotFlagPending(t *testing.T) {
 	}
 }
 
+// TestRun_RepositoryStatsFailureFallsBackToContributorList mirrors the
+// 202-path fallback but for the 500 path: when /stats/contributors fails
+// (statsStatusFailed), Run must fall back to /repos/{owner}/{repo}/
+// contributors, populate Result.List (sorted, ignored-filtered) and leave
+// StatsPending false (a hard failure is not a warm-up).
+func TestRun_RepositoryStatsFailureFallsBackToContributorList(t *testing.T) {
+	t.Parallel()
+	rest := mocks.NewRESTMux(t)
+	rest.OnBody("/repos/octocat/hello-world/stats/contributors", http.StatusInternalServerError, `{"message":"oops"}`)
+	rest.OnBody("/repos/octocat/hello-world/contributors", http.StatusOK, `[
+		{"login":"alice","avatar_url":"https://avatars.example/alice.png","contributions":8},
+		{"login":"hubot","avatar_url":"https://avatars.example/hubot.png","contributions":12},
+		{"login":"bob","avatar_url":"https://avatars.example/bob.png","contributions":3}
+	]`)
+	data := plugins.NewData()
+	data.Account = plugins.AccountRepository
+	data.SetRepo(&plugins.Repo{
+		Owner:         "octocat",
+		OwnerAvatar:   "https://avatars.example/owner.png",
+		Name:          "hello-world",
+		Contributors:  3,
+		DefaultBranch: "main",
+		Activity:      plugins.RepoActivity{RecentCommits: 1},
+	})
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithREST(rest),
+		mocks.WithData(data),
+		mocks.WithInputs(map[string]any{
+			"plugin_contributors_contributions": true,
+			"plugin_contributors_ignored":       []string{"hubot"},
+		}),
+	)
+
+	out, err := contributors.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*contributors.Result)
+	if r.StatsPending {
+		t.Fatalf("a hard 500 failure must not flag StatsPending; got %+v", r)
+	}
+	if got := rest.Calls("/repos/octocat/hello-world/contributors"); got != 1 {
+		t.Fatalf("contributors fallback calls = %d, want 1", got)
+	}
+	// ignored "hubot" filtered out; remaining sorted by commits desc.
+	if len(r.List) != 2 || r.List[0].Login != "alice" || r.List[0].Commits != 8 || r.List[1].Login != "bob" {
+		t.Fatalf("fallback contributor list not used/filtered/sorted: %+v", r.List)
+	}
+}
+
 func TestPartial_ContributionsDisplayMode(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()

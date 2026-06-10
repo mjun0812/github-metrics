@@ -201,7 +201,9 @@ func formatStarredAt(t, now time.Time) string {
 		if hours < 0 {
 			hours = 0
 		}
-		return fmt.Sprintf("%d hour%s ago", hours, pluralSuffix(hours >= 2))
+		// Only "1 hour" is singular; "0 hours" (clamped future timestamp)
+		// and "2+ hours" both take the plural suffix.
+		return fmt.Sprintf("%d hour%s ago", hours, pluralSuffix(hours != 1))
 	case days < 30:
 		n := int(math.Floor(days))
 		return fmt.Sprintf("%d day%s ago", n, pluralSuffix(days >= 2))
