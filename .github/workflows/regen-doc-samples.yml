@@ -99,6 +99,10 @@ jobs:
 
     steps:
       - name: Render SVG + PNG
+        # Inside a job container the default step shell is `sh`, not
+        # bash — the array/pipefail syntax below needs the bash that
+        # the image ships.
+        shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.METRICS_TOKEN }}
           SAMPLE_NAME: ${{ matrix.name }}
