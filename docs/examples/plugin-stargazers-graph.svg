@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="308" class="">
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="99999" class="">
   <defs>
     <style/>
   </defs>
   <style>
-    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}h3{font-size:14px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}.column{display:flex;flex-direction:column;align-items:center}.margin-bottom{margin-bottom:16px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}.chart{padding:0 8px}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
+    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}h3{font-size:14px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:&#34;&#34;;display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}.column{display:flex;flex-direction:column;align-items:center}.fill-width{width:100%}.margin-bottom{margin-bottom:16px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}.chart{padding:0 8px}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
   </style>
   <style/>
   <foreignObject x="0" y="0" width="100%" height="100%">
@@ -17,108 +17,159 @@
             Stargazers
           </h2>
           <div class="row margin-bottom">
-            <section class="column chart">
+            <section class="column chart fill-width">
               <h3>
                 Total stargazers
               </h3>
-              <svg xmlns="http://www.w3.org/2000/svg" class="stargazers-graph" width="480" height="200" viewBox="0 0 480 200" role="img" aria-label="Total stargazers graph">
-                <line x1="32.0" y1="12.0" x2="32.0" y2="146.0" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
-                <line x1="32.0" y1="146.0" x2="466.0" y2="146.0" stroke="rgba(127, 127, 127, .8)"/>
-                <path d="M32.0,146.0L52.7,145.2L73.3,144.5L94.0,143.7L114.7,143.0L135.3,142.2L156.0,141.5L176.7,140.7L197.3,139.9L218.0,139.2L238.7,111.9L259.3,105.9L280.0,105.1L300.7,103.6L321.3,100.6L342.0,99.1L362.7,96.0L383.3,95.3L404.0,94.5L424.7,88.5L445.3,27.1L466.0,12.0L466.0,146.0L445.3,146.0L424.7,146.0L404.0,146.0L383.3,146.0L362.7,146.0L342.0,146.0L321.3,146.0L300.7,146.0L280.0,146.0L259.3,146.0L238.7,146.0L218.0,146.0L197.3,146.0L176.7,146.0L156.0,146.0L135.3,146.0L114.7,146.0L94.0,146.0L73.3,146.0L52.7,146.0L32.0,146.0Z" fill="rgba(88, 166, 255, .1)"/>
-                <path d="M32.0,146.0L52.7,145.2L73.3,144.5L94.0,143.7L114.7,143.0L135.3,142.2L156.0,141.5L176.7,140.7L197.3,139.9L218.0,139.2L238.7,111.9L259.3,105.9L280.0,105.1L300.7,103.6L321.3,100.6L342.0,99.1L362.7,96.0L383.3,95.3L404.0,94.5L424.7,88.5L445.3,27.1L466.0,12.0" fill="transparent" stroke="#87ceeb" stroke-width="2"/>
-                <circle cx="32.0" cy="146.0" r="2" fill="#106cbc"/>
-                <text x="32.0" y="140.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  1
+              <svg xmlns="http://www.w3.org/2000/svg" class="stargazers-graph" width="480" height="180" viewBox="0 0 480 180" role="img" aria-label="Total stargazers graph">
+                <line x1="32.0" y1="12.0" x2="32.0" y2="126.0" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
+                <line x1="32.0" y1="126.0" x2="466.0" y2="126.0" stroke="rgba(127, 127, 127, .8)"/>
+                <text x="28.0" y="16.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
+                  1600
                 </text>
-                <circle cx="52.7" cy="145.2" r="2" fill="#106cbc"/>
-                <circle cx="73.3" cy="144.5" r="2" fill="#106cbc"/>
-                <text x="73.3" y="138.5" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  3
+                <text x="28.0" y="126.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
+                  1541
                 </text>
-                <circle cx="94.0" cy="143.7" r="2" fill="#106cbc"/>
-                <circle cx="114.7" cy="143.0" r="2" fill="#106cbc"/>
-                <text x="114.7" y="137.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  5
+                <path d="M32.0,126.0L65.4,118.3L98.8,106.7L132.2,100.9L165.5,87.4L198.9,75.8L232.3,68.0L265.7,60.3L299.1,52.6L332.5,48.7L365.8,41.0L399.2,23.6L432.6,12.0L466.0,12.0L466.0,126.0L432.6,126.0L399.2,126.0L365.8,126.0L332.5,126.0L299.1,126.0L265.7,126.0L232.3,126.0L198.9,126.0L165.5,126.0L132.2,126.0L98.8,126.0L65.4,126.0L32.0,126.0Z" fill="rgba(88, 166, 255, .1)"/>
+                <path d="M32.0,126.0L65.4,118.3L98.8,106.7L132.2,100.9L165.5,87.4L198.9,75.8L232.3,68.0L265.7,60.3L299.1,52.6L332.5,48.7L365.8,41.0L399.2,23.6L432.6,12.0L466.0,12.0" fill="transparent" stroke="#87ceeb" stroke-width="2"/>
+                <circle cx="32.0" cy="126.0" r="2" fill="#106cbc"/>
+                <text x="32.0" y="120.0" fill="rgba(127, 127, 127, .8)" text-anchor="start" font-size="10">
+                  1541
                 </text>
-                <circle cx="135.3" cy="142.2" r="2" fill="#106cbc"/>
-                <circle cx="156.0" cy="141.5" r="2" fill="#106cbc"/>
-                <text x="156.0" y="135.5" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  7
+                <circle cx="65.4" cy="118.3" r="2" fill="#106cbc"/>
+                <circle cx="98.8" cy="106.7" r="2" fill="#106cbc"/>
+                <text x="98.8" y="100.7" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  1551
                 </text>
-                <circle cx="176.7" cy="140.7" r="2" fill="#106cbc"/>
-                <circle cx="197.3" cy="139.9" r="2" fill="#106cbc"/>
-                <text x="197.3" y="133.9" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  9
+                <circle cx="132.2" cy="100.9" r="2" fill="#106cbc"/>
+                <circle cx="165.5" cy="87.4" r="2" fill="#106cbc"/>
+                <text x="165.5" y="81.4" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  1561
                 </text>
-                <circle cx="218.0" cy="139.2" r="2" fill="#106cbc"/>
-                <circle cx="238.7" cy="111.9" r="2" fill="#106cbc"/>
-                <text x="238.7" y="105.9" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  46
+                <circle cx="198.9" cy="75.8" r="2" fill="#106cbc"/>
+                <circle cx="232.3" cy="68.0" r="2" fill="#106cbc"/>
+                <text x="232.3" y="62.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  1571
                 </text>
-                <circle cx="259.3" cy="105.9" r="2" fill="#106cbc"/>
-                <circle cx="280.0" cy="105.1" r="2" fill="#106cbc"/>
-                <text x="280.0" y="99.1" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  55
+                <circle cx="265.7" cy="60.3" r="2" fill="#106cbc"/>
+                <circle cx="299.1" cy="52.6" r="2" fill="#106cbc"/>
+                <text x="299.1" y="46.6" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  1579
                 </text>
-                <circle cx="300.7" cy="103.6" r="2" fill="#106cbc"/>
-                <circle cx="321.3" cy="100.6" r="2" fill="#106cbc"/>
-                <text x="321.3" y="94.6" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  61
+                <circle cx="332.5" cy="48.7" r="2" fill="#106cbc"/>
+                <circle cx="365.8" cy="41.0" r="2" fill="#106cbc"/>
+                <text x="365.8" y="35.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  1585
                 </text>
-                <circle cx="342.0" cy="99.1" r="2" fill="#106cbc"/>
-                <circle cx="362.7" cy="96.0" r="2" fill="#106cbc"/>
-                <text x="362.7" y="90.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  67
-                </text>
-                <circle cx="383.3" cy="95.3" r="2" fill="#106cbc"/>
-                <circle cx="404.0" cy="94.5" r="2" fill="#106cbc"/>
-                <text x="404.0" y="88.5" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  69
-                </text>
-                <circle cx="424.7" cy="88.5" r="2" fill="#106cbc"/>
-                <circle cx="445.3" cy="27.1" r="2" fill="#106cbc"/>
-                <text x="445.3" y="21.1" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  158
+                <circle cx="399.2" cy="23.6" r="2" fill="#106cbc"/>
+                <circle cx="432.6" cy="12.0" r="2" fill="#106cbc"/>
+                <text x="432.6" y="6.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  1600
                 </text>
                 <circle cx="466.0" cy="12.0" r="2" fill="#106cbc"/>
-                <text x="466.0" y="6.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  178
+                <text x="466.0" y="6.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
+                  1600
                 </text>
-                <text x="32.0" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 32.0 158.0)">
-                  Nov 2022
+                <text x="32.0" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 32.0 138.0)">
+                  May 29
                 </text>
-                <text x="73.3" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 73.3 158.0)">
-                  Aug 2023
+                <text x="98.8" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 98.8 138.0)">
+                  May 31
                 </text>
-                <text x="114.7" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 114.7 158.0)">
-                  Apr 2024
+                <text x="165.5" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 165.5 138.0)">
+                  Jun 2
                 </text>
-                <text x="156.0" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 156.0 158.0)">
-                  Aug 2024
+                <text x="232.3" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 232.3 138.0)">
+                  Jun 4
                 </text>
-                <text x="197.3" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 197.3 158.0)">
-                  Mar 2025
+                <text x="299.1" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 299.1 138.0)">
+                  Jun 6
                 </text>
-                <text x="238.7" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 238.7 158.0)">
-                  Jun 2025
+                <text x="365.8" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 365.8 138.0)">
+                  Jun 8
                 </text>
-                <text x="280.0" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 280.0 158.0)">
-                  Aug 2025
+                <text x="432.6" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 432.6 138.0)">
+                  Jun 10
                 </text>
-                <text x="321.3" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 321.3 158.0)">
-                  Oct 2025
+                <text x="466.0" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 466.0 138.0)">
+                  Jun 11
                 </text>
-                <text x="362.7" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 362.7 158.0)">
-                  Dec 2025
+              </svg>
+              <h3>
+                New stargazers per day
+              </h3>
+              <svg xmlns="http://www.w3.org/2000/svg" class="stargazers-graph" width="480" height="180" viewBox="0 0 480 180" role="img" aria-label="New stargazers per day graph">
+                <line x1="32.0" y1="12.0" x2="32.0" y2="126.0" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
+                <line x1="32.0" y1="126.0" x2="466.0" y2="126.0" stroke="rgba(127, 127, 127, .8)"/>
+                <text x="28.0" y="16.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
+                  9
                 </text>
-                <text x="404.0" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 404.0 158.0)">
-                  Feb 2026
+                <text x="28.0" y="126.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
+                  0
                 </text>
-                <text x="445.3" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 445.3 158.0)">
-                  May 2026
+                <path d="M32.0,88.0L65.4,75.3L98.8,50.0L132.2,88.0L165.5,37.3L198.9,50.0L232.3,75.3L265.7,75.3L299.1,75.3L332.5,100.7L365.8,75.3L399.2,12.0L432.6,50.0L466.0,126.0L466.0,126.0L432.6,126.0L399.2,126.0L365.8,126.0L332.5,126.0L299.1,126.0L265.7,126.0L232.3,126.0L198.9,126.0L165.5,126.0L132.2,126.0L98.8,126.0L65.4,126.0L32.0,126.0Z" fill="rgba(88, 166, 255, .1)"/>
+                <path d="M32.0,88.0L65.4,75.3L98.8,50.0L132.2,88.0L165.5,37.3L198.9,50.0L232.3,75.3L265.7,75.3L299.1,75.3L332.5,100.7L365.8,75.3L399.2,12.0L432.6,50.0L466.0,126.0" fill="transparent" stroke="#87ceeb" stroke-width="2"/>
+                <circle cx="32.0" cy="88.0" r="2" fill="#106cbc"/>
+                <text x="32.0" y="82.0" fill="rgba(127, 127, 127, .8)" text-anchor="start" font-size="10">
+                  3
                 </text>
-                <text x="466.0" y="158.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 466.0 158.0)">
-                  Jun 2026
+                <circle cx="65.4" cy="75.3" r="2" fill="#106cbc"/>
+                <circle cx="98.8" cy="50.0" r="2" fill="#106cbc"/>
+                <text x="98.8" y="44.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  6
+                </text>
+                <circle cx="132.2" cy="88.0" r="2" fill="#106cbc"/>
+                <circle cx="165.5" cy="37.3" r="2" fill="#106cbc"/>
+                <text x="165.5" y="31.3" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  7
+                </text>
+                <circle cx="198.9" cy="50.0" r="2" fill="#106cbc"/>
+                <circle cx="232.3" cy="75.3" r="2" fill="#106cbc"/>
+                <text x="232.3" y="69.3" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  4
+                </text>
+                <circle cx="265.7" cy="75.3" r="2" fill="#106cbc"/>
+                <circle cx="299.1" cy="75.3" r="2" fill="#106cbc"/>
+                <text x="299.1" y="69.3" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  4
+                </text>
+                <circle cx="332.5" cy="100.7" r="2" fill="#106cbc"/>
+                <circle cx="365.8" cy="75.3" r="2" fill="#106cbc"/>
+                <text x="365.8" y="69.3" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  4
+                </text>
+                <circle cx="399.2" cy="12.0" r="2" fill="#106cbc"/>
+                <circle cx="432.6" cy="50.0" r="2" fill="#106cbc"/>
+                <text x="432.6" y="44.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  6
+                </text>
+                <circle cx="466.0" cy="126.0" r="2" fill="#106cbc"/>
+                <text x="466.0" y="120.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
+                  0
+                </text>
+                <text x="32.0" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 32.0 138.0)">
+                  May 29
+                </text>
+                <text x="98.8" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 98.8 138.0)">
+                  May 31
+                </text>
+                <text x="165.5" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 165.5 138.0)">
+                  Jun 2
+                </text>
+                <text x="232.3" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 232.3 138.0)">
+                  Jun 4
+                </text>
+                <text x="299.1" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 299.1 138.0)">
+                  Jun 6
+                </text>
+                <text x="365.8" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 365.8 138.0)">
+                  Jun 8
+                </text>
+                <text x="432.6" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 432.6 138.0)">
+                  Jun 10
+                </text>
+                <text x="466.0" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 466.0 138.0)">
+                  Jun 11
                 </text>
               </svg>
             </section>

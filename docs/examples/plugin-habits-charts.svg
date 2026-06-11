@@ -1,13 +1,331 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="8" class="">
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="99999" class="">
   <defs>
     <style/>
   </defs>
   <style>
-    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}.repo-badges .badge.language::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}@keyframes animation-gauge{from{stroke-dasharray:0 329}}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
+    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h3{font-size:14px}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:&#34;&#34;;display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}.column{display:flex;flex-direction:column;align-items:center}.horizontal{justify-content:space-around}@keyframes animation-gauge{from{stroke-dasharray:0 329}}.chart{padding:0 8px}.chart-bars{display:flex;justify-content:space-between;align-items:flex-end;width:100%;margin:8px 0 4px;flex-grow:1;min-height:70px}.chart-bars .entry{flex-grow:1;display:flex;flex-direction:column;align-items:center;font-size:10px;color:#666}.chart-bars .entry .value{font-size:6px}.chart-bars .bar{width:7px;background-color:var(--color-calendar-graph-day-bg);border:1px solid var(--color-calendar-graph-day-border);border-radius:5px}.chart-bars.horizontal{flex-direction:column;height:100%}.chart-bars.horizontal .entry{align-items:center;flex-direction:row;width:100%;min-height:1rem}.chart-bars.horizontal .entry .name{flex-shrink:0;text-align:right;width:34%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chart-bars.horizontal .bar{height:7px;width:auto;margin:0 6px}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
   </style>
   <style/>
   <foreignObject x="0" y="0" width="100%" height="100%">
     <div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper">
+      <div class="plugin-habits" data-plugin="habits">
+        <section data-section="habits">
+          <section class="habits">
+            <div class="column chart largeable">
+              <h3>
+                Commit activity per hour of day
+              </h3>
+              <div class="chart-bars">
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  00
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  01
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  02
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  03
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  04
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  05
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  06
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  07
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  08
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  09
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    1
+                  </span>
+                  <div class="bar" style="height: 6px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  10
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  11
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    4
+                  </span>
+                  <div class="bar" style="height: 22px; background-color: var(--color-calendar-graph-day-L2-bg)"></div>
+                  12
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    5
+                  </span>
+                  <div class="bar" style="height: 28px; background-color: var(--color-calendar-graph-day-L3-bg)"></div>
+                  13
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  14
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  15
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    6
+                  </span>
+                  <div class="bar" style="height: 33px; background-color: var(--color-calendar-graph-day-L3-bg)"></div>
+                  16
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    1
+                  </span>
+                  <div class="bar" style="height: 6px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  17
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  18
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    0
+                  </span>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  19
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    5
+                  </span>
+                  <div class="bar" style="height: 28px; background-color: var(--color-calendar-graph-day-L3-bg)"></div>
+                  20
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    3
+                  </span>
+                  <div class="bar" style="height: 17px; background-color: var(--color-calendar-graph-day-L2-bg)"></div>
+                  21
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    9
+                  </span>
+                  <div class="bar" style="height: 50px; background-color: var(--color-calendar-graph-day-L4-bg)"></div>
+                  22
+                </div>
+                <div class="entry">
+                  <span class="value">
+                    7
+                  </span>
+                  <div class="bar" style="height: 39px; background-color: var(--color-calendar-graph-day-L4-bg)"></div>
+                  23
+                </div>
+              </div>
+            </div>
+            <div class="row largeable">
+              <section class="column chart">
+                <h3>
+                  Commit activity per day of week
+                </h3>
+                <div class="chart-bars">
+                  <div class="entry">
+                    <span class="value">
+                      0
+                    </span>
+                    <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    Sun
+                  </div>
+                  <div class="entry">
+                    <span class="value">
+                      20
+                    </span>
+                    <div class="bar" style="height: 48px; background-color: var(--color-calendar-graph-day-L4-bg)"></div>
+                    Mon
+                  </div>
+                  <div class="entry">
+                    <span class="value">
+                      21
+                    </span>
+                    <div class="bar" style="height: 50px; background-color: var(--color-calendar-graph-day-L4-bg)"></div>
+                    Tue
+                  </div>
+                  <div class="entry">
+                    <span class="value">
+                      0
+                    </span>
+                    <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    Wed
+                  </div>
+                  <div class="entry">
+                    <span class="value">
+                      0
+                    </span>
+                    <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    Thu
+                  </div>
+                  <div class="entry">
+                    <span class="value">
+                      0
+                    </span>
+                    <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    Fri
+                  </div>
+                  <div class="entry">
+                    <span class="value">
+                      0
+                    </span>
+                    <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    Sat
+                  </div>
+                </div>
+              </section>
+              <section class="column chart">
+                <h3>
+                  Language activity
+                </h3>
+                <div class="chart-bars horizontal">
+                  <div class="entry">
+                    <span class="name">
+                      Go
+                    </span>
+                    <div class="bar" style="width: 27.57805151175812%; background-color: var(--color-calendar-graph-day-L2-bg)"></div>
+                    <span class="value">
+                      34%
+                    </span>
+                  </div>
+                  <div class="entry">
+                    <span class="name">
+                      SVG
+                    </span>
+                    <div class="bar" style="width: 23.1023516237402%; background-color: var(--color-calendar-graph-day-L2-bg)"></div>
+                    <span class="value">
+                      29%
+                    </span>
+                  </div>
+                  <div class="entry">
+                    <span class="name">
+                      Markdown
+                    </span>
+                    <div class="bar" style="width: 8.10929451287794%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <span class="value">
+                      10%
+                    </span>
+                  </div>
+                  <div class="entry">
+                    <span class="name">
+                      Go Template
+                    </span>
+                    <div class="bar" style="width: 6.99484882418813%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <span class="value">
+                      9%
+                    </span>
+                  </div>
+                  <div class="entry">
+                    <span class="name">
+                      JavaScript
+                    </span>
+                    <div class="bar" style="width: 4.063605823068309%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <span class="value">
+                      5%
+                    </span>
+                  </div>
+                  <div class="entry">
+                    <span class="name">
+                      Shell
+                    </span>
+                    <div class="bar" style="width: 3.6120940649496083%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <span class="value">
+                      5%
+                    </span>
+                  </div>
+                  <div class="entry">
+                    <span class="name">
+                      YAML
+                    </span>
+                    <div class="bar" style="width: 1.9601343784994403%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <span class="value">
+                      2%
+                    </span>
+                  </div>
+                  <div class="entry">
+                    <span class="name">
+                      CSS
+                    </span>
+                    <div class="bar" style="width: 1.691377379619261%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <span class="value">
+                      2%
+                    </span>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
+        </section>
+      </div>
       <div id="metrics-end"></div>
     </div>
   </foreignObject>
