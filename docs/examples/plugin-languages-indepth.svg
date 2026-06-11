@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="201" class="">
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="99999" class="">
   <defs>
     <style/>
   </defs>
   <style>
-    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}h3{font-size:14px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}.column{display:flex;flex-direction:column;align-items:center}.fill-width{width:100%}svg.bar{margin:4px 0}.field.language{margin:0 8px;flex-grow:0}.field.language.details{display:flex;justify-content:space-between}.field.language.details small{display:flex;justify-content:space-between;color:#666;text-align:right}.field.language.details&gt;*,.field.language.details small&gt;*{flex:1}.field.language.details small&gt;*:not(:last-child){margin-right:6px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
+    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}h3{font-size:14px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:&#34;&#34;;display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}.column{display:flex;flex-direction:column;align-items:center}.fill-width{width:100%}svg.bar{margin:4px 0}.field.language{margin:0 8px;flex-grow:0}.field.language.details{display:flex;justify-content:space-between}.field.language.details small{display:flex;justify-content:space-between;color:#666;text-align:right}.field.language.details&gt;*,.field.language.details small&gt;*{flex:1}.field.language.details small&gt;*:not(:last-child){margin-right:6px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
   </style>
   <style/>
   <foreignObject x="0" y="0" width="100%" height="100%">
@@ -23,7 +23,7 @@
               Most used languages
             </h3>
             <small>
-              estimation from 169.5 MB of code in 32 analyzed repositories
+              estimation from 170.3 MB of code in 34 analyzed repositories
             </small>
             <svg xmlns="http://www.w3.org/2000/svg" class="bar" width="460" height="8" role="img" aria-label="Languages distribution">
               <title>
@@ -34,15 +34,15 @@
               </mask>
               <rect mask="url(#languages-bar-most)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-progress">
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="74.93" height="8" fill="#a91e50" data-language="EJS"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="74.93" y="0" width="74.71" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="149.64" y="0" width="66.74" height="8" fill="#3D6117" data-language="TeX"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="216.38" y="0" width="60.54" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="276.92" y="0" width="54.85" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="331.77" y="0" width="48.09" height="8" fill="#f1e05a" data-language="JavaScript"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="379.86" y="0" width="47.97" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="427.82" y="0" width="8.93" height="8" fill="#3A4E3A" data-language="Cuda"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="436.76" y="0" width="23.24" height="8" fill="#cccccc" data-language="Other"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="73.30" height="8" fill="#a91e50" data-language="EJS"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="73.30" y="0" width="73.08" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="146.39" y="0" width="65.29" height="8" fill="#3D6117" data-language="TeX"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="211.68" y="0" width="60.02" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="271.70" y="0" width="58.13" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="329.83" y="0" width="47.06" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="376.88" y="0" width="47.05" height="8" fill="#f1e05a" data-language="JavaScript"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="423.93" y="0" width="8.74" height="8" fill="#3A4E3A" data-language="Cuda"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="432.67" y="0" width="27.33" height="8" fill="#cccccc" data-language="Other"/>
               </g>
             </svg>
             <div class="row fill-width">
@@ -59,7 +59,7 @@
                       2.3 MB
                     </div>
                     <div>
-                      16.3%
+                      15.9%
                     </div>
                   </small>
                 </div>
@@ -75,7 +75,7 @@
                       2.1 MB
                     </div>
                     <div>
-                      14.5%
+                      14.2%
                     </div>
                   </small>
                 </div>
@@ -91,23 +91,23 @@
                       115 B
                     </div>
                     <div>
-                      11.9%
+                      12.6%
                     </div>
                   </small>
                 </div>
-                <div class="field language details" data-language="Python">
+                <div class="field language details" data-language="JavaScript">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#3572A5" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#f1e05a" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    Python
+                    JavaScript
                   </div>
                   <small>
                     <div>
-                      18.9 MB
+                      10.0 MB
                     </div>
                     <div>
-                      10.4%
+                      10.2%
                     </div>
                   </small>
                 </div>
@@ -120,10 +120,10 @@
                   </div>
                   <small>
                     <div>
-                      732.0 kB
+                      879.9 kB
                     </div>
                     <div>
-                      5.1%
+                      5.9%
                     </div>
                   </small>
                 </div>
@@ -141,7 +141,7 @@
                       42.4 MB
                     </div>
                     <div>
-                      16.2%
+                      15.9%
                     </div>
                   </small>
                 </div>
@@ -154,26 +154,26 @@
                   </div>
                   <small>
                     <div>
-                      101.5 kB
+                      261.9 kB
                     </div>
                     <div>
-                      13.2%
+                      13.0%
                     </div>
                   </small>
                 </div>
-                <div class="field language details" data-language="JavaScript">
+                <div class="field language details" data-language="Python">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#f1e05a" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#3572A5" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    JavaScript
+                    Python
                   </div>
                   <small>
                     <div>
-                      10.0 MB
+                      18.9 MB
                     </div>
                     <div>
-                      10.5%
+                      10.2%
                     </div>
                   </small>
                 </div>
@@ -204,10 +204,10 @@
               <text class="indepth-language" data-language="Rust" data-bytes="26191855">
                 Rust
               </text>
-              <text class="indepth-language" data-language="Python" data-bytes="19844221">
+              <text class="indepth-language" data-language="Python" data-bytes="19858768">
                 Python
               </text>
-              <text class="indepth-language" data-language="JSON" data-bytes="17122220">
+              <text class="indepth-language" data-language="JSON" data-bytes="17209434">
                 JSON
               </text>
               <text class="indepth-language" data-language="Jest Snapshot" data-bytes="14329594">
@@ -219,16 +219,16 @@
               <text class="indepth-language" data-language="JavaScript" data-bytes="10493932">
                 JavaScript
               </text>
+              <text class="indepth-language" data-language="Markdown" data-bytes="5576102">
+                Markdown
+              </text>
               <text class="indepth-language" data-language="Java" data-bytes="5386420">
                 Java
-              </text>
-              <text class="indepth-language" data-language="Markdown" data-bytes="5272861">
-                Markdown
               </text>
               <text class="indepth-language" data-language="TypeScript" data-bytes="4981583">
                 TypeScript
               </text>
-              <text class="indepth-language" data-language="SVG" data-bytes="3899176">
+              <text class="indepth-language" data-language="SVG" data-bytes="3970922">
                 SVG
               </text>
               <text class="indepth-language" data-language="CSV" data-bytes="2716407">
@@ -243,13 +243,13 @@
               <text class="indepth-language" data-language="RenderScript" data-bytes="1323984">
                 RenderScript
               </text>
-              <text class="indepth-language" data-language="YAML" data-bytes="1187167">
+              <text class="indepth-language" data-language="YAML" data-bytes="1190000">
                 YAML
               </text>
-              <text class="indepth-language" data-language="CSS" data-bytes="1160190">
+              <text class="indepth-language" data-language="CSS" data-bytes="1188869">
                 CSS
               </text>
-              <text class="indepth-language" data-language="TOML" data-bytes="1043071">
+              <text class="indepth-language" data-language="TOML" data-bytes="1091802">
                 TOML
               </text>
               <text class="indepth-language" data-language="Swift" data-bytes="378042">
@@ -258,10 +258,13 @@
               <text class="indepth-language" data-language="Cuda" data-bytes="273611">
                 Cuda
               </text>
+              <text class="indepth-language" data-language="Shell" data-bytes="268147">
+                Shell
+              </text>
               <text class="indepth-language" data-language="R" data-bytes="265325">
                 R
               </text>
-              <text class="indepth-language" data-language="Text" data-bytes="248550">
+              <text class="indepth-language" data-language="Text" data-bytes="251938">
                 Text
               </text>
               <text class="indepth-language" data-language="Astro" data-bytes="132681">
@@ -273,16 +276,16 @@
               <text class="indepth-language" data-language="C" data-bytes="127647">
                 C
               </text>
-              <text class="indepth-language" data-language="Shell" data-bytes="103935">
-                Shell
+              <text class="indepth-language" data-language="Lua" data-bytes="101899">
+                Lua
               </text>
-              <text class="indepth-language" data-language="Ignore List" data-bytes="92361">
+              <text class="indepth-language" data-language="Ignore List" data-bytes="92805">
                 Ignore List
               </text>
               <text class="indepth-language" data-language="HTML" data-bytes="90035">
                 HTML
               </text>
-              <text class="indepth-language" data-language="JSON with Comments" data-bytes="66888">
+              <text class="indepth-language" data-language="JSON with Comments" data-bytes="66885">
                 JSON with Comments
               </text>
               <text class="indepth-language" data-language="Pip Requirements" data-bytes="52608">
@@ -296,6 +299,9 @@
               </text>
               <text class="indepth-language" data-language="C++" data-bytes="36731">
                 C++
+              </text>
+              <text class="indepth-language" data-language="XML Property List" data-bytes="31877">
+                XML Property List
               </text>
               <text class="indepth-language" data-language="SQL" data-bytes="28767">
                 SQL
@@ -321,6 +327,9 @@
               <text class="indepth-language" data-language="BibTeX" data-bytes="13446">
                 BibTeX
               </text>
+              <text class="indepth-language" data-language="XML" data-bytes="13382">
+                XML
+              </text>
               <text class="indepth-language" data-language="Just" data-bytes="10191">
                 Just
               </text>
@@ -336,14 +345,8 @@
               <text class="indepth-language" data-language="Vue" data-bytes="5218">
                 Vue
               </text>
-              <text class="indepth-language" data-language="XML" data-bytes="5196">
-                XML
-              </text>
               <text class="indepth-language" data-language="Diff" data-bytes="4662">
                 Diff
-              </text>
-              <text class="indepth-language" data-language="XML Property List" data-bytes="4177">
-                XML Property List
               </text>
               <text class="indepth-language" data-language="Svelte" data-bytes="2071">
                 Svelte
