@@ -395,3 +395,29 @@ func TestRun_VisibilityFilter(t *testing.T) {
 		t.Errorf("expected private repo only; got %s", r.Events[0].Repo)
 	}
 }
+
+// TestRun_VisibilityDefaultIncludesPrivate pins the absent-input
+// default to "all" (assets/plugins/activity/metadata.yml): private
+// events the token can see must be surfaced without an explicit
+// plugin_activity_visibility input. Regression guard for the
+// hardcoded "public" default that hid every private event (found via
+// the #465 DOM-contract failure on the regenerated doc samples).
+func TestRun_VisibilityDefaultIncludesPrivate(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	mux := newRESTMux()
+	mux.on(
+		"/users/octocat/events",
+		http.StatusOK,
+		eventsBody(
+			ev("PushEvent", "octocat/pub", now.Add(-1*time.Hour), true),
+			ev("PushEvent", "octocat/priv", now.Add(-2*time.Hour), false),
+		),
+	)
+	pc := newPC(t, mux, nil)
+	out, _ := activity.Plugin.Run(context.Background(), pc)
+	r := out.(*activity.Result)
+	if len(r.Events) != 2 {
+		t.Fatalf("Events len = %d, want 2 (public + private); %+v", len(r.Events), r.Events)
+	}
+}
