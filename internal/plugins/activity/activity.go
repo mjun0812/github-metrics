@@ -244,10 +244,14 @@ func parseInputs(in map[string]any) inputs {
 		// (assets/plugins/activity/metadata.yml plugin_activity_limit)
 		// — the previous 100 rendered an over-long timeline (every event
 		// in the 14-day window) instead of the short recent-activity card.
-		limit:      5,
-		load:       300,
-		days:       14,
-		visibility: "public",
+		limit: 5,
+		load:  300,
+		days:  14,
+		// "all" matches the metadata-declared default
+		// (assets/plugins/activity/metadata.yml
+		// plugin_activity_visibility) — private events are surfaced
+		// whenever the token can see them, like upstream.
+		visibility: "all",
 		skipped:    map[string]struct{}{},
 		ignored:    map[string]struct{}{},
 	}
