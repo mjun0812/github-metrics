@@ -1,18 +1,24 @@
 // Command svg2png rasterizes one or more standalone metrics SVG files
 // to PNG using the same chromedp-based renderer the production pipeline
-// uses (internal/render.Browser + Resize). It exists purely as a
-// developer aid for visual layout comparison between the Go output
-// (docs/examples/) and the upstream reference output (docs/org_examples/)
-// — both rendered through the identical Chrome path so any difference is
-// a real layout difference, not a renderer artifact.
+// uses (internal/render.Browser + Resize). Two uses:
+//
+//   - Developer aid for visual layout comparison between the Go output
+//     (docs/examples/) and the upstream reference output
+//     (docs/org_examples/) — both rendered through the identical Chrome
+//     path so any difference is a real layout difference, not a renderer
+//     artifact.
+//   - The doc-sample regen pipeline (regen-doc-samples.yml /
+//     scripts/gen-doc-samples.sh) derives each sample's PNG from its
+//     already-rendered SVG with zero API calls, instead of running a
+//     second full API fetch (#527). For that reason the production image
+//     ships this binary next to metrics-cli (see Dockerfile).
 //
 // Usage:
 //
 //	METRICS_CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
 //	  go run ./internal/tools/svg2png --out /tmp/png a.svg b.svg ...
 //
-// This tool is not shipped in the Docker image and has no bearing on
-// the action / CLI binaries.
+// It has no bearing on the action / CLI binaries' contract.
 package main
 
 import (
