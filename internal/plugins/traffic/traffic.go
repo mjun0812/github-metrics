@@ -2,8 +2,9 @@
 // repository view counts from REST /repos/{owner}/{repo}/traffic/views
 // for every repository in base.Computed.RepositoryList. The endpoint
 // requires the `repo` OAuth scope; without it the plugin returns
-// Skipped=true. Repositories that return 403 (owner-only endpoint) are
-// dropped silently and aggregation continues.
+// Skipped=true. Repositories that fail (403, other non-2xx) are dropped
+// and aggregation continues; a single aggregated AppendError is recorded
+// so the degradation is observable via Result.Errors / JSON output.
 package traffic
 
 import (
@@ -14,6 +15,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"golang.org/x/sync/errgroup"
 
@@ -113,6 +115,18 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	var total TrafficView
 	var mu sync.Mutex
 
+	// droppedRateLimit and droppedForbidden count repos dropped due to
+	// rate limiting vs plain 403 (no admin access). Both are aggregated
+	// into a single AppendError after the loop so a 50-repo list does
+	// not spam 50 entries.
+	//
+	// Rate-limit detection: when the httpx client exhausts its retries on a
+	// rate-limited 403, it returns err != nil (wrapping "giving up after N
+	// attempt(s)"). A plain forbidden 403 (no rate-limit headers) is not
+	// retried and arrives as err == nil with resp.StatusCode == 403.
+	var droppedRateLimit atomic.Int64
+	var droppedForbidden atomic.Int64
+
 	g, gctx := errgroup.WithContext(ctx)
 	g.SetLimit(8)
 	for _, repo := range repos {
@@ -121,24 +135,35 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 			path := fmt.Sprintf("/repos/%s/traffic/views", urlPath(repo.NameWithOwner))
 			body, resp, err := pc.REST.Get(gctx, path, nil)
 			if err != nil {
-				// Transport error — drop and continue per the
-				// best-effort contract.
-				//nolint:nilerr // intentional: per-repo failure does not abort the aggregation
-				return nil
+				// Transport error or rate-limit retry exhaustion.
+				// "giving up after" is the retryablehttp marker that surfaces
+				// when all retry attempts are consumed (typically due to a
+				// rate-limited 403 with Retry-After that never cleared).
+				if strings.Contains(err.Error(), "giving up after") {
+					droppedRateLimit.Add(1)
+				} else {
+					droppedForbidden.Add(1)
+				}
+				return nil //nolint:nilerr // intentional: per-repo failure does not abort the aggregation
 			}
 			if resp == nil {
+				droppedForbidden.Add(1)
 				return nil
 			}
 			if resp.StatusCode == http.StatusForbidden {
+				// Plain 403: no rate-limit headers (the httpx layer would have
+				// retried a rate-limited 403 and returned err != nil above).
+				droppedForbidden.Add(1)
 				return nil
 			}
 			if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+				droppedForbidden.Add(1)
 				return nil
 			}
 			var raw rawTraffic
 			if err := json.Unmarshal(body, &raw); err != nil {
-				//nolint:nilerr // intentional: decode failure → drop one repo
-				return nil
+				droppedForbidden.Add(1)
+				return nil //nolint:nilerr // intentional: decode failure → drop one repo
 			}
 			mu.Lock()
 			views[repo.NameWithOwner] = TrafficView(raw)
@@ -149,6 +174,16 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 		})
 	}
 	_ = g.Wait()
+
+	// Surface a single aggregated error when repos were silently dropped so
+	// operators can distinguish a correct empty state from a degraded one.
+	repoCount := len(repos)
+	if rl := droppedRateLimit.Load(); rl > 0 {
+		pc.Data.AppendError(fmt.Errorf("traffic: views unavailable for %d/%d repos (rate limited)", rl, repoCount))
+	}
+	if fb := droppedForbidden.Load(); fb > 0 {
+		pc.Data.AppendError(fmt.Errorf("traffic: views unavailable for %d/%d repos (forbidden)", fb, repoCount))
+	}
 
 	return &Result{
 		Views:     views,

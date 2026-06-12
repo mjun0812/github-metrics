@@ -533,3 +533,51 @@ func TestPartial_DefaultDisplayHidesContributionNumbers(t *testing.T) {
 		t.Fatalf("default display should keep contributor row: %q", got)
 	}
 }
+
+// TestRun_RepositoryStatsFailed_AppendError verifies that when
+// /stats/contributors returns a hard failure (5xx), Run (a) still
+// renders a result (not Skipped), (b) falls back to /contributors,
+// and (c) records exactly one AppendError entry mentioning the failed
+// endpoint so operators can observe the degradation.
+func TestRun_RepositoryStatsFailed_AppendError(t *testing.T) {
+	t.Parallel()
+	rest := mocks.NewRESTMux(t)
+	rest.OnBody("/repos/octocat/hello-world/stats/contributors", http.StatusInternalServerError, `{"message":"oops"}`)
+	rest.OnBody("/repos/octocat/hello-world/contributors", http.StatusOK, `[
+		{"login":"alice","avatar_url":"https://avatars.example/alice.png","contributions":8}
+	]`)
+	data := plugins.NewData()
+	data.Account = plugins.AccountRepository
+	data.SetRepo(&plugins.Repo{
+		Owner:         "octocat",
+		Name:          "hello-world",
+		Contributors:  1,
+		DefaultBranch: "main",
+		Activity:      plugins.RepoActivity{RecentCommits: 1},
+	})
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithREST(rest),
+		mocks.WithData(data),
+		mocks.WithInputs(map[string]any{"plugin_contributors_contributions": true}),
+	)
+
+	out, err := contributors.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*contributors.Result)
+	if r.Skipped {
+		t.Fatalf("/stats/contributors failure must not Skipped the whole result; got %+v", r)
+	}
+	if r.StatsPending {
+		t.Fatalf("hard 5xx failure must not set StatsPending; got %+v", r)
+	}
+	errs := pc.Data.SnapshotErrors()
+	if len(errs) != 1 {
+		t.Fatalf("SnapshotErrors len = %d, want 1; errors: %v", len(errs), errs)
+	}
+	if !strings.Contains(errs[0].Error(), "stats fetch failed") {
+		t.Errorf("error message should mention stats fetch failed; got %q", errs[0].Error())
+	}
+}
