@@ -36,10 +36,13 @@
 # configuration parsing and the parallel plugin runner and has no
 # standalone visual output — see docs/plugins/core.md.
 #
-# Pipeline per file:
-#   1. docker run github-metrics:local → writes /out/<file>.svg
-#   2. go run ./internal/tools/normalize-svg-stream < tmp → mask dynamic
-#   3. mv into docs/examples/ atomically
+# Pipeline per file (fetch once, derive PNG — #527):
+#   1. docker run github-metrics:local --output svg → writes /out/<file>.svg
+#      (the only API-touching step; PNG is no longer a second full fetch)
+#   2. docker run --entrypoint svg2png → rasterize the raw SVG to PNG
+#      through the same chromedp path --output png uses (no API)
+#   3. go run ./internal/tools/normalize-svg-stream < svg → mask dynamic
+#   4. mv svg + png into docs/examples/ atomically
 #
 # Pre-conditions:
 #   - GITHUB_TOKEN exported (classic PAT with at minimum read:user + repo;
@@ -102,66 +105,101 @@ PLUGINS=(
 # Track failures so the script can exit non-zero at the end.
 FAILURES=()
 
+# svg_to_png <svg-basename-in-WORKDIR> — derive <base>.png from a
+# rendered <base>.svg with ZERO additional API calls (#527). Previously
+# render_one ran a second `--output png` docker invocation that re-ran
+# the whole engine pipeline (base + plugin queries + REST calls),
+# doubling the per-sample rate-limit cost and letting the SVG and PNG
+# render from different data snapshots. We now rasterize the
+# already-rendered raw SVG through svg2png, which uses the identical
+# internal/render.Browser + Resize chromedp path as `--output png`, so
+# the PNG is pixel-equivalent. svg2png ships in the production image
+# (see Dockerfile) and is invoked through the same image as the render
+# so no local chromium install is required; it reads/writes inside the
+# mounted ${WORKDIR} (/out). The conversion is API-free and deterministic,
+# so it gets a single attempt (no retry loop). It converts the RAW SVG
+# (before normalize-svg-stream) to match what production `--output png`
+# emits — the committed PNG is binary and not normalized.
+# Returns 0 on success (PNG present at ${WORKDIR}/<base>.png), 1 otherwise.
+svg_to_png() {
+	local svg_name="$1"
+	local base="${svg_name%.svg}"
+	local png_raw="${WORKDIR}/${base}.png"
+	rm -f "$png_raw"
+	if docker run --rm \
+		--entrypoint /usr/local/bin/svg2png \
+		-v "${WORKDIR}:/out" \
+		"$IMAGE" \
+		--out /out \
+		"/out/${svg_name}" >/dev/null 2>"${WORKDIR}/${base}.png.log" && [[ -s "$png_raw" ]]; then
+		return 0
+	fi
+	return 1
+}
+
 render_one() {
 	# render_one <basename-without-ext> <extra-args...>
 	# User-mode render: `--user ${USER}` is injected automatically. The
 	# caller passes `--template classic` (or nothing — classic is the
-	# default) and any `--plugin key=value` overrides. Renders BOTH .svg
-	# and .png variants under OUTDIR. SVG is piped through
-	# normalize-svg-stream for idempotency; PNG is binary deterministic
-	# so the docker output is moved directly.
+	# default) and any `--plugin key=value` overrides. Renders the .svg
+	# once (the only API-touching step) and derives the .png from it via
+	# svg2png (no API). SVG is piped through normalize-svg-stream for
+	# idempotency; the PNG is rasterized from the raw SVG and moved
+	# directly.
 	local base="$1"
 	shift
 
 	echo "  → ${base}"
-	local fmt
-	for fmt in svg png; do
-		local outfile="${base}.${fmt}"
-		local tmp_raw="${WORKDIR}/${outfile}"
-		local final="${OUTDIR}/${outfile}"
+	local outfile="${base}.svg"
+	local tmp_raw="${WORKDIR}/${outfile}"
 
-		local attempt ok=0
-		for attempt in 1 2 3; do
-			rm -f "$tmp_raw"
-			if docker run --rm \
-				-e GITHUB_TOKEN \
-				-e HTTP_PROXY="" \
-				-e HTTPS_PROXY="" \
-				-e http_proxy="" \
-				-e https_proxy="" \
-				-e NO_PROXY="*" \
-				-e no_proxy="*" \
-				-v "${WORKDIR}:/out" \
-				"$IMAGE" \
-				--user "$USER" \
-				--token-env GITHUB_TOKEN \
-				--output "$fmt" \
-				--filename "/out/${outfile}" \
-				--dryrun \
-				"$@" >/dev/null 2>"${WORKDIR}/${outfile}.log" && [[ -s "$tmp_raw" ]]; then
-				ok=1
-				break
-			fi
-			[[ "$attempt" -lt 3 ]] && echo "    retry ${attempt}/3 ${fmt} ..."
-		done
-		if [[ "$ok" -eq 0 ]]; then
-			echo "    FAIL ${fmt} (see ${WORKDIR}/${outfile}.log)"
-			FAILURES+=("$outfile")
-			continue
+	local attempt ok=0
+	for attempt in 1 2 3; do
+		rm -f "$tmp_raw"
+		if docker run --rm \
+			-e GITHUB_TOKEN \
+			-e HTTP_PROXY="" \
+			-e HTTPS_PROXY="" \
+			-e http_proxy="" \
+			-e https_proxy="" \
+			-e NO_PROXY="*" \
+			-e no_proxy="*" \
+			-v "${WORKDIR}:/out" \
+			"$IMAGE" \
+			--user "$USER" \
+			--token-env GITHUB_TOKEN \
+			--output svg \
+			--filename "/out/${outfile}" \
+			--dryrun \
+			"$@" >/dev/null 2>"${WORKDIR}/${outfile}.log" && [[ -s "$tmp_raw" ]]; then
+			ok=1
+			break
 		fi
-		if [[ "$fmt" == "svg" ]]; then
-			local tmp_norm="${WORKDIR}/${outfile}.norm"
-			if ! go run ./internal/tools/normalize-svg-stream <"$tmp_raw" >"$tmp_norm" 2>"${WORKDIR}/${outfile}.norm.log"; then
-				echo "    FAIL ${fmt} (normalize)"
-				FAILURES+=("$outfile")
-				continue
-			fi
-			mv "$tmp_norm" "$final"
-		else
-			mv "$tmp_raw" "$final"
-		fi
-		echo "    OK ${fmt} ($(wc -c <"$final" | tr -d ' ') bytes)"
+		[[ "$attempt" -lt 3 ]] && echo "    retry ${attempt}/3 svg ..."
 	done
+	if [[ "$ok" -eq 0 ]]; then
+		echo "    FAIL svg (see ${WORKDIR}/${outfile}.log)"
+		FAILURES+=("$outfile")
+		return
+	fi
+
+	# Derive the PNG from the raw rendered SVG (no API) before normalize.
+	if ! svg_to_png "$outfile"; then
+		echo "    FAIL png (convert; see ${WORKDIR}/${base}.png.log)"
+		FAILURES+=("${base}.png")
+	else
+		mv "${WORKDIR}/${base}.png" "${OUTDIR}/${base}.png"
+		echo "    OK png ($(wc -c <"${OUTDIR}/${base}.png" | tr -d ' ') bytes)"
+	fi
+
+	local tmp_norm="${WORKDIR}/${outfile}.norm"
+	if ! go run ./internal/tools/normalize-svg-stream <"$tmp_raw" >"$tmp_norm" 2>"${WORKDIR}/${outfile}.norm.log"; then
+		echo "    FAIL svg (normalize)"
+		FAILURES+=("$outfile")
+		return
+	fi
+	mv "$tmp_norm" "${OUTDIR}/${outfile}"
+	echo "    OK svg ($(wc -c <"${OUTDIR}/${outfile}" | tr -d ' ') bytes)"
 }
 
 render_one_repo() {
@@ -171,61 +209,64 @@ render_one_repo() {
 	# `--plugin key=value` overrides (typically `--plugin base=` to
 	# suppress the default base sections + `--plugin plugin_<slug>=yes`
 	# to enable a single plugin). Output handling is identical to
-	# render_one (svg + png, normalize-svg-stream for svg).
+	# render_one: render the .svg once, derive the .png from it via
+	# svg2png (no API), normalize-svg-stream the svg.
 	local base="$1"
 	shift
 
 	echo "  → ${base}"
-	local fmt
-	for fmt in svg png; do
-		local outfile="${base}.${fmt}"
-		local tmp_raw="${WORKDIR}/${outfile}"
-		local final="${OUTDIR}/${outfile}"
+	local outfile="${base}.svg"
+	local tmp_raw="${WORKDIR}/${outfile}"
 
-		local attempt ok=0
-		for attempt in 1 2 3; do
-			rm -f "$tmp_raw"
-			if docker run --rm \
-				-e GITHUB_TOKEN \
-				-e HTTP_PROXY="" \
-				-e HTTPS_PROXY="" \
-				-e http_proxy="" \
-				-e https_proxy="" \
-				-e NO_PROXY="*" \
-				-e no_proxy="*" \
-				-v "${WORKDIR}:/out" \
-				"$IMAGE" \
-				--user "$USER" \
-				--repo "$REPO" \
-				--template repository \
-				--token-env GITHUB_TOKEN \
-				--output "$fmt" \
-				--filename "/out/${outfile}" \
-				--dryrun \
-				"$@" >/dev/null 2>"${WORKDIR}/${outfile}.log" && [[ -s "$tmp_raw" ]]; then
-				ok=1
-				break
-			fi
-			[[ "$attempt" -lt 3 ]] && echo "    retry ${attempt}/3 ${fmt} ..."
-		done
-		if [[ "$ok" -eq 0 ]]; then
-			echo "    FAIL ${fmt} (see ${WORKDIR}/${outfile}.log)"
-			FAILURES+=("$outfile")
-			continue
+	local attempt ok=0
+	for attempt in 1 2 3; do
+		rm -f "$tmp_raw"
+		if docker run --rm \
+			-e GITHUB_TOKEN \
+			-e HTTP_PROXY="" \
+			-e HTTPS_PROXY="" \
+			-e http_proxy="" \
+			-e https_proxy="" \
+			-e NO_PROXY="*" \
+			-e no_proxy="*" \
+			-v "${WORKDIR}:/out" \
+			"$IMAGE" \
+			--user "$USER" \
+			--repo "$REPO" \
+			--template repository \
+			--token-env GITHUB_TOKEN \
+			--output svg \
+			--filename "/out/${outfile}" \
+			--dryrun \
+			"$@" >/dev/null 2>"${WORKDIR}/${outfile}.log" && [[ -s "$tmp_raw" ]]; then
+			ok=1
+			break
 		fi
-		if [[ "$fmt" == "svg" ]]; then
-			local tmp_norm="${WORKDIR}/${outfile}.norm"
-			if ! go run ./internal/tools/normalize-svg-stream <"$tmp_raw" >"$tmp_norm" 2>"${WORKDIR}/${outfile}.norm.log"; then
-				echo "    FAIL ${fmt} (normalize)"
-				FAILURES+=("$outfile")
-				continue
-			fi
-			mv "$tmp_norm" "$final"
-		else
-			mv "$tmp_raw" "$final"
-		fi
-		echo "    OK ${fmt} ($(wc -c <"$final" | tr -d ' ') bytes)"
+		[[ "$attempt" -lt 3 ]] && echo "    retry ${attempt}/3 svg ..."
 	done
+	if [[ "$ok" -eq 0 ]]; then
+		echo "    FAIL svg (see ${WORKDIR}/${outfile}.log)"
+		FAILURES+=("$outfile")
+		return
+	fi
+
+	# Derive the PNG from the raw rendered SVG (no API) before normalize.
+	if ! svg_to_png "$outfile"; then
+		echo "    FAIL png (convert; see ${WORKDIR}/${base}.png.log)"
+		FAILURES+=("${base}.png")
+	else
+		mv "${WORKDIR}/${base}.png" "${OUTDIR}/${base}.png"
+		echo "    OK png ($(wc -c <"${OUTDIR}/${base}.png" | tr -d ' ') bytes)"
+	fi
+
+	local tmp_norm="${WORKDIR}/${outfile}.norm"
+	if ! go run ./internal/tools/normalize-svg-stream <"$tmp_raw" >"$tmp_norm" 2>"${WORKDIR}/${outfile}.norm.log"; then
+		echo "    FAIL svg (normalize)"
+		FAILURES+=("$outfile")
+		return
+	fi
+	mv "$tmp_norm" "${OUTDIR}/${outfile}"
+	echo "    OK svg ($(wc -c <"${OUTDIR}/${outfile}" | tr -d ' ') bytes)"
 }
 
 echo "== 16 per-plugin single-panel renders (languages handled separately) =="
