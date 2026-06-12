@@ -98,7 +98,7 @@ jobs:
         include: ${{ fromJSON(needs.setup.outputs.matrix) }}
 
     steps:
-      - name: Render SVG + PNG
+      - name: Render SVG (fetch once) + derive PNG
         # Inside a job container the default step shell is `sh`, not
         # bash — the array/pipefail syntax below needs the bash that
         # the image ships.
@@ -147,51 +147,78 @@ jobs:
 
           read -ra extra_arr <<< "$SAMPLE_EXTRA"
 
-          for fmt in svg png; do
-            out="${outdir}/${SAMPLE_NAME}.${fmt}"
-            ok=0
-            for attempt in 1 2 3; do
-              rm -f "$out"
-              RUN_ARGS=(
-                "${BASE_ARGS[@]}"
-                --token-env METRICS_TOKEN
-                --output "$fmt"
-                --filename -
-                --dryrun
-              )
-              if [[ "${#extra_arr[@]}" -gt 0 ]]; then
-                RUN_ARGS+=("${extra_arr[@]}")
-              fi
-              tmplog=$(mktemp)
-              if /usr/local/bin/metrics-cli "${RUN_ARGS[@]}" > "$out" 2>"$tmplog" \
-                  && [[ -s "$out" ]]; then
-                ok=1; rm -f "$tmplog"; break
-              fi
-              cat "$tmplog" >&2; rm -f "$tmplog"
-              if [[ "$attempt" -lt 3 ]]; then
-                backoff=$(( attempt * 20 ))
-                echo "retry ${attempt}/3 ${fmt} in ${backoff}s (let secondary rate limit settle)"
-                sleep "$backoff"
-              fi
-            done
-            # Both formats are fatal now. PNG used to be downgraded to
-            # a warning while chromedp was broken under DinD (#501);
-            # with the job-level container chromedp is expected to
-            # work, and a silent PNG gap should fail loudly instead of
-            # shipping a half-regenerated sample set (#523).
-            if [[ "$ok" -eq 0 ]]; then
-              echo "FAIL: ${SAMPLE_NAME}.${fmt} after 3 attempts" >&2
-              exit 1
+          # --- 1. Fetch the SVG once (the only API-touching step) ------
+          # Previously this loop also ran a second `--output png`
+          # invocation, which re-ran the entire engine pipeline (base +
+          # plugin queries + REST calls) and doubled the per-sample
+          # rate-limit cost — the single largest multiplier in sample
+          # generation (#527). With 3 retries the worst case was 6 full
+          # fetches. We now fetch the SVG once and derive the PNG from it
+          # locally (step 2), halving the API cost and guaranteeing the
+          # SVG and PNG share one data snapshot.
+          svg_out="${outdir}/${SAMPLE_NAME}.svg"
+          ok=0
+          for attempt in 1 2 3; do
+            rm -f "$svg_out"
+            RUN_ARGS=(
+              "${BASE_ARGS[@]}"
+              --token-env METRICS_TOKEN
+              --output svg
+              --filename -
+              --dryrun
+            )
+            if [[ "${#extra_arr[@]}" -gt 0 ]]; then
+              RUN_ARGS+=("${extra_arr[@]}")
             fi
-            # Postcondition (#523): an untrimmed SVG means the
-            # chromedp resize step silently failed — exactly the
-            # breakage this workflow shipped once. Refuse to upload it.
-            if [[ "$fmt" == "svg" ]] && grep -q 'height="99999"' "$out"; then
-              echo "FAIL: ${SAMPLE_NAME}.svg still carries the height=99999 placeholder (chromedp trim did not run)" >&2
-              exit 1
+            tmplog=$(mktemp)
+            if /usr/local/bin/metrics-cli "${RUN_ARGS[@]}" > "$svg_out" 2>"$tmplog" \
+                && [[ -s "$svg_out" ]]; then
+              ok=1; rm -f "$tmplog"; break
             fi
-            echo "OK: ${SAMPLE_NAME}.${fmt} ($(wc -c < "$out" | tr -d ' ') bytes)"
+            cat "$tmplog" >&2; rm -f "$tmplog"
+            if [[ "$attempt" -lt 3 ]]; then
+              backoff=$(( attempt * 20 ))
+              echo "retry ${attempt}/3 svg in ${backoff}s (let secondary rate limit settle)"
+              sleep "$backoff"
+            fi
           done
+          if [[ "$ok" -eq 0 ]]; then
+            echo "FAIL: ${SAMPLE_NAME}.svg after 3 attempts" >&2
+            exit 1
+          fi
+          # Postcondition (#523): an untrimmed SVG means the chromedp
+          # resize step silently failed — exactly the breakage this
+          # workflow shipped once. Refuse to upload it. Checked BEFORE
+          # conversion so a bad SVG never produces a bad PNG either.
+          if grep -q 'height="99999"' "$svg_out"; then
+            echo "FAIL: ${SAMPLE_NAME}.svg still carries the height=99999 placeholder (chromedp trim did not run)" >&2
+            exit 1
+          fi
+          echo "OK: ${SAMPLE_NAME}.svg ($(wc -c < "$svg_out" | tr -d ' ') bytes)"
+
+          # --- 2. Derive the PNG from the rendered SVG (no API) --------
+          # svg2png ships in the production image next to metrics-cli
+          # (see Dockerfile) and rasterizes through the identical
+          # internal/render.Browser + Resize chromedp path that
+          # `--output png` uses, so the PNG is pixel-equivalent. It is
+          # API-free and deterministic, so a single attempt is enough; a
+          # missing/empty PNG stays fatal (#523) — chromedp is expected
+          # to work in the job-level container, and a silent PNG gap must
+          # fail loudly instead of shipping a half-regenerated sample.
+          png_out="${outdir}/${SAMPLE_NAME}.png"
+          rm -f "$png_out"
+          # Friendly guard: image tags <= v1.2.0 predate the svg2png
+          # binary — tell the operator which tag to use instead of a
+          # bare "No such file or directory".
+          if [[ ! -x /usr/local/bin/svg2png ]]; then
+            echo "FAIL: /usr/local/bin/svg2png not found in image '${{ inputs.tag }}' — single-fetch regen needs an image built after #527 (v1.2.1+)" >&2
+            exit 1
+          fi
+          if ! /usr/local/bin/svg2png --out "$outdir" "$svg_out" || [[ ! -s "$png_out" ]]; then
+            echo "FAIL: ${SAMPLE_NAME}.png conversion from SVG failed" >&2
+            exit 1
+          fi
+          echo "OK: ${SAMPLE_NAME}.png ($(wc -c < "$png_out" | tr -d ' ') bytes)"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
