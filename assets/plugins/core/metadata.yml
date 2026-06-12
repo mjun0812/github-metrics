@@ -346,6 +346,27 @@ inputs:
     type: string
     default: 0, 8 + 11%
 
+  config_rate_limit_guard:
+    description: |
+      Startup rate-limit gate
+
+      Refresh `GET /rate_limit` once before rendering (the endpoint itself
+      does not consume quota) and act when a pool the run uses is below an
+      internal threshold, instead of starting a render that would silently
+      degrade mid-run when a pool is exhausted.
+      - `off`: no `/rate_limit` call; current behavior (default)
+      - `fail`: abort with a clear error naming the pool, remaining, and reset
+      - `wait`: block until the pool resets (bounded), then proceed
+
+      This option has no effect when [`token: NOT_NEEDED`](/source/plugins/core/README.md#token) is set.
+    type: string
+    default: off
+    values:
+      - off
+      - fail
+      - wait
+    global: yes
+
   config_output:
     description: |
       Output format
