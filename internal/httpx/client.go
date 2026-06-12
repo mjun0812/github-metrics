@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -23,10 +22,18 @@ import (
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 )
 
-// rateLimitBackoffCap is the maximum delay we will honor from a Retry-After
-// or x-ratelimit-reset header. Responses requesting a wait longer than this
-// cap are not retried and the caller receives a *RateLimitedError instead.
+// rateLimitBackoffCap is the maximum wait we will honor from a Retry-After
+// or x-ratelimit-reset header. When the indicated wait exceeds this cap,
+// checkRetry returns false (no more retries) and the ErrorHandler wraps the
+// final response as a *RateLimitedError so callers can use errors.As.
 const rateLimitBackoffCap = 2 * time.Minute
+
+// errRateLimitBeyondCap is the sentinel error returned by checkRetry when a
+// rate-limit response indicates a wait beyond rateLimitBackoffCap. It causes
+// retryablehttp to skip the "success" short-circuit and invoke ErrorHandler
+// with the final response, so rateLimitErrorHandler can wrap it as
+// *RateLimitedError. It is not surfaced to callers.
+var errRateLimitBeyondCap = fmt.Errorf("httpx: rate-limit wait exceeds cap")
 
 // RateLimitKind describes how GitHub signalled the rate limit.
 type RateLimitKind int
@@ -122,14 +129,39 @@ func parseRetryAfter(header string) time.Time {
 	return time.Time{}
 }
 
-// isRateLimited reports whether resp signals a GitHub rate limit without
-// constructing the full error. Used in checkRetry (hot path).
-func isRateLimited(resp *http.Response) bool {
+// rateLimitWait returns the wait duration indicated by rate-limit response
+// headers and whether the response is at all rate-limited. It is the shared
+// source of truth used by both checkRetry and rateLimitAwareBackoff so the
+// retry decision and the sleep duration are always consistent.
+//
+// ok is true when resp carries rate-limit headers (Retry-After or
+// X-Ratelimit-Remaining=0); wait is the computed duration to sleep (may be
+// zero if the reset is already in the past or the header is unparseable).
+func rateLimitWait(resp *http.Response) (wait time.Duration, ok bool) {
 	if resp == nil {
-		return false
+		return 0, false
 	}
-	return resp.Header.Get("Retry-After") != "" ||
-		resp.Header.Get("X-Ratelimit-Remaining") == "0"
+	// Secondary limit: Retry-After header.
+	if ra := resp.Header.Get("Retry-After"); ra != "" {
+		retryAt := parseRetryAfter(ra)
+		if retryAt.IsZero() {
+			// Unparseable header: treat as rate-limited but unknown wait.
+			// checkRetry will retry with default backoff; backoff returns 0
+			// which retryablehttp clamps to RetryWaitMin.
+			return 0, true
+		}
+		return time.Until(retryAt), true
+	}
+	// Primary limit: x-ratelimit-remaining == "0".
+	if resp.Header.Get("X-Ratelimit-Remaining") == "0" {
+		if reset := resp.Header.Get("X-Ratelimit-Reset"); reset != "" {
+			if epoch, err := strconv.ParseInt(reset, 10, 64); err == nil && epoch > 0 {
+				return time.Until(time.Unix(epoch, 0)), true
+			}
+		}
+		return 0, true
+	}
+	return 0, false
 }
 
 // DefaultUserAgent is used when Options.UserAgent is empty. Callers
@@ -210,6 +242,7 @@ func New(opts Options) *Client {
 	rc.Logger = &slogAdapter{logger: opts.Logger}
 	rc.CheckRetry = checkRetry
 	rc.Backoff = rateLimitAwareBackoff
+	rc.ErrorHandler = rateLimitErrorHandler
 	if opts.Transport != nil {
 		rc.HTTPClient.Transport = opts.Transport
 	}
@@ -219,6 +252,47 @@ func New(opts Options) *Client {
 		userAgent: opts.UserAgent,
 		logger:    opts.Logger,
 	}
+}
+
+// rateLimitErrorHandler is the retryablehttp.ErrorHandler set on every Client.
+// It is called once after all retry attempts are exhausted (or after checkRetry
+// returns false) with the final response still open.
+//
+// When the final response carries rate-limit headers, rateLimitErrorHandler
+// drains and closes the body, then returns a wrapped *RateLimitedError so
+// callers can use errors.As. Otherwise it reproduces the library's default
+// behavior: drain+close body and return the same "giving up after N attempt(s)"
+// message retryablehttp would have produced.
+func rateLimitErrorHandler(resp *http.Response, err error, numTries int) (*http.Response, error) {
+	// Always drain and close the body to avoid connection leaks, regardless of path.
+	if resp != nil {
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+		_ = resp.Body.Close()
+	}
+
+	if rle := ClassifyRateLimit(resp); rle != nil {
+		// Determine method and redacted URL from the wrapped error text when
+		// resp itself does not carry them (retryablehttp does not expose the
+		// request here). We reconstruct a compatible message shape.
+		var prefix string
+		if resp != nil && resp.Request != nil {
+			u := resp.Request.URL
+			if u != nil {
+				ru := *u
+				if _, has := ru.User.Password(); has {
+					ru.User = url.UserPassword(ru.User.Username(), "xxxxx")
+				}
+				prefix = resp.Request.Method + " " + ru.String() + " "
+			}
+		}
+		return nil, fmt.Errorf("%sgiving up after %d attempt(s): %w", prefix, numTries, rle)
+	}
+
+	// Default behavior: mirror retryablehttp's own tail (client.go:836-842).
+	if err == nil {
+		return nil, fmt.Errorf("giving up after %d attempt(s)", numTries)
+	}
+	return nil, fmt.Errorf("giving up after %d attempt(s): %w", numTries, err)
 }
 
 // HTTPClient returns the underlying *http.Client. Exposed so callers
@@ -337,15 +411,18 @@ func cloneOrNew(h http.Header) http.Header {
 }
 
 // checkRetry implements the project's retry policy:
-//   - 5xx and 429: always retry (transient).
-//   - 403 with Retry-After header (GitHub secondary/abuse limit): retry.
-//   - 403 with x-ratelimit-remaining==0 (GitHub primary exhaustion): retry.
+//   - 5xx: always retry (transient).
+//   - 429 with Retry-After within the cap: retry honoring the header.
+//   - 429 with Retry-After beyond the cap: NOT retried → ErrorHandler returns *RateLimitedError.
+//   - 429 without rate-limit headers: retry with default backoff.
+//   - 403 with rate-limit headers and wait within cap: retry.
+//   - 403 with rate-limit headers and wait beyond cap: NOT retried → *RateLimitedError.
 //   - 403 without rate-limit headers (permission error): NOT retried.
 //   - Other 4xx: not retried.
 //   - Context cancellation/timeout: stop immediately.
 //
-// retryablehttp's DefaultRetryPolicy treats 429 as definitive and ignores
-// Retry-After — we explicitly opt into both behaviors here.
+// The shared rateLimitWait helper ensures checkRetry and rateLimitAwareBackoff
+// always agree on whether a given response's wait is within the cap.
 func checkRetry(ctx context.Context, resp *http.Response, err error) (bool, error) {
 	if ctx.Err() != nil {
 		return false, ctx.Err()
@@ -361,10 +438,23 @@ func checkRetry(ctx context.Context, resp *http.Response, err error) (bool, erro
 	if resp == nil {
 		return true, nil
 	}
-	if resp.StatusCode == http.StatusTooManyRequests {
-		return true, nil
-	}
-	if resp.StatusCode == http.StatusForbidden && isRateLimited(resp) {
+	if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusForbidden {
+		wait, isRL := rateLimitWait(resp)
+		if isRL {
+			// Beyond the cap → stop retrying. Return a sentinel error so
+			// retryablehttp hands the final response to ErrorHandler, which
+			// will wrap it as *RateLimitedError for errors.As callers.
+			if wait > rateLimitBackoffCap {
+				return false, errRateLimitBeyondCap
+			}
+			// Within the cap (or unknown/past wait): retry.
+			return true, nil
+		}
+		// 403 without rate-limit headers is a plain permission error: not retried.
+		if resp.StatusCode == http.StatusForbidden {
+			return false, nil
+		}
+		// 429 without rate-limit headers: retry with default backoff.
 		return true, nil
 	}
 	if resp.StatusCode >= 500 && resp.StatusCode <= 599 {
@@ -374,51 +464,33 @@ func checkRetry(ctx context.Context, resp *http.Response, err error) (bool, erro
 }
 
 // rateLimitAwareBackoff is the project's Backoff function. It extends
-// retryablehttp.DefaultBackoff to also honor Retry-After and
-// x-ratelimit-reset on 403 responses (GitHub rate-limit signals).
+// retryablehttp.DefaultBackoff to honor Retry-After and x-ratelimit-reset on
+// 403 and 429 responses (GitHub rate-limit signals).
 //
-// If the computed wait exceeds rateLimitBackoffCap, it returns the cap so
-// retryablehttp applies the cap duration — the caller will receive the last
-// response as-is after all retries are exhausted. Callers that need to
-// distinguish rate-limit exhaustion from permission errors should call
-// ClassifyRateLimit on the final non-2xx response.
+// It uses the same rateLimitWait helper as checkRetry, so the sleep duration
+// is always consistent with the retry decision: if checkRetry allowed a retry
+// (wait ≤ rateLimitBackoffCap), this function returns that wait clamped to
+// max. For all other responses (5xx, network errors, 429 without headers)
+// it delegates to retryablehttp.DefaultBackoff, which also handles
+// Retry-After on 429/503 responses.
 func rateLimitAwareBackoff(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
-	if resp != nil && resp.StatusCode == http.StatusForbidden {
-		// Secondary limit: Retry-After header.
-		if ra := resp.Header.Get("Retry-After"); ra != "" {
-			retryAt := parseRetryAfter(ra)
-			if !retryAt.IsZero() {
-				wait := time.Until(retryAt)
-				if wait > rateLimitBackoffCap {
-					return rateLimitBackoffCap
-				}
-				if wait > 0 {
-					return wait
-				}
+	if resp != nil && (resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusTooManyRequests) {
+		if wait, ok := rateLimitWait(resp); ok {
+			// checkRetry already ensured wait ≤ rateLimitBackoffCap (it returns
+			// false otherwise), so we just clamp to [0, max].
+			if wait > max {
+				return max
 			}
-		}
-		// Primary limit: x-ratelimit-reset epoch.
-		if resp.Header.Get("X-Ratelimit-Remaining") == "0" {
-			if reset := resp.Header.Get("X-Ratelimit-Reset"); reset != "" {
-				if epoch, err := strconv.ParseInt(reset, 10, 64); err == nil && epoch > 0 {
-					wait := time.Until(time.Unix(epoch, 0))
-					if wait > rateLimitBackoffCap {
-						return rateLimitBackoffCap
-					}
-					if wait > 0 {
-						return wait
-					}
-				}
+			if wait > 0 {
+				return wait
 			}
+			// wait == 0: reset already passed or unknown; use default backoff.
 		}
 	}
-	// Fall back to standard exponential backoff for 429/5xx/network errors.
-	mult := math.Pow(2, float64(attemptNum)) * float64(min)
-	sleep := time.Duration(mult)
-	if float64(sleep) != mult || sleep > max {
-		sleep = max
-	}
-	return sleep
+	// Fall back to retryablehttp.DefaultBackoff for 5xx/network errors and
+	// 429/503 without our rate-limit headers (DefaultBackoff also honors
+	// Retry-After on 429/503, preserving that existing behavior).
+	return retryablehttp.DefaultBackoff(min, max, attemptNum, resp)
 }
 
 // slogAdapter bridges retryablehttp's Logger interface onto slog.
