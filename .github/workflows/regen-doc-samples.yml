@@ -5,15 +5,25 @@ name: Regen doc samples
 #
 # Pipeline:
 #   setup   — reads scripts/samples.json and emits the render matrix
-#   render  — 35 parallel jobs, each pulling ghcr.io/mjun0812/github-metrics
-#             from GHCR and running one docker run; artifacts uploaded
-#   open-pr — collects all artifacts, commits to a branch, opens draft PR
+#   render  — 35 parallel jobs, each running INSIDE the published
+#             ghcr.io/mjun0812/github-metrics image as a job-level
+#             container; artifacts uploaded
+#   open-pr — collects all artifacts, normalizes the SVGs, commits to
+#             a branch, opens a draft PR via the REST API
+#
+# Why job-level containers instead of `docker run` (#523): chromedp /
+# chromium does not work when the image is launched through the ARC
+# runner's DinD sidecar — every SVG shipped untrimmed (the height
+# stayed at the 99999 placeholder) and no PNG could be produced at
+# all. go-ci's test-chromedp job proves chromedp works fine inside a
+# job-level container on the same `home-k3s-runner` scale set, so the
+# render jobs now run the same way.
 #
 # Requirements:
 #   - METRICS_TOKEN secret: classic PAT with read:user + repo scopes.
-#     Passed to the container as GITHUB_TOKEN so the binary can call
-#     the GitHub API. The workflow's built-in GITHUB_TOKEN is used only
-#     for GHCR pull, git push, and gh pr create.
+#     Passed to the render step as METRICS_TOKEN so the binary can
+#     call the GitHub API. The workflow's built-in GITHUB_TOKEN is used only
+#     for GHCR pull, git push, and the PR-creation API call.
 #   - GHCR image ghcr.io/mjun0812/github-metrics:<tag> must exist.
 #     The image is published by release.yml on every semver tag push.
 
@@ -35,12 +45,11 @@ on:
 
 permissions:
   contents: write       # git push (new branch + commit)
-  pull-requests: write  # gh pr create
+  pull-requests: write  # PR creation via the REST API
   packages: read        # GHCR pull
 
 env:
   GO_VERSION: "1.26.4"
-  IMAGE: ghcr.io/mjun0812/github-metrics
 
 jobs:
   # ------------------------------------------------------------------ #
@@ -67,6 +76,16 @@ jobs:
     name: Render ${{ matrix.name }}
     needs: setup
     runs-on: home-k3s-runner
+    container:
+      image: ghcr.io/mjun0812/github-metrics:${{ inputs.tag }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      # The image ships `USER metrics`, but the runner mounts the job
+      # workspace with its own uid — run as root so the step can write
+      # $GITHUB_WORKSPACE. chromium is fine with root because chromedp
+      # launches it with --no-sandbox.
+      options: --user root
     strategy:
       # Cap concurrency so 35 GraphQL-heavy renders don't trip the
       # GitHub secondary rate limit (anti-abuse). 8 still saw ~40% of
@@ -79,34 +98,39 @@ jobs:
         include: ${{ fromJSON(needs.setup.outputs.matrix) }}
 
     steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Pull image
-        run: docker pull ${{ env.IMAGE }}:${{ inputs.tag }}
-
       - name: Render SVG + PNG
+        # Inside a job container the default step shell is `sh`, not
+        # bash — the array/pipefail syntax below needs the bash that
+        # the image ships.
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.METRICS_TOKEN }}
+          # Passed under a non-reserved name: inside a job container
+          # the runner controls the GITHUB_* env namespace and a
+          # step-level GITHUB_TOKEN did not survive to the process
+          # (the binary saw an invalid value).
+          METRICS_TOKEN: ${{ secrets.METRICS_TOKEN }}
           SAMPLE_NAME: ${{ matrix.name }}
           SAMPLE_MODE: ${{ matrix.mode }}
           SAMPLE_EXTRA: ${{ matrix.extra }}
           INPUT_USER: ${{ inputs.user }}
           INPUT_REPO: ${{ inputs.repo }}
-          INPUT_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
+          # The runner exports GITHUB_ACTIONS=true inside job
+          # containers, which flips the binary into Action mode
+          # (cmd/metrics-cli/main.go): CLI flags are ignored and the
+          # token is read from INPUT_TOKEN instead of --token-env.
+          # Unset it so the render keeps using the CLI path, exactly
+          # like the previous `docker run` (which passed no GITHUB_*
+          # env) did.
+          unset GITHUB_ACTIONS
+          # The ARC runner environment may inject proxy settings that
+          # break the container's egress; clear both cases explicitly
+          # like the previous `docker run -e` invocation did (the
+          # workflow `env:` map is case-insensitive, so this has to
+          # happen in the shell).
+          export HTTP_PROXY="" HTTPS_PROXY="" http_proxy="" https_proxy=""
+          export NO_PROXY="*" no_proxy="*"
           # Non-hidden directory name so actions/upload-artifact@v4
           # picks it up: v4's default include-hidden-files: false
           # silently excludes any path containing a dot-prefixed
@@ -130,7 +154,7 @@ jobs:
               rm -f "$out"
               RUN_ARGS=(
                 "${BASE_ARGS[@]}"
-                --token-env GITHUB_TOKEN
+                --token-env METRICS_TOKEN
                 --output "$fmt"
                 --filename -
                 --dryrun
@@ -139,16 +163,8 @@ jobs:
                 RUN_ARGS+=("${extra_arr[@]}")
               fi
               tmplog=$(mktemp)
-              if docker run --rm \
-                  -e GITHUB_TOKEN \
-                  -e HTTP_PROXY="" \
-                  -e HTTPS_PROXY="" \
-                  -e http_proxy="" \
-                  -e https_proxy="" \
-                  -e NO_PROXY="*" \
-                  -e no_proxy="*" \
-                  "${{ env.IMAGE }}:$INPUT_TAG" \
-                  "${RUN_ARGS[@]}" > "$out" 2>"$tmplog" && [[ -s "$out" ]]; then
+              if /usr/local/bin/metrics-cli "${RUN_ARGS[@]}" > "$out" 2>"$tmplog" \
+                  && [[ -s "$out" ]]; then
                 ok=1; rm -f "$tmplog"; break
               fi
               cat "$tmplog" >&2; rm -f "$tmplog"
@@ -158,27 +174,21 @@ jobs:
                 sleep "$backoff"
               fi
             done
+            # Both formats are fatal now. PNG used to be downgraded to
+            # a warning while chromedp was broken under DinD (#501);
+            # with the job-level container chromedp is expected to
+            # work, and a silent PNG gap should fail loudly instead of
+            # shipping a half-regenerated sample set (#523).
             if [[ "$ok" -eq 0 ]]; then
-              # SVG failure is fatal — the sample is unusable without
-              # its source vector. PNG failure is downgraded to a
-              # warning so the SVG can still ship: the PNG path goes
-              # through chromedp / chromium and is known to fail
-              # silently inside the container as of v1.1.5 (see issue
-              # tracked separately). Letting PNG-failed samples land
-              # as SVG-only keeps regen runs productive while that
-              # is investigated; the stale committed PNG stays in
-              # place until a real new one is generated.
-              if [[ "$fmt" == "svg" ]]; then
-                echo "FAIL: ${SAMPLE_NAME}.${fmt} (fatal — aborting this sample)" >&2
-                exit 1
-              fi
-              echo "::warning::regen-doc-samples: ${SAMPLE_NAME}.${fmt} failed after 3 retries; SVG was generated successfully, PNG will be missing from this run's artifact"
-              rm -f "$out"
-              continue
+              echo "FAIL: ${SAMPLE_NAME}.${fmt} after 3 attempts" >&2
+              exit 1
             fi
-            if [[ "$fmt" == "svg" ]]; then
-              go run ./internal/tools/normalize-svg-stream < "$out" > "${out}.norm"
-              mv "${out}.norm" "$out"
+            # Postcondition (#523): an untrimmed SVG means the
+            # chromedp resize step silently failed — exactly the
+            # breakage this workflow shipped once. Refuse to upload it.
+            if [[ "$fmt" == "svg" ]] && grep -q 'height="99999"' "$out"; then
+              echo "FAIL: ${SAMPLE_NAME}.svg still carries the height=99999 placeholder (chromedp trim did not run)" >&2
+              exit 1
             fi
             echo "OK: ${SAMPLE_NAME}.${fmt} ($(wc -c < "$out" | tr -d ' ') bytes)"
           done
@@ -191,7 +201,7 @@ jobs:
           retention-days: 3
 
   # ------------------------------------------------------------------ #
-  # 3. Collect artifacts and open a draft PR                           #
+  # 3. Collect artifacts, normalize, and open a draft PR               #
   # ------------------------------------------------------------------ #
   open-pr:
     name: Open draft PR
@@ -208,12 +218,30 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
       - name: Download all sample artifacts
         uses: actions/download-artifact@v4
         with:
           path: docs/examples/
           pattern: sample-*
           merge-multiple: true
+
+      # Normalization moved here from the render jobs (#523): the
+      # render jobs now run inside the production image, which carries
+      # no Go toolchain or repo checkout. normalize-svg-stream is
+      # idempotent, so re-running it over already-normalized committed
+      # files produces no diff.
+      - name: Normalize SVGs
+        run: |
+          set -euo pipefail
+          for f in docs/examples/*.svg; do
+            go run ./internal/tools/normalize-svg-stream < "$f" > "${f}.norm"
+            mv "${f}.norm" "$f"
+          done
 
       - name: Note failed renders (if any)
         id: failed
@@ -262,26 +290,57 @@ jobs:
           commit_msg=$(printf 'chore(docs): regenerate doc samples\n\nTriggered by workflow_dispatch on %s.\nUser: %s / Repo: %s / Tag: %s\nChanged files: %s' \
             "${short_sha}" "${COMMIT_USER}" "${COMMIT_REPO}" "${COMMIT_TAG}" "${COMMIT_COUNT}")
           git commit -m "${commit_msg}"
-          git push origin "${branch}"
+          # Force push: the branch is workflow-owned and keyed to the
+          # base sha, and a job rerun rebuilds it from scratch — a
+          # plain push would be rejected non-fast-forward by the
+          # previous attempt's push.
+          git push --force origin "${branch}"
 
+      # The PR is created through the REST API via actions/github-script
+      # because the self-hosted runner image does not ship the gh CLI
+      # (#523 — the previous `gh pr create` step failed with
+      # `gh: command not found`).
       - name: Create pull request
         if: steps.diff.outputs.changed == 'true'
+        uses: actions/github-script@v8
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_SHA: ${{ github.sha }}
           PR_TAG: ${{ inputs.tag }}
           PR_USER: ${{ inputs.user }}
           PR_REPO: ${{ inputs.repo }}
           PR_COUNT: ${{ steps.diff.outputs.count }}
           PR_FAILED_NOTE: ${{ steps.failed.outputs.note }}
-        run: |
-          printf '## Summary\n\nAutomated regeneration of `docs/examples/` triggered via **Regen doc samples** workflow.\n\n- Triggered on: `%s`\n- Image tag: `%s`\n- User: `%s`\n- Repo: `%s`\n- Changed files: %s\n\n%s## Review checklist\n\n- [ ] SVG/PNG diffs look correct (no rendering regressions)\n- [ ] No unexpected files added or removed\n\n🤖 Generated by the `regen-doc-samples` workflow\n' \
-            "$PR_SHA" "$PR_TAG" "$PR_USER" "$PR_REPO" "$PR_COUNT" \
-            "$([[ -n "$PR_FAILED_NOTE" ]] && printf '## Partial run\n\n> %s\n\n' "$PR_FAILED_NOTE")" \
-            > /tmp/pr-body.md
-          gh pr create \
-            --base main \
-            --head "${branch}" \
-            --draft \
-            --title "chore(docs): regenerate doc samples" \
-            --body-file /tmp/pr-body.md
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { PR_TAG, PR_USER, PR_REPO, PR_COUNT, PR_FAILED_NOTE, branch } = process.env;
+            const partial = PR_FAILED_NOTE
+              ? `## Partial run\n\n> ${PR_FAILED_NOTE}\n\n`
+              : '';
+            const body = [
+              '## Summary',
+              '',
+              'Automated regeneration of `docs/examples/` triggered via **Regen doc samples** workflow.',
+              '',
+              `- Triggered on: \`${context.sha}\``,
+              `- Image tag: \`${PR_TAG}\``,
+              `- User: \`${PR_USER}\``,
+              `- Repo: \`${PR_REPO}\``,
+              `- Changed files: ${PR_COUNT}`,
+              '',
+              `${partial}## Review checklist`,
+              '',
+              '- [ ] SVG/PNG diffs look correct (no rendering regressions)',
+              '- [ ] No unexpected files added or removed',
+              '',
+              '🤖 Generated by the `regen-doc-samples` workflow',
+            ].join('\n');
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: 'main',
+              head: branch,
+              draft: true,
+              title: 'chore(docs): regenerate doc samples',
+              body,
+            });
+            core.info(`Created draft PR: ${pr.html_url}`);
