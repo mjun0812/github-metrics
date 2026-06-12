@@ -207,6 +207,13 @@ jobs:
           # fail loudly instead of shipping a half-regenerated sample.
           png_out="${outdir}/${SAMPLE_NAME}.png"
           rm -f "$png_out"
+          # Friendly guard: image tags <= v1.2.0 predate the svg2png
+          # binary — tell the operator which tag to use instead of a
+          # bare "No such file or directory".
+          if [[ ! -x /usr/local/bin/svg2png ]]; then
+            echo "FAIL: /usr/local/bin/svg2png not found in image '${{ inputs.tag }}' — single-fetch regen needs an image built after #527 (v1.2.1+)" >&2
+            exit 1
+          fi
           if ! /usr/local/bin/svg2png --out "$outdir" "$svg_out" || [[ ! -s "$png_out" ]]; then
             echo "FAIL: ${SAMPLE_NAME}.png conversion from SVG failed" >&2
             exit 1
