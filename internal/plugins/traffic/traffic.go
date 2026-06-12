@@ -2,14 +2,16 @@
 // repository view counts from REST /repos/{owner}/{repo}/traffic/views
 // for every repository in base.Computed.RepositoryList. The endpoint
 // requires the `repo` OAuth scope; without it the plugin returns
-// Skipped=true. Repositories that fail (403, other non-2xx) are dropped
-// and aggregation continues; a single aggregated AppendError is recorded
-// so the degradation is observable via Result.Errors / JSON output.
+// Skipped=true. Repositories that fail are dropped and aggregation
+// continues; up to three aggregated AppendErrors are recorded (one per
+// non-zero bucket: rate limited / forbidden / failed) so the degradation
+// is observable via Result.Errors / JSON output.
 package traffic
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -20,6 +22,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/mjun0812/github-metrics/internal/config"
+	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
@@ -76,8 +79,9 @@ type rawTraffic struct {
 }
 
 // Run gates on `repo` scope, then parallel-fetches views for every
-// repository in Computed.RepositoryList. 403 (collaborator
-// permissions) is treated as drop-and-continue per contract §12.
+// repository in Computed.RepositoryList. Failures are drop-and-continue
+// per contract §12; failures are classified into rate-limited /
+// forbidden / failed buckets and surfaced via AppendError.
 func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
@@ -115,17 +119,21 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	var total TrafficView
 	var mu sync.Mutex
 
-	// droppedRateLimit and droppedForbidden count repos dropped due to
-	// rate limiting vs plain 403 (no admin access). Both are aggregated
-	// into a single AppendError after the loop so a 50-repo list does
-	// not spam 50 entries.
+	// Three drop counters — all aggregated into at most one AppendError each
+	// after the loop so a 50-repo list does not spam 50 log entries.
 	//
-	// Rate-limit detection: when the httpx client exhausts its retries on a
-	// rate-limited 403, it returns err != nil (wrapping "giving up after N
-	// attempt(s)"). A plain forbidden 403 (no rate-limit headers) is not
-	// retried and arrives as err == nil with resp.StatusCode == 403.
+	// Classification:
+	//   droppedRateLimit — errors.As(*httpx.RateLimitedError) on the error
+	//     path (retry exhaustion or beyond-cap single attempt), or a response
+	//     with rate-limit headers classified by httpx.ClassifyRateLimit(resp)
+	//     (defense-in-depth for responses that reach the resp != nil path).
+	//   droppedForbidden — resp.StatusCode == 403 with no rate-limit headers
+	//     (plain permission error, not retried by the httpx layer).
+	//   droppedFailed — everything else: transport errors, nil resp, other
+	//     non-2xx, and JSON-decode failures.
 	var droppedRateLimit atomic.Int64
 	var droppedForbidden atomic.Int64
+	var droppedFailed atomic.Int64
 
 	g, gctx := errgroup.WithContext(ctx)
 	g.SetLimit(8)
@@ -136,33 +144,38 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 			body, resp, err := pc.REST.Get(gctx, path, nil)
 			if err != nil {
 				// Transport error or rate-limit retry exhaustion.
-				// "giving up after" is the retryablehttp marker that surfaces
-				// when all retry attempts are consumed (typically due to a
-				// rate-limited 403 with Retry-After that never cleared).
-				if strings.Contains(err.Error(), "giving up after") {
+				// Use errors.As to detect *httpx.RateLimitedError (set by the
+				// httpx ErrorHandler on retry exhaustion or beyond-cap responses).
+				var rle *httpx.RateLimitedError
+				if errors.As(err, &rle) {
 					droppedRateLimit.Add(1)
 				} else {
-					droppedForbidden.Add(1)
+					droppedFailed.Add(1)
 				}
 				return nil //nolint:nilerr // intentional: per-repo failure does not abort the aggregation
 			}
 			if resp == nil {
-				droppedForbidden.Add(1)
+				droppedFailed.Add(1)
 				return nil
 			}
+			// Defense-in-depth: classify any response that carries rate-limit
+			// headers (e.g. a beyond-cap 403 that flowed through the resp path).
+			if httpx.ClassifyRateLimit(resp) != nil {
+				droppedRateLimit.Add(1)
+				return nil //nolint:nilerr // intentional: *RateLimitedError is not propagated; the drop counter carries the signal
+			}
 			if resp.StatusCode == http.StatusForbidden {
-				// Plain 403: no rate-limit headers (the httpx layer would have
-				// retried a rate-limited 403 and returned err != nil above).
+				// Plain 403: no rate-limit headers (already ruled out above).
 				droppedForbidden.Add(1)
 				return nil
 			}
 			if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-				droppedForbidden.Add(1)
+				droppedFailed.Add(1)
 				return nil
 			}
 			var raw rawTraffic
 			if err := json.Unmarshal(body, &raw); err != nil {
-				droppedForbidden.Add(1)
+				droppedFailed.Add(1)
 				return nil //nolint:nilerr // intentional: decode failure → drop one repo
 			}
 			mu.Lock()
@@ -175,14 +188,17 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	}
 	_ = g.Wait()
 
-	// Surface a single aggregated error when repos were silently dropped so
-	// operators can distinguish a correct empty state from a degraded one.
+	// Surface aggregated errors (at most one per non-zero bucket) so operators
+	// can distinguish a correct empty state from a degraded one.
 	repoCount := len(repos)
 	if rl := droppedRateLimit.Load(); rl > 0 {
 		pc.Data.AppendError(fmt.Errorf("traffic: views unavailable for %d/%d repos (rate limited)", rl, repoCount))
 	}
 	if fb := droppedForbidden.Load(); fb > 0 {
 		pc.Data.AppendError(fmt.Errorf("traffic: views unavailable for %d/%d repos (forbidden)", fb, repoCount))
+	}
+	if fl := droppedFailed.Load(); fl > 0 {
+		pc.Data.AppendError(fmt.Errorf("traffic: views unavailable for %d/%d repos (failed)", fl, repoCount))
 	}
 
 	return &Result{

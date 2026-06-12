@@ -218,15 +218,16 @@ func newRESTNoRetry(t *testing.T, mux *githubapi.MockTransport) *githubapi.REST 
 // and (c) the surviving repo is still present in Views.
 //
 // DisableRetries causes the retryablehttp client to exhaust its single
-// attempt immediately and return err != nil with "giving up after 1
-// attempt(s)", which is the same signal produced in production when the
-// real retry budget is consumed on a persistent rate-limited 403.
+// attempt immediately and invoke the ErrorHandler with the 403+Retry-After
+// response. The ErrorHandler returns a *httpx.RateLimitedError (wrapped),
+// which the traffic plugin detects via errors.As.
 func TestRun_RateLimitedForbidden_AppendError(t *testing.T) {
 	t.Parallel()
 	mux := scopeMux("repo")
 	// alpha: 403 + Retry-After (rate-limited secondary limit).
-	// The retryablehttp client will immediately exhaust its 0-attempt
-	// budget (DisableRetries) and surface "giving up after 1 attempt(s)".
+	// With DisableRetries the retryablehttp client exhausts its 0-attempt
+	// budget immediately, invoking rateLimitErrorHandler which wraps the
+	// response as *httpx.RateLimitedError.
 	h403rl := http.Header{}
 	h403rl.Set("Retry-After", "1")
 	h403rl.Set("Content-Type", "application/json")
@@ -267,6 +268,148 @@ func TestRun_RateLimitedForbidden_AppendError(t *testing.T) {
 	}
 	if !strings.Contains(errs[0].Error(), "1/2") {
 		t.Errorf("error message should contain 1/2; got %q", errs[0].Error())
+	}
+}
+
+// TestRun_RateLimitedViaResponsePath_AppendError verifies the defense-in-depth
+// classification via httpx.ClassifyRateLimit(resp). A beyond-cap 403 with a
+// far-future Retry-After is not retried (checkRetry returns false) and the
+// httpx ErrorHandler surfaces it as a *httpx.RateLimitedError error, so
+// errors.As on the error path already catches it. This test additionally
+// verifies that a 403 carrying rate-limit headers routes to the rate-limited
+// bucket, not the forbidden bucket, confirming the ClassifyRateLimit guard on
+// the resp != nil path handles any such response that reaches it.
+func TestRun_RateLimitedViaResponsePath_AppendError(t *testing.T) {
+	t.Parallel()
+	mux := scopeMux("repo")
+	// alpha: 403 + large Retry-After (beyond 2-minute cap).
+	// checkRetry returns false, ErrorHandler wraps as *RateLimitedError.
+	// errors.As on the error path catches it as rate-limited.
+	h403beyond := http.Header{}
+	h403beyond.Set("Retry-After", "7200") // 2 hours — exceeds 2-minute cap
+	h403beyond.Set("Content-Type", "application/json")
+	mux.Set("GET", "/repos/octocat/alpha/traffic/views", githubapi.MockResponse{
+		Status: http.StatusForbidden,
+		Header: h403beyond,
+		Body:   []byte(`{"message":"rate limited"}`),
+	})
+	// beta: success
+	mux.SetJSON("GET", "/repos/octocat/beta/traffic/views", `{"count":30,"uniques":10}`)
+
+	data := plugins.NewData()
+	data.Computed.RepositoryList = []plugins.Repository{
+		{NameWithOwner: "octocat/alpha"},
+		{NameWithOwner: "octocat/beta"},
+	}
+	// Use a real retry-enabled client so checkRetry fires with the full cap logic.
+	pc := &plugins.PluginContext{Data: data, Inputs: map[string]any{}, REST: newREST(t, mux)}
+	out, runErr := traffic.Plugin.Run(context.Background(), pc)
+	if runErr != nil {
+		t.Fatalf("Run returned error: %v", runErr)
+	}
+	r := out.(*traffic.Result)
+	if r.Skipped {
+		t.Fatalf("result should not be Skipped")
+	}
+	if _, ok := r.Views["octocat/beta"]; !ok {
+		t.Errorf("octocat/beta should still be present in Views")
+	}
+	errs := pc.Data.SnapshotErrors()
+	if len(errs) != 1 {
+		t.Fatalf("SnapshotErrors len = %d, want 1; errors: %v", len(errs), errs)
+	}
+	if !strings.Contains(errs[0].Error(), "rate limit") {
+		t.Errorf("error message should mention rate limit; got %q", errs[0].Error())
+	}
+	// Must NOT say "forbidden" — the rate-limit bucket takes precedence.
+	if strings.Contains(errs[0].Error(), "forbidden") {
+		t.Errorf("error message must not say forbidden for a rate-limited response; got %q", errs[0].Error())
+	}
+}
+
+// TestRun_ServerError_FailedBucket verifies that a 500 response lands in the
+// "failed" bucket (not "forbidden") and produces a message containing "(failed)".
+func TestRun_ServerError_FailedBucket(t *testing.T) {
+	t.Parallel()
+	mux := scopeMux("repo")
+	// alpha: 500 Internal Server Error — should land in droppedFailed.
+	mux.Set("GET", "/repos/octocat/alpha/traffic/views", githubapi.MockResponse{
+		Status: http.StatusInternalServerError,
+		Body:   []byte(`{"message":"internal server error"}`),
+	})
+	// beta: success
+	mux.SetJSON("GET", "/repos/octocat/beta/traffic/views", `{"count":20,"uniques":8}`)
+
+	data := plugins.NewData()
+	data.Computed.RepositoryList = []plugins.Repository{
+		{NameWithOwner: "octocat/alpha"},
+		{NameWithOwner: "octocat/beta"},
+	}
+	// DisableRetries so the 500 does not spend time retrying.
+	pc := &plugins.PluginContext{Data: data, Inputs: map[string]any{}, REST: newRESTNoRetry(t, mux)}
+	out, runErr := traffic.Plugin.Run(context.Background(), pc)
+	if runErr != nil {
+		t.Fatalf("Run returned error: %v", runErr)
+	}
+	r := out.(*traffic.Result)
+	if r.Skipped {
+		t.Fatalf("result should not be Skipped")
+	}
+	if _, ok := r.Views["octocat/beta"]; !ok {
+		t.Errorf("octocat/beta should still be present in Views")
+	}
+	errs := pc.Data.SnapshotErrors()
+	if len(errs) != 1 {
+		t.Fatalf("SnapshotErrors len = %d, want 1; errors: %v", len(errs), errs)
+	}
+	if !strings.Contains(errs[0].Error(), "(failed)") {
+		t.Errorf("error message should say (failed) for a 500; got %q", errs[0].Error())
+	}
+	if strings.Contains(errs[0].Error(), "forbidden") {
+		t.Errorf("error message must not say forbidden for a 500; got %q", errs[0].Error())
+	}
+}
+
+// TestRun_DecodeFailure_FailedBucket verifies that a 200 response with
+// malformed JSON lands in the "failed" bucket (not "forbidden") and
+// produces a message containing "(failed)".
+func TestRun_DecodeFailure_FailedBucket(t *testing.T) {
+	t.Parallel()
+	mux := scopeMux("repo")
+	// alpha: 200 but invalid JSON body.
+	mux.Set("GET", "/repos/octocat/alpha/traffic/views", githubapi.MockResponse{
+		Status: http.StatusOK,
+		Body:   []byte(`not-json`),
+	})
+	// beta: success
+	mux.SetJSON("GET", "/repos/octocat/beta/traffic/views", `{"count":10,"uniques":4}`)
+
+	data := plugins.NewData()
+	data.Computed.RepositoryList = []plugins.Repository{
+		{NameWithOwner: "octocat/alpha"},
+		{NameWithOwner: "octocat/beta"},
+	}
+	pc := &plugins.PluginContext{Data: data, Inputs: map[string]any{}, REST: newREST(t, mux)}
+	out, runErr := traffic.Plugin.Run(context.Background(), pc)
+	if runErr != nil {
+		t.Fatalf("Run returned error: %v", runErr)
+	}
+	r := out.(*traffic.Result)
+	if r.Skipped {
+		t.Fatalf("result should not be Skipped")
+	}
+	if _, ok := r.Views["octocat/beta"]; !ok {
+		t.Errorf("octocat/beta should still be present in Views")
+	}
+	errs := pc.Data.SnapshotErrors()
+	if len(errs) != 1 {
+		t.Fatalf("SnapshotErrors len = %d, want 1; errors: %v", len(errs), errs)
+	}
+	if !strings.Contains(errs[0].Error(), "(failed)") {
+		t.Errorf("error message should say (failed) for a decode error; got %q", errs[0].Error())
+	}
+	if strings.Contains(errs[0].Error(), "forbidden") {
+		t.Errorf("error message must not say forbidden for a decode error; got %q", errs[0].Error())
 	}
 }
 
