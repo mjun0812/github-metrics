@@ -272,3 +272,189 @@ func TestClient_HTTPClientExposesUnderlying(t *testing.T) {
 		t.Fatalf("HTTPClient() returned nil")
 	}
 }
+
+// --- Rate-limit retry tests ---
+
+// newFastClient uses millisecond-scale backoff so rate-limit tests finish
+// quickly without relying on real clock sleeps from Retry-After headers.
+func newFastClient(t *testing.T, transport http.RoundTripper) *httpx.Client {
+	t.Helper()
+	return httpx.New(httpx.Options{
+		Transport:  transport,
+		MaxRetries: 3,
+		MinBackoff: time.Millisecond,
+		MaxBackoff: 5 * time.Millisecond,
+	})
+}
+
+func TestClient_403WithRetryAfterIsRetried(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := calls.Add(1)
+		if n == 1 {
+			// First call: secondary rate limit with a very short Retry-After.
+			w.Header().Set("Retry-After", "0")
+			http.Error(w, "secondary rate limited", http.StatusForbidden)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprint(w, "ok")
+	}))
+	defer srv.Close()
+
+	c := newFastClient(t, nil)
+	_, resp, err := c.Get(context.Background(), srv.URL, nil)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if got := calls.Load(); got != 2 {
+		t.Fatalf("expected 2 calls (1 rate-limited + 1 success), got %d", got)
+	}
+}
+
+func TestClient_403WithRatelimitRemainingZeroIsRetried(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := calls.Add(1)
+		if n == 1 {
+			// First call: primary rate exhaustion.
+			w.Header().Set("X-Ratelimit-Remaining", "0")
+			w.Header().Set("X-Ratelimit-Reset", "1") // epoch 1 = in the past
+			http.Error(w, "rate limit exhausted", http.StatusForbidden)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprint(w, "ok")
+	}))
+	defer srv.Close()
+
+	c := newFastClient(t, nil)
+	_, resp, err := c.Get(context.Background(), srv.URL, nil)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if got := calls.Load(); got != 2 {
+		t.Fatalf("expected 2 calls, got %d", got)
+	}
+}
+
+func TestClient_403WithoutRateHeadersIsNotRetried(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		// Plain permission error: no rate-limit headers.
+		http.Error(w, "forbidden", http.StatusForbidden)
+	}))
+	defer srv.Close()
+
+	c := newFastClient(t, nil)
+	_, resp, err := c.Get(context.Background(), srv.URL, nil)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", resp.StatusCode)
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("expected 1 call (no retry on permission 403), got %d", got)
+	}
+}
+
+// --- ClassifyRateLimit tests ---
+
+func TestClassifyRateLimit_RetryAfterHeader(t *testing.T) {
+	t.Parallel()
+
+	resp := &http.Response{
+		StatusCode: http.StatusForbidden,
+		Header: http.Header{
+			"Retry-After": []string{"60"},
+		},
+	}
+	rle := httpx.ClassifyRateLimit(resp)
+	if rle == nil {
+		t.Fatal("expected *RateLimitedError, got nil")
+	}
+	if rle.Kind != httpx.RateLimitSecondary {
+		t.Fatalf("Kind = %v, want RateLimitSecondary", rle.Kind)
+	}
+	if rle.RetryAt.IsZero() {
+		t.Fatal("RetryAt should not be zero when Retry-After: 60 is present")
+	}
+}
+
+func TestClassifyRateLimit_PrimaryExhaustion(t *testing.T) {
+	t.Parallel()
+
+	reset := fmt.Sprintf("%d", time.Now().Add(5*time.Minute).Unix())
+	resp := &http.Response{
+		StatusCode: http.StatusForbidden,
+		Header: http.Header{
+			"X-Ratelimit-Remaining": []string{"0"},
+			"X-Ratelimit-Reset":     []string{reset},
+		},
+	}
+	rle := httpx.ClassifyRateLimit(resp)
+	if rle == nil {
+		t.Fatal("expected *RateLimitedError, got nil")
+	}
+	if rle.Kind != httpx.RateLimitPrimary {
+		t.Fatalf("Kind = %v, want RateLimitPrimary", rle.Kind)
+	}
+	if rle.RetryAt.IsZero() {
+		t.Fatal("RetryAt should not be zero when x-ratelimit-reset is present")
+	}
+}
+
+func TestClassifyRateLimit_PlainForbidden(t *testing.T) {
+	t.Parallel()
+
+	resp := &http.Response{
+		StatusCode: http.StatusForbidden,
+		Header:     http.Header{},
+	}
+	if rle := httpx.ClassifyRateLimit(resp); rle != nil {
+		t.Fatalf("expected nil for plain 403, got %v", rle)
+	}
+}
+
+func TestClassifyRateLimit_Nil(t *testing.T) {
+	t.Parallel()
+
+	if rle := httpx.ClassifyRateLimit(nil); rle != nil {
+		t.Fatalf("expected nil for nil response, got %v", rle)
+	}
+}
+
+func TestRateLimitedError_ErrorString(t *testing.T) {
+	t.Parallel()
+
+	rle := &httpx.RateLimitedError{
+		Kind:    httpx.RateLimitSecondary,
+		RetryAt: time.Time{},
+	}
+	if rle.Error() == "" {
+		t.Fatal("Error() should return non-empty string")
+	}
+
+	rle2 := &httpx.RateLimitedError{
+		Kind:    httpx.RateLimitPrimary,
+		RetryAt: time.Now().Add(time.Minute),
+	}
+	msg := rle2.Error()
+	if !strings.Contains(msg, "primary") {
+		t.Fatalf("Error() = %q, want to contain 'primary'", msg)
+	}
+}

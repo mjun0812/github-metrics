@@ -13,13 +13,124 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 )
+
+// rateLimitBackoffCap is the maximum delay we will honor from a Retry-After
+// or x-ratelimit-reset header. Responses requesting a wait longer than this
+// cap are not retried and the caller receives a *RateLimitedError instead.
+const rateLimitBackoffCap = 2 * time.Minute
+
+// RateLimitKind describes how GitHub signalled the rate limit.
+type RateLimitKind int
+
+const (
+	// RateLimitSecondary indicates a secondary/abuse limit: the server
+	// responded with a Retry-After header (GitHub docs: "secondary rate limits").
+	RateLimitSecondary RateLimitKind = iota
+	// RateLimitPrimary indicates primary quota exhaustion: the server set
+	// x-ratelimit-remaining to "0" and x-ratelimit-reset to a reset epoch.
+	RateLimitPrimary
+)
+
+// RateLimitedError is returned (or wrapped) when all retry attempts are
+// exhausted due to a GitHub rate-limit response, or when the requested
+// wait exceeds rateLimitBackoffCap.
+//
+// Callers that want to distinguish "rate limited" from "forbidden (no
+// access)" can use errors.As:
+//
+//	var rle *httpx.RateLimitedError
+//	if errors.As(err, &rle) { /* rate limited */ }
+type RateLimitedError struct {
+	// Kind is whether this was a secondary (Retry-After) or primary
+	// (x-ratelimit-remaining=0) limit.
+	Kind RateLimitKind
+	// RetryAt is when GitHub says the limit resets. It may be zero if the
+	// server did not supply a parseable reset time.
+	RetryAt time.Time
+}
+
+func (e *RateLimitedError) Error() string {
+	var kind string
+	switch e.Kind {
+	case RateLimitSecondary:
+		kind = "secondary"
+	default:
+		kind = "primary"
+	}
+	if e.RetryAt.IsZero() {
+		return fmt.Sprintf("httpx: GitHub %s rate limit exceeded", kind)
+	}
+	return fmt.Sprintf("httpx: GitHub %s rate limit exceeded, retry after %s", kind, e.RetryAt.UTC().Format(time.RFC3339))
+}
+
+// ClassifyRateLimit inspects a non-2xx *http.Response (typically 403 or 429)
+// and returns a *RateLimitedError if the response carries rate-limit headers,
+// or nil if the response is a plain permission error / unrelated failure.
+//
+// #531 should call this after receiving a 403 from a REST endpoint:
+//
+//	var rle *httpx.RateLimitedError
+//	if rle = httpx.ClassifyRateLimit(resp); rle != nil {
+//	    // rate limited — surface rle to caller
+//	}
+func ClassifyRateLimit(resp *http.Response) *RateLimitedError {
+	if resp == nil {
+		return nil
+	}
+	// Secondary limit: Retry-After header present.
+	if ra := resp.Header.Get("Retry-After"); ra != "" {
+		retryAt := parseRetryAfter(ra)
+		return &RateLimitedError{Kind: RateLimitSecondary, RetryAt: retryAt}
+	}
+	// Primary limit: x-ratelimit-remaining == "0".
+	if resp.Header.Get("X-Ratelimit-Remaining") == "0" {
+		var retryAt time.Time
+		if reset := resp.Header.Get("X-Ratelimit-Reset"); reset != "" {
+			if epoch, err := strconv.ParseInt(reset, 10, 64); err == nil && epoch > 0 {
+				retryAt = time.Unix(epoch, 0).UTC()
+			}
+		}
+		return &RateLimitedError{Kind: RateLimitPrimary, RetryAt: retryAt}
+	}
+	return nil
+}
+
+// parseRetryAfter parses a Retry-After header value and returns the
+// absolute time at which the client may retry. Returns zero time on parse
+// failure.
+func parseRetryAfter(header string) time.Time {
+	if header == "" {
+		return time.Time{}
+	}
+	// Retry-After: <seconds>
+	if secs, err := strconv.ParseInt(header, 10, 64); err == nil && secs >= 0 {
+		return time.Now().Add(time.Duration(secs) * time.Second)
+	}
+	// Retry-After: <HTTP-date>
+	if t, err := time.Parse(time.RFC1123, header); err == nil {
+		return t
+	}
+	return time.Time{}
+}
+
+// isRateLimited reports whether resp signals a GitHub rate limit without
+// constructing the full error. Used in checkRetry (hot path).
+func isRateLimited(resp *http.Response) bool {
+	if resp == nil {
+		return false
+	}
+	return resp.Header.Get("Retry-After") != "" ||
+		resp.Header.Get("X-Ratelimit-Remaining") == "0"
+}
 
 // DefaultUserAgent is used when Options.UserAgent is empty. Callers
 // (notably the github-metrics action binary) typically override it with
@@ -98,7 +209,7 @@ func New(opts Options) *Client {
 	rc.RetryWaitMax = maxBackoff
 	rc.Logger = &slogAdapter{logger: opts.Logger}
 	rc.CheckRetry = checkRetry
-	rc.Backoff = retryablehttp.DefaultBackoff
+	rc.Backoff = rateLimitAwareBackoff
 	if opts.Transport != nil {
 		rc.HTTPClient.Transport = opts.Transport
 	}
@@ -225,11 +336,16 @@ func cloneOrNew(h http.Header) http.Header {
 	return h.Clone()
 }
 
-// checkRetry implements the project's retry policy: 5xx and 429 are
-// transient, 4xx (other than 429) is not, context cancellation/timeout
-// stops retrying immediately. retryablehttp's DefaultRetryPolicy is
-// close but treats 429 as definitive and ignores Retry-After — we
-// explicitly opt into both behaviors.
+// checkRetry implements the project's retry policy:
+//   - 5xx and 429: always retry (transient).
+//   - 403 with Retry-After header (GitHub secondary/abuse limit): retry.
+//   - 403 with x-ratelimit-remaining==0 (GitHub primary exhaustion): retry.
+//   - 403 without rate-limit headers (permission error): NOT retried.
+//   - Other 4xx: not retried.
+//   - Context cancellation/timeout: stop immediately.
+//
+// retryablehttp's DefaultRetryPolicy treats 429 as definitive and ignores
+// Retry-After — we explicitly opt into both behaviors here.
 func checkRetry(ctx context.Context, resp *http.Response, err error) (bool, error) {
 	if ctx.Err() != nil {
 		return false, ctx.Err()
@@ -248,10 +364,61 @@ func checkRetry(ctx context.Context, resp *http.Response, err error) (bool, erro
 	if resp.StatusCode == http.StatusTooManyRequests {
 		return true, nil
 	}
+	if resp.StatusCode == http.StatusForbidden && isRateLimited(resp) {
+		return true, nil
+	}
 	if resp.StatusCode >= 500 && resp.StatusCode <= 599 {
 		return true, nil
 	}
 	return false, nil
+}
+
+// rateLimitAwareBackoff is the project's Backoff function. It extends
+// retryablehttp.DefaultBackoff to also honor Retry-After and
+// x-ratelimit-reset on 403 responses (GitHub rate-limit signals).
+//
+// If the computed wait exceeds rateLimitBackoffCap, it returns the cap so
+// retryablehttp applies the cap duration — the caller will receive the last
+// response as-is after all retries are exhausted. Callers that need to
+// distinguish rate-limit exhaustion from permission errors should call
+// ClassifyRateLimit on the final non-2xx response.
+func rateLimitAwareBackoff(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
+	if resp != nil && resp.StatusCode == http.StatusForbidden {
+		// Secondary limit: Retry-After header.
+		if ra := resp.Header.Get("Retry-After"); ra != "" {
+			retryAt := parseRetryAfter(ra)
+			if !retryAt.IsZero() {
+				wait := time.Until(retryAt)
+				if wait > rateLimitBackoffCap {
+					return rateLimitBackoffCap
+				}
+				if wait > 0 {
+					return wait
+				}
+			}
+		}
+		// Primary limit: x-ratelimit-reset epoch.
+		if resp.Header.Get("X-Ratelimit-Remaining") == "0" {
+			if reset := resp.Header.Get("X-Ratelimit-Reset"); reset != "" {
+				if epoch, err := strconv.ParseInt(reset, 10, 64); err == nil && epoch > 0 {
+					wait := time.Until(time.Unix(epoch, 0))
+					if wait > rateLimitBackoffCap {
+						return rateLimitBackoffCap
+					}
+					if wait > 0 {
+						return wait
+					}
+				}
+			}
+		}
+	}
+	// Fall back to standard exponential backoff for 429/5xx/network errors.
+	mult := math.Pow(2, float64(attemptNum)) * float64(min)
+	sleep := time.Duration(mult)
+	if float64(sleep) != mult || sleep > max {
+		sleep = max
+	}
+	return sleep
 }
 
 // slogAdapter bridges retryablehttp's Logger interface onto slog.
