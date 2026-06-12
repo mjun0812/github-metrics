@@ -104,6 +104,11 @@ inputs:
     description: 'Configuration presets'
     required: false
 
+  config_rate_limit_guard:
+    description: 'Startup rate-limit gate'
+    default: 'off'
+    required: false
+
   config_timezone:
     description: 'Timezone for dates'
     required: false

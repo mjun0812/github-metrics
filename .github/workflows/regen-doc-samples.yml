@@ -166,6 +166,10 @@ jobs:
               --output svg
               --filename -
               --dryrun
+              # Strict rate-limit gate (#529): a batch regen must abort
+              # loudly when a pool is exhausted rather than ship a sample
+              # that silently lost rows mid-run (#522).
+              --plugin config_rate_limit_guard=fail
             )
             if [[ "${#extra_arr[@]}" -gt 0 ]]; then
               RUN_ARGS+=("${extra_arr[@]}")
