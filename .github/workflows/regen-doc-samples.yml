@@ -21,8 +21,8 @@ name: Regen doc samples
 #
 # Requirements:
 #   - METRICS_TOKEN secret: classic PAT with read:user + repo scopes.
-#     Passed to the render step as GITHUB_TOKEN so the binary can call
-#     the GitHub API. The workflow's built-in GITHUB_TOKEN is used only
+#     Passed to the render step as METRICS_TOKEN so the binary can
+#     call the GitHub API. The workflow's built-in GITHUB_TOKEN is used only
 #     for GHCR pull, git push, and the PR-creation API call.
 #   - GHCR image ghcr.io/mjun0812/github-metrics:<tag> must exist.
 #     The image is published by release.yml on every semver tag push.
@@ -104,7 +104,11 @@ jobs:
         # the image ships.
         shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.METRICS_TOKEN }}
+          # Passed under a non-reserved name: inside a job container
+          # the runner controls the GITHUB_* env namespace and a
+          # step-level GITHUB_TOKEN did not survive to the process
+          # (the binary saw an invalid value).
+          METRICS_TOKEN: ${{ secrets.METRICS_TOKEN }}
           SAMPLE_NAME: ${{ matrix.name }}
           SAMPLE_MODE: ${{ matrix.mode }}
           SAMPLE_EXTRA: ${{ matrix.extra }}
@@ -142,7 +146,7 @@ jobs:
               rm -f "$out"
               RUN_ARGS=(
                 "${BASE_ARGS[@]}"
-                --token-env GITHUB_TOKEN
+                --token-env METRICS_TOKEN
                 --output "$fmt"
                 --filename -
                 --dryrun
