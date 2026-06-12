@@ -47,6 +47,17 @@ RUN go build -trimpath \
     -ldflags="-s -w -X main.version=${VERSION}" \
     -o /out/metrics-cli ./cmd/metrics-cli
 
+# svg2png rasterizes a standalone metrics SVG to PNG through the same
+# internal/render.Browser + Resize chromedp path that --output png uses,
+# with zero API calls (#527). The regen-doc-samples render job ships it
+# alongside metrics-cli so it can fetch each sample's SVG once and derive
+# the PNG locally instead of running a second full API fetch. It is a
+# static CGO_ENABLED=0 binary (~few MB) so the image-size impact is
+# trivial.
+RUN go build -trimpath \
+    -ldflags="-s -w" \
+    -o /out/svg2png ./internal/tools/svg2png
+
 # --- Runtime stage --------------------------------------------------
 FROM debian:bookworm-slim
 
@@ -70,6 +81,11 @@ ENV METRICS_CHROME_PATH=/usr/bin/chromium
 # Binaries land at /usr/local/bin/, owned by root and mode 0755 so
 # the non-root runtime user can execute but not modify.
 COPY --from=build /out/metrics-cli /usr/local/bin/metrics-cli
+
+# svg2png is a developer/CI aid (regen-doc-samples render job, #527), not
+# part of the action / CLI contract. It shares the runtime's chromium via
+# METRICS_CHROME_PATH.
+COPY --from=build /out/svg2png /usr/local/bin/svg2png
 
 # Non-root user. uid 10001 sits outside the system range (0-999) and
 # the GitHub Actions runner range (1000-1999), avoiding collisions
