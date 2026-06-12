@@ -290,7 +290,11 @@ jobs:
           commit_msg=$(printf 'chore(docs): regenerate doc samples\n\nTriggered by workflow_dispatch on %s.\nUser: %s / Repo: %s / Tag: %s\nChanged files: %s' \
             "${short_sha}" "${COMMIT_USER}" "${COMMIT_REPO}" "${COMMIT_TAG}" "${COMMIT_COUNT}")
           git commit -m "${commit_msg}"
-          git push origin "${branch}"
+          # Force push: the branch is workflow-owned and keyed to the
+          # base sha, and a job rerun rebuilds it from scratch — a
+          # plain push would be rejected non-fast-forward by the
+          # previous attempt's push.
+          git push --force origin "${branch}"
 
       # The PR is created through the REST API via actions/github-script
       # because the self-hosted runner image does not ship the gh CLI
