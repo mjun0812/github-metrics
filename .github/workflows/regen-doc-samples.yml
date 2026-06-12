@@ -116,7 +116,14 @@ jobs:
           INPUT_REPO: ${{ inputs.repo }}
         run: |
           set -euo pipefail
-          echo "DEBUG token shape: prefix=${METRICS_TOKEN:0:4} len=${#METRICS_TOKEN}"
+          # The runner exports GITHUB_ACTIONS=true inside job
+          # containers, which flips the binary into Action mode
+          # (cmd/metrics-cli/main.go): CLI flags are ignored and the
+          # token is read from INPUT_TOKEN instead of --token-env.
+          # Unset it so the render keeps using the CLI path, exactly
+          # like the previous `docker run` (which passed no GITHUB_*
+          # env) did.
+          unset GITHUB_ACTIONS
           # The ARC runner environment may inject proxy settings that
           # break the container's egress; clear both cases explicitly
           # like the previous `docker run -e` invocation did (the
