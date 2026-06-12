@@ -142,6 +142,17 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 		data.Account = plugins.AccountUser
 	}
 
+	// Startup rate-limit gate (#529): refresh /rate_limit once (quota-free)
+	// and, per config_rate_limit_guard, wait for reset or fail fast when a
+	// pool is below the threshold — instead of starting a render that would
+	// silently degrade mid-run (#522). No-op when the mode is "off"
+	// (default), the token is mocked / NOT_NEEDED, or deps are absent. On a
+	// fail/wait-cap verdict the returned error aborts Compute before any
+	// plugin runs, so there is no partial Data to surface it through.
+	if err := runRateGate(ctx, req.Inputs, deps); err != nil {
+		return nil, err
+	}
+
 	pc := &plugins.PluginContext{
 		Settings:   deps.Settings,
 		Inputs:     mergeLogin(req.Inputs, req.Login),

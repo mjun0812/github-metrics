@@ -46,6 +46,7 @@ Global configuration and options
 | `config_animations` | Use CSS animations | `yes` | no | boolean |
 | `config_base64` | Base64-encoded images | `yes` | no | boolean |
 | `config_padding` | Output padding | `0, 8 + 11%` | no | string |
+| `config_rate_limit_guard` | Startup rate-limit gate | `off` | no | string |
 | `config_output` | Output format - `auto`: Template default (usually `svg` or `markdown`) - `svg`: SVG image - `png`: PNG image (animations not supported) - `jpeg`: JPEG image (animations and transparency not supported) - `json`: JSON data dump - `markdown`: Markdown rendered file - `markdown-pdf`: PDF from markdown rendered file - `insights`: Metrics Insights self-contained HTML file (not configurable) | `auto` | no | string |
 | `config_presets` | Configuration presets | `` | no | array |
 | `retries` | Retries in case of failures (for rendering) | `3` | no | number |
