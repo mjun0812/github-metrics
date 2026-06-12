@@ -116,6 +116,7 @@ jobs:
           INPUT_REPO: ${{ inputs.repo }}
         run: |
           set -euo pipefail
+          echo "DEBUG token shape: prefix=${METRICS_TOKEN:0:4} len=${#METRICS_TOKEN}"
           # The ARC runner environment may inject proxy settings that
           # break the container's egress; clear both cases explicitly
           # like the previous `docker run -e` invocation did (the
