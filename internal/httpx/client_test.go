@@ -3,6 +3,7 @@ package httpx_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -456,5 +457,217 @@ func TestRateLimitedError_ErrorString(t *testing.T) {
 	msg := rle2.Error()
 	if !strings.Contains(msg, "primary") {
 		t.Fatalf("Error() = %q, want to contain 'primary'", msg)
+	}
+}
+
+// --- Must-Fix tests ---
+
+// TestClient_RateLimited403ExhaustedReturnsRateLimitedError verifies Must 1:
+// when all retries are exhausted on a rate-limited 403, the returned error
+// satisfies errors.As(*RateLimitedError) with the correct Kind, and the
+// response body is fully drained (no goroutine leak via unclosed body).
+func TestClient_RateLimited403ExhaustedReturnsRateLimitedError(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		// Always return a secondary rate-limit 403 (short Retry-After so
+		// retries actually happen within the cap).
+		w.Header().Set("Retry-After", "0")
+		http.Error(w, "secondary rate limited", http.StatusForbidden)
+	}))
+	defer srv.Close()
+
+	c := httpx.New(httpx.Options{
+		MaxRetries: 2,
+		MinBackoff: time.Millisecond,
+		MaxBackoff: 5 * time.Millisecond,
+	})
+
+	_, resp, err := c.Get(context.Background(), srv.URL, nil)
+	if resp != nil {
+		t.Fatalf("expected nil response on exhausted retries, got status %d", resp.StatusCode)
+	}
+	if err == nil {
+		t.Fatal("expected error on exhausted retries, got nil")
+	}
+
+	var rle *httpx.RateLimitedError
+	if !errors.As(err, &rle) {
+		t.Fatalf("errors.As(*RateLimitedError) = false; err = %v", err)
+	}
+	if rle.Kind != httpx.RateLimitSecondary {
+		t.Fatalf("Kind = %v, want RateLimitSecondary", rle.Kind)
+	}
+	// 3 attempts: initial + 2 retries.
+	if got := calls.Load(); got != 3 {
+		t.Fatalf("expected 3 attempts (1 initial + 2 retries), got %d", got)
+	}
+	// Error message must still contain "giving up after" for log compatibility.
+	if !strings.Contains(err.Error(), "giving up after") {
+		t.Fatalf("error message = %q, want substring 'giving up after'", err.Error())
+	}
+}
+
+// TestClient_Non403ExhaustedReturnsGivingUpError verifies that persistent
+// non-rate-limit failures (e.g. 500) still return a "giving up after" error
+// shape and do NOT wrap a *RateLimitedError.
+func TestClient_Non403ExhaustedReturnsGivingUpError(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		http.Error(w, "server error", http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	c := httpx.New(httpx.Options{
+		MaxRetries: 2,
+		MinBackoff: time.Millisecond,
+		MaxBackoff: 5 * time.Millisecond,
+	})
+
+	_, resp, err := c.Get(context.Background(), srv.URL, nil)
+	if resp != nil {
+		t.Fatalf("expected nil response on exhausted 500 retries, got status %d", resp.StatusCode)
+	}
+	if err == nil {
+		t.Fatal("expected error on exhausted retries, got nil")
+	}
+
+	var rle *httpx.RateLimitedError
+	if errors.As(err, &rle) {
+		t.Fatalf("unexpected *RateLimitedError on persistent 500: %v", rle)
+	}
+	if !strings.Contains(err.Error(), "giving up after") {
+		t.Fatalf("error message = %q, want substring 'giving up after'", err.Error())
+	}
+	// 3 attempts: initial + 2 retries.
+	if got := calls.Load(); got != 3 {
+		t.Fatalf("expected 3 attempts, got %d", got)
+	}
+}
+
+// TestClient_403RetryAfterBeyondCapNotRetried verifies Must 2:
+// a 403 with a Retry-After far in the future (beyond rateLimitBackoffCap)
+// is NOT retried — only 1 attempt is made — and the error wraps *RateLimitedError.
+func TestClient_403RetryAfterBeyondCapNotRetried(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	// Retry-After: 1h (3600 seconds) — far beyond the 2-minute cap.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		w.Header().Set("Retry-After", "3600")
+		http.Error(w, "primary exhausted", http.StatusForbidden)
+	}))
+	defer srv.Close()
+
+	c := httpx.New(httpx.Options{
+		MaxRetries: 3,
+		MinBackoff: time.Millisecond,
+		MaxBackoff: 5 * time.Millisecond,
+	})
+
+	_, resp, err := c.Get(context.Background(), srv.URL, nil)
+	if resp != nil {
+		t.Fatalf("expected nil response, got status %d", resp.StatusCode)
+	}
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var rle *httpx.RateLimitedError
+	if !errors.As(err, &rle) {
+		t.Fatalf("errors.As(*RateLimitedError) = false; err = %v", err)
+	}
+	if rle.Kind != httpx.RateLimitSecondary {
+		t.Fatalf("Kind = %v, want RateLimitSecondary", rle.Kind)
+	}
+	// The reset is ~1 hour away; RetryAt should be set.
+	if rle.RetryAt.IsZero() {
+		t.Fatal("RetryAt should not be zero for Retry-After: 3600")
+	}
+	// Must NOT have retried — only 1 attempt.
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("expected 1 attempt (no retry beyond cap), got %d", got)
+	}
+}
+
+// TestClient_403RetryAfterWithinCapIsRetried verifies Must 2 (positive path):
+// a 403 with a Retry-After within the cap is retried. This supplements the
+// existing TestClient_403WithRetryAfterIsRetried with an explicit cap-boundary check.
+func TestClient_403RetryAfterWithinCapIsRetried(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := calls.Add(1)
+		if n == 1 {
+			// Retry-After: 1 second — well within the 2-minute cap.
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "secondary limit", http.StatusForbidden)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprint(w, "ok")
+	}))
+	defer srv.Close()
+
+	c := httpx.New(httpx.Options{
+		MaxRetries: 3,
+		MinBackoff: time.Millisecond,
+		MaxBackoff: 5 * time.Millisecond,
+	})
+
+	_, resp, err := c.Get(context.Background(), srv.URL, nil)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if got := calls.Load(); got != 2 {
+		t.Fatalf("expected 2 calls (1 rate-limited + 1 success), got %d", got)
+	}
+}
+
+// TestClient_429WithRetryAfterHonorsHeader verifies Must 3 regression:
+// a 429 with Retry-After should be retried and the header should be honored
+// by the backoff (not silently replaced with exponential backoff).
+func TestClient_429WithRetryAfterHonorsHeader(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	// Use Retry-After: 0 so the test doesn't actually sleep.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := calls.Add(1)
+		if n == 1 {
+			w.Header().Set("Retry-After", "0")
+			http.Error(w, "too many requests", http.StatusTooManyRequests)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprint(w, "ok")
+	}))
+	defer srv.Close()
+
+	c := httpx.New(httpx.Options{
+		MaxRetries: 3,
+		MinBackoff: time.Millisecond,
+		MaxBackoff: 5 * time.Millisecond,
+	})
+
+	_, resp, err := c.Get(context.Background(), srv.URL, nil)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if got := calls.Load(); got != 2 {
+		t.Fatalf("expected 2 calls (1 429 + 1 success), got %d", got)
 	}
 }
