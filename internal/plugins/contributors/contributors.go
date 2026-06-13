@@ -92,6 +92,7 @@ func (p *contributorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 				if fallback, ok := fetchContributorList(ctx, pc, r.Owner, r.Name, in.ignored); ok {
 					list = fallback
 				}
+				pc.Data.AppendError(fmt.Errorf("contributors: /stats/contributors unavailable for %s/%s (stats fetch failed)", r.Owner, r.Name))
 			}
 		}
 		return &Result{
