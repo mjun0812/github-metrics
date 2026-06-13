@@ -229,12 +229,26 @@ func writeGraphChart(b *strings.Builder, series []ChartPoint, values []int, labe
 	}
 
 	fmt.Fprintf(b, `<svg class="stargazers-graph" xmlns="http://www.w3.org/2000/svg" width="480" height="180" viewBox="0 0 480 180" role="img" aria-label="%s">`, partials.EscapeXML(label))
-	// Y axis (dashed) + X axis (solid baseline), matching upstream's
-	// faint grey rgba(127,127,127) axis colors.
+	// Vertical Y axis (left dashed) + bottom solid baseline, matching
+	// upstream's faint grey rgba(127,127,127) axis colors.
 	fmt.Fprintf(b, `<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"></line>`, left, top, left, top+plotH)
 	fmt.Fprintf(b, `<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="rgba(127, 127, 127, .8)"></line>`, left, top+plotH, left+plotW, top+plotH)
-	fmt.Fprintf(b, `<text x="%.1f" y="%.1f" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">%d</text>`, left-4, top+4, maxV)
-	fmt.Fprintf(b, `<text x="%.1f" y="%.1f" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">%d</text>`, left-4, top+plotH, minV)
+
+	// Horizontal dashed grid (#542): upstream's chartist line chart
+	// draws a stack of intermediate Y-grid rows so the reader can read
+	// off plot values without guessing. The previous implementation
+	// emitted only the topmost (max) and bottom (min) Y labels with no
+	// gridlines in between, so the chart looked unreferenced. Five
+	// evenly-spaced rows (incl. max/min) keeps the loop trivial and
+	// matches the upstream visual density.
+	const numGrid = 5
+	for k := 0; k < numGrid; k++ {
+		frac := float64(k) / float64(numGrid-1)
+		y := top + plotH*frac
+		val := maxV - int(float64(maxV-minV)*frac+0.5)
+		fmt.Fprintf(b, `<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"></line>`, left, y, left+plotW, y)
+		fmt.Fprintf(b, `<text x="%.1f" y="%.1f" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">%d</text>`, left-4, y+4, val)
+	}
 
 	// Area fill first so the line + markers paint on top of it.
 	b.WriteString(`<path d="`)
