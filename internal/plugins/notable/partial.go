@@ -146,7 +146,15 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	)
 	b.WriteString(`<div class="row organization contributions">`)
 	for _, c := range r.List {
-		fmt.Fprintf(&b, `<div class="organization contribution %s ">`, contributionLevel(c))
+		// `indepth` lets the CSS apply gauge-friendly flex + max-width
+		// only to chips that host the per-repo stat gauges; default-mode
+		// chips (icon + @owner) stay tight on the text per upstream
+		// (#538).
+		indepthClass := ""
+		if c.Indepth {
+			indepthClass = "indepth "
+		}
+		fmt.Fprintf(&b, `<div class="organization contribution %s %s">`, contributionLevel(c), indepthClass)
 		avatarClass := "avatar"
 		if c.Organization {
 			avatarClass = "organization avatar"
