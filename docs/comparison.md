@@ -376,7 +376,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 
 | 効果あり (repo mode で出力が変わる)                                                                                                                     | 効果なし (chrome と byte 同一になる)                                                                                                                                                                                                                                                                                                                            |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `people`<br>新規 `<section data-section="people">` を追加<br><br>`contributors_contributions`<br>chrome の contributors セクションに adds/dels 列を追加 | `achievements` / `activity` / `calendar` / `habits`<br>`isocalendar` / `notable` / `reactions` / `repositories`<br>`sponsorships` / `starlists` / `stars` / `topics`<br><br>`contributors` / `languages`: chrome 側ですでに描画<br>`projects` / `sponsors`: データ無し<br>`stargazers`: M7 MVP は totals のみで partial は空文字列<br>`traffic`: partial 未登録 |
+| `people`<br>新規 `<section data-section="people">` を追加<br><br>`contributors_contributions`<br>chrome の contributors セクションに adds/dels 列を追加 | `achievements` / `activity` / `calendar` / `habits`<br>`isocalendar` / `notable` / `reactions` / `repositories`<br>`sponsorships` / `starlists` / `stars` / `topics`<br><br>`contributors`: chrome 側ですでに描画<br>`languages`: upstream parity で `plugin_languages=yes` 明示が必要 (#537)<br>`projects` / `sponsors`: データ無し<br>`stargazers`: M7 MVP は totals のみで partial は空文字列<br>`traffic`: partial 未登録 |
 
 「効果なし」側の plugin (18 個) は `plugin-<slug>-repo.svg` を生成しても `plugin-base-repo.svg` と byte 同一になります（md5 一致を実測で確認済）。これは未実装ではなく:
 
@@ -428,10 +428,10 @@ level=WARN msg="plugin contributors is only supported in repository mode (curren
 | 種別            | upstream (mjun0812)                                                                   | Go 実装                                                                     |
 | --------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | repository 総合 | <img src="reference_examples/metrics.repository.svg" width="420">                     | <img src="examples/metrics-repository.svg" width="420">                     |
-| languages       | <img src="reference_examples/metrics.repository.plugin.languages.svg" width="420">    | <img src="examples/plugin-base-repo.svg" width="420">                       |
+| languages       | <img src="reference_examples/metrics.repository.plugin.languages.svg" width="420">    | — 別サンプルなし（upstream parity で `plugin_languages=yes` 明示が必要、#537）|
 | contributors    | <img src="reference_examples/metrics.repository.plugin.contributors.svg" width="420"> | <img src="examples/plugin-contributors-repo-contributions.svg" width="420"> |
 | people          | <img src="reference_examples/metrics.repository.plugin.people.svg" width="420">       | <img src="examples/plugin-people-repo-types.svg" width="420">               |
 | stargazers      | <img src="reference_examples/metrics.repository.plugin.stargazers.svg" width="420">   | <img src="examples/plugin-base-repo.svg" width="420">                       |
 
-> ⚠ Go 実装側は repository mode の plugin 単体サンプルを「base chrome と byte 差が出るもの」だけに絞っているため、languages / stargazers のように chrome に統合される plugin は `plugin-base-repo.svg`（chrome 全体）を対応サンプルとして並べています。詳細は上記「repository mode サンプル一覧」を参照。
+> ⚠ Go 実装側は repository mode の plugin 単体サンプルを「base chrome と byte 差が出るもの」だけに絞っているため、stargazers のように chrome に統合される plugin は `plugin-base-repo.svg`（chrome 全体）を対応サンプルとして並べています。`languages` は upstream parity で plugin として扱うため (#537)、repo mode 単体サンプルは作成していません。詳細は上記「repository mode サンプル一覧」を参照。
 > ℹ️ activity / traffic は upstream(mjun0812) 側が v3.34 のバグ・データ不足で生成できず、reference からは削除済みのため本表から除外しています。
