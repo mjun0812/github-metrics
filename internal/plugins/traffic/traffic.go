@@ -2,22 +2,27 @@
 // repository view counts from REST /repos/{owner}/{repo}/traffic/views
 // for every repository in base.Computed.RepositoryList. The endpoint
 // requires the `repo` OAuth scope; without it the plugin returns
-// Skipped=true. Repositories that return 403 (owner-only endpoint) are
-// dropped silently and aggregation continues.
+// Skipped=true. Repositories that fail are dropped and aggregation
+// continues; up to three aggregated AppendErrors are recorded (one per
+// non-zero bucket: rate limited / forbidden / failed) so the degradation
+// is observable via Result.Errors / JSON output.
 package traffic
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"golang.org/x/sync/errgroup"
 
 	"github.com/mjun0812/github-metrics/internal/config"
+	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
@@ -74,8 +79,9 @@ type rawTraffic struct {
 }
 
 // Run gates on `repo` scope, then parallel-fetches views for every
-// repository in Computed.RepositoryList. 403 (collaborator
-// permissions) is treated as drop-and-continue per contract §12.
+// repository in Computed.RepositoryList. Failures are drop-and-continue
+// per contract §12; failures are classified into rate-limited /
+// forbidden / failed buckets and surfaced via AppendError.
 func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
@@ -113,6 +119,22 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	var total TrafficView
 	var mu sync.Mutex
 
+	// Three drop counters — all aggregated into at most one AppendError each
+	// after the loop so a 50-repo list does not spam 50 log entries.
+	//
+	// Classification:
+	//   droppedRateLimit — errors.As(*httpx.RateLimitedError) on the error
+	//     path (retry exhaustion or beyond-cap single attempt), or a response
+	//     with rate-limit headers classified by httpx.ClassifyRateLimit(resp)
+	//     (defense-in-depth for responses that reach the resp != nil path).
+	//   droppedForbidden — resp.StatusCode == 403 with no rate-limit headers
+	//     (plain permission error, not retried by the httpx layer).
+	//   droppedFailed — everything else: transport errors, nil resp, other
+	//     non-2xx, and JSON-decode failures.
+	var droppedRateLimit atomic.Int64
+	var droppedForbidden atomic.Int64
+	var droppedFailed atomic.Int64
+
 	g, gctx := errgroup.WithContext(ctx)
 	g.SetLimit(8)
 	for _, repo := range repos {
@@ -121,24 +143,40 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 			path := fmt.Sprintf("/repos/%s/traffic/views", urlPath(repo.NameWithOwner))
 			body, resp, err := pc.REST.Get(gctx, path, nil)
 			if err != nil {
-				// Transport error — drop and continue per the
-				// best-effort contract.
-				//nolint:nilerr // intentional: per-repo failure does not abort the aggregation
-				return nil
+				// Transport error or rate-limit retry exhaustion.
+				// Use errors.As to detect *httpx.RateLimitedError (set by the
+				// httpx ErrorHandler on retry exhaustion or beyond-cap responses).
+				var rle *httpx.RateLimitedError
+				if errors.As(err, &rle) {
+					droppedRateLimit.Add(1)
+				} else {
+					droppedFailed.Add(1)
+				}
+				return nil //nolint:nilerr // intentional: per-repo failure does not abort the aggregation
 			}
 			if resp == nil {
+				droppedFailed.Add(1)
 				return nil
 			}
+			// Defense-in-depth: classify any response that carries rate-limit
+			// headers (e.g. a beyond-cap 403 that flowed through the resp path).
+			if httpx.ClassifyRateLimit(resp) != nil {
+				droppedRateLimit.Add(1)
+				return nil //nolint:nilerr // intentional: *RateLimitedError is not propagated; the drop counter carries the signal
+			}
 			if resp.StatusCode == http.StatusForbidden {
+				// Plain 403: no rate-limit headers (already ruled out above).
+				droppedForbidden.Add(1)
 				return nil
 			}
 			if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+				droppedFailed.Add(1)
 				return nil
 			}
 			var raw rawTraffic
 			if err := json.Unmarshal(body, &raw); err != nil {
-				//nolint:nilerr // intentional: decode failure → drop one repo
-				return nil
+				droppedFailed.Add(1)
+				return nil //nolint:nilerr // intentional: decode failure → drop one repo
 			}
 			mu.Lock()
 			views[repo.NameWithOwner] = TrafficView(raw)
@@ -149,6 +187,19 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 		})
 	}
 	_ = g.Wait()
+
+	// Surface aggregated errors (at most one per non-zero bucket) so operators
+	// can distinguish a correct empty state from a degraded one.
+	repoCount := len(repos)
+	if rl := droppedRateLimit.Load(); rl > 0 {
+		pc.Data.AppendError(fmt.Errorf("traffic: views unavailable for %d/%d repos (rate limited)", rl, repoCount))
+	}
+	if fb := droppedForbidden.Load(); fb > 0 {
+		pc.Data.AppendError(fmt.Errorf("traffic: views unavailable for %d/%d repos (forbidden)", fb, repoCount))
+	}
+	if fl := droppedFailed.Load(); fl > 0 {
+		pc.Data.AppendError(fmt.Errorf("traffic: views unavailable for %d/%d repos (failed)", fl, repoCount))
+	}
 
 	return &Result{
 		Views:     views,
