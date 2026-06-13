@@ -85,6 +85,27 @@ func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any
 		return nil, nil
 	}
 	in := parseInputs(pc.Inputs)
+	// Upstream parity (#537): every plugin defaults to off — see
+	// org_repo/source/app/metrics/index.mjs:143-148. The repository
+	// template's fixed partial order
+	// (assets/templates/repository/partials/_.json) includes
+	// "languages", and base.runRepository populates a single-repo
+	// RepositoryList regardless of the `base=` value, so without
+	// this gate every repo-mode sample with `--plugin base=` still
+	// leaked a `<section data-section="languages">` (plugin-base-repo
+	// / plugin-people-repo* / plugin-contributors-repo-contributions
+	// / metrics-repository). Gating here also keeps the JSON output
+	// upstream-parity by omitting languages from data.plugins when
+	// the toggle is off.
+	if !truthy(pc.Inputs["plugin_languages"]) {
+		return &Result{
+			Skipped:       true,
+			SkippedReason: "plugin_languages not enabled",
+			Sections:      in.sections,
+			Favorites:     []plugins.LanguageStat{},
+			Colors:        map[string]string{},
+		}, nil
+	}
 	repos := pc.Data.Computed.RepositoryList
 	if len(repos) == 0 {
 		return &Result{

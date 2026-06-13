@@ -122,40 +122,29 @@
       "weeks": []
     },
     "languages": {
-      "colors": {
-        "Go": "#00ADD8",
-        "Other": "#cccccc"
-      },
+      "colors": {},
       "details": null,
-      "favorites": [
-        {
-          "color": "#00ADD8",
-          "count": 1,
-          "name": "Go",
-          "size": 1,
-          "value": 1
-        }
-      ],
-      "mode": "repo",
+      "favorites": [],
+      "mode": "",
       "mostly": {
-        "color": "#00ADD8",
-        "count": 1,
-        "name": "Go",
-        "size": 1,
-        "value": 1
+        "color": "",
+        "count": 0,
+        "name": "",
+        "size": 0,
+        "value": 0
       },
       "other": {
-        "color": "#cccccc",
+        "color": "",
         "count": 0,
-        "name": "Other",
+        "name": "",
         "size": 0,
         "value": 0
       },
       "sections": [
         "most-used"
       ],
-      "skipped": false,
-      "unique": 1
+      "skipped": true,
+      "unique": 0
     },
     "languages.indepth": {
       "analyzed": [],
