@@ -61,7 +61,7 @@ func runWith(t *testing.T, repos []plugins.Repository, inputs map[string]any) *l
 // descending byte order, Mostly = Favorites[0], non-zero Value.
 func TestRun_Normal(t *testing.T) {
 	t.Parallel()
-	r := runWith(t, octocatRepos(), nil)
+	r := runWith(t, octocatRepos(), map[string]any{"plugin_languages": true})
 	if r.Skipped {
 		t.Fatalf("expected Skipped=false, got Skipped=%v reason=%q", r.Skipped, r.SkippedReason)
 	}
@@ -92,6 +92,7 @@ func TestRun_Normal(t *testing.T) {
 func TestRun_LimitOtherAggregation(t *testing.T) {
 	t.Parallel()
 	r := runWith(t, octocatRepos(), map[string]any{
+		"plugin_languages":       true,
 		"plugin_languages_limit": 3,
 	})
 	if r.Skipped {
@@ -114,6 +115,7 @@ func TestRun_LimitOtherAggregation(t *testing.T) {
 func TestRun_Alias(t *testing.T) {
 	t.Parallel()
 	r := runWith(t, octocatRepos(), map[string]any{
+		"plugin_languages":         true,
 		"plugin_languages_aliases": "TypeScript:JavaScript",
 	})
 	if r.Skipped {
@@ -150,12 +152,45 @@ func TestRun_Alias(t *testing.T) {
 // TestRun_EmptyRepositories asserts the no-repository path skips.
 func TestRun_EmptyRepositories(t *testing.T) {
 	t.Parallel()
-	r := runWith(t, nil, nil)
+	r := runWith(t, nil, map[string]any{"plugin_languages": true})
 	if !r.Skipped {
 		t.Errorf("Skipped = false, want true; result=%+v", r)
 	}
-	if r.SkippedReason == "" {
-		t.Errorf("SkippedReason empty, want a non-empty hint")
+	if r.SkippedReason != "no repositories" {
+		t.Errorf("SkippedReason = %q, want %q", r.SkippedReason, "no repositories")
+	}
+}
+
+// TestRun_PluginDisabled asserts the upstream-parity plugin gate
+// (#537): with `plugin_languages` absent from the inputs map, Run
+// returns a Skipped Result whose reason names the toggle, and the
+// per-language fields are left in their zero state so the JSON
+// envelope stays small. Mirrors the gating pattern used by notable /
+// sponsors / topics / starlists / projects.
+func TestRun_PluginDisabled(t *testing.T) {
+	t.Parallel()
+	r := runWith(t, octocatRepos(), map[string]any{})
+	if !r.Skipped {
+		t.Errorf("Skipped = false, want true; result=%+v", r)
+	}
+	if r.SkippedReason != "plugin_languages not enabled" {
+		t.Errorf("SkippedReason = %q, want %q", r.SkippedReason, "plugin_languages not enabled")
+	}
+	if len(r.Favorites) != 0 {
+		t.Errorf("Favorites len = %d, want 0", len(r.Favorites))
+	}
+}
+
+// TestRun_PluginExplicitlyFalse covers the case where the input is
+// present but resolves to a falsy value — the gate still fires.
+func TestRun_PluginExplicitlyFalse(t *testing.T) {
+	t.Parallel()
+	r := runWith(t, octocatRepos(), map[string]any{"plugin_languages": false})
+	if !r.Skipped {
+		t.Errorf("Skipped = false, want true; result=%+v", r)
+	}
+	if r.SkippedReason != "plugin_languages not enabled" {
+		t.Errorf("SkippedReason = %q, want %q", r.SkippedReason, "plugin_languages not enabled")
 	}
 }
 
@@ -164,6 +199,7 @@ func TestRun_EmptyRepositories(t *testing.T) {
 func TestRun_Ignored(t *testing.T) {
 	t.Parallel()
 	r := runWith(t, octocatRepos(), map[string]any{
+		"plugin_languages":         true,
 		"plugin_languages_ignored": "Markdown",
 		"plugin_languages_limit":   3,
 	})
