@@ -315,7 +315,7 @@ func TestPartial_ClassicTwoColumns(t *testing.T) {
 		// first bar and any day-1 bar additionally carries a
 		// `<div class="bottom">{month}</div>` caption (#541), matching
 		// `org_repo/source/templates/classic/partials/stargazers.ejs`.
-		`</div>1<div class="bottom">Apr</div></div>`,
+		`</div>1<div class="bottom">Apr.</div></div>`,
 		`<div class="bottom">May</div>`,
 	} {
 		if !strings.Contains(got, marker) {
