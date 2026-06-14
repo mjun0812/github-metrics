@@ -257,18 +257,23 @@
     fill: currentColor;
     font-size: 13px;
   }
+  /* Match upstream's notable gauge sizing/positioning verbatim (#539):
+   * scale(1.4) blows the 16x16 viewBox up to ~22.4x22.4 and the icon's
+   * -9px / +8px margin lands it on the gauge's bottom-right. The flex
+   * basis added in 6cc1dbe (#519/#512) made gauge and icon separate
+   * flex items, so the icon's negative margin pulled away from its own
+   * gauge and collided with the next one — the indepth overlap. */
   .contribution .gauge {
-    flex: 0 0 16px;
-    margin: 0 4px;
+    margin: 0 6px;
     color: inherit;
+    transform: scale(1.4) translateY(1px);
   }
   .contribution .icon {
-    flex: 0 0 10px;
     fill: currentColor;
     width: 10px;
     height: 10px;
-    margin-left: -12px;
-    margin-top: 14px;
+    margin-left: -9px;
+    margin-top: 8px;
     color: inherit;
     filter: brightness(.5);
   }
