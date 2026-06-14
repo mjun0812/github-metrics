@@ -27,8 +27,8 @@ on:
 
 jobs:
   smoke-x86:
-    name: x86_64 smoke (self-hosted Linux X64)
-    runs-on: [self-hosted, Linux, X64]
+    name: x86_64 smoke (home-k3s-runner)
+    runs-on: home-k3s-runner
     timeout-minutes: 5
     steps:
       - uses: mjun0812/github-metrics@v1.0.0
