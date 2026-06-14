@@ -24,75 +24,89 @@
               <svg xmlns="http://www.w3.org/2000/svg" class="stargazers-graph" width="480" height="180" viewBox="0 0 480 180" role="img" aria-label="Total stargazers graph">
                 <line x1="32.0" y1="12.0" x2="32.0" y2="126.0" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
                 <line x1="32.0" y1="126.0" x2="466.0" y2="126.0" stroke="rgba(127, 127, 127, .8)"/>
+                <line x1="32.0" y1="12.0" x2="466.0" y2="12.0" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
                 <text x="28.0" y="16.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
-                  1606
+                  1609
                 </text>
-                <text x="28.0" y="126.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
-                  1551
+                <line x1="32.0" y1="40.5" x2="466.0" y2="40.5" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
+                <text x="28.0" y="44.5" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
+                  1595
                 </text>
-                <path d="M32.0,126.0L65.4,119.8L98.8,105.3L132.2,92.8L165.5,84.5L198.9,76.3L232.3,68.0L265.7,63.8L299.1,55.5L332.5,36.9L365.8,24.4L399.2,14.1L432.6,12.0L466.0,12.0L466.0,126.0L432.6,126.0L399.2,126.0L365.8,126.0L332.5,126.0L299.1,126.0L265.7,126.0L232.3,126.0L198.9,126.0L165.5,126.0L132.2,126.0L98.8,126.0L65.4,126.0L32.0,126.0Z" fill="rgba(88, 166, 255, .1)"/>
-                <path d="M32.0,126.0L65.4,119.8L98.8,105.3L132.2,92.8L165.5,84.5L198.9,76.3L232.3,68.0L265.7,63.8L299.1,55.5L332.5,36.9L365.8,24.4L399.2,14.1L432.6,12.0L466.0,12.0" fill="transparent" stroke="#87ceeb" stroke-width="2"/>
+                <line x1="32.0" y1="69.0" x2="466.0" y2="69.0" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
+                <text x="28.0" y="73.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
+                  1581
+                </text>
+                <line x1="32.0" y1="97.5" x2="466.0" y2="97.5" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
+                <text x="28.0" y="101.5" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
+                  1568
+                </text>
+                <line x1="32.0" y1="126.0" x2="466.0" y2="126.0" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
+                <text x="28.0" y="130.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
+                  1554
+                </text>
+                <path d="M32.0,126.0L65.4,111.5L98.8,99.1L132.2,90.8L165.5,82.5L198.9,74.2L232.3,70.0L265.7,61.7L299.1,43.1L332.5,30.7L365.8,20.3L399.2,18.2L432.6,12.0L466.0,12.0L466.0,126.0L432.6,126.0L399.2,126.0L365.8,126.0L332.5,126.0L299.1,126.0L265.7,126.0L232.3,126.0L198.9,126.0L165.5,126.0L132.2,126.0L98.8,126.0L65.4,126.0L32.0,126.0Z" fill="rgba(88, 166, 255, .1)"/>
+                <path d="M32.0,126.0L65.4,111.5L98.8,99.1L132.2,90.8L165.5,82.5L198.9,74.2L232.3,70.0L265.7,61.7L299.1,43.1L332.5,30.7L365.8,20.3L399.2,18.2L432.6,12.0L466.0,12.0" fill="transparent" stroke="#87ceeb" stroke-width="2"/>
                 <circle cx="32.0" cy="126.0" r="2" fill="#106cbc"/>
                 <text x="32.0" y="120.0" fill="rgba(127, 127, 127, .8)" text-anchor="start" font-size="10">
-                  1551
+                  1554
                 </text>
-                <circle cx="65.4" cy="119.8" r="2" fill="#106cbc"/>
-                <circle cx="98.8" cy="105.3" r="2" fill="#106cbc"/>
-                <text x="98.8" y="99.3" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  1561
+                <circle cx="65.4" cy="111.5" r="2" fill="#106cbc"/>
+                <circle cx="98.8" cy="99.1" r="2" fill="#106cbc"/>
+                <text x="98.8" y="93.1" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  1567
                 </text>
-                <circle cx="132.2" cy="92.8" r="2" fill="#106cbc"/>
-                <circle cx="165.5" cy="84.5" r="2" fill="#106cbc"/>
-                <text x="165.5" y="78.5" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  1571
+                <circle cx="132.2" cy="90.8" r="2" fill="#106cbc"/>
+                <circle cx="165.5" cy="82.5" r="2" fill="#106cbc"/>
+                <text x="165.5" y="76.5" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  1575
                 </text>
-                <circle cx="198.9" cy="76.3" r="2" fill="#106cbc"/>
-                <circle cx="232.3" cy="68.0" r="2" fill="#106cbc"/>
-                <text x="232.3" y="62.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  1579
+                <circle cx="198.9" cy="74.2" r="2" fill="#106cbc"/>
+                <circle cx="232.3" cy="70.0" r="2" fill="#106cbc"/>
+                <text x="232.3" y="64.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  1581
                 </text>
-                <circle cx="265.7" cy="63.8" r="2" fill="#106cbc"/>
-                <circle cx="299.1" cy="55.5" r="2" fill="#106cbc"/>
-                <text x="299.1" y="49.5" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  1585
+                <circle cx="265.7" cy="61.7" r="2" fill="#106cbc"/>
+                <circle cx="299.1" cy="43.1" r="2" fill="#106cbc"/>
+                <text x="299.1" y="37.1" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  1594
                 </text>
-                <circle cx="332.5" cy="36.9" r="2" fill="#106cbc"/>
-                <circle cx="365.8" cy="24.4" r="2" fill="#106cbc"/>
-                <text x="365.8" y="18.4" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  1600
+                <circle cx="332.5" cy="30.7" r="2" fill="#106cbc"/>
+                <circle cx="365.8" cy="20.3" r="2" fill="#106cbc"/>
+                <text x="365.8" y="14.3" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  1605
                 </text>
-                <circle cx="399.2" cy="14.1" r="2" fill="#106cbc"/>
+                <circle cx="399.2" cy="18.2" r="2" fill="#106cbc"/>
                 <circle cx="432.6" cy="12.0" r="2" fill="#106cbc"/>
                 <text x="432.6" y="6.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  1606
+                  1609
                 </text>
                 <circle cx="466.0" cy="12.0" r="2" fill="#106cbc"/>
                 <text x="466.0" y="6.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
-                  1606
+                  1609
                 </text>
                 <text x="32.0" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 32.0 138.0)">
-                  May 31
+                  Jun 1
                 </text>
                 <text x="98.8" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 98.8 138.0)">
-                  Jun 2
+                  Jun 3
                 </text>
                 <text x="165.5" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 165.5 138.0)">
-                  Jun 4
+                  Jun 5
                 </text>
                 <text x="232.3" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 232.3 138.0)">
-                  Jun 6
+                  Jun 7
                 </text>
                 <text x="299.1" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 299.1 138.0)">
-                  Jun 8
+                  Jun 9
                 </text>
                 <text x="365.8" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 365.8 138.0)">
-                  Jun 10
+                  Jun 11
                 </text>
                 <text x="432.6" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 432.6 138.0)">
-                  Jun 12
+                  Jun 13
                 </text>
                 <text x="466.0" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 466.0 138.0)">
-                  Jun 13
+                  Jun 14
                 </text>
               </svg>
               <h3>
@@ -101,75 +115,89 @@
               <svg xmlns="http://www.w3.org/2000/svg" class="stargazers-graph" width="480" height="180" viewBox="0 0 480 180" role="img" aria-label="New stargazers per day graph">
                 <line x1="32.0" y1="12.0" x2="32.0" y2="126.0" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
                 <line x1="32.0" y1="126.0" x2="466.0" y2="126.0" stroke="rgba(127, 127, 127, .8)"/>
+                <line x1="32.0" y1="12.0" x2="466.0" y2="12.0" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
                 <text x="28.0" y="16.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
                   9
                 </text>
-                <text x="28.0" y="126.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
-                  0
-                </text>
-                <path d="M32.0,50.0L65.4,88.0L98.8,37.3L132.2,50.0L165.5,75.3L198.9,75.3L232.3,75.3L265.7,100.7L299.1,75.3L332.5,12.0L365.8,50.0L399.2,62.7L432.6,113.3L466.0,126.0L466.0,126.0L432.6,126.0L399.2,126.0L365.8,126.0L332.5,126.0L299.1,126.0L265.7,126.0L232.3,126.0L198.9,126.0L165.5,126.0L132.2,126.0L98.8,126.0L65.4,126.0L32.0,126.0Z" fill="rgba(88, 166, 255, .1)"/>
-                <path d="M32.0,50.0L65.4,88.0L98.8,37.3L132.2,50.0L165.5,75.3L198.9,75.3L232.3,75.3L265.7,100.7L299.1,75.3L332.5,12.0L365.8,50.0L399.2,62.7L432.6,113.3L466.0,126.0" fill="transparent" stroke="#87ceeb" stroke-width="2"/>
-                <circle cx="32.0" cy="50.0" r="2" fill="#106cbc"/>
-                <text x="32.0" y="44.0" fill="rgba(127, 127, 127, .8)" text-anchor="start" font-size="10">
-                  6
-                </text>
-                <circle cx="65.4" cy="88.0" r="2" fill="#106cbc"/>
-                <circle cx="98.8" cy="37.3" r="2" fill="#106cbc"/>
-                <text x="98.8" y="31.3" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                <line x1="32.0" y1="40.5" x2="466.0" y2="40.5" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
+                <text x="28.0" y="44.5" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
                   7
                 </text>
-                <circle cx="132.2" cy="50.0" r="2" fill="#106cbc"/>
+                <line x1="32.0" y1="69.0" x2="466.0" y2="69.0" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
+                <text x="28.0" y="73.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
+                  4
+                </text>
+                <line x1="32.0" y1="97.5" x2="466.0" y2="97.5" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
+                <text x="28.0" y="101.5" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
+                  2
+                </text>
+                <line x1="32.0" y1="126.0" x2="466.0" y2="126.0" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"/>
+                <text x="28.0" y="130.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
+                  0
+                </text>
+                <path d="M32.0,88.0L65.4,37.3L98.8,50.0L132.2,75.3L165.5,75.3L198.9,75.3L232.3,100.7L265.7,75.3L299.1,12.0L332.5,50.0L365.8,62.7L399.2,113.3L432.6,88.0L466.0,126.0L466.0,126.0L432.6,126.0L399.2,126.0L365.8,126.0L332.5,126.0L299.1,126.0L265.7,126.0L232.3,126.0L198.9,126.0L165.5,126.0L132.2,126.0L98.8,126.0L65.4,126.0L32.0,126.0Z" fill="rgba(88, 166, 255, .1)"/>
+                <path d="M32.0,88.0L65.4,37.3L98.8,50.0L132.2,75.3L165.5,75.3L198.9,75.3L232.3,100.7L265.7,75.3L299.1,12.0L332.5,50.0L365.8,62.7L399.2,113.3L432.6,88.0L466.0,126.0" fill="transparent" stroke="#87ceeb" stroke-width="2"/>
+                <circle cx="32.0" cy="88.0" r="2" fill="#106cbc"/>
+                <text x="32.0" y="82.0" fill="rgba(127, 127, 127, .8)" text-anchor="start" font-size="10">
+                  3
+                </text>
+                <circle cx="65.4" cy="37.3" r="2" fill="#106cbc"/>
+                <circle cx="98.8" cy="50.0" r="2" fill="#106cbc"/>
+                <text x="98.8" y="44.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  6
+                </text>
+                <circle cx="132.2" cy="75.3" r="2" fill="#106cbc"/>
                 <circle cx="165.5" cy="75.3" r="2" fill="#106cbc"/>
                 <text x="165.5" y="69.3" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
                   4
                 </text>
                 <circle cx="198.9" cy="75.3" r="2" fill="#106cbc"/>
-                <circle cx="232.3" cy="75.3" r="2" fill="#106cbc"/>
-                <text x="232.3" y="69.3" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  4
+                <circle cx="232.3" cy="100.7" r="2" fill="#106cbc"/>
+                <text x="232.3" y="94.7" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  2
                 </text>
-                <circle cx="265.7" cy="100.7" r="2" fill="#106cbc"/>
-                <circle cx="299.1" cy="75.3" r="2" fill="#106cbc"/>
-                <text x="299.1" y="69.3" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  4
+                <circle cx="265.7" cy="75.3" r="2" fill="#106cbc"/>
+                <circle cx="299.1" cy="12.0" r="2" fill="#106cbc"/>
+                <text x="299.1" y="6.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  9
                 </text>
-                <circle cx="332.5" cy="12.0" r="2" fill="#106cbc"/>
-                <circle cx="365.8" cy="50.0" r="2" fill="#106cbc"/>
-                <text x="365.8" y="44.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  6
+                <circle cx="332.5" cy="50.0" r="2" fill="#106cbc"/>
+                <circle cx="365.8" cy="62.7" r="2" fill="#106cbc"/>
+                <text x="365.8" y="56.7" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  5
                 </text>
-                <circle cx="399.2" cy="62.7" r="2" fill="#106cbc"/>
-                <circle cx="432.6" cy="113.3" r="2" fill="#106cbc"/>
-                <text x="432.6" y="107.3" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
-                  1
+                <circle cx="399.2" cy="113.3" r="2" fill="#106cbc"/>
+                <circle cx="432.6" cy="88.0" r="2" fill="#106cbc"/>
+                <text x="432.6" y="82.0" fill="rgba(127, 127, 127, .8)" text-anchor="middle" font-size="10">
+                  3
                 </text>
                 <circle cx="466.0" cy="126.0" r="2" fill="#106cbc"/>
                 <text x="466.0" y="120.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">
                   0
                 </text>
                 <text x="32.0" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 32.0 138.0)">
-                  May 31
+                  Jun 1
                 </text>
                 <text x="98.8" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 98.8 138.0)">
-                  Jun 2
+                  Jun 3
                 </text>
                 <text x="165.5" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 165.5 138.0)">
-                  Jun 4
+                  Jun 5
                 </text>
                 <text x="232.3" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 232.3 138.0)">
-                  Jun 6
+                  Jun 7
                 </text>
                 <text x="299.1" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 299.1 138.0)">
-                  Jun 8
+                  Jun 9
                 </text>
                 <text x="365.8" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 365.8 138.0)">
-                  Jun 10
+                  Jun 11
                 </text>
                 <text x="432.6" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 432.6 138.0)">
-                  Jun 12
+                  Jun 13
                 </text>
                 <text x="466.0" y="138.0" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 466.0 138.0)">
-                  Jun 13
+                  Jun 14
                 </text>
               </svg>
             </section>
