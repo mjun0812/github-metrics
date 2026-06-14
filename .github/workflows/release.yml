@@ -47,7 +47,7 @@ env:
 jobs:
   docker-smoke:
     name: Smoke-test the production Docker image
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: home-k3s-runner
     steps:
       - uses: actions/checkout@v4
         with:
@@ -83,7 +83,7 @@ jobs:
       matrix:
         include:
           - platform: linux/amd64
-            runner: [self-hosted, Linux, X64]
+            runner: home-k3s-runner
             arch: amd64
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
@@ -173,7 +173,7 @@ jobs:
   merge-manifest:
     name: Merge multi-arch manifest + cosign sign
     needs: build-image
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: home-k3s-runner
     if: ${{ github.event.inputs.dry_run != 'true' }}
     steps:
       - name: Extract semver tag
@@ -249,7 +249,7 @@ jobs:
   release-binary:
     name: Cross-compile + sign + publish CLI binaries
     needs: docker-smoke
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: home-k3s-runner
     steps:
       - uses: actions/checkout@v4
         with:
@@ -354,7 +354,7 @@ jobs:
   update-floating-tag:
     name: Advance vMAJOR floating tag (stable releases only)
     needs: [merge-manifest, release-binary]
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: home-k3s-runner
     # Only run on tag pushes (not workflow_dispatch from a branch) and
     # only when not in dry-run mode. The decision step below also
     # filters pre-releases (FR-004) and back-port releases (FR-005).
