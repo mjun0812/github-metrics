@@ -370,7 +370,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 
 `--template repository --user mjun0812 --repo flash-attention-prebuild-wheels` で生成した repository-mode サンプル一覧です。`scripts/gen-doc-samples.sh` の repository mode セクションで `make docs-samples` 実行時に自動再生成されます。
 
-`--template repository` は `assets/templates/repository/partials/_.json` の固定 partial 順 (`base.header` → `introduction` → `followup` → `languages` → `projects` → `pagespeed` → `stargazers` → `people` → `activity` → `posts` → `rss` → `screenshot` → `stock` → `crypto` → `contributors` → `sponsors` → `licenses`) でレンダリングします。base 系セクション (`base.header` / `introduction` / `activity` / `contributors` / `languages`) は `base.runRepository` が常に値を populate するため、ユーザーが `--plugin <slug>=yes` を渡さなくても chrome として表示されます。
+`--template repository` は `assets/templates/repository/partials/_.json` の固定 partial 順 (`base.header` → `introduction` → `followup` → `languages` → `projects` → `pagespeed` → `stargazers` → `people` → `activity` → `posts` → `rss` → `screenshot` → `stock` → `crypto` → `contributors` → `sponsors` → `licenses`) でレンダリングします。base 系セクション (`base.header` / `introduction` / `activity` / `contributors`) は `base.runRepository` が常に値を populate するため、ユーザーが `--plugin <slug>=yes` を渡さなくても chrome として表示されます。`languages` は `base.runRepository` が値を populate するものの、`plugin_languages=yes` を明示しない限り `Run()` 冒頭の gate で Skipped となり描画されません (#537、upstream parity)。
 
 そのうえで、`--plugin <slug>=yes` トグルが追加の効果を持つ plugin は **`mjun0812/flash-attention-prebuild-wheels` で実測した限り** 以下に限定されます:
 
@@ -380,7 +380,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 
 「効果なし」側の plugin (18 個) は `plugin-<slug>-repo.svg` を生成しても `plugin-base-repo.svg` と byte 同一になります（md5 一致を実測で確認済）。これは未実装ではなく:
 
-1. base 系セクションは plugin toggle 不要で常に描画される
+1. base 系セクション (`base.header` / `introduction` / `activity` / `contributors`) は plugin toggle 不要で常に描画される (`languages` は `plugin_languages=yes` 明示が必要 — #537)
 2. partial が template の `_.json` にない / partial が空文字列 / 対象データが無い
 3. plugin 自体が user mode 専用（mode gate により Skipped を返す）
 
