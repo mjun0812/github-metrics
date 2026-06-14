@@ -18,6 +18,12 @@ func init() {
 // in the stargazers section header (EJS line 4).
 const starOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25zm0 2.445L6.615 5.5a.75.75 0 01-.564.41l-3.097.45 2.24 2.184a.75.75 0 01.216.664l-.528 3.084 2.769-1.456a.75.75 0 01.698 0l2.77 1.456-.53-3.084a.75.75 0 01.216-.664l2.24-2.183-3.096-.45a.75.75 0 01-.564-.41L8 2.694v.001z"></path></svg>`
 
+// upstreamMonths mirrors `plugins.stargazers.months` in
+// `source/plugins/stargazers/index.mjs:64`. Indexed 1..12 (slot 0 unused)
+// so the month names rendered in `<div class="bottom">` match upstream
+// byte-for-byte (`Apr.` not `Apr`, `May` not `May.`, full `June`/`July`).
+var upstreamMonths = [13]string{"", "Jan.", "Feb.", "Mar.", "Apr.", "May", "June", "July", "Aug.", "Sep.", "Oct.", "Nov.", "Dec."}
+
 // bgLevel maps a 0..1 share to the upstream
 // `var(--color-calendar-graph-day-L{1..4}-bg)` ramp via Math.ceil(p/0.25).
 func bgLevel(p float64) int {
@@ -100,16 +106,33 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	return b.String(), nil
 }
 
-// writeClassicCharts renders the two upstream chart-bars columns:
-// cumulative "Total stargazers" and per-bucket "New stargazers". The Go
-// series is bucketed by month (stargazers.buildSeries), so the second
-// column is labelled "per month" rather than upstream's daily "per day",
-// and each bar's x-axis label is the month (the date is always the 1st
-// of its month, which previously rendered as a meaningless "1").
+// writeClassicCharts renders the two upstream chart-bars columns over
+// the 14-day window from buildSeriesAt (#508). Per-bar `<span class="value">`
+// text differs between columns to match upstream
+// `org_repo/source/templates/classic/partials/stargazers.ejs:25-46`:
+//
+//   - Total column shows the current cumulative count only when it
+//     changed since the previous bar, so flat days render empty (no
+//     noisy repeated labels).
+//   - Increments column shows a signed "+N" only when N != 0.
 func writeClassicCharts(b *strings.Builder, series []ChartPoint) {
 	totals, news := chartValues(series)
-	writeChartColumn(b, "Total stargazers", series, totals)
-	writeChartColumn(b, "New stargazers per day", series, news)
+	prevTotal := 0
+	totalLabel := func(_, cur int) string {
+		if cur == prevTotal {
+			return ""
+		}
+		prevTotal = cur
+		return partials.FormatCount(int64(cur))
+	}
+	incLabel := func(_, cur int) string {
+		if cur == 0 {
+			return ""
+		}
+		return "+" + partials.FormatCount(int64(cur))
+	}
+	writeChartColumn(b, "Total stargazers", series, totals, totalLabel)
+	writeChartColumn(b, "New stargazers per day", series, news, incLabel)
 }
 
 func chartValues(series []ChartPoint) ([]int, []int) {
@@ -124,9 +147,16 @@ func chartValues(series []ChartPoint) ([]int, []int) {
 
 // writeChartColumn emits one `<section class="column chart">` containing
 // a chart-bars block whose bar heights are normalised within `values`
-// (matching upstream's `(value-min)/(max-min)` ramp). Each bar is
-// labelled with its month; a zero value renders an empty `.value`.
-func writeChartColumn(b *strings.Builder, title string, series []ChartPoint, values []int) {
+// (matching upstream's `(value-min)/(max-min)` ramp). Every bar carries
+// the day-of-month as bare text — NOT inside `<span class="label">`,
+// which is the unrelated blue pill-badge class that previously turned
+// each x-axis tick into a wide rounded chip and overflowed the column —
+// and the first bar plus every month boundary (day == 1) adds a
+// `<div class="bottom">{month}</div>` caption, mirroring upstream
+// `stargazers.ejs:32-35`. valueFn picks the per-bar `.value` text so
+// the Total and Increments columns can use different display rules
+// without forking the loop.
+func writeChartColumn(b *strings.Builder, title string, series []ChartPoint, values []int, valueFn func(i, cur int) string) {
 	b.WriteString(`<section class="column chart">`)
 	fmt.Fprintf(b, `<h3>%s</h3>`, title)
 
@@ -144,37 +174,19 @@ func writeChartColumn(b *strings.Builder, title string, series []ChartPoint, val
 		denom = 1
 	}
 
-	// Thin the annotations so month names don't overlap on the narrow
-	// half-width columns (same stride idea as the graph chart's labels):
-	// every bar still draws, but only ~maxLabels of them carry a month
-	// label + value. The month label is emitted as bare text — like
-	// upstream's `<%= d %>` — NOT inside `<span class="label">`, which is
-	// the unrelated blue pill-badge class (.label{background;padding;…})
-	// that previously turned each x-axis tick into a wide rounded chip
-	// and overflowed the column.
-	const maxLabels = 7
-	stride := 1
-	if len(series) > maxLabels {
-		stride = (len(series) + maxLabels - 1) / maxLabels
-	}
-
 	b.WriteString(`<div class="chart-bars">`)
 	for i, pt := range series {
 		v := values[i]
 		share := 0.05 + 0.95*float64(v-minV)/float64(denom)
-		labeled := i == 0 || i == len(series)-1 || i%stride == 0
-		valueStr := ""
-		label := ""
-		if labeled {
-			if v != 0 {
-				valueStr = partials.FormatCount(int64(v))
-			}
-			label = pt.Date.UTC().Format("2")
+		day := pt.Date.UTC().Day()
+		bottom := ""
+		if i == 0 || day == 1 {
+			bottom = fmt.Sprintf(`<div class="bottom">%s</div>`, upstreamMonths[int(pt.Date.UTC().Month())])
 		}
 		fmt.Fprintf(
 			b,
-			`<div class="entry"><span class="value">%s</span><div class="bar" style="height: %.0fpx; background-color: var(--color-calendar-graph-day-L%d-bg)"></div>%s</div>`,
-			valueStr, share*50, bgLevel(share), label,
+			`<div class="entry"><span class="value">%s</span><div class="bar" style="height: %.0fpx; background-color: var(--color-calendar-graph-day-L%d-bg)"></div>%d%s</div>`,
+			valueFn(i, v), share*50, bgLevel(share), day, bottom,
 		)
 	}
 	b.WriteString(`</div>`)

@@ -302,18 +302,21 @@ func TestPartial_ClassicChartBarsMaintained(t *testing.T) {
 }
 
 // TestPartial_ClassicTwoColumns asserts the classic chart renders the
-// two upstream columns (cumulative Total + per-bucket New) with month
-// x-axis labels rather than the old single column labelled with a
-// meaningless day-of-month "1".
+// two upstream columns (cumulative Total + per-bucket New) with
+// upstream-equivalent day-of-month labels plus month-boundary captions
+// (#541), rather than the day-only stride-thinned labels of #508.
 func TestPartial_ClassicTwoColumns(t *testing.T) {
 	t.Parallel()
 	got := renderPartial(t, "classic")
 	for _, marker := range []string{
 		`<h3>Total stargazers</h3>`,
 		`<h3>New stargazers per day</h3>`,
-		// Month labels are emitted as bare text after the bar (upstream
-		// style), NOT as the blue pill `<span class="label">` badge.
-		`</div>1</div>`,
+		// Day-of-month labels sit as bare text inside `.entry`; the
+		// first bar and any day-1 bar additionally carries a
+		// `<div class="bottom">{month}</div>` caption (#541), matching
+		// `org_repo/source/templates/classic/partials/stargazers.ejs`.
+		`</div>1<div class="bottom">Apr.</div></div>`,
+		`<div class="bottom">May</div>`,
 	} {
 		if !strings.Contains(got, marker) {
 			t.Fatalf("classic partial missing %q:\n%s", marker, got)
@@ -328,9 +331,17 @@ func TestPartial_ClassicTwoColumns(t *testing.T) {
 		t.Fatalf("want 2 chart-bars columns, got %d:\n%s", n, got)
 	}
 	// New-stargazers column: Apr is the first bucket (cumulative 1 →
-	// +1), May adds 2 (cumulative 3 → +2). The increment "2" must appear.
-	if !strings.Contains(got, `<span class="value">2</span>`) {
+	// +1), May adds 2 (cumulative 3 → +2). The signed increment "+2"
+	// must appear (#541 switched the Increments column to upstream's
+	// `f(value, {sign:true})` shape).
+	if !strings.Contains(got, `<span class="value">+2</span>`) {
 		t.Errorf("expected a +2 increment in the New column:\n%s", got)
+	}
+	// Total column: the second bar (May, cumulative 3) carries the
+	// raw count, exercising the "label only when the value changed"
+	// rule from writeClassicCharts.
+	if !strings.Contains(got, `<span class="value">3</span>`) {
+		t.Errorf("expected the Total column to label the changed cumulative count 3:\n%s", got)
 	}
 }
 
