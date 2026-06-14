@@ -352,6 +352,13 @@ func TestPartial_GraphChart(t *testing.T) {
 	if strings.Contains(got, `class="chart-bars"`) {
 		t.Fatalf("graph partial should not render classic chart-bars:\n%s", got)
 	}
+	// Pin the upstream-equivalent dashed grid (#542): each of the two
+	// graph charts emits one vertical Y-axis line + 5 horizontal grid
+	// rows (numGrid in writeGraphChart), so the partial must contain
+	// at least (1+5)*2 = 12 `stroke-dasharray="2,2"` occurrences.
+	if n := strings.Count(got, `stroke-dasharray="2,2"`); n < 12 {
+		t.Errorf("graph partial should carry the horizontal dashed grid (>= 12 dashed lines for 2 charts), got %d:\n%s", n, got)
+	}
 }
 
 func renderPartial(t *testing.T, chartsType string) string {
