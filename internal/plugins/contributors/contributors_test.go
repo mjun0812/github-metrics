@@ -422,24 +422,32 @@ func TestPartial_ContributionsDisplayMode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
+	// Upstream parity (#540): chips are <div class="label">, login is
+	// raw text, and the commit count rides on a <div class="contributions">
+	// badge with an inline commits octicon — matching
+	// org_repo/source/templates/repository/partials/contributors.ejs.
+	// Adds/dels stay in <span class="label-right"> as a Go-specific
+	// extension while contributors_contributions is unadopted upstream.
 	for _, want := range []string{
-		"contributor-contributions",
-		`<span class="login">octocat</span><span class="label-right">2</span>`,
+		`<div class="label" data-login="octocat">`,
+		`<div class="contributions">2 <svg`,
 		"++15 --5",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("expected %q in %q", want, got)
 		}
 	}
-	if strings.Contains(got, "octocat2 commits") || strings.Contains(got, "octocat 2 commits") {
+	if strings.Contains(got, "octocat2") {
 		t.Fatalf("login must not fuse with commit count; got %q", got)
 	}
 }
 
 // TestPartial_LoginWithDigitsUsesSeparateBadge pins #421 directly:
 // the bug surfaced with login "mjun0812" because the rendered SVG
-// dropped the whitespace between the login span and the commits chip.
-// The chip layout keeps the count in a separate label-right badge.
+// dropped the whitespace between the login token and the commits chip.
+// The upstream-equivalent layout (#540) places the commit count in a
+// separate <div class="contributions"> badge, so digit-only logins
+// can never fuse with the count even though the login is now raw text.
 func TestPartial_LoginWithDigitsHasExplicitDelimiter(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
@@ -458,13 +466,13 @@ func TestPartial_LoginWithDigitsHasExplicitDelimiter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
-	if !strings.Contains(got, `<span class="login">mjun0812</span><span class="label-right">67</span>`) {
+	if !strings.Contains(got, `<div class="contributions">67 <svg`) {
 		t.Fatalf("expected separate count badge; got %q", got)
 	}
 	if strings.Contains(got, "mjun081267") {
 		t.Fatalf("regression: login and commit count fused into %q", "mjun081267")
 	}
-	for _, want := range []string{`label-right">67</span>`, "++1234 --56"} {
+	for _, want := range []string{`<div class="contributions">67 <svg`, "++1234 --56"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("expected %q in %q", want, got)
 		}
@@ -498,8 +506,9 @@ func TestPartial_StatsPendingOmitsDiffSpan(t *testing.T) {
 	if strings.Contains(got, "++") {
 		t.Fatalf("StatsPending must omit the add/del diff span; got %q", got)
 	}
-	// The commit count still carries the contribution signal.
-	if !strings.Contains(got, `label-right">3</span>`) {
+	// The commit count still carries the contribution signal via the
+	// upstream <div class="contributions"> badge (#540).
+	if !strings.Contains(got, `<div class="contributions">3 <svg`) {
 		t.Fatalf("commit count from minimal stub should still render; got %q", got)
 	}
 }
@@ -521,7 +530,7 @@ func TestPartial_DefaultDisplayHidesContributionNumbers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
-	for _, notWant := range []string{"contributor-contributions", "2 commits", "++15 --5"} {
+	for _, notWant := range []string{"2 commits", "++15 --5", `class="contributions"`} {
 		if strings.Contains(got, notWant) {
 			t.Fatalf("did not expect %q in %q", notWant, got)
 		}
