@@ -394,6 +394,66 @@ func TestPartial_BasicTruncatesLongHandle(t *testing.T) {
 	}
 }
 
+// TestPartial_DefaultModeOmitsIndepthClass pins the chip class contract
+// (#538): default-mode chips (icon + @owner) carry only the contribution
+// level token, so the CSS in assets/templates/classic/style.css can
+// keep them tight on the text. Mirrors upstream's
+// `.contribution.organization` (no flex grow / max-width).
+func TestPartial_DefaultModeOmitsIndepthClass(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.SetPlugin(notable.Name, &notable.Result{
+		List: []notable.NotableContrib{{
+			Name:           "huggingface",
+			AvatarURL:      "https://example.invalid/avatar.png",
+			Organization:   true,
+			Login:          "huggingface",
+			Repo:           "huggingface/accelerate",
+			Type:           "owner",
+			StargazerCount: 12000,
+			// Indepth left false on purpose: default-mode chip.
+		}},
+	})
+	pc := &templates.PartialContext{Data: data}
+	got, err := notable.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	if strings.Contains(got, "indepth") {
+		t.Errorf("default-mode chip must not carry the `indepth` class; got:\n%s", got)
+	}
+}
+
+// TestPartial_IndepthModeAddsIndepthClass pins the indepth-class
+// emission so the CSS gauge layout (flex + max-width) only applies to
+// chips that host the gauge stack (#538).
+func TestPartial_IndepthModeAddsIndepthClass(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.SetPlugin(notable.Name, &notable.Result{
+		List: []notable.NotableContrib{{
+			Name:           "huggingface/accelerate",
+			AvatarURL:      "https://example.invalid/avatar.png",
+			Organization:   true,
+			Login:          "huggingface",
+			Repo:           "huggingface/accelerate",
+			Type:           "owner",
+			StargazerCount: 12000,
+			Indepth:        true,
+			Commits:        42,
+			Percentage:     0.5,
+		}},
+	})
+	pc := &templates.PartialContext{Data: data}
+	got, err := notable.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	if !strings.Contains(got, "indepth") {
+		t.Errorf("indepth chip must carry the `indepth` class; got:\n%s", got)
+	}
+}
+
 func TestPartial_IndepthGolden(t *testing.T) {
 	data := plugins.NewData()
 	data.SetPlugin(notable.Name, &notable.Result{
@@ -441,7 +501,7 @@ func TestPartial_IndepthGolden(t *testing.T) {
 	// maintainer contribution-level class, and the gauge visualizations.
 	for _, marker := range []string{
 		`class="row organization contributions"`,
-		`class="organization contribution s "`,
+		`class="organization contribution s indepth "`,
 		`@huggingface/accelerate`,
 		`class="gauge"`,
 	} {
