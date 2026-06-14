@@ -18,6 +18,12 @@ func init() {
 // in the stargazers section header (EJS line 4).
 const starOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25zm0 2.445L6.615 5.5a.75.75 0 01-.564.41l-3.097.45 2.24 2.184a.75.75 0 01.216.664l-.528 3.084 2.769-1.456a.75.75 0 01.698 0l2.77 1.456-.53-3.084a.75.75 0 01.216-.664l2.24-2.183-3.096-.45a.75.75 0 01-.564-.41L8 2.694v.001z"></path></svg>`
 
+// upstreamMonths mirrors `plugins.stargazers.months` in
+// `source/plugins/stargazers/index.mjs:64`. Indexed 1..12 (slot 0 unused)
+// so the month names rendered in `<div class="bottom">` match upstream
+// byte-for-byte (`Apr.` not `Apr`, `May` not `May.`, full `June`/`July`).
+var upstreamMonths = [13]string{"", "Jan.", "Feb.", "Mar.", "Apr.", "May", "June", "July", "Aug.", "Sep.", "Oct.", "Nov.", "Dec."}
+
 // bgLevel maps a 0..1 share to the upstream
 // `var(--color-calendar-graph-day-L{1..4}-bg)` ramp via Math.ceil(p/0.25).
 func bgLevel(p float64) int {
@@ -112,11 +118,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 func writeClassicCharts(b *strings.Builder, series []ChartPoint) {
 	totals, news := chartValues(series)
 	prevTotal := 0
-	totalLabel := func(i, cur int) string {
-		if i == 0 {
-			prevTotal = cur
-			return partials.FormatCount(int64(cur))
-		}
+	totalLabel := func(_, cur int) string {
 		if cur == prevTotal {
 			return ""
 		}
@@ -179,7 +181,7 @@ func writeChartColumn(b *strings.Builder, title string, series []ChartPoint, val
 		day := pt.Date.UTC().Day()
 		bottom := ""
 		if i == 0 || day == 1 {
-			bottom = fmt.Sprintf(`<div class="bottom">%s</div>`, pt.Date.UTC().Format("Jan"))
+			bottom = fmt.Sprintf(`<div class="bottom">%s</div>`, upstreamMonths[int(pt.Date.UTC().Month())])
 		}
 		fmt.Fprintf(
 			b,
