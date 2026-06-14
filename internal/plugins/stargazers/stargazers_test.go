@@ -361,6 +361,53 @@ func TestPartial_GraphChart(t *testing.T) {
 	}
 }
 
+// TestPartial_ChartistOutputIdenticalToGraph pins the deprecated-alias
+// contract at the partial layer (#543). parseChartsType in stargazers.go
+// already normalises `chartist` to `graph`, and
+// TestRun_ChartsTypeChartistOutputIdenticalToGraph guards the Result
+// shape — this guard goes the full Run → Partial round-trip so any
+// future Partial branch on Result.Charts.Type would be caught before
+// it reaches users. The Run pass is what feeds the normalised
+// Charts.Type into Partial; constructing Result manually via
+// renderPartial would skip parseChartsType and is not the realistic
+// production path.
+func TestPartial_ChartistOutputIdenticalToGraph(t *testing.T) {
+	t.Parallel()
+	const mockResponse = `{"data":{"viewer":{"repositories":{"totalCount":1,"nodes":[{"nameWithOwner":"octocat/hello-world","stargazerCount":2,"stargazers":{"totalCount":2,"edges":[{"starredAt":"2026-05-02T00:00:00Z"},{"starredAt":"2026-04-01T00:00:00Z"}]}}]}}}}`
+
+	runAndRender := func(t *testing.T, chartsType string) string {
+		t.Helper()
+		mux := mocks.NewGraphQLMux(t)
+		mux.OnBody("ViewerStargazersRepos", http.StatusOK, mockResponse)
+		pc := mocks.NewPluginContext(
+			t,
+			mocks.WithGraphQL(mux),
+			mocks.WithInputs(map[string]any{
+				"plugin_stargazers":             true,
+				"plugin_stargazers_charts_type": chartsType,
+			}),
+		)
+		out, err := stargazers.Plugin.Run(context.Background(), pc)
+		if err != nil {
+			t.Fatalf("Run(%s): %v", chartsType, err)
+		}
+		r := out.(*stargazers.Result)
+		data := plugins.NewData()
+		data.SetPlugin("stargazers", r)
+		got, err := stargazers.Partial(context.Background(), &templates.PartialContext{Data: data})
+		if err != nil {
+			t.Fatalf("Partial(%s): %v", chartsType, err)
+		}
+		return got
+	}
+
+	gotGraph := runAndRender(t, "graph")
+	gotChartist := runAndRender(t, "chartist")
+	if gotGraph != gotChartist {
+		t.Fatalf("chartist partial output differs from graph output\ngraph:\n%s\n\nchartist:\n%s", gotGraph, gotChartist)
+	}
+}
+
 func renderPartial(t *testing.T, chartsType string) string {
 	t.Helper()
 	data := plugins.NewData()

@@ -350,7 +350,7 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 
 | variant  | upstream (lowlighter)                                                            | upstream (mjun0812) | Go 実装                                                      |
 | -------- | -------------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------ |
-| chartist | <img src="original_examples/metrics.plugin.stargazers.chartist.svg" width="420"> | — 該当なし          | — 別サンプルなし（`graph` の deprecated alias でバイト同一） |
+| chartist | <img src="original_examples/metrics.plugin.stargazers.chartist.svg" width="420"> | — 該当なし          | — 別サンプルなし（`graph` の deprecated alias でバイト同一。`internal/plugins/stargazers/stargazers.go::parseChartsType` が `graph` に正規化し、`TestRun_ChartsTypeChartistOutputIdenticalToGraph` と `TestPartial_ChartistOutputIdenticalToGraph` で回帰防止 — #543） |
 | worldmap | <img src="original_examples/metrics.plugin.stargazers.worldmap.svg" width="420"> | — 該当なし          | — 未対応（Google Maps API 必須の backlog）                   |
 
 > ✅ Go 側は `plugin_stargazers_charts_type=graph` 対応（`chartist` は graph の deprecated alias でバイト同一）。`graph` は累積 stargazers と直近 14 日の日次 new stargazers を上下 2 段で描画する。Go サンプル: `plugin-stargazers-graph.svg`。worldmap は Google Maps API 必須の backlog（Skipped path、未対応）。
