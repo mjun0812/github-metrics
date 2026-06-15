@@ -107,7 +107,23 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	b.WriteString(`<section data-section="repositories">`)
 	fmt.Fprintf(&b, `<h2 class="field">%sFeatured repositories</h2>`, reposHeaderOcticon)
 	b.WriteString(`<div class="row"><section class="largeable-flex-wrap">`)
+	seen := make(map[string]struct{}, len(r.Featured)+len(r.Pinned))
 	for _, repo := range r.Featured {
+		seen[repo.NameWithOwner] = struct{}{}
+		writeRepoCard(&b, repo)
+	}
+	// #555: when `plugin_repositories_pinned` is enabled, append the
+	// pinned items after Featured, deduping by NameWithOwner. Mirrors
+	// upstream `org_repo/source/templates/classic/partials/repositories.ejs`
+	// which iterates a single `list` that accumulates featured + pinned
+	// items (`plugins/repositories/index.mjs` push loop). The no-token
+	// test path sets `r.Pinned = r.Featured`, which the dedupe collapses
+	// to a no-op so legacy fixtures stay byte-identical.
+	for _, repo := range r.Pinned {
+		if _, dup := seen[repo.NameWithOwner]; dup {
+			continue
+		}
+		seen[repo.NameWithOwner] = struct{}{}
 		writeRepoCard(&b, repo)
 	}
 	b.WriteString(`</section></div>`)
