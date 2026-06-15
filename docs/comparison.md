@@ -27,7 +27,7 @@ upstream に存在する各 plugin のサブモードについて、Go 実装の
 | `languages.details`              | ✅ 比較可              | `plugin-languages-details.svg`（本対応で追加）                                                                                                 |
 | `achievements.compact`           | ✅ 比較可              | `plugin-achievements-compact.svg`（本対応で追加）                                                                                              |
 | `isocalendar.fullyear`           | ✅ 比較可              | `plugin-isocalendar-fullyear.svg`（本対応で追加）                                                                                              |
-| `calendar.full`                  | ◐ 実装済み・生成待ち   | `plugin_calendar_limit=0` で全期間を取得。サンプルは次回 `make docs-samples` で生成                                                            |
+| `calendar.full`                  | ✅ 比較可              | `plugin-calendar-full.svg`。`plugin_calendar_limit=0` で全期間を取得                                                                           |
 | `repositories.pinned`            | ◐ partial 未配線       | `plugin_repositories_pinned=yes` を受け付けるが partial が variant を反映せず、無印と同じ Featured set (stars 降順) を描画する。follow-up 予定 |
 | `topics.icons`                   | ○ データ無し           | `plugin_topics_mode=icons` 対応。サンプルユーザーに topics 無しで空                                                                            |
 | `starlists.languages`            | ○ データ無し           | `plugin_starlists_languages` 対応。サンプルユーザーにデータ無しで空                                                                            |
@@ -193,11 +193,11 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 
 **variant: full** — upstream `calendar.full`
 
-| upstream (lowlighter)                                                      | upstream (mjun0812)                                                         | Go 実装                                                          |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| <img src="original_examples/metrics.plugin.calendar.full.svg" width="420"> | <img src="reference_examples/metrics.plugin.calendar.full.svg" width="420"> | — 生成待ち（`GITHUB_TOKEN` 付き `make docs-samples` で生成予定） |
+| upstream (lowlighter)                                                      | upstream (mjun0812)                                                         | Go 実装 (`plugin-calendar-full.svg`)                      |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.calendar.full.svg" width="420"> | <img src="reference_examples/metrics.plugin.calendar.full.svg" width="420"> | <img src="examples/plugin-calendar-full.svg" width="420"> |
 
-> ◐ Go 側は `plugin_calendar_limit=0` でアカウント作成年から現在年までを年単位で再取得する。`scripts/samples.json` / `scripts/gen-doc-samples.sh` には `plugin-calendar-full` を追加済みだが、この環境では `GITHUB_TOKEN` が未設定のため SVG/PNG は未生成。
+> Go 側は `plugin_calendar_limit=0` でアカウント作成年から現在年までを年単位で再取得する。`scripts/samples.json` / `scripts/gen-doc-samples.sh` の `plugin-calendar-full` エントリ経由で `regen-doc-samples.yml` が定期再生成する。
 
 ### habits
 
