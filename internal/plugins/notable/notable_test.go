@@ -394,11 +394,10 @@ func TestPartial_BasicTruncatesLongHandle(t *testing.T) {
 	}
 }
 
-// TestPartial_DefaultModeOmitsIndepthClass pins the chip class contract
-// (#538): default-mode chips (icon + @owner) carry only the contribution
-// level token, so the CSS in assets/templates/classic/style.css can
-// keep them tight on the text. Mirrors upstream's
-// `.contribution.organization` (no flex grow / max-width).
+// TestPartial_DefaultModeOmitsIndepthClass pins upstream parity (#557):
+// upstream `partials/notable.ejs` emits a single chip class for both
+// basic and indepth modes, with only the gauge SVGs differing. Default
+// chips must therefore not carry the divergent `indepth` token.
 func TestPartial_DefaultModeOmitsIndepthClass(t *testing.T) {
 	t.Parallel()
 	data := plugins.NewData()
@@ -424,10 +423,14 @@ func TestPartial_DefaultModeOmitsIndepthClass(t *testing.T) {
 	}
 }
 
-// TestPartial_IndepthModeAddsIndepthClass pins the indepth-class
-// emission so the CSS gauge layout (flex + max-width) only applies to
-// chips that host the gauge stack (#538).
-func TestPartial_IndepthModeAddsIndepthClass(t *testing.T) {
+// TestPartial_IndepthModeOmitsIndepthClass pins upstream parity (#557):
+// even in indepth mode the chip class must match upstream
+// `partials/notable.ejs` exactly (`organization contribution <level>`).
+// Earlier we attached an extra `indepth` token to scope a fixed-width
+// CSS rule, but that fixed width forced the gauge stack to collide
+// inside the box — so the marker is removed and the chip width becomes
+// content-driven again, matching upstream.
+func TestPartial_IndepthModeOmitsIndepthClass(t *testing.T) {
 	t.Parallel()
 	data := plugins.NewData()
 	data.SetPlugin(notable.Name, &notable.Result{
@@ -449,8 +452,8 @@ func TestPartial_IndepthModeAddsIndepthClass(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
-	if !strings.Contains(got, "indepth") {
-		t.Errorf("indepth chip must carry the `indepth` class; got:\n%s", got)
+	if strings.Contains(got, "indepth") {
+		t.Errorf("indepth chip must not carry the `indepth` class; got:\n%s", got)
 	}
 }
 
@@ -501,7 +504,7 @@ func TestPartial_IndepthGolden(t *testing.T) {
 	// maintainer contribution-level class, and the gauge visualizations.
 	for _, marker := range []string{
 		`class="row organization contributions"`,
-		`class="organization contribution s indepth "`,
+		`class="organization contribution s "`,
 		`@huggingface/accelerate`,
 		`class="gauge"`,
 	} {

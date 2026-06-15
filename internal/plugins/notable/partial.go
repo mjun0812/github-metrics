@@ -146,15 +146,13 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	)
 	b.WriteString(`<div class="row organization contributions">`)
 	for _, c := range r.List {
-		// `indepth` lets the CSS apply gauge-friendly flex + max-width
-		// only to chips that host the per-repo stat gauges; default-mode
-		// chips (icon + @owner) stay tight on the text per upstream
-		// (#538).
-		indepthClass := ""
-		if c.Indepth {
-			indepthClass = "indepth "
-		}
-		fmt.Fprintf(&b, `<div class="organization contribution %s %s">`, contributionLevel(c), indepthClass)
+		// Upstream `partials/notable.ejs` emits the same chip class for
+		// basic and indepth modes — only the gauge SVGs below differ.
+		// Adding an `indepth` marker here let our CSS force a 204 px
+		// fixed-width box (#545) that diverged from upstream's natural
+		// flex sizing and made the gauge stack collide (#557). Mirror
+		// upstream verbatim so the chip width is content-driven.
+		fmt.Fprintf(&b, `<div class="organization contribution %s ">`, contributionLevel(c))
 		avatarClass := "avatar"
 		if c.Organization {
 			avatarClass = "organization avatar"
