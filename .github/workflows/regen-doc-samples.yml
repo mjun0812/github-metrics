@@ -57,7 +57,7 @@ jobs:
   # ------------------------------------------------------------------ #
   setup:
     name: Build render matrix
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: home-k3s-runner
     outputs:
       matrix: ${{ steps.gen.outputs.matrix }}
     steps:
@@ -75,7 +75,7 @@ jobs:
   render:
     name: Render ${{ matrix.name }}
     needs: setup
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: home-k3s-runner
     container:
       image: ghcr.io/mjun0812/github-metrics:${{ inputs.tag }}
       credentials:
@@ -237,7 +237,7 @@ jobs:
   open-pr:
     name: Open draft PR
     needs: render
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: home-k3s-runner
     # Run even when some render matrix entries failed so that the
     # successful artifacts still land in a draft PR. download-artifact
     # silently skips missing names, and the diff check produces a PR
