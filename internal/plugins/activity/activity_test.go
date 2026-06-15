@@ -3,6 +3,7 @@ package activity_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -24,19 +25,21 @@ import (
 // by URL path prefix. Tests register `(status, body)` per prefix and
 // the mux serves the first matching entry.
 type restMux struct {
-	mu    sync.Mutex
-	calls int
-	resp  map[string]restResp
+	mu     sync.Mutex
+	calls  int
+	resp   map[string]restResp
+	byPath map[string]int
 }
 
 type restResp struct {
 	status int
 	body   string
 	err    error
+	header http.Header
 }
 
 func newRESTMux() *restMux {
-	return &restMux{resp: map[string]restResp{}}
+	return &restMux{resp: map[string]restResp{}, byPath: map[string]int{}}
 }
 
 func (m *restMux) on(path string, status int, body string) {
@@ -45,16 +48,38 @@ func (m *restMux) on(path string, status int, body string) {
 	m.resp[path] = restResp{status: status, body: body}
 }
 
+// onWithHeader registers a response carrying custom headers — used to
+// inject Retry-After so httpx.ClassifyRateLimit produces a
+// *httpx.RateLimitedError.
+func (m *restMux) onWithHeader(path string, status int, body string, header http.Header) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.resp[path] = restResp{status: status, body: body, header: header}
+}
+
+// pathCalls is a per-path call counter used to assert dedup / fetch
+// budget bounds.
+func (m *restMux) pathCalls(prefix string) int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.byPath[prefix]
+}
+
 func (m *restMux) RoundTrip(req *http.Request) (*http.Response, error) {
 	m.mu.Lock()
 	m.calls++
 	var hit *restResp
+	var hitPrefix string
 	for prefix, r := range m.resp {
 		if strings.HasPrefix(req.URL.RequestURI(), prefix) {
 			rr := r
 			hit = &rr
+			hitPrefix = prefix
 			break
 		}
+	}
+	if hit != nil {
+		m.byPath[hitPrefix]++
 	}
 	m.mu.Unlock()
 	if hit == nil {
@@ -63,7 +88,13 @@ func (m *restMux) RoundTrip(req *http.Request) (*http.Response, error) {
 	if hit.err != nil {
 		return nil, hit.err
 	}
-	return jsonResp(req, hit.status, hit.body), nil
+	resp := jsonResp(req, hit.status, hit.body)
+	for k, vs := range hit.header {
+		for _, v := range vs {
+			resp.Header.Add(k, v)
+		}
+	}
+	return resp, nil
 }
 
 func jsonResp(req *http.Request, status int, body string) *http.Response {
@@ -396,8 +427,10 @@ func TestRun_PullRequestStats_FallbackToPRDetail(t *testing.T) {
 
 // TestRun_PullRequestStats_FallbackFailsGracefully asserts a failing PR
 // detail fetch (4xx, 5xx, transport error) does not break the whole
-// plugin — the PR event is still surfaced with zeroed stats. A missing
-// diff line is far less destructive than a missing activity card.
+// plugin — the PR event is still surfaced, but with Files/Lines left
+// nil so the partial skips the "N files changed" line entirely.
+// Rendering "0 files changed ++0 --0" is the original #553 bug; keeping
+// the stats nil is the only safe degradation path.
 func TestRun_PullRequestStats_FallbackFailsGracefully(t *testing.T) {
 	t.Parallel()
 	now := time.Now().UTC()
@@ -417,10 +450,11 @@ func TestRun_PullRequestStats_FallbackFailsGracefully(t *testing.T) {
 	if len(r.Events) != 1 {
 		t.Fatalf("Events len = %d, want 1", len(r.Events))
 	}
-	// Fallback failed → zeroed stats but still surfaced.
+	// Fallback failed → Files/Lines stay nil so the partial does not
+	// render the misleading "0 files changed ++0 --0" details line.
 	pr := r.Events[0]
-	if pr.Files == nil || pr.Lines == nil {
-		t.Errorf("PR event should still carry zeroed Files/Lines; got %+v", pr)
+	if pr.Files != nil || pr.Lines != nil {
+		t.Errorf("failed fallback should leave Files/Lines nil; got Files=%+v Lines=%+v", pr.Files, pr.Lines)
 	}
 }
 
@@ -507,5 +541,133 @@ func TestRun_VisibilityDefaultIncludesPrivate(t *testing.T) {
 	r := out.(*activity.Result)
 	if len(r.Events) != 2 {
 		t.Fatalf("Events len = %d, want 2 (public + private); %+v", len(r.Events), r.Events)
+	}
+}
+
+// TestRun_PullRequestStats_DedupAcrossEvents asserts the /pulls/{n}
+// fallback is called exactly once per (repo, number) even when the
+// same PR surfaces through several PullRequestEvent rows (opened /
+// synchronize / closed). Without dedup the activity card would burn
+// 2-4x the REST budget on identical fetches.
+func TestRun_PullRequestStats_DedupAcrossEvents(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	mux := newRESTMux()
+	mux.on(
+		"/users/octocat/events",
+		http.StatusOK,
+		eventsBody(
+			prEvSummaryOnly("octocat/beta", now.Add(-1*time.Hour), true, 42),
+			prEvSummaryOnly("octocat/beta", now.Add(-2*time.Hour), true, 42),
+			prEvSummaryOnly("octocat/beta", now.Add(-3*time.Hour), true, 42),
+		),
+	)
+	mux.on("/repos/octocat/beta/pulls/42", http.StatusOK, prDetail(34, 5, 2))
+	pc := newPC(t, mux, nil)
+	out, err := activity.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*activity.Result)
+	if len(r.Events) != 3 {
+		t.Fatalf("Events len = %d, want 3", len(r.Events))
+	}
+	for i, e := range r.Events {
+		if e.Files == nil || e.Lines == nil {
+			t.Errorf("event[%d] missing stats: %+v", i, e)
+			continue
+		}
+		if e.Files.Changed != 2 || e.Lines.Added != 34 || e.Lines.Deleted != 5 {
+			t.Errorf("event[%d] wrong stats: %+v", i, e)
+		}
+	}
+	if n := mux.pathCalls("/repos/octocat/beta/pulls/42"); n != 1 {
+		t.Errorf("PR detail fetched %d times for PR #42, want 1 (dedup)", n)
+	}
+}
+
+// TestRun_PullRequestStats_LimitCapsFetchBudget asserts the fallback
+// fetch is bounded by the display `limit`, not the raw `load` count.
+// Without the fix the worst case would burn 300 REST calls per run on
+// events that get truncated away.
+func TestRun_PullRequestStats_LimitCapsFetchBudget(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	mux := newRESTMux()
+	// 10 distinct PR events, all eligible — limit=3 must keep the
+	// fallback fetch at 3 calls, not 10.
+	evs := make([]string, 0, 10)
+	for i := 0; i < 10; i++ {
+		evs = append(evs,
+			prEvSummaryOnly("octocat/beta", now.Add(-time.Duration(i+1)*time.Hour), true, 100+i))
+	}
+	mux.on("/users/octocat/events", http.StatusOK, eventsBody(evs...))
+	// Register a detail fixture for every PR so an over-fetch surfaces
+	// as a higher pathCalls total, not as 404s.
+	for i := 0; i < 10; i++ {
+		mux.on(fmt.Sprintf("/repos/octocat/beta/pulls/%d", 100+i),
+			http.StatusOK, prDetail(1, 1, 1))
+	}
+	pc := newPC(t, mux, map[string]any{"plugin_activity_limit": 3})
+	out, err := activity.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*activity.Result)
+	if len(r.Events) != 3 {
+		t.Fatalf("Events len = %d, want 3", len(r.Events))
+	}
+	// Count total /pulls/ fetches across all PR numbers.
+	var total int
+	for i := 0; i < 10; i++ {
+		total += mux.pathCalls(fmt.Sprintf("/repos/octocat/beta/pulls/%d", 100+i))
+	}
+	if total != 3 {
+		t.Errorf("PR detail fetched %d times total, want 3 (one per kept event)", total)
+	}
+}
+
+// TestRun_PullRequestStats_RateLimitedSurfacesAsAppendError asserts a
+// rate-limited /pulls/{n} fetch records a single aggregated
+// AppendError on Data so the #531 surface-degradation contract holds.
+// The PR event itself stays surfaced with Files/Lines nil so the
+// partial skips the stats line.
+func TestRun_PullRequestStats_RateLimitedSurfacesAsAppendError(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	mux := newRESTMux()
+	mux.on(
+		"/users/octocat/events",
+		http.StatusOK,
+		eventsBody(prEvSummaryOnly("octocat/beta", now.Add(-1*time.Hour), true, 42)),
+	)
+	// 403 + Retry-After + X-RateLimit-* → httpx.ClassifyRateLimit (and
+	// our fetcher's direct ClassifyRateLimit call) returns a
+	// *httpx.RateLimitedError on the non-2xx branch.
+	h := http.Header{}
+	h.Set("Retry-After", "1")
+	h.Set("X-RateLimit-Remaining", "0")
+	h.Set("X-RateLimit-Reset", strconv.FormatInt(time.Now().Add(time.Hour).Unix(), 10))
+	mux.onWithHeader("/repos/octocat/beta/pulls/42",
+		http.StatusForbidden, `{"message":"rate limited"}`, h)
+
+	pc := newPC(t, mux, nil)
+	out, err := activity.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*activity.Result)
+	if len(r.Events) != 1 {
+		t.Fatalf("Events len = %d, want 1", len(r.Events))
+	}
+	if r.Events[0].Files != nil || r.Events[0].Lines != nil {
+		t.Errorf("rate-limited fetch should leave Files/Lines nil; got %+v", r.Events[0])
+	}
+	errs := pc.Data.SnapshotErrors()
+	if len(errs) != 1 {
+		t.Fatalf("SnapshotErrors len = %d, want 1; errors: %v", len(errs), errs)
+	}
+	if !strings.Contains(errs[0].Error(), "rate limit") {
+		t.Errorf("error message should mention rate limit; got %q", errs[0].Error())
 	}
 }

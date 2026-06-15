@@ -17,6 +17,7 @@ import (
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
+	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
@@ -151,7 +152,15 @@ func (p *activityPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 		return nil, wrapped
 	}
 
+	// Phase 1: filter + classify events. The PR diff-stat fetch is
+	// deferred to Phase 3 (after truncation) so we never spend REST
+	// budget on events that get dropped by limit.
+	type pendingPR struct {
+		index  int // position in `events`
+		number int
+	}
 	events := make([]ActivityEvent, 0, len(raws))
+	pending := make([]pendingPR, 0)
 	for _, raw := range raws {
 		if _, drop := in.skipped[raw.Type]; drop {
 			continue
@@ -172,33 +181,81 @@ func (p *activityPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 			Date:       raw.CreatedAt,
 			Visibility: vis,
 		}
-		// PullRequestEvent carries diff stats in payload.pull_request.
-		// Surface them so the template can render upstream's
-		// "N files changed ++A --D" line (activity.ejs line 79).
-		//
-		// The events API only embeds a PR summary (base/head/id/number/
-		// url) — additions/deletions/changed_files arrive as 0/nil. When
-		// the embedded summary lacks the diff stats, fall back to the PR
-		// detail endpoint `/repos/{owner}/{repo}/pulls/{number}` which
-		// always carries the stats.
+		// PullRequestEvent: capture embedded summary now, defer the
+		// /pulls/{number} fallback fetch until after sort + truncate so
+		// only the kept events spend REST budget.
 		if raw.Type == "PullRequestEvent" && raw.Payload.PullRequest != nil {
 			pr := raw.Payload.PullRequest
-			added, deleted, changed := pr.Additions, pr.Deletions, pr.ChangedFiles
-			if (added == 0 && deleted == 0 && changed == 0) && pr.Number > 0 {
-				if a, d, c, ok := fetchPullRequestStats(ctx, pc, raw.Repo.Name, pr.Number); ok {
-					added, deleted, changed = a, d, c
-				}
+			if pr.Additions != 0 || pr.Deletions != 0 || pr.ChangedFiles != 0 {
+				// Rare: GitHub did populate the embedded stats.
+				ae.Files = &EventFiles{Changed: pr.ChangedFiles}
+				ae.Lines = &EventLines{Added: pr.Additions, Deleted: pr.Deletions}
+			} else if pr.Number > 0 {
+				pending = append(pending, pendingPR{index: len(events), number: pr.Number})
 			}
-			ae.Files = &EventFiles{Changed: changed}
-			ae.Lines = &EventLines{Added: added, Deleted: deleted}
 		}
 		events = append(events, ae)
 	}
+
+	// Phase 2: sort + truncate to display limit. Doing this before the
+	// PR detail fetch (Phase 3) caps the fallback API spend at `limit`
+	// calls — not `load` (300). Without truncation the activity plugin
+	// alone would burn ~300 REST calls per run in the worst case.
 	sort.SliceStable(events, func(i, j int) bool {
 		return events[i].Date.After(events[j].Date)
 	})
 	if len(events) > in.limit {
 		events = events[:in.limit]
+	}
+
+	// Phase 3: fetch PR diff stats for kept events that lack them, with
+	// dedup by (repo, number). The same PR can surface as several
+	// PullRequestEvent rows (opened / synchronize / closed) — fetching
+	// /pulls/{n} once and reusing the result keeps the REST spend at
+	// O(unique PRs in window) rather than O(events). Surface a single
+	// aggregated AppendError if any fetch hits rate-limit, mirroring
+	// the #531 surface-degradation contract.
+	type prKey struct {
+		repo   string
+		number int
+	}
+	type prStats struct {
+		additions, deletions, changedFiles int
+	}
+	cache := make(map[prKey]prStats)
+	var droppedRateLimit, droppedOther int
+	var lastRLE *httpx.RateLimitedError
+	for _, p := range pending {
+		if p.index >= len(events) {
+			continue // event was truncated away by Phase 2.
+		}
+		key := prKey{repo: events[p.index].Repo, number: p.number}
+		stats, cached := cache[key]
+		if !cached {
+			a, d, c, err := fetchPullRequestStats(ctx, pc, key.repo, key.number)
+			if err != nil {
+				var rle *httpx.RateLimitedError
+				if errors.As(err, &rle) {
+					droppedRateLimit++
+					lastRLE = rle
+				} else {
+					droppedOther++
+				}
+				continue // leave Files/Lines nil; partial skips the line.
+			}
+			stats = prStats{additions: a, deletions: d, changedFiles: c}
+			cache[key] = stats
+		}
+		events[p.index].Files = &EventFiles{Changed: stats.changedFiles}
+		events[p.index].Lines = &EventLines{Added: stats.additions, Deleted: stats.deletions}
+	}
+	if droppedRateLimit > 0 {
+		pc.Data.AppendError(fmt.Errorf("activity: PR diff stats unavailable for %d PR(s) (rate limited): %w",
+			droppedRateLimit, lastRLE))
+	}
+	if droppedOther > 0 {
+		pc.Data.AppendError(fmt.Errorf("activity: PR diff stats unavailable for %d PR(s) (fetch failed)",
+			droppedOther))
 	}
 
 	return &Result{
@@ -214,31 +271,44 @@ func (p *activityPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 // changed_files at zero — without this fallback the rendered card shows
 // "0 files changed ++0 --0" which defeats the activity card's purpose.
 //
-// Returns (additions, deletions, changedFiles, ok). ok=false on any
-// network/decode/status failure: a missing diff line is preferable to
-// failing the whole plugin because one PR detail call hiccuped.
-func fetchPullRequestStats(ctx context.Context, pc *plugins.PluginContext, repo string, number int) (int, int, int, bool) {
-	if pc == nil || pc.REST == nil || repo == "" || number <= 0 {
-		return 0, 0, 0, false
+// Returns (additions, deletions, changedFiles, error). The error is the
+// raw transport / decode / status failure so callers can errors.As it
+// against *httpx.RateLimitedError to distinguish rate-limit drops from
+// other failures (#531 surface-degradation contract).
+func fetchPullRequestStats(ctx context.Context, pc *plugins.PluginContext, repo string, number int) (int, int, int, error) {
+	if pc == nil || pc.REST == nil {
+		return 0, 0, 0, fmt.Errorf("nil REST client")
+	}
+	if number <= 0 {
+		return 0, 0, 0, fmt.Errorf("invalid PR number %d", number)
 	}
 	owner, name, ok := splitRepo(repo)
 	if !ok {
-		return 0, 0, 0, false
+		return 0, 0, 0, fmt.Errorf("invalid repo %q", repo)
 	}
 	path := fmt.Sprintf("/repos/%s/%s/pulls/%d",
 		url.PathEscape(owner), url.PathEscape(name), number)
 	body, resp, err := pc.REST.Get(ctx, path, nil)
-	if err != nil || resp == nil {
-		return 0, 0, 0, false
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	if resp == nil {
+		return 0, 0, 0, fmt.Errorf("nil response")
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return 0, 0, 0, false
+		// Pass the response through ClassifyRateLimit so a 403/429 with
+		// rate-limit headers surfaces as *httpx.RateLimitedError. Other
+		// 4xx/5xx stay as plain fetchStatusError.
+		if rle := httpx.ClassifyRateLimit(resp); rle != nil {
+			return 0, 0, 0, rle
+		}
+		return 0, 0, 0, &fetchStatusError{status: resp.StatusCode}
 	}
 	var pr rawPullRequest
 	if err := json.Unmarshal(body, &pr); err != nil {
-		return 0, 0, 0, false
+		return 0, 0, 0, fmt.Errorf("decode PR: %w", err)
 	}
-	return pr.Additions, pr.Deletions, pr.ChangedFiles, true
+	return pr.Additions, pr.Deletions, pr.ChangedFiles, nil
 }
 
 // splitRepo parses "owner/name" into its parts. Returns ok=false when
