@@ -91,14 +91,22 @@ type rawRepo struct {
 }
 
 // rawPayload covers the per-event-type `payload` object. Only the
-// PullRequestEvent's pull_request diff stats are consumed today.
+// PullRequestEvent's pull_request reference is consumed today.
 type rawPayload struct {
 	PullRequest *rawPullRequest `json:"pull_request"`
 }
 
-// rawPullRequest carries the PR diff stats GitHub embeds in a
-// PullRequestEvent payload.
+// rawPullRequest carries the PR diff stats and PR number GitHub embeds
+// in a PullRequestEvent payload.
+//
+// ⚠ The events API (`/users/{login}/events`) embeds only a *summary* of
+// the pull request — `additions`, `deletions`, and `changed_files` are
+// not populated there (they live on the full PR object). We keep the
+// fields here for the rare case GitHub returns them, but rely on
+// `Number` to fetch the full PR via `/repos/{owner}/{repo}/pulls/{num}`
+// when the embedded summary lacks the diff stats.
 type rawPullRequest struct {
+	Number       int `json:"number"`
 	Additions    int `json:"additions"`
 	Deletions    int `json:"deletions"`
 	ChangedFiles int `json:"changed_files"`
@@ -167,10 +175,22 @@ func (p *activityPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 		// PullRequestEvent carries diff stats in payload.pull_request.
 		// Surface them so the template can render upstream's
 		// "N files changed ++A --D" line (activity.ejs line 79).
+		//
+		// The events API only embeds a PR summary (base/head/id/number/
+		// url) — additions/deletions/changed_files arrive as 0/nil. When
+		// the embedded summary lacks the diff stats, fall back to the PR
+		// detail endpoint `/repos/{owner}/{repo}/pulls/{number}` which
+		// always carries the stats.
 		if raw.Type == "PullRequestEvent" && raw.Payload.PullRequest != nil {
 			pr := raw.Payload.PullRequest
-			ae.Files = &EventFiles{Changed: pr.ChangedFiles}
-			ae.Lines = &EventLines{Added: pr.Additions, Deleted: pr.Deletions}
+			added, deleted, changed := pr.Additions, pr.Deletions, pr.ChangedFiles
+			if (added == 0 && deleted == 0 && changed == 0) && pr.Number > 0 {
+				if a, d, c, ok := fetchPullRequestStats(ctx, pc, raw.Repo.Name, pr.Number); ok {
+					added, deleted, changed = a, d, c
+				}
+			}
+			ae.Files = &EventFiles{Changed: changed}
+			ae.Lines = &EventLines{Added: added, Deleted: deleted}
 		}
 		events = append(events, ae)
 	}
@@ -186,6 +206,49 @@ func (p *activityPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 		Events: events,
 		Days:   in.days,
 	}, nil
+}
+
+// fetchPullRequestStats fetches the diff stats for a single PR via
+// `/repos/{owner}/{repo}/pulls/{number}`. The events API embeds only a
+// PR summary (base/head/id/number/url) and leaves additions/deletions/
+// changed_files at zero — without this fallback the rendered card shows
+// "0 files changed ++0 --0" which defeats the activity card's purpose.
+//
+// Returns (additions, deletions, changedFiles, ok). ok=false on any
+// network/decode/status failure: a missing diff line is preferable to
+// failing the whole plugin because one PR detail call hiccuped.
+func fetchPullRequestStats(ctx context.Context, pc *plugins.PluginContext, repo string, number int) (int, int, int, bool) {
+	if pc == nil || pc.REST == nil || repo == "" || number <= 0 {
+		return 0, 0, 0, false
+	}
+	owner, name, ok := splitRepo(repo)
+	if !ok {
+		return 0, 0, 0, false
+	}
+	path := fmt.Sprintf("/repos/%s/%s/pulls/%d",
+		url.PathEscape(owner), url.PathEscape(name), number)
+	body, resp, err := pc.REST.Get(ctx, path, nil)
+	if err != nil || resp == nil {
+		return 0, 0, 0, false
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return 0, 0, 0, false
+	}
+	var pr rawPullRequest
+	if err := json.Unmarshal(body, &pr); err != nil {
+		return 0, 0, 0, false
+	}
+	return pr.Additions, pr.Deletions, pr.ChangedFiles, true
+}
+
+// splitRepo parses "owner/name" into its parts. Returns ok=false when
+// the input is not the canonical two-segment form.
+func splitRepo(repo string) (string, string, bool) {
+	i := strings.IndexByte(repo, '/')
+	if i <= 0 || i == len(repo)-1 {
+		return "", "", false
+	}
+	return repo[:i], repo[i+1:], true
 }
 
 // fetchEvents pages /users/{login}/events?per_page=100 until either

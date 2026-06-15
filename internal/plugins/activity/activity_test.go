@@ -137,9 +137,30 @@ func prEv(repo string, when time.Time, public bool, additions, deletions, change
 	return `{"type":"PullRequestEvent","repo":{"name":"` + repo +
 		`"},"created_at":"` + when.UTC().Format(time.RFC3339) +
 		`","public":` + boolStr(public) +
-		`,"payload":{"pull_request":{"additions":` + strconv.Itoa(additions) +
+		`,"payload":{"pull_request":{"number":1,"additions":` + strconv.Itoa(additions) +
 		`,"deletions":` + strconv.Itoa(deletions) +
 		`,"changed_files":` + strconv.Itoa(changed) + `}}}`
+}
+
+// prEvSummaryOnly renders a PullRequestEvent JSON entry shaped like the
+// real events API payload: the embedded pull_request carries only the
+// summary fields (number/url/...) and NO additions/deletions/
+// changed_files. This is what GitHub actually returns from
+// `/users/{login}/events` — see the curl-driven discovery in #553.
+func prEvSummaryOnly(repo string, when time.Time, public bool, number int) string {
+	return `{"type":"PullRequestEvent","repo":{"name":"` + repo +
+		`"},"created_at":"` + when.UTC().Format(time.RFC3339) +
+		`","public":` + boolStr(public) +
+		`,"payload":{"pull_request":{"number":` + strconv.Itoa(number) +
+		`,"url":"https://api.github.com/repos/` + repo + `/pulls/` + strconv.Itoa(number) + `"}}}`
+}
+
+// prDetail renders the `/repos/{owner}/{name}/pulls/{number}` JSON body
+// shape this plugin consumes.
+func prDetail(additions, deletions, changed int) string {
+	return `{"additions":` + strconv.Itoa(additions) +
+		`,"deletions":` + strconv.Itoa(deletions) +
+		`,"changed_files":` + strconv.Itoa(changed) + `}`
 }
 
 // TestRun_Normal — single page of mixed events, default inputs.
@@ -333,6 +354,73 @@ func TestRun_PullRequestStats(t *testing.T) {
 	}
 	if push.Files != nil || push.Lines != nil {
 		t.Errorf("non-PR event should have nil Files/Lines; got Files=%+v Lines=%+v", push.Files, push.Lines)
+	}
+}
+
+// TestRun_PullRequestStats_FallbackToPRDetail asserts the plugin
+// fetches PR diff stats from `/repos/{owner}/{repo}/pulls/{number}`
+// when the events payload only carries the PR summary (number/url),
+// which is what the real `/users/{login}/events` API returns. Without
+// this fallback the rendered card shows "0 files changed ++0 --0",
+// the bug pinned by issue #553.
+func TestRun_PullRequestStats_FallbackToPRDetail(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	mux := newRESTMux()
+	mux.on(
+		"/users/octocat/events",
+		http.StatusOK,
+		eventsBody(prEvSummaryOnly("octocat/beta", now.Add(-1*time.Hour), true, 42)),
+	)
+	mux.on("/repos/octocat/beta/pulls/42", http.StatusOK, prDetail(34, 5, 2))
+	pc := newPC(t, mux, nil)
+	out, err := activity.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*activity.Result)
+	if len(r.Events) != 1 {
+		t.Fatalf("Events len = %d, want 1", len(r.Events))
+	}
+	pr := r.Events[0]
+	if pr.Files == nil || pr.Lines == nil {
+		t.Fatalf("PR event missing diff stats after fallback: %+v", pr)
+	}
+	if pr.Files.Changed != 2 {
+		t.Errorf("Files.Changed = %d, want 2", pr.Files.Changed)
+	}
+	if pr.Lines.Added != 34 || pr.Lines.Deleted != 5 {
+		t.Errorf("Lines = %+v, want {Added:34 Deleted:5}", pr.Lines)
+	}
+}
+
+// TestRun_PullRequestStats_FallbackFailsGracefully asserts a failing PR
+// detail fetch (4xx, 5xx, transport error) does not break the whole
+// plugin — the PR event is still surfaced with zeroed stats. A missing
+// diff line is far less destructive than a missing activity card.
+func TestRun_PullRequestStats_FallbackFailsGracefully(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	mux := newRESTMux()
+	mux.on(
+		"/users/octocat/events",
+		http.StatusOK,
+		eventsBody(prEvSummaryOnly("octocat/beta", now.Add(-1*time.Hour), true, 42)),
+	)
+	mux.on("/repos/octocat/beta/pulls/42", http.StatusNotFound, `{"message":"not found"}`)
+	pc := newPC(t, mux, nil)
+	out, err := activity.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*activity.Result)
+	if len(r.Events) != 1 {
+		t.Fatalf("Events len = %d, want 1", len(r.Events))
+	}
+	// Fallback failed → zeroed stats but still surfaced.
+	pr := r.Events[0]
+	if pr.Files == nil || pr.Lines == nil {
+		t.Errorf("PR event should still carry zeroed Files/Lines; got %+v", pr)
 	}
 }
 
