@@ -8,6 +8,7 @@
   {"name": "plugin-people",                          "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_people=yes"},
   {"name": "plugin-projects",                        "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_projects=yes"},
   {"name": "plugin-repositories",                    "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_repositories=yes"},
+  {"name": "plugin-repositories-pinned",             "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_repositories=yes --plugin plugin_repositories_pinned=yes"},
   {"name": "plugin-sponsors",                        "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_sponsors=yes"},
   {"name": "plugin-sponsorships",                    "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_sponsorships=yes"},
   {"name": "plugin-stargazers",                      "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_stargazers=yes"},
