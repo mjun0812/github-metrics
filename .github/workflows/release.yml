@@ -58,7 +58,10 @@ jobs:
           go-version-file: go.mod
 
       - name: Run M10 docker-smoke (build + --help + ≤900MB assertion)
-        run: make docker-smoke
+        # Inlined from the Makefile `docker-smoke` target so the step
+        # does not depend on `make` being installed on the
+        # `home-k3s-runner` ARC pod (minimal image).
+        run: go test -tags=docker_smoke -v ./tests/integration/...
 
   # Per-arch image build on a NATIVE runner (no QEMU emulation).
   #
