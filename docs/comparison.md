@@ -20,25 +20,25 @@
 
 upstream に存在する各 plugin のサブモードについて、Go 実装の対応状況です。
 
-| upstream variant                 | Go 側                  | 備考                                                                                                                    |
-| -------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `languages.recent`               | ✅ 比較可              | `plugin-languages-recent.svg`                                                                                           |
-| `languages.indepth`              | ✅ 比較可              | `plugin-languages-indepth.svg`                                                                                          |
-| `languages.details`              | ✅ 比較可              | `plugin-languages-details.svg`（本対応で追加）                                                                          |
-| `achievements.compact`           | ✅ 比較可              | `plugin-achievements-compact.svg`（本対応で追加）                                                                       |
-| `isocalendar.fullyear`           | ✅ 比較可              | `plugin-isocalendar-fullyear.svg`（本対応で追加）                                                                       |
-| `calendar.full`                  | ◐ 実装済み・生成待ち   | `plugin_calendar_limit=0` で全期間を取得。サンプルは次回 `make docs-samples` で生成                                     |
-| `repositories.pinned`            | ◐ 対応・差分なし       | `plugin_repositories_pinned` を受け付けるが、このサンプルデータでは無印とバイト同一                                     |
-| `topics.icons`                   | ○ データ無し           | `plugin_topics_mode=icons` 対応。サンプルユーザーに topics 無しで空                                                     |
-| `starlists.languages`            | ○ データ無し           | `plugin_starlists_languages` 対応。サンプルユーザーにデータ無しで空                                                     |
-| `sponsors.full`                  | ○ データ無し           | `plugin_sponsors_sections` 対応。サンプルユーザーにデータ無しで空                                                       |
-| `habits.facts` / `habits.charts` | ✅ 比較可              | `plugin_habits_facts` / `plugin_habits_charts` で個別トグル。<br>`plugin-habits-facts.svg` / `plugin-habits-charts.svg` |
-| `notable.indepth`                | ✅ 比較可              | `plugin_notable_indepth` 対応。`@owner/repo` 粒度チップ + 統計ゲージ。<br>`plugin-notable-indepth.svg`                  |
-| `contributors.contributions`     | ✅ 比較可（repo mode） | `plugin_contributors_contributions` 対応。<br>`plugin-contributors-repo-contributions.svg` で adds/dels 列を表示        |
-| `stargazers.graph`               | ✅ 比較可              | `plugin_stargazers_charts_type=graph` 対応。<br>`plugin-stargazers-graph.svg`                                           |
-| `stargazers.worldmap`            | ✗ 未対応               | backlog（Google Maps API、R-012 Skipped path）                                                                          |
-| `stargazers.chartist`            | ◐ graph と同一         | `charts_type=chartist` は deprecated alias。`graph` とバイト同一出力                                                    |
-| `people.repository`              | ✅ 比較可（repo mode） | contributors / stargazers / watchers 対応。<br>`plugin-people-repo-types.svg` で 3 種同時表示                           |
+| upstream variant                 | Go 側                  | 備考                                                                                                                                           |
+| -------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `languages.recent`               | ✅ 比較可              | `plugin-languages-recent.svg`                                                                                                                  |
+| `languages.indepth`              | ✅ 比較可              | `plugin-languages-indepth.svg`                                                                                                                 |
+| `languages.details`              | ✅ 比較可              | `plugin-languages-details.svg`（本対応で追加）                                                                                                 |
+| `achievements.compact`           | ✅ 比較可              | `plugin-achievements-compact.svg`（本対応で追加）                                                                                              |
+| `isocalendar.fullyear`           | ✅ 比較可              | `plugin-isocalendar-fullyear.svg`（本対応で追加）                                                                                              |
+| `calendar.full`                  | ◐ 実装済み・生成待ち   | `plugin_calendar_limit=0` で全期間を取得。サンプルは次回 `make docs-samples` で生成                                                            |
+| `repositories.pinned`            | ◐ partial 未配線       | `plugin_repositories_pinned=yes` を受け付けるが partial が variant を反映せず、無印と同じ Featured set (stars 降順) を描画する。follow-up 予定 |
+| `topics.icons`                   | ○ データ無し           | `plugin_topics_mode=icons` 対応。サンプルユーザーに topics 無しで空                                                                            |
+| `starlists.languages`            | ○ データ無し           | `plugin_starlists_languages` 対応。サンプルユーザーにデータ無しで空                                                                            |
+| `sponsors.full`                  | ○ データ無し           | `plugin_sponsors_sections` 対応。サンプルユーザーにデータ無しで空                                                                              |
+| `habits.facts` / `habits.charts` | ✅ 比較可              | `plugin_habits_facts` / `plugin_habits_charts` で個別トグル。<br>`plugin-habits-facts.svg` / `plugin-habits-charts.svg`                        |
+| `notable.indepth`                | ✅ 比較可              | `plugin_notable_indepth` 対応。`@owner/repo` 粒度チップ + 統計ゲージ。<br>`plugin-notable-indepth.svg`                                         |
+| `contributors.contributions`     | ✅ 比較可（repo mode） | `plugin_contributors_contributions` 対応。<br>`plugin-contributors-repo-contributions.svg` で adds/dels 列を表示                               |
+| `stargazers.graph`               | ✅ 比較可              | `plugin_stargazers_charts_type=graph` 対応。<br>`plugin-stargazers-graph.svg`                                                                  |
+| `stargazers.worldmap`            | ✗ 未対応               | backlog（Google Maps API、R-012 Skipped path）                                                                                                 |
+| `stargazers.chartist`            | ◐ graph と同一         | `charts_type=chartist` は deprecated alias。`graph` とバイト同一出力                                                                           |
+| `people.repository`              | ✅ 比較可（repo mode） | contributors / stargazers / watchers 対応。<br>`plugin-people-repo-types.svg` で 3 種同時表示                                                  |
 
 ✅ = 左右比較可 / ◐ = Go は対応するがサンプル差分なし・または repository 専用 / deprecated alias でサンプル省略 / ○ = Go は対応するがサンプルユーザーにデータ無し（空） / ✗ = Go 実装が未対応（要実装・backlog）
 
@@ -167,11 +167,11 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 
 **variant: pinned** — upstream `repositories.pinned`
 
-| upstream (lowlighter)                                                            | upstream (mjun0812)                                                               | Go 実装                                                |
-| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| <img src="original_examples/metrics.plugin.repositories.pinned.svg" width="420"> | <img src="reference_examples/metrics.plugin.repositories.pinned.svg" width="420"> | — 別サンプルなし（サンプルデータでは無印とバイト同一） |
+| upstream (lowlighter)                                                            | upstream (mjun0812)                                                               | Go 実装                                              |
+| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.repositories.pinned.svg" width="420"> | <img src="reference_examples/metrics.plugin.repositories.pinned.svg" width="420"> | — 別サンプルなし（partial が pinned variant 未対応） |
 
-> ◐ Go 側は `plugin_repositories_pinned` を受け付けるが、サンプルデータでは無印と同一出力のため別サンプルなし。
+> ◐ Go 実装は現状 partial が pinned variant の選択を反映しないため、`plugin_repositories_pinned=yes` を渡しても無印と同じ Featured set (stars 降順) を描画する。partial 未対応分は follow-up issue で対処予定。
 
 ### isocalendar
 
