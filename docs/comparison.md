@@ -28,7 +28,7 @@ upstream に存在する各 plugin のサブモードについて、Go 実装の
 | `achievements.compact`           | ✅ 比較可              | `plugin-achievements-compact.svg`（本対応で追加）                                                                                              |
 | `isocalendar.fullyear`           | ✅ 比較可              | `plugin-isocalendar-fullyear.svg`（本対応で追加）                                                                                              |
 | `calendar.full`                  | ✅ 比較可              | `plugin-calendar-full.svg`。`plugin_calendar_limit=0` で全期間を取得                                                                           |
-| `repositories.pinned`            | ◐ partial 未配線       | `plugin_repositories_pinned=yes` を受け付けるが partial が variant を反映せず、無印と同じ Featured set (stars 降順) を描画する。follow-up 予定 |
+| `repositories.pinned`            | ✅ 配線済              | `plugin_repositories_pinned=yes` で `viewer.pinnedItems` を取得し、Featured の後ろに重複除外して追加描画する (#555)                            |
 | `topics.icons`                   | ○ データ無し           | `plugin_topics_mode=icons` 対応。サンプルユーザーに topics 無しで空                                                                            |
 | `starlists.languages`            | ○ データ無し           | `plugin_starlists_languages` 対応。サンプルユーザーにデータ無しで空                                                                            |
 | `sponsors.full`                  | ○ データ無し           | `plugin_sponsors_sections` 対応。サンプルユーザーにデータ無しで空                                                                              |
@@ -169,9 +169,9 @@ upstream の参考表示と Go 実装側の対応サンプルを並べていま�
 
 | upstream (lowlighter)                                                            | upstream (mjun0812)                                                               | Go 実装                                              |
 | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| <img src="original_examples/metrics.plugin.repositories.pinned.svg" width="420"> | <img src="reference_examples/metrics.plugin.repositories.pinned.svg" width="420"> | — 別サンプルなし（partial が pinned variant 未対応） |
+| <img src="original_examples/metrics.plugin.repositories.pinned.svg" width="420"> | <img src="reference_examples/metrics.plugin.repositories.pinned.svg" width="420"> | — 別サンプルなし（次回 regen で `plugin-repositories-pinned.svg` を生成予定、#555） |
 
-> ◐ Go 実装は現状 partial が pinned variant の選択を反映しないため、`plugin_repositories_pinned=yes` を渡しても無印と同じ Featured set (stars 降順) を描画する。partial 未対応分は follow-up issue で対処予定。
+> ✅ Go 実装は `plugin_repositories_pinned=yes` で `viewer.pinnedItems` を取得し、`Result.Pinned` を partial が Featured の後ろに重複除外して描画する (`internal/plugins/repositories/partial.go::Partial`)。`scripts/samples.json` の `plugin-repositories-pinned` エントリは次回 `regen-doc-samples.yml` で生成される。
 
 ### isocalendar
 
