@@ -23,7 +23,7 @@
               Recently used languages
             </h3>
             <small>
-              activity from 44 repositories analysed over last 30 days
+              activity from 45 repositories analysed over last 30 days
             </small>
             <svg xmlns="http://www.w3.org/2000/svg" class="bar" width="460" height="8" role="img" aria-label="Recently used languages distribution">
               <title>
@@ -34,10 +34,9 @@
               </mask>
               <rect mask="url(#languages-bar-recent)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-recent">
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="335.63" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="335.63" y="0" width="101.62" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="437.25" y="0" width="21.41" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="458.66" y="0" width="1.34" height="8" fill="#384d54" data-language="Dockerfile"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="352.84" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="352.84" y="0" width="98.61" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="451.45" y="0" width="8.55" height="8" fill="#3572A5" data-language="Python"/>
               </g>
             </svg>
             <div class="row fill-width">
@@ -51,10 +50,10 @@
                   </div>
                   <small>
                     <div>
-                      3.9 kB
+                      3.1 kB
                     </div>
                     <div>
-                      73.0%
+                      76.7%
                     </div>
                   </small>
                 </div>
@@ -67,10 +66,10 @@
                   </div>
                   <small>
                     <div>
-                      256 B
+                      76 B
                     </div>
                     <div>
-                      4.7%
+                      1.9%
                     </div>
                   </small>
                 </div>
@@ -85,26 +84,10 @@
                   </div>
                   <small>
                     <div>
-                      1.2 kB
+                      877 B
                     </div>
                     <div>
-                      22.1%
-                    </div>
-                  </small>
-                </div>
-                <div class="field language details" data-language="Dockerfile">
-                  <div class="field">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#384d54" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
-                    </svg>
-                    Dockerfile
-                  </div>
-                  <small>
-                    <div>
-                      16 B
-                    </div>
-                    <div>
-                      0.3%
+                      21.4%
                     </div>
                   </small>
                 </div>
