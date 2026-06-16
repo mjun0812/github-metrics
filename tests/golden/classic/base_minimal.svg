@@ -243,25 +243,27 @@
   }
   .contribution .gauge text {
     fill: currentColor;
-    font-size: 13px;
+    font-size: 11px;
   }
-  /* Match upstream's notable gauge sizing/positioning verbatim (#539):
-   * scale(1.4) blows the 16x16 viewBox up to ~22.4x22.4 and the icon's
-   * -9px / +8px margin lands it on the gauge's bottom-right. The flex
-   * basis added in 6cc1dbe (#519/#512) made gauge and icon separate
-   * flex items, so the icon's negative margin pulled away from its own
-   * gauge and collided with the next one — the indepth overlap. */
+  /* Gauge + icon layout (diverges from upstream): upstream scales the
+   * 16x16 gauge to ~22.4x22.4 and overlays the icon at
+   * margin-left:-9px / margin-top:8px so the icon lands on the gauge's
+   * own bottom-right. That overlay covers the gauge's value text —
+   * every lowlighter/mjun0812 sample is gauge-less so the regression is
+   * invisible upstream, but our indepth sample renders gauges and the
+   * overlap is real. Drop scale() so the gauge stays at 16x16 (matching
+   * the SVG attributes) and float the icon as a separate sibling to the
+   * right of the gauge so the pair reads as "value chip + type marker". */
   .contribution .gauge {
-    margin: 0 6px;
+    margin: 0 4px;
     color: inherit;
-    transform: scale(1.4) translateY(1px);
   }
   .contribution .icon {
     fill: currentColor;
     width: 10px;
     height: 10px;
-    margin-left: -9px;
-    margin-top: 8px;
+    margin-left: 2px;
+    margin-top: 4px;
     color: inherit;
     filter: brightness(.5);
   }
@@ -1740,4 +1742,4 @@
     animation-play-state: paused !important;
     caret-color: transparent !important;
   }
-</style><style></style><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper"><section data-section="header"><h1 class="field"><img class="avatar" src="https://avatars.githubusercontent.com/u/12345?v=4" width="20" height="20" /><span>The Octocat</span></h1></section><section data-section="repositories"><h2 class="field">:octicon-repo:51 Repositories</h2><div class="row"><section><div class="field">:octicon-tag:0 Releases</div><div class="field">:octicon-package:0 Packages</div></section><section><div class="field">:octicon-heart:0 Sponsors</div><div class="field">:octicon-star:1500 Stargazers</div><div class="field">:octicon-repo-forked:81 Forkers</div><div class="field">:octicon-eye:0 Watchers</div></section></div></section><div id="metrics-end"></div><section data-section="metadata"><footer><span>These metrics include private contributions</span><span>Last updated 2026-06-15T10:27:01Z with mjun0812/github-metrics@test-version</span></footer></section></div></foreignObject></svg>
+</style><style></style><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper"><section data-section="header"><h1 class="field"><img class="avatar" src="https://avatars.githubusercontent.com/u/12345?v=4" width="20" height="20" /><span>The Octocat</span></h1></section><section data-section="repositories"><h2 class="field">:octicon-repo:51 Repositories</h2><div class="row"><section><div class="field">:octicon-tag:0 Releases</div><div class="field">:octicon-package:0 Packages</div></section><section><div class="field">:octicon-heart:0 Sponsors</div><div class="field">:octicon-star:1500 Stargazers</div><div class="field">:octicon-repo-forked:81 Forkers</div><div class="field">:octicon-eye:0 Watchers</div></section></div></section><div id="metrics-end"></div><section data-section="metadata"><footer><span>These metrics include private contributions</span><span>Last updated 2026-06-16T17:03:15Z with mjun0812/github-metrics@test-version</span></footer></section></div></foreignObject></svg>
