@@ -243,25 +243,27 @@
   }
   .contribution .gauge text {
     fill: currentColor;
-    font-size: 13px;
+    font-size: 11px;
   }
-  /* Match upstream's notable gauge sizing/positioning verbatim (#539):
-   * scale(1.4) blows the 16x16 viewBox up to ~22.4x22.4 and the icon's
-   * -9px / +8px margin lands it on the gauge's bottom-right. The flex
-   * basis added in 6cc1dbe (#519/#512) made gauge and icon separate
-   * flex items, so the icon's negative margin pulled away from its own
-   * gauge and collided with the next one — the indepth overlap. */
+  /* Gauge + icon layout (diverges from upstream): upstream scales the
+   * 16x16 gauge to ~22.4x22.4 and overlays the icon at
+   * margin-left:-9px / margin-top:8px so the icon lands on the gauge's
+   * own bottom-right. That overlay covers the gauge's value text —
+   * every lowlighter/mjun0812 sample is gauge-less so the regression is
+   * invisible upstream, but our indepth sample renders gauges and the
+   * overlap is real. Drop scale() so the gauge stays at 16x16 (matching
+   * the SVG attributes) and float the icon as a separate sibling to the
+   * right of the gauge so the pair reads as "value chip + type marker". */
   .contribution .gauge {
-    margin: 0 6px;
+    margin: 0 4px;
     color: inherit;
-    transform: scale(1.4) translateY(1px);
   }
   .contribution .icon {
     fill: currentColor;
     width: 10px;
     height: 10px;
-    margin-left: -9px;
-    margin-top: 8px;
+    margin-left: 2px;
+    margin-top: 4px;
     color: inherit;
     filter: brightness(.5);
   }
