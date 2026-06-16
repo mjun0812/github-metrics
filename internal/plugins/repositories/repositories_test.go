@@ -80,6 +80,76 @@ func TestRun_FeaturedDescByStars(t *testing.T) {
 	}
 }
 
+// TestRun_FeaturedExplicitList exercises upstream's
+// `plugin_repositories_featured` semantics: a comma-separated list of
+// "owner/repo" or bare "repo" names overrides the auto-list, and the
+// output order follows the input order — not the sort key.
+func TestRun_FeaturedExplicitList(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.User = &plugins.User{Login: "octocat"}
+	data.Computed.RepositoryList = octocatRepos()
+	pc := &plugins.PluginContext{
+		Inputs: map[string]any{
+			"plugin_repositories_featured": "octocat/alpha, beta",
+		},
+		Data: data,
+	}
+	out, err := repositories.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*repositories.Result)
+	want := []string{"octocat/alpha", "octocat/beta"}
+	got := nameList(r.Featured)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Featured (explicit list) = %v, want %v", got, want)
+	}
+}
+
+// TestRun_FeaturedExplicitListUnknownIDsSkipped pins upstream's silent
+// skip behavior — unknown repos in the explicit list are dropped so the
+// remaining order stays intact.
+func TestRun_FeaturedExplicitListUnknownIDsSkipped(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.User = &plugins.User{Login: "octocat"}
+	data.Computed.RepositoryList = octocatRepos()
+	pc := &plugins.PluginContext{
+		Inputs: map[string]any{
+			"plugin_repositories_featured": "octocat/gamma, ghost/missing, alpha",
+		},
+		Data: data,
+	}
+	out, _ := repositories.Plugin.Run(context.Background(), pc)
+	want := []string{"octocat/gamma", "octocat/alpha"}
+	got := nameList(out.(*repositories.Result).Featured)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Featured = %v, want %v", got, want)
+	}
+}
+
+// TestRun_FeaturedExplicitListWithoutLogin ensures bare "repo" entries
+// are silently skipped when the current login is unknown (no fallback
+// owner). `owner/repo` entries still resolve.
+func TestRun_FeaturedExplicitListWithoutLogin(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.Computed.RepositoryList = octocatRepos()
+	pc := &plugins.PluginContext{
+		Inputs: map[string]any{
+			"plugin_repositories_featured": "octocat/gamma, alpha",
+		},
+		Data: data,
+	}
+	out, _ := repositories.Plugin.Run(context.Background(), pc)
+	want := []string{"octocat/gamma"} // bare "alpha" dropped (no login)
+	got := nameList(out.(*repositories.Result).Featured)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Featured = %v, want %v", got, want)
+	}
+}
+
 // TestRun_OrderForks switches order to "forks" and verifies sort.
 func TestRun_OrderForks(t *testing.T) {
 	t.Parallel()
