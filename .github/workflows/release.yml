@@ -262,6 +262,23 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Install gh CLI
+        # The home-k3s-runner ARC pod is a minimal image without gh
+        # preinstalled. The "Publish to GitHub Release" step below
+        # depends on it (`gh release view/upload/create`). Drop the
+        # binary into ~/.local/bin and prepend that to PATH for
+        # subsequent steps.
+        env:
+          GH_VERSION: '2.55.0'
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" \
+            | tar xz -C "$HOME/.local"
+          mv "$HOME/.local/gh_${GH_VERSION}_linux_amd64/bin/gh" "$HOME/.local/bin/gh"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/gh" --version
+
       - name: Extract semver tag (or dry-run placeholder)
         id: tag
         run: |
