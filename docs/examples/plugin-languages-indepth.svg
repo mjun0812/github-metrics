@@ -34,15 +34,15 @@
               </mask>
               <rect mask="url(#languages-bar-most)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-progress">
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="72.76" height="8" fill="#a91e50" data-language="EJS"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="72.76" y="0" width="72.54" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="145.31" y="0" width="64.81" height="8" fill="#3D6117" data-language="TeX"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="210.12" y="0" width="60.95" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="271.07" y="0" width="59.67" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="330.74" y="0" width="46.71" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="377.45" y="0" width="46.70" height="8" fill="#f1e05a" data-language="JavaScript"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="424.15" y="0" width="8.68" height="8" fill="#3A4E3A" data-language="Cuda"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="432.83" y="0" width="27.17" height="8" fill="#cccccc" data-language="Other"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="72.72" height="8" fill="#a91e50" data-language="EJS"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="72.72" y="0" width="72.50" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="145.22" y="0" width="64.78" height="8" fill="#3D6117" data-language="TeX"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="210.00" y="0" width="61.04" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="271.04" y="0" width="59.64" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="330.68" y="0" width="46.68" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="377.37" y="0" width="46.67" height="8" fill="#f1e05a" data-language="JavaScript"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="424.04" y="0" width="8.67" height="8" fill="#3A4E3A" data-language="Cuda"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="432.71" y="0" width="27.29" height="8" fill="#cccccc" data-language="Other"/>
               </g>
             </svg>
             <div class="row fill-width">
@@ -88,7 +88,7 @@
                   </div>
                   <small>
                     <div>
-                      262.9 kB
+                      263.0 kB
                     </div>
                     <div>
                       13.0%
@@ -107,7 +107,7 @@
                       10.0 MB
                     </div>
                     <div>
-                      10.2%
+                      10.1%
                     </div>
                   </small>
                 </div>
@@ -120,7 +120,7 @@
                   </div>
                   <small>
                     <div>
-                      881.4 kB
+                      885.7 kB
                     </div>
                     <div>
                       5.9%
@@ -157,7 +157,7 @@
                       115 B
                     </div>
                     <div>
-                      13.2%
+                      13.3%
                     </div>
                   </small>
                 </div>
@@ -173,7 +173,7 @@
                       18.9 MB
                     </div>
                     <div>
-                      10.2%
+                      10.1%
                     </div>
                   </small>
                 </div>
@@ -207,7 +207,7 @@
               <text class="indepth-language" data-language="Python" data-bytes="19858768">
                 Python
               </text>
-              <text class="indepth-language" data-language="JSON" data-bytes="17210057">
+              <text class="indepth-language" data-language="JSON" data-bytes="17210155">
                 JSON
               </text>
               <text class="indepth-language" data-language="Jest Snapshot" data-bytes="14329594">
@@ -216,10 +216,10 @@
               <text class="indepth-language" data-language="Adblock Filter List" data-bytes="12404744">
                 Adblock Filter List
               </text>
-              <text class="indepth-language" data-language="JavaScript" data-bytes="10493932">
+              <text class="indepth-language" data-language="JavaScript" data-bytes="10494023">
                 JavaScript
               </text>
-              <text class="indepth-language" data-language="Markdown" data-bytes="5609882">
+              <text class="indepth-language" data-language="Markdown" data-bytes="5647084">
                 Markdown
               </text>
               <text class="indepth-language" data-language="Java" data-bytes="5386420">
@@ -228,7 +228,7 @@
               <text class="indepth-language" data-language="TypeScript" data-bytes="4981583">
                 TypeScript
               </text>
-              <text class="indepth-language" data-language="SVG" data-bytes="3964588">
+              <text class="indepth-language" data-language="SVG" data-bytes="3964787">
                 SVG
               </text>
               <text class="indepth-language" data-language="CSV" data-bytes="2716407">
@@ -249,7 +249,7 @@
               <text class="indepth-language" data-language="CSS" data-bytes="1188869">
                 CSS
               </text>
-              <text class="indepth-language" data-language="TOML" data-bytes="1092017">
+              <text class="indepth-language" data-language="TOML" data-bytes="1092033">
                 TOML
               </text>
               <text class="indepth-language" data-language="Swift" data-bytes="378042">
@@ -258,7 +258,7 @@
               <text class="indepth-language" data-language="Cuda" data-bytes="273611">
                 Cuda
               </text>
-              <text class="indepth-language" data-language="Shell" data-bytes="269239">
+              <text class="indepth-language" data-language="Shell" data-bytes="269320">
                 Shell
               </text>
               <text class="indepth-language" data-language="R" data-bytes="265325">
@@ -276,7 +276,7 @@
               <text class="indepth-language" data-language="C" data-bytes="127647">
                 C
               </text>
-              <text class="indepth-language" data-language="Lua" data-bytes="101899">
+              <text class="indepth-language" data-language="Lua" data-bytes="103451">
                 Lua
               </text>
               <text class="indepth-language" data-language="Ignore List" data-bytes="96385">
@@ -315,14 +315,14 @@
               <text class="indepth-language" data-language="Spline Font Database" data-bytes="22404">
                 Spline Font Database
               </text>
+              <text class="indepth-language" data-language="SCSS" data-bytes="17548">
+                SCSS
+              </text>
               <text class="indepth-language" data-language="Makefile" data-bytes="17208">
                 Makefile
               </text>
               <text class="indepth-language" data-language="PowerShell" data-bytes="16170">
                 PowerShell
-              </text>
-              <text class="indepth-language" data-language="SCSS" data-bytes="14701">
-                SCSS
               </text>
               <text class="indepth-language" data-language="BibTeX" data-bytes="13446">
                 BibTeX
