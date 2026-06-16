@@ -75,8 +75,13 @@ type inputs struct {
 	includeForks bool
 	skipped      map[string]struct{}
 	affiliations map[string]struct{}
-	limit        int
-	randomSeed   int64
+	// featured pins specific repositories to the Featured set, matching
+	// upstream's `plugin_repositories_featured` (comma-separated
+	// "owner/repo" or bare "repo" against the current login). Empty
+	// means "auto-pick from owner-affiliated repos" (Go extension).
+	featured   []string
+	limit      int
+	randomSeed int64
 }
 
 func (p *repositoriesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
@@ -117,8 +122,17 @@ func (p *repositoriesPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 	}
 
 	sortRepositories(filtered, in.order)
+	// Featured selection:
+	//   - explicit list via `plugin_repositories_featured`: pick those
+	//     names in the order they were specified (matches upstream
+	//     `index.mjs` Featured loop). Bare `repo` resolves against the
+	//     current login.
+	//   - empty list: auto-list every owner-affiliated repo (Go
+	//     extension), truncated to `in.limit`.
 	featured := filtered
-	if in.limit > 0 && len(featured) > in.limit {
+	if len(in.featured) > 0 {
+		featured = selectFeatured(filtered, in.featured, pc.Data.User)
+	} else if in.limit > 0 && len(featured) > in.limit {
 		featured = featured[:in.limit]
 	}
 
@@ -287,6 +301,40 @@ func sortRepositories(s []plugins.Repository, order string) {
 	}
 }
 
+// selectFeatured implements upstream's
+// `plugin_repositories_featured` semantics: keep the entries from
+// `pool` whose `NameWithOwner` matches one of the requested ids, in
+// the order the user listed them. Each id may be `owner/repo` or a
+// bare `repo` (which resolves against the current login).
+//
+// Unknown ids are silently skipped (matches upstream — it tries to
+// fetch them via a dedicated GraphQL call that simply returns no
+// node if absent, after which the loop ignores it).
+func selectFeatured(pool []plugins.Repository, ids []string, user *plugins.User) []plugins.Repository {
+	if len(ids) == 0 {
+		return pool
+	}
+	login := ""
+	if user != nil {
+		login = user.Login
+	}
+	index := make(map[string]plugins.Repository, len(pool))
+	for _, r := range pool {
+		index[r.NameWithOwner] = r
+	}
+	out := make([]plugins.Repository, 0, len(ids))
+	for _, raw := range ids {
+		nwo := raw
+		if !strings.Contains(raw, "/") && login != "" {
+			nwo = login + "/" + raw
+		}
+		if r, ok := index[nwo]; ok {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
 // randomSubset returns at most `limit` repositories drawn from src via
 // fisher-yates on a copy. seed=0 picks a deterministic seed=1 so tests
 // can pin the order without exporting a knob.
@@ -336,6 +384,7 @@ func parseInputs(in map[string]any) inputs {
 	for _, s := range readCSV(in, "plugin_repositories_affiliations") {
 		out.affiliations[strings.ToUpper(s)] = struct{}{}
 	}
+	out.featured = readCSV(in, "plugin_repositories_featured")
 	for _, s := range readCSV(in, "plugin_repositories_skipped") {
 		out.skipped[s] = struct{}{}
 	}

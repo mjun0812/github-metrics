@@ -7,7 +7,7 @@
   {"name": "plugin-notable",                         "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_notable=yes"},
   {"name": "plugin-people",                          "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_people=yes"},
   {"name": "plugin-projects",                        "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_projects=yes"},
-  {"name": "plugin-repositories",                    "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_repositories=yes"},
+  {"name": "plugin-repositories",                    "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_repositories=yes --plugin plugin_repositories_featured=mjun0812/flash-attention-prebuild-wheels"},
   {"name": "plugin-repositories-pinned",             "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_repositories=yes --plugin plugin_repositories_pinned=yes"},
   {"name": "plugin-sponsors",                        "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_sponsors=yes"},
   {"name": "plugin-sponsorships",                    "mode": "user", "extra": "--template classic --plugin base= --plugin plugin_sponsorships=yes"},
