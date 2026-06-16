@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="141" class="">
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="161" class="">
   <defs>
     <style/>
   </defs>
@@ -23,7 +23,7 @@
               Recently used languages
             </h3>
             <small>
-              activity from 45 repositories analysed over last 30 days
+              activity from 46 repositories analysed over last 30 days
             </small>
             <svg xmlns="http://www.w3.org/2000/svg" class="bar" width="460" height="8" role="img" aria-label="Recently used languages distribution">
               <title>
@@ -34,9 +34,11 @@
               </mask>
               <rect mask="url(#languages-bar-recent)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-recent">
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="352.84" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="352.84" y="0" width="98.61" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="451.45" y="0" width="8.55" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="358.40" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="358.40" y="0" width="86.44" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="444.84" y="0" width="8.35" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="453.19" y="0" width="6.59" height="8" fill="#000080" data-language="Lua"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.78" y="0" width="0.22" height="8" fill="#f1e05a" data-language="JavaScript"/>
               </g>
             </svg>
             <div class="row fill-width">
@@ -50,10 +52,10 @@
                   </div>
                   <small>
                     <div>
-                      3.1 kB
+                      3.2 kB
                     </div>
                     <div>
-                      76.7%
+                      77.9%
                     </div>
                   </small>
                 </div>
@@ -69,7 +71,23 @@
                       76 B
                     </div>
                     <div>
-                      1.9%
+                      1.8%
+                    </div>
+                  </small>
+                </div>
+                <div class="field language details" data-language="JavaScript">
+                  <div class="field">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                      <path fill="#f1e05a" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                    </svg>
+                    JavaScript
+                  </div>
+                  <small>
+                    <div>
+                      2 B
+                    </div>
+                    <div>
+                      0.0%
                     </div>
                   </small>
                 </div>
@@ -84,10 +102,26 @@
                   </div>
                   <small>
                     <div>
-                      877 B
+                      787 B
                     </div>
                     <div>
-                      21.4%
+                      18.8%
+                    </div>
+                  </small>
+                </div>
+                <div class="field language details" data-language="Lua">
+                  <div class="field">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                      <path fill="#000080" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                    </svg>
+                    Lua
+                  </div>
+                  <small>
+                    <div>
+                      60 B
+                    </div>
+                    <div>
+                      1.4%
                     </div>
                   </small>
                 </div>
