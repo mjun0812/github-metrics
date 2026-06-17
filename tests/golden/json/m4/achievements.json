@@ -2,20 +2,32 @@
   "display": "detailed",
   "list": [
     {
-      "id": "commits",
+      "id": "developer",
       "rank": "S",
-      "title": "Worker",
-      "description": "Total commits",
-      "icon": "git-commit",
-      "value": 6000
+      "title": "Developer",
+      "description": "Published 120 public repositories",
+      "icon": "repo",
+      "value": 120
     }
   ],
   "ranks": {
-    "commits": "S",
-    "followers": "X",
-    "issues": "B",
-    "pull-requests": "A",
-    "repositories": "A",
-    "stars": "B"
+    "chatter": "B",
+    "contributor": "A",
+    "deployer": "B",
+    "developer": "S",
+    "follower": "B",
+    "forker": "X",
+    "gister": "B",
+    "helper": "B",
+    "influencer": "S",
+    "inspirer": "B",
+    "maintainer": "B",
+    "member": "A",
+    "packager": "B",
+    "polyglot": "B",
+    "reviewer": "B",
+    "sponsor": "B",
+    "stargazer": "A",
+    "worker": "A"
   }
 }

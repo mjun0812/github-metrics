@@ -62,6 +62,12 @@ query OrganizationRepositories($login: String!, $first: Int!, $after: String) {
         packages(first: 0) {
           totalCount
         }
+        # achievements: mirrors the user_repositories.graphql extension
+        # so the organisation render path produces the same
+        # Computed.Repositories.Deployments aggregate.
+        deployments {
+          totalCount
+        }
         licenseInfo {
           name
           key

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/achievements"
@@ -34,10 +35,8 @@ func repoRoot(t *testing.T) string {
 	return ""
 }
 
-func run(t *testing.T, computed plugins.Computed, inputs map[string]any) *achievements.Result {
+func run(t *testing.T, data *plugins.Data, inputs map[string]any) *achievements.Result {
 	t.Helper()
-	data := plugins.NewData()
-	data.Computed = computed
 	pc := &plugins.PluginContext{Inputs: inputs, Data: data}
 	out, err := achievements.Plugin.Run(context.Background(), pc)
 	if err != nil {
@@ -46,35 +45,60 @@ func run(t *testing.T, computed plugins.Computed, inputs map[string]any) *achiev
 	return out.(*achievements.Result)
 }
 
-func octocatComputed() plugins.Computed {
-	return plugins.Computed{
-		TotalCommits:      6000, // S
-		TotalIssues:       150,  // B
-		TotalPullRequests: 600,  // A
-		Repositories: plugins.ComputedRepositories{
-			Count:        80,  // A
-			Stargazers:   200, // B
-			Issues:       150,
-			PullRequests: 600,
-		},
-		RepositoryList: []plugins.Repository{{NameWithOwner: "octocat/alpha"}},
+// octocatData mimics a populated Data with values that put each
+// achievement on a known tier. Thresholds mirror upstream users.mjs.
+func octocatData() *plugins.Data {
+	d := plugins.NewData()
+	d.User = &plugins.User{
+		Login:                "octocat",
+		CreatedAt:            time.Now().AddDate(-7, 0, 0), // member: A (3..5..10 → 7 = A)
+		Followers:            6000,                         // influencer: S
+		Following:            300,                          // follower: B (200..500)
+		Sponsoring:           4,                            // sponsor: B (3..5)
+		Starred:              700,                          // stargazer: A (500..1000)
+		Organizations:        3,                            // worker: A (2..4)
+		Gists:                25,                           // gister: B (20..50)
+		DiscussionsStarted:   100,                          // chatter: 100+150=250 → B (200..500)
+		DiscussionsComments:  150,
+		DiscussionAnswers:    30,  // helper: B (20..50)
+		PullRequestsOpened:   600, // contributor: A (500..1000)
+		PullRequestsReviewed: 220, // reviewer: B (200..500)
 	}
+	d.Computed = plugins.Computed{
+		TotalCommits: 6000,
+		Repositories: plugins.ComputedRepositories{
+			Count:       80,  // developer: B (50..100)
+			Packages:    7,   // packager: B (5..10)
+			Deployments: 250, // deployer: B (200..500)
+		},
+		RepositoryList: []plugins.Repository{
+			{NameWithOwner: "octocat/alpha", Stars: 1200, Forks: 120, IsFork: false, Languages: []plugins.LanguageStat{{Name: "Go"}, {Name: "Ruby"}}},
+			{NameWithOwner: "octocat/beta", Stars: 300, Forks: 30, IsFork: true, Languages: []plugins.LanguageStat{{Name: "Python"}}},
+			{NameWithOwner: "octocat/gamma", Stars: 80, Forks: 10, IsFork: true, Languages: []plugins.LanguageStat{{Name: "JavaScript"}, {Name: "TypeScript"}, {Name: "Go"}}},
+			{NameWithOwner: "octocat/delta", Stars: 40, Forks: 5, IsFork: true, Languages: []plugins.LanguageStat{{Name: "Rust"}}},
+			{NameWithOwner: "octocat/epsilon", Stars: 20, Forks: 1, IsFork: true, Languages: []plugins.LanguageStat{{Name: "C"}}},
+			// 5 IsFork → forker: C (5..10)
+			// max stars 1200 → maintainer: B (1000..5000)
+			// max forks 120 → inspirer: B (100..500)
+			// distinct languages: Go, Ruby, Python, JavaScript, TypeScript, Rust, C = 7 → polyglot: B (4..8)
+		},
+	}
+	return d
 }
 
-// TestRun_Normal_ThresholdC — default threshold "C" should list 5+
-// entries (commits S, repos A, stars B, issues B, PRs A; followers X
-// dropped by threshold).
+// TestRun_Normal_ThresholdC — default threshold "C" lists 18 achievements
+// (the seed data was tuned so every entry lands at C or better).
 func TestRun_Normal_ThresholdC(t *testing.T) {
 	t.Parallel()
-	r := run(t, octocatComputed(), nil)
+	r := run(t, octocatData(), nil)
 	if r.Skipped {
 		t.Fatalf("unexpected Skipped: %+v", r)
 	}
 	if r.Display != "detailed" {
 		t.Errorf("Display = %q, want detailed", r.Display)
 	}
-	if len(r.List) < 5 {
-		t.Errorf("List len = %d, want >= 5; %+v", len(r.List), r.List)
+	if len(r.Ranks) != 18 {
+		t.Errorf("Ranks len = %d, want 18; got %+v", len(r.Ranks), r.Ranks)
 	}
 	for _, a := range r.List {
 		if a.Rank == "X" {
@@ -83,9 +107,126 @@ func TestRun_Normal_ThresholdC(t *testing.T) {
 	}
 }
 
+// TestRun_AchievementCoverage — every adopted id surfaces in Ranks with
+// a non-empty rank token.
+func TestRun_AchievementCoverage(t *testing.T) {
+	t.Parallel()
+	want := []string{
+		"developer", "forker", "contributor", "reviewer", "packager",
+		"gister", "worker", "stargazer", "follower", "influencer",
+		"maintainer", "inspirer", "polyglot", "member", "sponsor",
+		"deployer", "chatter", "helper",
+	}
+	r := run(t, octocatData(), nil)
+	for _, id := range want {
+		if _, ok := r.Ranks[id]; !ok {
+			t.Errorf("missing rank entry for %q", id)
+		}
+	}
+}
+
+// TestRun_InfluencerWired — Followers > 0 must unlock Influencer
+// (regression for the old `followers: 0` hardcoded bug).
+func TestRun_InfluencerWired(t *testing.T) {
+	t.Parallel()
+	r := run(t, octocatData(), nil)
+	found := false
+	for _, a := range r.List {
+		if a.ID == "influencer" {
+			found = true
+			if a.Value != 6000 {
+				t.Errorf("influencer.Value = %d, want 6000", a.Value)
+			}
+			if a.Rank != "S" {
+				t.Errorf("influencer.Rank = %q, want S (>= 1000)", a.Rank)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("influencer not in list")
+	}
+}
+
+// TestRun_WorkerSemantics — Worker is now organizations count, not commits.
+func TestRun_WorkerSemantics(t *testing.T) {
+	t.Parallel()
+	r := run(t, octocatData(), nil)
+	for _, a := range r.List {
+		if a.ID == "worker" {
+			if a.Value != 3 {
+				t.Errorf("worker.Value = %d, want 3 (Organizations)", a.Value)
+			}
+			return
+		}
+	}
+	t.Errorf("worker not in list")
+}
+
+// TestRun_StargazerSemantics — Stargazer is now starred-by-me count.
+func TestRun_StargazerSemantics(t *testing.T) {
+	t.Parallel()
+	r := run(t, octocatData(), nil)
+	for _, a := range r.List {
+		if a.ID == "stargazer" {
+			if a.Value != 700 {
+				t.Errorf("stargazer.Value = %d, want 700 (User.Starred)", a.Value)
+			}
+			return
+		}
+	}
+	t.Errorf("stargazer not in list")
+}
+
+// TestRun_PolyglotSemantics — Polyglot is distinct language count.
+func TestRun_PolyglotSemantics(t *testing.T) {
+	t.Parallel()
+	r := run(t, octocatData(), nil)
+	for _, a := range r.List {
+		if a.ID == "polyglot" {
+			if a.Value != 7 {
+				t.Errorf("polyglot.Value = %d, want 7 distinct languages", a.Value)
+			}
+			return
+		}
+	}
+	t.Errorf("polyglot not in list")
+}
+
+// TestRun_MemberSemantics — Member is floor((now - CreatedAt) / year).
+func TestRun_MemberSemantics(t *testing.T) {
+	t.Parallel()
+	d := octocatData()
+	d.User.CreatedAt = time.Now().AddDate(-10, -6, 0) // 10.5 years
+	r := run(t, d, nil)
+	for _, a := range r.List {
+		if a.ID == "member" {
+			if a.Value != 10 {
+				t.Errorf("member.Value = %d, want 10 (years floor)", a.Value)
+			}
+			if a.Rank != "S" {
+				t.Errorf("member.Rank = %q, want S (>= 10)", a.Rank)
+			}
+			return
+		}
+	}
+	t.Errorf("member not in list")
+}
+
+// TestRun_NoEngineerTitle — the Go-only Engineer achievement is gone.
+func TestRun_NoEngineerTitle(t *testing.T) {
+	t.Parallel()
+	r := run(t, octocatData(), nil)
+	for _, a := range r.List {
+		if a.Title == "Engineer" || a.ID == "engineer" {
+			t.Errorf("Engineer should not exist; got %+v", a)
+		}
+	}
+}
+
+// TestRun_DisplayCompact — display=compact normalises to compact.
 func TestRun_DisplayCompact(t *testing.T) {
 	t.Parallel()
-	r := run(t, octocatComputed(), map[string]any{
+	r := run(t, octocatData(), map[string]any{
 		"plugin_achievements_display": " compact ",
 	})
 	if r.Display != "compact" {
@@ -93,10 +234,10 @@ func TestRun_DisplayCompact(t *testing.T) {
 	}
 }
 
-// TestRun_ThresholdS — only S-rank entries (commits) survive.
+// TestRun_ThresholdS — only S-rank entries survive.
 func TestRun_ThresholdS(t *testing.T) {
 	t.Parallel()
-	r := run(t, octocatComputed(), map[string]any{
+	r := run(t, octocatData(), map[string]any{
 		"plugin_achievements_threshold": "S",
 	})
 	for _, a := range r.List {
@@ -106,45 +247,64 @@ func TestRun_ThresholdS(t *testing.T) {
 	}
 }
 
-// TestRun_OnlyFilter — limits to commits, stars only.
+// TestRun_OnlyFilter — limits to developer + stargazer only.
 func TestRun_OnlyFilter(t *testing.T) {
 	t.Parallel()
-	r := run(t, octocatComputed(), map[string]any{
-		"plugin_achievements_only": "commits,stars",
+	r := run(t, octocatData(), map[string]any{
+		"plugin_achievements_only": "developer,stargazer",
 	})
 	ids := map[string]bool{}
 	for _, a := range r.List {
 		ids[a.ID] = true
 	}
-	if !ids["commits"] || !ids["stars"] {
-		t.Errorf("expected commits+stars; got %+v", ids)
+	if !ids["developer"] || !ids["stargazer"] {
+		t.Errorf("expected developer+stargazer; got %+v", ids)
 	}
 	for id := range ids {
-		if id != "commits" && id != "stars" {
+		if id != "developer" && id != "stargazer" {
 			t.Errorf("unexpected achievement id %q", id)
 		}
 	}
 }
 
-// TestRun_IgnoredFilter — drops the "stars" achievement explicitly.
+// TestRun_IgnoredFilter — drops the "stargazer" achievement explicitly.
 func TestRun_IgnoredFilter(t *testing.T) {
 	t.Parallel()
-	r := run(t, octocatComputed(), map[string]any{
-		"plugin_achievements_ignored": "stars",
+	r := run(t, octocatData(), map[string]any{
+		"plugin_achievements_ignored": "stargazer",
 	})
 	for _, a := range r.List {
-		if a.ID == "stars" {
-			t.Errorf("stars should be ignored: %+v", a)
+		if a.ID == "stargazer" {
+			t.Errorf("stargazer should be ignored: %+v", a)
 		}
 	}
 }
 
-// TestRun_BaseUnavailable — empty computed → Skipped.
+// TestRun_BaseUnavailable — empty data → Skipped.
 func TestRun_BaseUnavailable(t *testing.T) {
 	t.Parallel()
-	r := run(t, plugins.Computed{}, nil)
+	r := run(t, plugins.NewData(), nil)
 	if !r.Skipped {
 		t.Errorf("expected Skipped=true; got %+v", r)
+	}
+}
+
+// TestRun_PluralizationY — repositor-y/-ies switches with value.
+func TestRun_PluralizationY(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	d.User = &plugins.User{Login: "u"}
+	d.Computed.Repositories.Count = 1
+	d.Computed.RepositoryList = []plugins.Repository{{NameWithOwner: "u/a"}}
+	r := run(t, d, map[string]any{"plugin_achievements_only": "developer"})
+	if len(r.List) != 1 || !strings.Contains(r.List[0].Description, "repository") {
+		t.Errorf("want 'repository' (singular), got %q", r.List[0].Description)
+	}
+
+	d.Computed.Repositories.Count = 5
+	r = run(t, d, map[string]any{"plugin_achievements_only": "developer"})
+	if len(r.List) != 1 || !strings.Contains(r.List[0].Description, "repositories") {
+		t.Errorf("want 'repositories' (plural), got %q", r.List[0].Description)
 	}
 }
 
@@ -153,17 +313,12 @@ func TestPartial_Achievements_Golden(t *testing.T) {
 	r := &achievements.Result{
 		Display: "detailed",
 		List: []achievements.Achievement{
-			{ID: "commits", Rank: "S", Title: "Worker", Description: "Total commits", Icon: "git-commit", Value: 6000},
-			{ID: "pull-requests", Rank: "A", Title: "Engineer", Description: "Pull requests", Icon: "git-pull-request", Value: 600},
-			{ID: "repositories", Rank: "A", Title: "Member", Description: "Public repositories", Icon: "repo", Value: 80},
+			{ID: "developer", Rank: "S", Title: "Developer", Description: "Published 120 public repositories", Icon: "repo", Value: 120},
+			{ID: "stargazer", Rank: "A", Title: "Stargazer", Description: "Starred 700 repositories", Icon: "star", Value: 700},
+			{ID: "worker", Rank: "A", Title: "Worker", Description: "Member of 3 organizations", Icon: "organization", Value: 3},
 		},
 		Ranks: map[string]string{
-			"commits":       "S",
-			"pull-requests": "A",
-			"repositories":  "A",
-			"stars":         "B",
-			"issues":        "B",
-			"followers":     "X",
+			"developer": "S", "stargazer": "A", "worker": "A",
 		},
 	}
 	data := plugins.NewData()
@@ -179,7 +334,7 @@ func TestPartial_Achievements_Golden(t *testing.T) {
 			t.Fatalf("MkdirAll: %v", err)
 		}
 		if werr := os.WriteFile(gp, []byte(got), 0o644); werr != nil {
-			t.Fatalf("WriteFile: %v", err)
+			t.Fatalf("WriteFile: %v", werr)
 		}
 		return
 	}
@@ -190,11 +345,6 @@ func TestPartial_Achievements_Golden(t *testing.T) {
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
-	// Tier 3 (011) rewrite: each entry is now
-	// `<div class="achievement <rank> largeable-width-half" data-rank=...>`
-	// so the literal `class="achievement"` (closing quote) and the old
-	// `data-achievement=` attribute no longer match. Anchor on the
-	// multi-class prefix + the new `data-rank=` attribute instead.
 	for _, marker := range []string{
 		`class="achievement `,
 		`data-rank="`,
@@ -209,17 +359,12 @@ func TestPartial_AchievementsCompact_Golden(t *testing.T) {
 	r := &achievements.Result{
 		Display: "compact",
 		List: []achievements.Achievement{
-			{ID: "commits", Rank: "S", Title: "Worker", Description: "Total commits", Icon: "git-commit", Value: 6000},
-			{ID: "pull-requests", Rank: "A", Title: "Engineer", Description: "Pull requests", Icon: "git-pull-request", Value: 600},
-			{ID: "repositories", Rank: "A", Title: "Member", Description: "Public repositories", Icon: "repo", Value: 80},
+			{ID: "developer", Rank: "S", Title: "Developer", Description: "Published 120 public repositories", Icon: "repo", Value: 120},
+			{ID: "stargazer", Rank: "A", Title: "Stargazer", Description: "Starred 700 repositories", Icon: "star", Value: 700},
+			{ID: "worker", Rank: "A", Title: "Worker", Description: "Member of 3 organizations", Icon: "organization", Value: 3},
 		},
 		Ranks: map[string]string{
-			"commits":       "S",
-			"pull-requests": "A",
-			"repositories":  "A",
-			"stars":         "B",
-			"issues":        "B",
-			"followers":     "X",
+			"developer": "S", "stargazer": "A", "worker": "A",
 		},
 	}
 	data := plugins.NewData()
@@ -254,7 +399,7 @@ func TestPartial_AchievementsCompact_Golden(t *testing.T) {
 			t.Errorf("missing marker %q in:\n%s", marker, got)
 		}
 	}
-	if strings.Contains(got, `class="text"`) || strings.Contains(got, "Total commits") {
+	if strings.Contains(got, `class="text"`) {
 		t.Errorf("compact output should not render descriptions:\n%s", got)
 	}
 }
@@ -263,11 +408,14 @@ func TestRun_GoldenShape_Achievements(t *testing.T) {
 	r := &achievements.Result{
 		Display: "detailed",
 		List: []achievements.Achievement{
-			{ID: "commits", Rank: "S", Title: "Worker", Description: "Total commits", Icon: "git-commit", Value: 6000},
+			{ID: "developer", Rank: "S", Title: "Developer", Description: "Published 120 public repositories", Icon: "repo", Value: 120},
 		},
 		Ranks: map[string]string{
-			"commits": "S", "repositories": "A", "stars": "B", "followers": "X",
-			"issues": "B", "pull-requests": "A",
+			"developer": "S", "forker": "X", "contributor": "A", "reviewer": "B",
+			"packager": "B", "gister": "B", "worker": "A", "stargazer": "A",
+			"follower": "B", "influencer": "S", "maintainer": "B", "inspirer": "B",
+			"polyglot": "B", "member": "A", "sponsor": "B", "deployer": "B",
+			"chatter": "B", "helper": "B",
 		},
 	}
 	got, err := json.MarshalIndent(r, "", "  ")
