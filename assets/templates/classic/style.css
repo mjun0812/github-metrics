@@ -209,6 +209,11 @@
 
   .contribution.organization {
     display: flex;
+    /* Vertically center avatar / name / (gauge + icon) so the per-stat
+     * icon sits on the gauge's horizontal centerline. Without this the
+     * default `align-items: stretch` lets each child anchor to its own
+     * baseline and the icons drift below the gauge text. */
+    align-items: center;
     border: 1px solid #959da5;
     border-radius: 6px;
     padding: 2px 6px;
@@ -263,7 +268,6 @@
     width: 10px;
     height: 10px;
     margin-left: 2px;
-    margin-top: 4px;
     color: inherit;
     filter: brightness(.5);
   }
