@@ -23,7 +23,7 @@
               Most used languages
             </h3>
             <small>
-              estimation from 170.4 MB of code in 34 analyzed repositories
+              estimation from 170.5 MB of code in 34 analyzed repositories
             </small>
             <svg xmlns="http://www.w3.org/2000/svg" class="bar" width="460" height="8" role="img" aria-label="Languages distribution">
               <title>
@@ -36,13 +36,13 @@
               <g class="languages-progress">
                 <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="72.72" height="8" fill="#a91e50" data-language="EJS"/>
                 <rect class="language-bar" mask="url(#languages-bar-most)" x="72.72" y="0" width="72.50" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="145.22" y="0" width="64.78" height="8" fill="#3D6117" data-language="TeX"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="210.00" y="0" width="61.04" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="271.04" y="0" width="59.64" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="330.68" y="0" width="46.68" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="377.36" y="0" width="46.67" height="8" fill="#f1e05a" data-language="JavaScript"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="145.22" y="0" width="64.77" height="8" fill="#3D6117" data-language="TeX"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="209.99" y="0" width="61.04" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="271.03" y="0" width="59.64" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="330.67" y="0" width="46.68" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="377.35" y="0" width="46.67" height="8" fill="#f1e05a" data-language="JavaScript"/>
                 <rect class="language-bar" mask="url(#languages-bar-most)" x="424.03" y="0" width="8.67" height="8" fill="#3A4E3A" data-language="Cuda"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="432.71" y="0" width="27.29" height="8" fill="#cccccc" data-language="Other"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="432.70" y="0" width="27.30" height="8" fill="#cccccc" data-language="Other"/>
               </g>
             </svg>
             <div class="row fill-width">
@@ -120,7 +120,7 @@
                   </div>
                   <small>
                     <div>
-                      885.8 kB
+                      886.1 kB
                     </div>
                     <div>
                       5.9%
@@ -207,7 +207,7 @@
               <text class="indepth-language" data-language="Python" data-bytes="19858768">
                 Python
               </text>
-              <text class="indepth-language" data-language="JSON" data-bytes="17210155">
+              <text class="indepth-language" data-language="JSON" data-bytes="17210254">
                 JSON
               </text>
               <text class="indepth-language" data-language="Jest Snapshot" data-bytes="14329594">
@@ -219,7 +219,7 @@
               <text class="indepth-language" data-language="JavaScript" data-bytes="10494023">
                 JavaScript
               </text>
-              <text class="indepth-language" data-language="Markdown" data-bytes="5647084">
+              <text class="indepth-language" data-language="Markdown" data-bytes="5734412">
                 Markdown
               </text>
               <text class="indepth-language" data-language="Java" data-bytes="5386420">
@@ -228,7 +228,7 @@
               <text class="indepth-language" data-language="TypeScript" data-bytes="4981583">
                 TypeScript
               </text>
-              <text class="indepth-language" data-language="SVG" data-bytes="3964787">
+              <text class="indepth-language" data-language="SVG" data-bytes="3966564">
                 SVG
               </text>
               <text class="indepth-language" data-language="CSV" data-bytes="2716407">
