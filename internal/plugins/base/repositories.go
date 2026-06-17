@@ -49,6 +49,7 @@ type pagingState struct {
 	releases      int
 	packages      int
 	diskUsage     int
+	deployments   int
 	licenseCounts map[string]int
 	// licensedRepos counts repositories that reported a non-nil
 	// licenseInfo.name. It is the denominator for the LicensePreference
@@ -143,6 +144,9 @@ func fetchOnePage(ctx context.Context, pc *plugins.PluginContext, login string, 
 			if node.DiskUsage != nil {
 				state.diskUsage += *node.DiskUsage
 			}
+			if node.Deployments != nil {
+				state.deployments += node.Deployments.TotalCount
+			}
 			if node.LicenseInfo != nil && node.LicenseInfo.Name != "" {
 				if state.licenseCounts == nil {
 					state.licenseCounts = map[string]int{}
@@ -185,6 +189,9 @@ func fetchOnePage(ctx context.Context, pc *plugins.PluginContext, login string, 
 		if node.DiskUsage != nil {
 			state.diskUsage += *node.DiskUsage
 		}
+		if node.Deployments != nil {
+			state.deployments += node.Deployments.TotalCount
+		}
 		if node.LicenseInfo != nil && node.LicenseInfo.Name != "" {
 			if state.licenseCounts == nil {
 				state.licenseCounts = map[string]int{}
@@ -217,6 +224,7 @@ func populateRepositories(ctx context.Context, pc *plugins.PluginContext, login 
 	pc.Data.Computed.Repositories.Releases = state.releases
 	pc.Data.Computed.Repositories.Packages = state.packages
 	pc.Data.Computed.Repositories.DiskUsage = state.diskUsage
+	pc.Data.Computed.Repositories.Deployments = state.deployments
 	pc.Data.Computed.Repositories.LicensePreference = topLicenseShares(
 		state.licenseCounts, state.licensedRepos, licensePreferenceTopN,
 	)

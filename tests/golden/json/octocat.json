@@ -29,29 +29,105 @@
       "display": "detailed",
       "list": [
         {
-          "description": "Public repositories owned",
+          "description": "Published 250 public repositories",
           "icon": "repo",
-          "id": "repositories",
+          "id": "developer",
           "rank": "S",
-          "title": "Member",
+          "title": "Developer",
           "value": 250
         },
         {
-          "description": "Total stars received across owned repositories",
+          "description": "Followed by 1555 users",
+          "icon": "people",
+          "id": "influencer",
+          "rank": "S",
+          "title": "Influencer",
+          "value": 1555
+        },
+        {
+          "description": "Registered 18 years ago",
+          "icon": "calendar",
+          "id": "member",
+          "rank": "S",
+          "title": "Member",
+          "value": 18
+        },
+        {
+          "description": "Following 617 users",
+          "icon": "person-add",
+          "id": "follower",
+          "rank": "A",
+          "title": "Follower",
+          "value": 617
+        },
+        {
+          "description": "Opened 290 pull requests",
+          "icon": "git-pull-request",
+          "id": "contributor",
+          "rank": "B",
+          "title": "Contributor",
+          "value": 290
+        },
+        {
+          "description": "Starred 310 repositories",
           "icon": "star",
-          "id": "stars",
+          "id": "stargazer",
           "rank": "B",
           "title": "Stargazer",
-          "value": 150
+          "value": 310
+        },
+        {
+          "description": "Member of 2 organizations",
+          "icon": "organization",
+          "id": "worker",
+          "rank": "B",
+          "title": "Worker",
+          "value": 2
+        },
+        {
+          "description": "Most forked repository has 10 forks",
+          "icon": "repo-forked",
+          "id": "inspirer",
+          "rank": "C",
+          "title": "Inspirer",
+          "value": 10
+        },
+        {
+          "description": "Most popular repository has 100 stars",
+          "icon": "tools",
+          "id": "maintainer",
+          "rank": "C",
+          "title": "Maintainer",
+          "value": 100
+        },
+        {
+          "description": "Reviewed 68 pull requests",
+          "icon": "eye",
+          "id": "reviewer",
+          "rank": "C",
+          "title": "Reviewer",
+          "value": 68
         }
       ],
       "ranks": {
-        "commits": "X",
-        "followers": "X",
-        "issues": "X",
-        "pull-requests": "X",
-        "repositories": "S",
-        "stars": "B"
+        "chatter": "X",
+        "contributor": "B",
+        "deployer": "X",
+        "developer": "S",
+        "follower": "A",
+        "forker": "X",
+        "gister": "X",
+        "helper": "X",
+        "influencer": "S",
+        "inspirer": "C",
+        "maintainer": "C",
+        "member": "S",
+        "packager": "X",
+        "polyglot": "X",
+        "reviewer": "C",
+        "sponsor": "X",
+        "stargazer": "B",
+        "worker": "B"
       },
       "skipped": false
     },

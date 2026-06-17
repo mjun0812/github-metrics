@@ -184,6 +184,11 @@ func (p *basePlugin) runUser(ctx context.Context, pc *plugins.PluginContext, log
 		Organizations: organizationsTotal(u),
 		Sponsoring:    sponsorshipsAsSponsorTotal(u),
 		Starred:       starredRepositoriesTotal(u),
+		// achievements: 18-upstream-achievements rewrite.
+		Gists:               gistsTotal(u),
+		DiscussionsStarted:  discussionsStartedTotal(u),
+		DiscussionsComments: discussionsCommentsTotal(u),
+		DiscussionAnswers:   discussionAnswersTotal(u),
 	}
 	populateLifetimeCommits(ctx, pc, login)
 
@@ -349,6 +354,38 @@ func starredRepositoriesTotal(u *githubapi.UserUser) int {
 		return 0
 	}
 	return u.StarredRepositories.TotalCount
+}
+
+// achievements: 18-upstream-achievements rewrite. Each helper reads
+// `totalCount` off its connection or returns 0 when the connection is
+// nil (degraded GraphQL response). They back the Gister / Chatter /
+// Helper badges in internal/plugins/achievements/achievements.go.
+func gistsTotal(u *githubapi.UserUser) int {
+	if u == nil || u.Gists == nil {
+		return 0
+	}
+	return u.Gists.TotalCount
+}
+
+func discussionsStartedTotal(u *githubapi.UserUser) int {
+	if u == nil || u.DiscussionsStarted == nil {
+		return 0
+	}
+	return u.DiscussionsStarted.TotalCount
+}
+
+func discussionsCommentsTotal(u *githubapi.UserUser) int {
+	if u == nil || u.DiscussionsComments == nil {
+		return 0
+	}
+	return u.DiscussionsComments.TotalCount
+}
+
+func discussionAnswersTotal(u *githubapi.UserUser) int {
+	if u == nil || u.DiscussionAnswers == nil {
+		return 0
+	}
+	return u.DiscussionAnswers.TotalCount
 }
 
 // repositoriesContributedToTotal returns the totalCount sub-field from

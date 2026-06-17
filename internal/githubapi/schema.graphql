@@ -94,6 +94,14 @@ type User implements RepositoryOwner {
     contributionTypes: [RepositoryContributionType!]
     orderBy: RepositoryOrder
   ): RepositoryConnection
+  # achievements: 18-upstream-achievements rewrite. Surfaces the totals
+  # behind Gister / Chatter / Helper. Only totalCount is read.
+  gists(first: Int): GistConnection
+  repositoryDiscussions(first: Int): RepositoryDiscussionConnection
+  repositoryDiscussionComments(
+    first: Int
+    onlyAnswers: Boolean
+  ): RepositoryDiscussionCommentConnection
 }
 
 # 429 Phase 2: contribution-type enum used by
@@ -408,6 +416,20 @@ type ContributionsCollection {
 # 442: minimal organizations connection — only totalCount is consumed
 # by the base Community-stats section ("Member of N organizations").
 type OrganizationConnection {
+  totalCount: Int!
+}
+
+# achievements: minimal connection types backing the Gister / Chatter /
+# Helper badges. Only totalCount is consumed.
+type GistConnection {
+  totalCount: Int!
+}
+
+type RepositoryDiscussionConnection {
+  totalCount: Int!
+}
+
+type RepositoryDiscussionCommentConnection {
   totalCount: Int!
 }
 

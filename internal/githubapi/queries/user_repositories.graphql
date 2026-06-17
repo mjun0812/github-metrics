@@ -62,6 +62,12 @@ query UserRepositories($login: String!, $first: Int!, $after: String) {
         packages(first: 0) {
           totalCount
         }
+        # achievements: per-repo deployments count summed across all
+        # owned repos into ComputedRepositories.Deployments (feeds the
+        # Deployer badge).
+        deployments {
+          totalCount
+        }
         licenseInfo {
           name
           key
