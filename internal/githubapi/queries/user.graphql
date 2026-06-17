@@ -47,6 +47,22 @@ query User($login: String!) {
     issueComments(first: 0) {
       totalCount
     }
+    # achievements: 18-upstream-achievements rewrite. Surfaces the
+    # totals required by the Gister / Chatter / Helper badges (see
+    # internal/plugins/achievements/achievements.go). Each connection
+    # is requested at first: 0 so only the counter is fetched.
+    gists(first: 0) {
+      totalCount
+    }
+    discussionsStarted: repositoryDiscussions(first: 0) {
+      totalCount
+    }
+    discussionsComments: repositoryDiscussionComments(first: 0) {
+      totalCount
+    }
+    discussionAnswers: repositoryDiscussionComments(first: 0, onlyAnswers: true) {
+      totalCount
+    }
     # 429 Phase 2: "Contributed to N repositories" counter rendered by
     # upstream base.header.ejs. Explicit contributionTypes mirrors
     # upstream's set so the number matches the GitHub profile page.

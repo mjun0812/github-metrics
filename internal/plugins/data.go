@@ -163,6 +163,16 @@ type User struct {
 	Organizations int
 	Sponsoring    int
 	Starred       int
+
+	// achievements: 18-upstream-achievements rewrite. Counters
+	// consumed by the Gister / Chatter / Helper badges. Sourced from
+	// the always-fetched User query connections (gists,
+	// repositoryDiscussions, repositoryDiscussionComments,
+	// repositoryDiscussionComments(onlyAnswers: true)).
+	Gists               int
+	DiscussionsStarted  int
+	DiscussionsComments int
+	DiscussionAnswers   int
 }
 
 // Organization is the organization-account payload populated by the
@@ -247,6 +257,10 @@ type ComputedRepositories struct {
 	PullRequests      int
 	Languages         map[string]int
 	LicensePreference []LicenseShare
+	// Deployments is the sum of `deployments.totalCount` across all
+	// owned repositories. Feeds the achievements Deployer badge
+	// (mirrors upstream `computed.repositories.deployments`).
+	Deployments int
 }
 
 // LicenseShare is one entry in the License-preference top-N. Percent is
