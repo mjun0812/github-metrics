@@ -106,6 +106,16 @@ var allowedFiles = map[string]struct{}{
 	// "N files changed ++A --D" render (activity.ejs line 79).
 	"internal/plugins/activity/activity.go": {},
 	"internal/plugins/activity/partial.go":  {},
+	// achievements: 18-upstream-achievements rewrite reads
+	// `User.Gists` / `User.DiscussionsStarted` / `User.DiscussionsComments`
+	// / `User.DiscussionAnswers` off the always-fetched user query to
+	// back the Gister / Chatter / Helper badges. The word "gists" /
+	// "discussions" overlap the unadopted standalone plugin slugs;
+	// this allow-list entry preserves the upstream-equivalent badge
+	// shape without standing up those plugins.
+	"internal/plugins/achievements/achievements.go": {},
+	"internal/plugins/base/base.go":                 {},
+	"internal/plugins/data.go":                      {},
 }
 
 // TestNoUnadoptedPluginReference walks scanRoots and asserts that no

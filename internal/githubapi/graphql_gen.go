@@ -190,6 +190,7 @@ type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRe
 	DiskUsage       *int                                                                                                                  `json:"diskUsage"`
 	Releases        *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryReleasesReleaseConnection         `json:"releases"`
 	Packages        *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryPackagesPackageConnection         `json:"packages"`
+	Deployments     *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryDeploymentsDeploymentConnection   `json:"deployments"`
 	LicenseInfo     *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense                `json:"licenseInfo"`
 }
 
@@ -298,9 +299,24 @@ func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNod
 	return v.Packages
 }
 
+// GetDeployments returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.Deployments, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetDeployments() *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryDeploymentsDeploymentConnection {
+	return v.Deployments
+}
+
 // GetLicenseInfo returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository.LicenseInfo, and is useful for accessing the field via an interface.
 func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepository) GetLicenseInfo() *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense {
 	return v.LicenseInfo
+}
+
+// OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryDeploymentsDeploymentConnection includes the requested fields of the GraphQL type DeploymentConnection.
+type OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryDeploymentsDeploymentConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryDeploymentsDeploymentConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryDeploymentsDeploymentConnection) GetTotalCount() int {
+	return v.TotalCount
 }
 
 // OrganizationRepositoriesOrganizationRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection includes the requested fields of the GraphQL type IssueConnection.
@@ -2651,6 +2667,7 @@ type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository struct 
 	DiskUsage       *int                                                                                                  `json:"diskUsage"`
 	Releases        *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryReleasesReleaseConnection         `json:"releases"`
 	Packages        *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryPackagesPackageConnection         `json:"packages"`
+	Deployments     *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryDeploymentsDeploymentConnection   `json:"deployments"`
 	LicenseInfo     *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense                `json:"licenseInfo"`
 }
 
@@ -2759,9 +2776,24 @@ func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) Ge
 	return v.Packages
 }
 
+// GetDeployments returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.Deployments, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetDeployments() *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryDeploymentsDeploymentConnection {
+	return v.Deployments
+}
+
 // GetLicenseInfo returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository.LicenseInfo, and is useful for accessing the field via an interface.
 func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepository) GetLicenseInfo() *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryLicenseInfoLicense {
 	return v.LicenseInfo
+}
+
+// UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryDeploymentsDeploymentConnection includes the requested fields of the GraphQL type DeploymentConnection.
+type UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryDeploymentsDeploymentConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryDeploymentsDeploymentConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryDeploymentsDeploymentConnection) GetTotalCount() int {
+	return v.TotalCount
 }
 
 // UserRepositoriesUserRepositoriesRepositoryConnectionNodesRepositoryIssuesIssueConnection includes the requested fields of the GraphQL type IssueConnection.
@@ -3104,28 +3136,32 @@ func (v *UserStarredRepositoriesUserStarredRepositoriesStarredRepositoryConnecti
 
 // UserUser includes the requested fields of the GraphQL type User.
 type UserUser struct {
-	DatabaseId                *int                                                    `json:"databaseId"`
-	Id                        string                                                  `json:"id"`
-	Login                     string                                                  `json:"login"`
-	Name                      *string                                                 `json:"name"`
-	Location                  *string                                                 `json:"location"`
-	CreatedAt                 time.Time                                               `json:"createdAt"`
-	AvatarUrl                 string                                                  `json:"avatarUrl"`
-	WebsiteUrl                *string                                                 `json:"websiteUrl"`
-	TwitterUsername           *string                                                 `json:"twitterUsername"`
-	Email                     *string                                                 `json:"email"`
-	Bio                       *string                                                 `json:"bio"`
-	Company                   *string                                                 `json:"company"`
-	Followers                 *UserUserFollowersUserConnection                        `json:"followers"`
-	Following                 *UserUserFollowingUserConnection                        `json:"following"`
-	Watching                  *UserUserWatchingRepositoryConnection                   `json:"watching"`
-	SponsorshipsAsMaintainer  *UserUserSponsorshipsAsMaintainerSponsorshipConnection  `json:"sponsorshipsAsMaintainer"`
-	Organizations             *UserUserOrganizationsOrganizationConnection            `json:"organizations"`
-	SponsorshipsAsSponsor     *UserUserSponsorshipsAsSponsorSponsorshipConnection     `json:"sponsorshipsAsSponsor"`
-	StarredRepositories       *UserUserStarredRepositoriesStarredRepositoryConnection `json:"starredRepositories"`
-	IssueComments             *UserUserIssueCommentsIssueCommentConnection            `json:"issueComments"`
-	RepositoriesContributedTo *UserUserRepositoriesContributedToRepositoryConnection  `json:"repositoriesContributedTo"`
-	ContributionsCollection   *UserUserContributionsCollection                        `json:"contributionsCollection"`
+	DatabaseId                *int                                                              `json:"databaseId"`
+	Id                        string                                                            `json:"id"`
+	Login                     string                                                            `json:"login"`
+	Name                      *string                                                           `json:"name"`
+	Location                  *string                                                           `json:"location"`
+	CreatedAt                 time.Time                                                         `json:"createdAt"`
+	AvatarUrl                 string                                                            `json:"avatarUrl"`
+	WebsiteUrl                *string                                                           `json:"websiteUrl"`
+	TwitterUsername           *string                                                           `json:"twitterUsername"`
+	Email                     *string                                                           `json:"email"`
+	Bio                       *string                                                           `json:"bio"`
+	Company                   *string                                                           `json:"company"`
+	Followers                 *UserUserFollowersUserConnection                                  `json:"followers"`
+	Following                 *UserUserFollowingUserConnection                                  `json:"following"`
+	Watching                  *UserUserWatchingRepositoryConnection                             `json:"watching"`
+	SponsorshipsAsMaintainer  *UserUserSponsorshipsAsMaintainerSponsorshipConnection            `json:"sponsorshipsAsMaintainer"`
+	Organizations             *UserUserOrganizationsOrganizationConnection                      `json:"organizations"`
+	SponsorshipsAsSponsor     *UserUserSponsorshipsAsSponsorSponsorshipConnection               `json:"sponsorshipsAsSponsor"`
+	StarredRepositories       *UserUserStarredRepositoriesStarredRepositoryConnection           `json:"starredRepositories"`
+	IssueComments             *UserUserIssueCommentsIssueCommentConnection                      `json:"issueComments"`
+	Gists                     *UserUserGistsGistConnection                                      `json:"gists"`
+	DiscussionsStarted        *UserUserDiscussionsStartedRepositoryDiscussionConnection         `json:"discussionsStarted"`
+	DiscussionsComments       *UserUserDiscussionsCommentsRepositoryDiscussionCommentConnection `json:"discussionsComments"`
+	DiscussionAnswers         *UserUserDiscussionAnswersRepositoryDiscussionCommentConnection   `json:"discussionAnswers"`
+	RepositoriesContributedTo *UserUserRepositoriesContributedToRepositoryConnection            `json:"repositoriesContributedTo"`
+	ContributionsCollection   *UserUserContributionsCollection                                  `json:"contributionsCollection"`
 }
 
 // GetDatabaseId returns UserUser.DatabaseId, and is useful for accessing the field via an interface.
@@ -3196,6 +3232,24 @@ func (v *UserUser) GetStarredRepositories() *UserUserStarredRepositoriesStarredR
 // GetIssueComments returns UserUser.IssueComments, and is useful for accessing the field via an interface.
 func (v *UserUser) GetIssueComments() *UserUserIssueCommentsIssueCommentConnection {
 	return v.IssueComments
+}
+
+// GetGists returns UserUser.Gists, and is useful for accessing the field via an interface.
+func (v *UserUser) GetGists() *UserUserGistsGistConnection { return v.Gists }
+
+// GetDiscussionsStarted returns UserUser.DiscussionsStarted, and is useful for accessing the field via an interface.
+func (v *UserUser) GetDiscussionsStarted() *UserUserDiscussionsStartedRepositoryDiscussionConnection {
+	return v.DiscussionsStarted
+}
+
+// GetDiscussionsComments returns UserUser.DiscussionsComments, and is useful for accessing the field via an interface.
+func (v *UserUser) GetDiscussionsComments() *UserUserDiscussionsCommentsRepositoryDiscussionCommentConnection {
+	return v.DiscussionsComments
+}
+
+// GetDiscussionAnswers returns UserUser.DiscussionAnswers, and is useful for accessing the field via an interface.
+func (v *UserUser) GetDiscussionAnswers() *UserUserDiscussionAnswersRepositoryDiscussionCommentConnection {
+	return v.DiscussionAnswers
 }
 
 // GetRepositoriesContributedTo returns UserUser.RepositoriesContributedTo, and is useful for accessing the field via an interface.
@@ -3302,6 +3356,36 @@ func (v *UserUserContributionsCollectionContributionCalendarWeeksContributionCal
 	return v.Color
 }
 
+// UserUserDiscussionAnswersRepositoryDiscussionCommentConnection includes the requested fields of the GraphQL type RepositoryDiscussionCommentConnection.
+type UserUserDiscussionAnswersRepositoryDiscussionCommentConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserUserDiscussionAnswersRepositoryDiscussionCommentConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserUserDiscussionAnswersRepositoryDiscussionCommentConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// UserUserDiscussionsCommentsRepositoryDiscussionCommentConnection includes the requested fields of the GraphQL type RepositoryDiscussionCommentConnection.
+type UserUserDiscussionsCommentsRepositoryDiscussionCommentConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserUserDiscussionsCommentsRepositoryDiscussionCommentConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserUserDiscussionsCommentsRepositoryDiscussionCommentConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// UserUserDiscussionsStartedRepositoryDiscussionConnection includes the requested fields of the GraphQL type RepositoryDiscussionConnection.
+type UserUserDiscussionsStartedRepositoryDiscussionConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserUserDiscussionsStartedRepositoryDiscussionConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserUserDiscussionsStartedRepositoryDiscussionConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
 // UserUserFollowersUserConnection includes the requested fields of the GraphQL type UserConnection.
 type UserUserFollowersUserConnection struct {
 	TotalCount int `json:"totalCount"`
@@ -3317,6 +3401,14 @@ type UserUserFollowingUserConnection struct {
 
 // GetTotalCount returns UserUserFollowingUserConnection.TotalCount, and is useful for accessing the field via an interface.
 func (v *UserUserFollowingUserConnection) GetTotalCount() int { return v.TotalCount }
+
+// UserUserGistsGistConnection includes the requested fields of the GraphQL type GistConnection.
+type UserUserGistsGistConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns UserUserGistsGistConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *UserUserGistsGistConnection) GetTotalCount() int { return v.TotalCount }
 
 // UserUserIssueCommentsIssueCommentConnection includes the requested fields of the GraphQL type IssueCommentConnection.
 type UserUserIssueCommentsIssueCommentConnection struct {
@@ -5025,6 +5117,9 @@ query OrganizationRepositories ($login: String!, $first: Int!, $after: String) {
 				packages(first: 0) {
 					totalCount
 				}
+				deployments {
+					totalCount
+				}
 				licenseInfo {
 					name
 					key
@@ -5194,6 +5289,18 @@ query User ($login: String!) {
 			totalCount
 		}
 		issueComments(first: 0) {
+			totalCount
+		}
+		gists(first: 0) {
+			totalCount
+		}
+		discussionsStarted: repositoryDiscussions(first: 0) {
+			totalCount
+		}
+		discussionsComments: repositoryDiscussionComments(first: 0) {
+			totalCount
+		}
+		discussionAnswers: repositoryDiscussionComments(first: 0, onlyAnswers: true) {
 			totalCount
 		}
 		repositoriesContributedTo(first: 0, contributionTypes: [COMMIT,PULL_REQUEST,ISSUE,REPOSITORY]) {
@@ -5722,6 +5829,9 @@ query UserRepositories ($login: String!, $first: Int!, $after: String) {
 					totalCount
 				}
 				packages(first: 0) {
+					totalCount
+				}
+				deployments {
 					totalCount
 				}
 				licenseInfo {
