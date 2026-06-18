@@ -24,13 +24,43 @@ const trophyOcticonPath = `<path fill-rule="evenodd" d="M3.217 6.962A3.75 3.75 0
 // with the heading text).
 const trophyHeaderSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">` + trophyOcticonPath + `</svg>`
 
-// trophyBadgeSVG is the per-achievement placeholder badge. Upstream emits
-// a 44x44 gauge composite (`viewBox="0 0 60 60"`) holding the rank gauge
-// circle plus per-achievement inline icon (EJS lines 18–31). Until that
-// composite is ported, we render the trophy path at the same 44x44
-// footprint as the CSS `.achievement .icon` box so the badge centers
-// vertically against the title/text column (Issue #554).
+// trophyBadgeSVG is the per-achievement fallback badge. iconForAchievement
+// uses this when an achievement id is not registered in iconsByID (e.g.,
+// a custom rank table entry without a known upstream icon). Sized 44x44
+// to fill the CSS `.achievement .icon` box (Issue #554).
 const trophyBadgeSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="44" height="44" aria-hidden="true">` + trophyOcticonPath + `</svg>`
+
+// iconViewBox / iconSize control the per-badge SVG wrapper. Upstream's
+// inline icon fragments are authored against a 60x60 viewBox; we
+// render them at 44x44 to match the `.achievement .icon` CSS box.
+const (
+	iconViewBox = "0 0 60 60"
+	iconSize    = "44"
+)
+
+// iconForAchievement returns the per-badge SVG for the given
+// achievement. It wraps the upstream `<g>` fragment in a sized
+// `<svg>` and substitutes the rank's hex pair into the `#primary`
+// / `#secondary` placeholders. Unknown ids fall back to the trophy
+// badge so the slot never renders empty.
+func iconForAchievement(a Achievement) string {
+	frag, ok := iconsByID[a.ID]
+	if !ok {
+		return trophyBadgeSVG
+	}
+	colors, ok := rankColors[a.Rank]
+	if !ok {
+		// Unknown rank — fall back to the neutral X palette so we
+		// never leave the literal "#primary" / "#secondary" tokens
+		// in the output.
+		colors = rankColors["X"]
+	}
+	tinted := strings.ReplaceAll(frag, "#primary", colors[0])
+	tinted = strings.ReplaceAll(tinted, "#secondary", colors[1])
+	return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="` + iconViewBox +
+		`" width="` + iconSize + `" height="` + iconSize +
+		`" aria-hidden="true">` + tinted + `</svg>`
+}
 
 // rankClass maps the upstream rank tokens (S/A/B/C/X/$) to the CSS
 // class suffix the upstream EJS emits (`rank.charAt(0).toLocaleLowerCase()`
@@ -110,26 +140,52 @@ func writeAchievement(b *strings.Builder, a Achievement, compact bool) {
 		partials.EscapeXML(a.Rank),
 		partials.EscapeXML(a.Icon),
 	)
-	// Icon — trophy badge placeholder until per-achievement icons
-	// land. Sized 44x44 to fill `.achievement .icon` and align with
-	// the title/text column (Issue #554).
-	fmt.Fprintf(b, `<div class="icon">%s</div>`, trophyBadgeSVG)
+	// Icon — per-achievement upstream SVG tinted with the rank
+	// color pair. Sized 44x44 to fill `.achievement .icon` and align
+	// with the title/text column (Issue #554).
+	fmt.Fprintf(b, `<div class="icon">%s</div>`, iconForAchievement(a))
 	b.WriteString(`<div class="info">`)
+	prefix := rankPrefixes[a.Rank]
+	// Upstream EJS line 35: when a prefix is set the title is lowered;
+	// otherwise the title is rendered as-is.
+	title := a.Title
+	if prefix != "" {
+		title = strings.ToLower(a.Title)
+	}
 	if compact {
-		fmt.Fprintf(
-			b,
-			`<div class="title"><span class="prefix">%s</span>%s<div class="value-wrapper"><div class="value">%d</div></div></div>`,
-			partials.EscapeXML(a.Rank),
-			partials.EscapeXML(a.Title),
-			a.Value,
-		)
+		if prefix != "" {
+			fmt.Fprintf(
+				b,
+				`<div class="title"><span class="prefix">%s</span> %s<div class="value-wrapper"><div class="value">%d</div></div></div>`,
+				partials.EscapeXML(prefix),
+				partials.EscapeXML(title),
+				a.Value,
+			)
+		} else {
+			fmt.Fprintf(
+				b,
+				`<div class="title">%s<div class="value-wrapper"><div class="value">%d</div></div></div>`,
+				partials.EscapeXML(title),
+				a.Value,
+			)
+		}
 	} else {
-		fmt.Fprintf(
-			b,
-			`<div class="title"><span class="prefix">%s</span><span class="value">%d</span></div>`,
-			partials.EscapeXML(a.Title),
-			a.Value,
-		)
+		if prefix != "" {
+			fmt.Fprintf(
+				b,
+				`<div class="title"><span class="prefix">%s</span> %s<span class="value">%d</span></div>`,
+				partials.EscapeXML(prefix),
+				partials.EscapeXML(title),
+				a.Value,
+			)
+		} else {
+			fmt.Fprintf(
+				b,
+				`<div class="title">%s<span class="value">%d</span></div>`,
+				partials.EscapeXML(title),
+				a.Value,
+			)
+		}
 		if a.Description != "" {
 			fmt.Fprintf(
 				b,
