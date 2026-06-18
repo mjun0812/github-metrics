@@ -34,15 +34,15 @@
               </mask>
               <rect mask="url(#languages-bar-most)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-progress">
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="72.65" height="8" fill="#a91e50" data-language="EJS"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="72.65" y="0" width="72.43" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="145.08" y="0" width="64.71" height="8" fill="#3D6117" data-language="TeX"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="209.79" y="0" width="61.43" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="271.22" y="0" width="59.58" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="330.80" y="0" width="46.64" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="377.43" y="0" width="46.63" height="8" fill="#f1e05a" data-language="JavaScript"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="424.06" y="0" width="8.66" height="8" fill="#3A4E3A" data-language="Cuda"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="432.72" y="0" width="27.28" height="8" fill="#cccccc" data-language="Other"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="72.46" height="8" fill="#a91e50" data-language="EJS"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="72.46" y="0" width="72.24" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="144.71" y="0" width="64.55" height="8" fill="#3D6117" data-language="TeX"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="209.25" y="0" width="62.36" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="271.61" y="0" width="59.48" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="331.09" y="0" width="46.52" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="377.61" y="0" width="46.51" height="8" fill="#f1e05a" data-language="JavaScript"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="424.12" y="0" width="8.64" height="8" fill="#3A4E3A" data-language="Cuda"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="432.76" y="0" width="27.24" height="8" fill="#cccccc" data-language="Other"/>
               </g>
             </svg>
             <div class="row fill-width">
@@ -75,7 +75,7 @@
                       2.1 MB
                     </div>
                     <div>
-                      14.1%
+                      14.0%
                     </div>
                   </small>
                 </div>
@@ -88,10 +88,10 @@
                   </div>
                   <small>
                     <div>
-                      263.0 kB
+                      264.8 kB
                     </div>
                     <div>
-                      13.0%
+                      12.9%
                     </div>
                   </small>
                 </div>
@@ -120,7 +120,7 @@
                   </div>
                   <small>
                     <div>
-                      886.1 kB
+                      887.3 kB
                     </div>
                     <div>
                       5.9%
@@ -157,7 +157,7 @@
                       115 B
                     </div>
                     <div>
-                      13.4%
+                      13.6%
                     </div>
                   </small>
                 </div>
@@ -207,7 +207,7 @@
               <text class="indepth-language" data-language="Python" data-bytes="19858768">
                 Python
               </text>
-              <text class="indepth-language" data-language="JSON" data-bytes="17210254">
+              <text class="indepth-language" data-language="JSON" data-bytes="17210533">
                 JSON
               </text>
               <text class="indepth-language" data-language="Jest Snapshot" data-bytes="14329594">
@@ -228,7 +228,7 @@
               <text class="indepth-language" data-language="TypeScript" data-bytes="4981583">
                 TypeScript
               </text>
-              <text class="indepth-language" data-language="SVG" data-bytes="3966564">
+              <text class="indepth-language" data-language="SVG" data-bytes="3975846">
                 SVG
               </text>
               <text class="indepth-language" data-language="CSV" data-bytes="2716407">
@@ -258,7 +258,7 @@
               <text class="indepth-language" data-language="Cuda" data-bytes="273611">
                 Cuda
               </text>
-              <text class="indepth-language" data-language="Shell" data-bytes="269320">
+              <text class="indepth-language" data-language="Shell" data-bytes="271185">
                 Shell
               </text>
               <text class="indepth-language" data-language="R" data-bytes="265325">
@@ -276,7 +276,7 @@
               <text class="indepth-language" data-language="C" data-bytes="127647">
                 C
               </text>
-              <text class="indepth-language" data-language="Lua" data-bytes="103451">
+              <text class="indepth-language" data-language="Lua" data-bytes="104731">
                 Lua
               </text>
               <text class="indepth-language" data-language="Ignore List" data-bytes="96385">
