@@ -404,6 +404,111 @@ func TestPartial_AchievementsCompact_Golden(t *testing.T) {
 	}
 }
 
+// TestPartial_IconResolution — confirms that the per-achievement icon
+// pulled from iconsByID lands in the rendered output (not the trophy
+// fallback) and that the rank's hex pair has replaced the
+// `#primary` / `#secondary` placeholders.
+func TestPartial_IconResolution(t *testing.T) {
+	t.Parallel()
+	r := &achievements.Result{
+		Display: "detailed",
+		List: []achievements.Achievement{
+			// Polyglot's icon has a unique path opener — use it as
+			// the discriminating substring so we don't pin the full
+			// ~500-char icon string.
+			{ID: "polyglot", Rank: "S", Title: "Polyglot", Description: "x", Icon: "code-square", Value: 16},
+		},
+		Ranks: map[string]string{"polyglot": "S"},
+	}
+	data := plugins.NewData()
+	data.SetPlugin(achievements.Name, r)
+	pc := &templates.PartialContext{Data: data}
+	got, err := achievements.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	// (a) The icon must be the upstream polyglot SVG, not the trophy
+	// placeholder.
+	if !strings.Contains(got, `d="M17.135 7.988`) {
+		t.Errorf("missing polyglot icon path in:\n%s", got)
+	}
+	// (b) The rank S color pair must replace the placeholders — no
+	// raw "#primary" / "#secondary" tokens should survive.
+	if strings.Contains(got, "#primary") || strings.Contains(got, "#secondary") {
+		t.Errorf("unresolved placeholder in:\n%s", got)
+	}
+	if !strings.Contains(got, "#EB355E") || !strings.Contains(got, "#731237") {
+		t.Errorf("missing S-rank color pair (#EB355E / #731237) in:\n%s", got)
+	}
+}
+
+// TestPartial_RankPrefixLabels — the prefix span carries the
+// "Master/Super/Great" label (rank S/A/B), and is omitted for
+// rank C entries.
+func TestPartial_RankPrefixLabels(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		rank       string
+		wantPrefix string // empty → expect no <span class="prefix">
+	}{
+		{"S", "Master"},
+		{"A", "Super"},
+		{"B", "Great"},
+		{"C", ""},
+	}
+	for _, tc := range cases {
+		r := &achievements.Result{
+			Display: "detailed",
+			List: []achievements.Achievement{
+				{ID: "developer", Rank: tc.rank, Title: "Developer", Description: "x", Icon: "repo", Value: 1},
+			},
+			Ranks: map[string]string{"developer": tc.rank},
+		}
+		data := plugins.NewData()
+		data.SetPlugin(achievements.Name, r)
+		pc := &templates.PartialContext{Data: data}
+		got, err := achievements.Partial(context.Background(), pc)
+		if err != nil {
+			t.Fatalf("rank %s Partial: %v", tc.rank, err)
+		}
+		if tc.wantPrefix == "" {
+			if strings.Contains(got, `<span class="prefix">`) {
+				t.Errorf("rank %s should omit prefix span; got:\n%s", tc.rank, got)
+			}
+		} else {
+			marker := `<span class="prefix">` + tc.wantPrefix + `</span>`
+			if !strings.Contains(got, marker) {
+				t.Errorf("rank %s missing %q in:\n%s", tc.rank, marker, got)
+			}
+		}
+	}
+}
+
+// TestPartial_UnknownIDFallsBackToTrophy — an id not registered in
+// iconsByID falls back to the trophy octicon path so the slot is
+// never empty.
+func TestPartial_UnknownIDFallsBackToTrophy(t *testing.T) {
+	t.Parallel()
+	r := &achievements.Result{
+		Display: "detailed",
+		List: []achievements.Achievement{
+			{ID: "unknown-id", Rank: "C", Title: "Unknown", Description: "x", Icon: "trophy", Value: 1},
+		},
+		Ranks: map[string]string{"unknown-id": "C"},
+	}
+	data := plugins.NewData()
+	data.SetPlugin(achievements.Name, r)
+	pc := &templates.PartialContext{Data: data}
+	got, err := achievements.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	// The trophy octicon has a distinctive opening "M3.217 6.962" segment.
+	if !strings.Contains(got, "M3.217 6.962") {
+		t.Errorf("expected trophy fallback path in:\n%s", got)
+	}
+}
+
 func TestRun_GoldenShape_Achievements(t *testing.T) {
 	r := &achievements.Result{
 		Display: "detailed",
