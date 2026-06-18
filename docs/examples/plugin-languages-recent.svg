@@ -23,7 +23,7 @@
               Recently used languages
             </h3>
             <small>
-              activity from 66 repositories analysed over last 30 days
+              activity from 75 repositories analysed over last 30 days
             </small>
             <svg xmlns="http://www.w3.org/2000/svg" class="bar" width="460" height="8" role="img" aria-label="Recently used languages distribution">
               <title>
@@ -34,11 +34,11 @@
               </mask>
               <rect mask="url(#languages-bar-recent)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-recent">
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="371.91" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="371.91" y="0" width="70.60" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="442.51" y="0" width="11.57" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="454.08" y="0" width="5.38" height="8" fill="#000080" data-language="Lua"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.46" y="0" width="0.54" height="8" fill="#f1e05a" data-language="JavaScript"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="319.22" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="319.22" y="0" width="63.09" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="382.31" y="0" width="62.44" height="8" fill="#000080" data-language="Lua"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="444.75" y="0" width="14.82" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.57" y="0" width="0.43" height="8" fill="#f1e05a" data-language="JavaScript"/>
               </g>
             </svg>
             <div class="row fill-width">
@@ -52,26 +52,26 @@
                   </div>
                   <small>
                     <div>
-                      4.0 kB
+                      4.3 kB
                     </div>
                     <div>
-                      80.9%
+                      69.4%
                     </div>
                   </small>
                 </div>
-                <div class="field language details" data-language="Python">
+                <div class="field language details" data-language="Lua">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#3572A5" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#000080" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    Python
+                    Lua
                   </div>
                   <small>
                     <div>
-                      129 B
+                      864 B
                     </div>
                     <div>
-                      2.5%
+                      13.6%
                     </div>
                   </small>
                 </div>
@@ -102,26 +102,26 @@
                   </div>
                   <small>
                     <div>
-                      787 B
+                      873 B
                     </div>
                     <div>
-                      15.3%
+                      13.7%
                     </div>
                   </small>
                 </div>
-                <div class="field language details" data-language="Lua">
+                <div class="field language details" data-language="Python">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#000080" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#3572A5" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    Lua
+                    Python
                   </div>
                   <small>
                     <div>
-                      60 B
+                      205 B
                     </div>
                     <div>
-                      1.2%
+                      3.2%
                     </div>
                   </small>
                 </div>
