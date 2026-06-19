@@ -3677,15 +3677,19 @@ func __marshalViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesP
 
 // ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository includes the requested fields of the GraphQL type Repository.
 type ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository struct {
-	Typename        *string                                                                                     `json:"__typename"`
-	NameWithOwner   string                                                                                      `json:"nameWithOwner"`
-	Description     *string                                                                                     `json:"description"`
-	Url             string                                                                                      `json:"url"`
-	IsPrivate       bool                                                                                        `json:"isPrivate"`
-	IsFork          bool                                                                                        `json:"isFork"`
-	StargazerCount  int                                                                                         `json:"stargazerCount"`
-	ForkCount       int                                                                                         `json:"forkCount"`
-	PrimaryLanguage *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPrimaryLanguage `json:"primaryLanguage"`
+	Typename        *string                                                                                                       `json:"__typename"`
+	NameWithOwner   string                                                                                                        `json:"nameWithOwner"`
+	Description     *string                                                                                                       `json:"description"`
+	Url             string                                                                                                        `json:"url"`
+	IsPrivate       bool                                                                                                          `json:"isPrivate"`
+	IsFork          bool                                                                                                          `json:"isFork"`
+	CreatedAt       time.Time                                                                                                     `json:"createdAt"`
+	StargazerCount  int                                                                                                           `json:"stargazerCount"`
+	ForkCount       int                                                                                                           `json:"forkCount"`
+	Issues          *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryIssuesIssueConnection             `json:"issues"`
+	PullRequests    *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPullRequestsPullRequestConnection `json:"pullRequests"`
+	LicenseInfo     *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryLicenseInfoLicense                `json:"licenseInfo"`
+	PrimaryLanguage *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPrimaryLanguage                   `json:"primaryLanguage"`
 }
 
 // GetTypename returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.Typename, and is useful for accessing the field via an interface.
@@ -3718,6 +3722,11 @@ func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesReposi
 	return v.IsFork
 }
 
+// GetCreatedAt returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.CreatedAt, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
 // GetStargazerCount returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.StargazerCount, and is useful for accessing the field via an interface.
 func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetStargazerCount() int {
 	return v.StargazerCount
@@ -3728,9 +3737,56 @@ func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesReposi
 	return v.ForkCount
 }
 
+// GetIssues returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.Issues, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetIssues() *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryIssuesIssueConnection {
+	return v.Issues
+}
+
+// GetPullRequests returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.PullRequests, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetPullRequests() *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPullRequestsPullRequestConnection {
+	return v.PullRequests
+}
+
+// GetLicenseInfo returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.LicenseInfo, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetLicenseInfo() *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryLicenseInfoLicense {
+	return v.LicenseInfo
+}
+
 // GetPrimaryLanguage returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository.PrimaryLanguage, and is useful for accessing the field via an interface.
 func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) GetPrimaryLanguage() *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPrimaryLanguage {
 	return v.PrimaryLanguage
+}
+
+// ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryIssuesIssueConnection includes the requested fields of the GraphQL type IssueConnection.
+type ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryIssuesIssueConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryIssuesIssueConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryIssuesIssueConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryLicenseInfoLicense includes the requested fields of the GraphQL type License.
+type ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryLicenseInfoLicense struct {
+	Name     string  `json:"name"`
+	SpdxId   *string `json:"spdxId"`
+	Nickname *string `json:"nickname"`
+}
+
+// GetName returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryLicenseInfoLicense.Name, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryLicenseInfoLicense) GetName() string {
+	return v.Name
+}
+
+// GetSpdxId returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryLicenseInfoLicense.SpdxId, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryLicenseInfoLicense) GetSpdxId() *string {
+	return v.SpdxId
+}
+
+// GetNickname returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryLicenseInfoLicense.Nickname, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryLicenseInfoLicense) GetNickname() *string {
+	return v.Nickname
 }
 
 // ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPrimaryLanguage includes the requested fields of the GraphQL type Language.
@@ -3747,6 +3803,16 @@ func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesReposi
 // GetColor returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPrimaryLanguage.Color, and is useful for accessing the field via an interface.
 func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPrimaryLanguage) GetColor() *string {
 	return v.Color
+}
+
+// ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPullRequestsPullRequestConnection includes the requested fields of the GraphQL type PullRequestConnection.
+type ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPullRequestsPullRequestConnection struct {
+	TotalCount int `json:"totalCount"`
+}
+
+// GetTotalCount returns ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPullRequestsPullRequestConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepositoryPullRequestsPullRequestConnection) GetTotalCount() int {
+	return v.TotalCount
 }
 
 // ViewerProjectsResponse is returned by ViewerProjects on success.
@@ -5952,8 +6018,20 @@ query ViewerPinnedItems ($first: Int!) {
 					url
 					isPrivate
 					isFork
+					createdAt
 					stargazerCount
 					forkCount
+					issues(states: OPEN) {
+						totalCount
+					}
+					pullRequests(states: OPEN) {
+						totalCount
+					}
+					licenseInfo {
+						name
+						spdxId
+						nickname
+					}
 					primaryLanguage {
 						name
 						color
