@@ -188,7 +188,7 @@ func TestClassic_Run_BaseInputMetadataRendersFooter(t *testing.T) {
 		`These metrics include private contributions`,
 		`Last updated `,
 		`timezone Asia/Tokyo`,
-		`github-metrics@`,
+		`mjun0812/github-metrics@`,
 	} {
 		if !strings.Contains(out, marker) {
 			t.Fatalf("base metadata output missing %q\noutput:\n%s", marker, out)
