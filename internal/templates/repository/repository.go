@@ -171,11 +171,13 @@ func (t *repositoryTemplate) Run(ctx context.Context, pc *templates.PartialConte
 	}
 
 	if footer := metadataFooter(pc, baseSections); footer != "" {
-		b.WriteString(`<div id="metrics-end"></div>`)
 		b.WriteString(footer)
-	} else {
-		b.WriteString(`<div id="metrics-end"></div>`)
 	}
+	// #metrics-end sits at the very end of the foreignObject so the
+	// chromedp trim measures the height *including* the footer. The
+	// earlier placement (before the footer) clipped the metadata span
+	// because the trim stopped above the section.
+	b.WriteString(`<div id="metrics-end"></div>`)
 	b.WriteString(`</div></foreignObject></svg>`)
 	return b.String(), nil
 }
