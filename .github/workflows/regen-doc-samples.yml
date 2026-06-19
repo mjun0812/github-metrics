@@ -261,19 +261,6 @@ jobs:
           pattern: sample-*
           merge-multiple: true
 
-      # Normalization moved here from the render jobs (#523): the
-      # render jobs now run inside the production image, which carries
-      # no Go toolchain or repo checkout. normalize-svg-stream is
-      # idempotent, so re-running it over already-normalized committed
-      # files produces no diff.
-      - name: Normalize SVGs
-        run: |
-          set -euo pipefail
-          for f in docs/examples/*.svg; do
-            go run ./internal/tools/normalize-svg-stream < "$f" > "${f}.norm"
-            mv "${f}.norm" "$f"
-          done
-
       - name: Note failed renders (if any)
         id: failed
         env:
