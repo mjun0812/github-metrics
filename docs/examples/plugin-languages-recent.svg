@@ -23,7 +23,7 @@
               Recently used languages
             </h3>
             <small>
-              activity from 80 repositories analysed over last 30 days
+              activity from 81 repositories analysed over last 30 days
             </small>
             <svg xmlns="http://www.w3.org/2000/svg" class="bar" width="460" height="8" role="img" aria-label="Recently used languages distribution">
               <title>
@@ -34,10 +34,10 @@
               </mask>
               <rect mask="url(#languages-bar-recent)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-recent">
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="221.06" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="221.06" y="0" width="188.92" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="409.98" y="0" width="43.26" height="8" fill="#000080" data-language="Lua"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="453.24" y="0" width="6.46" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="221.45" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="221.45" y="0" width="189.05" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="410.51" y="0" width="42.80" height="8" fill="#000080" data-language="Lua"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="453.31" y="0" width="6.39" height="8" fill="#3572A5" data-language="Python"/>
                 <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.70" y="0" width="0.30" height="8" fill="#f1e05a" data-language="JavaScript"/>
               </g>
             </svg>
@@ -52,7 +52,7 @@
                   </div>
                   <small>
                     <div>
-                      4.3 kB
+                      4.4 kB
                     </div>
                     <div>
                       48.1%
@@ -71,7 +71,7 @@
                       864 B
                     </div>
                     <div>
-                      9.4%
+                      9.3%
                     </div>
                   </small>
                 </div>
