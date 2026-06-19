@@ -10,8 +10,20 @@ query ViewerPinnedItems($first: Int!) {
           url
           isPrivate
           isFork
+          createdAt
           stargazerCount
           forkCount
+          issues(states: OPEN) {
+            totalCount
+          }
+          pullRequests(states: OPEN) {
+            totalCount
+          }
+          licenseInfo {
+            name
+            spdxId
+            nickname
+          }
           primaryLanguage {
             name
             color

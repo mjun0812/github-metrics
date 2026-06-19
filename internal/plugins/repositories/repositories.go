@@ -506,6 +506,7 @@ func pinnableToRepository(node githubapi.ViewerPinnedItemsViewerUserPinnedItemsP
 		Description:   desc,
 		URL:           r.Url,
 		IsFork:        r.IsFork,
+		CreatedAt:     r.CreatedAt,
 		Stars:         r.StargazerCount,
 		Forks:         r.ForkCount,
 	}
@@ -513,6 +514,22 @@ func pinnableToRepository(node githubapi.ViewerPinnedItemsViewerUserPinnedItemsP
 		repo.Visibility = "PRIVATE"
 	} else {
 		repo.Visibility = "PUBLIC"
+	}
+	if r.Issues != nil {
+		repo.Issues = r.Issues.TotalCount
+	}
+	if r.PullRequests != nil {
+		repo.PullRequests = r.PullRequests.TotalCount
+	}
+	if r.LicenseInfo != nil {
+		license := &plugins.RepositoryLicense{Name: r.LicenseInfo.Name}
+		if r.LicenseInfo.SpdxId != nil {
+			license.SpdxID = *r.LicenseInfo.SpdxId
+		}
+		if r.LicenseInfo.Nickname != nil {
+			license.Nickname = *r.LicenseInfo.Nickname
+		}
+		repo.License = license
 	}
 	if r.PrimaryLanguage != nil {
 		color := ""
