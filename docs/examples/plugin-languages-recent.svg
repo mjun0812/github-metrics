@@ -23,7 +23,7 @@
               Recently used languages
             </h3>
             <small>
-              activity from 75 repositories analysed over last 30 days
+              activity from 80 repositories analysed over last 30 days
             </small>
             <svg xmlns="http://www.w3.org/2000/svg" class="bar" width="460" height="8" role="img" aria-label="Recently used languages distribution">
               <title>
@@ -34,11 +34,11 @@
               </mask>
               <rect mask="url(#languages-bar-recent)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-recent">
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="319.22" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="319.22" y="0" width="63.09" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="382.31" y="0" width="62.44" height="8" fill="#000080" data-language="Lua"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="444.75" y="0" width="14.82" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.57" y="0" width="0.43" height="8" fill="#f1e05a" data-language="JavaScript"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="221.06" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="221.06" y="0" width="188.92" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="409.98" y="0" width="43.26" height="8" fill="#000080" data-language="Lua"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="453.24" y="0" width="6.46" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.70" y="0" width="0.30" height="8" fill="#f1e05a" data-language="JavaScript"/>
               </g>
             </svg>
             <div class="row fill-width">
@@ -55,7 +55,7 @@
                       4.3 kB
                     </div>
                     <div>
-                      69.4%
+                      48.1%
                     </div>
                   </small>
                 </div>
@@ -71,7 +71,7 @@
                       864 B
                     </div>
                     <div>
-                      13.6%
+                      9.4%
                     </div>
                   </small>
                 </div>
@@ -102,10 +102,10 @@
                   </div>
                   <small>
                     <div>
-                      873 B
+                      3.7 kB
                     </div>
                     <div>
-                      13.7%
+                      41.1%
                     </div>
                   </small>
                 </div>
@@ -118,10 +118,10 @@
                   </div>
                   <small>
                     <div>
-                      205 B
+                      129 B
                     </div>
                     <div>
-                      3.2%
+                      1.4%
                     </div>
                   </small>
                 </div>
