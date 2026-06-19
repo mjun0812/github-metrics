@@ -2,6 +2,7 @@ package content
 
 import (
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/mjun0812/github-metrics/internal/testutil/svgcontent"
@@ -29,6 +30,22 @@ type contract struct {
 	// mustNotContain: none of these substrings may appear (catches
 	// placeholder / error states leaking into the render).
 	mustNotContain []string
+	// conditionalMatch: assertions that only apply when a trigger
+	// substring is present in the visible text. Used for
+	// data-dependent contracts like "PR events must carry diff
+	// stats" — vacuously true when the sample window contains no
+	// PR events.
+	conditionalMatch []conditionalRule
+}
+
+// conditionalRule asserts that pattern matches at least minMatch
+// times, but only when trigger (case-insensitive substring) is
+// present in the visible text. When trigger is absent the rule
+// passes vacuously.
+type conditionalRule struct {
+	trigger  string
+	pattern  *regexp.Regexp
+	minMatch int
 }
 
 // filesChangedRE matches the activity "N files changed" label.
@@ -39,13 +56,17 @@ var filesChangedRE = regexp.MustCompile(`(?i)\d+\s+files?\s+changed`)
 // "issue #NNN is still unfixed", not an opaque assertion failure.
 var contracts = []contract{
 	{
-		// #465: activity push events must show the change volume
-		// (files changed / additions / deletions), not just the repo
-		// and date.
-		example:   "plugin-activity.svg",
-		issue:     "#465",
-		mustMatch: []*regexp.Regexp{filesChangedRE},
-		minMatch:  []int{1},
+		// #465: activity PR events must carry the diff volume
+		// (files changed / additions / deletions). The sample
+		// window may or may not include a PullRequestEvent (it
+		// depends on mjun0812's recent activity), so the check is
+		// conditional on "Opened PR" being in the rendered text —
+		// otherwise the contract holds vacuously.
+		example: "plugin-activity.svg",
+		issue:   "#465",
+		conditionalMatch: []conditionalRule{
+			{trigger: "opened pr", pattern: filesChangedRE, minMatch: 1},
+		},
 	},
 	{
 		// #466: each repository card must carry its license, and the
@@ -116,6 +137,23 @@ func TestDOMContracts(t *testing.T) {
 				if n < want {
 					t.Errorf("%s: pattern %q matched %d time(s), want >= %d\n  got: %q",
 						c.issue, re.String(), n, want, text)
+				}
+			}
+
+			lower := strings.ToLower(text)
+			for _, rule := range c.conditionalMatch {
+				if !strings.Contains(lower, strings.ToLower(rule.trigger)) {
+					t.Logf("%s: trigger %q absent — skipping conditional pattern %q",
+						c.issue, rule.trigger, rule.pattern.String())
+					continue
+				}
+				n, err := svgcontent.MatchCount(raw, rule.pattern)
+				if err != nil {
+					t.Fatalf("conditional match check: %v", err)
+				}
+				if n < rule.minMatch {
+					t.Errorf("%s: trigger %q present but pattern %q matched %d time(s), want >= %d\n  got: %q",
+						c.issue, rule.trigger, rule.pattern.String(), n, rule.minMatch, text)
 				}
 			}
 

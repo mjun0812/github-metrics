@@ -432,6 +432,10 @@
 
   footer span {
     max-width: 440px;
+    /* Keep a half-width-space worth of breathing room between the
+     * timestamp/version text and the SVG's right edge so the footer
+     * doesn't read as if it were clipped. */
+    padding-right: 6px;
   }
 
 /* Speed test categories */
