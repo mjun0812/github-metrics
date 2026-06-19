@@ -18,9 +18,9 @@
               <div class="chart-bars">
                 <div class="entry">
                   <span class="value">
-                    1
+                    2
                   </span>
-                  <div class="bar" style="height: 3px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  <div class="bar" style="height: 7px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                   00
                 </div>
                 <div class="entry">
@@ -88,16 +88,16 @@
                 </div>
                 <div class="entry">
                   <span class="value">
-                    2
+                    0
                   </span>
-                  <div class="bar" style="height: 7px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                   10
                 </div>
                 <div class="entry">
                   <span class="value">
-                    8
+                    5
                   </span>
-                  <div class="bar" style="height: 27px; background-color: var(--color-calendar-graph-day-L3-bg)"></div>
+                  <div class="bar" style="height: 17px; background-color: var(--color-calendar-graph-day-L2-bg)"></div>
                   11
                 </div>
                 <div class="entry">
@@ -144,9 +144,9 @@
                 </div>
                 <div class="entry">
                   <span class="value">
-                    0
+                    1
                   </span>
-                  <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  <div class="bar" style="height: 3px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                   18
                 </div>
                 <div class="entry">
@@ -179,9 +179,9 @@
                 </div>
                 <div class="entry">
                   <span class="value">
-                    1
+                    12
                   </span>
-                  <div class="bar" style="height: 3px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  <div class="bar" style="height: 40px; background-color: var(--color-calendar-graph-day-L4-bg)"></div>
                   23
                 </div>
               </div>
@@ -194,9 +194,9 @@
                 <div class="chart-bars">
                   <div class="entry">
                     <span class="value">
-                      14
+                      9
                     </span>
-                    <div class="bar" style="height: 29px; background-color: var(--color-calendar-graph-day-L3-bg)"></div>
+                    <div class="bar" style="height: 19px; background-color: var(--color-calendar-graph-day-L2-bg)"></div>
                     Sun
                   </div>
                   <div class="entry">
@@ -215,16 +215,16 @@
                   </div>
                   <div class="entry">
                     <span class="value">
-                      8
+                      20
                     </span>
-                    <div class="bar" style="height: 17px; background-color: var(--color-calendar-graph-day-L2-bg)"></div>
+                    <div class="bar" style="height: 42px; background-color: var(--color-calendar-graph-day-L4-bg)"></div>
                     Wed
                   </div>
                   <div class="entry">
                     <span class="value">
-                      0
+                      1
                     </span>
-                    <div class="bar" style="height: 0px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <div class="bar" style="height: 2px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     Thu
                   </div>
                   <div class="entry">
@@ -252,34 +252,52 @@
                     <span class="name">
                       Markdown
                     </span>
-                    <div class="bar" style="width: 53.748720360789086%; background-color: var(--color-calendar-graph-day-L3-bg)"></div>
+                    <div class="bar" style="width: 52.197023523763804%; background-color: var(--color-calendar-graph-day-L3-bg)"></div>
                     <span class="value">
-                      67%
+                      65%
                     </span>
                   </div>
                   <div class="entry">
                     <span class="name">
                       SVG
                     </span>
-                    <div class="bar" style="width: 15.040256757878428%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <div class="bar" style="width: 10.002496399423908%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     <span class="value">
-                      19%
+                      13%
+                    </span>
+                  </div>
+                  <div class="entry">
+                    <span class="name">
+                      TOML
+                    </span>
+                    <div class="bar" style="width: 6.0574171867498805%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <span class="value">
+                      8%
+                    </span>
+                  </div>
+                  <div class="entry">
+                    <span class="name">
+                      Shell
+                    </span>
+                    <div class="bar" style="width: 5.796255400864139%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <span class="value">
+                      7%
                     </span>
                   </div>
                   <div class="entry">
                     <span class="name">
                       Go
                     </span>
-                    <div class="bar" style="width: 6.843925518080956%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <div class="bar" style="width: 3.0955352856457035%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     <span class="value">
-                      9%
+                      4%
                     </span>
                   </div>
                   <div class="entry">
                     <span class="name">
                       Lua
                     </span>
-                    <div class="bar" style="width: 1.9124035082865285%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <div class="bar" style="width: 1.3273163706192992%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     <span class="value">
                       2%
                     </span>
@@ -288,7 +306,7 @@
                     <span class="name">
                       SCSS
                     </span>
-                    <div class="bar" style="width: 1.12220900312647%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <div class="bar" style="width: 0.7788766202592414%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     <span class="value">
                       1%
                     </span>
@@ -297,25 +315,7 @@
                     <span class="name">
                       JSON
                     </span>
-                    <div class="bar" style="width: 0.4006308275461362%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
-                    <span class="value">
-                      1%
-                    </span>
-                  </div>
-                  <div class="entry">
-                    <span class="name">
-                      Python
-                    </span>
-                    <div class="bar" style="width: 0.2855324682511136%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
-                    <span class="value">
-                      0%
-                    </span>
-                  </div>
-                  <div class="entry">
-                    <span class="name">
-                      Shell
-                    </span>
-                    <div class="bar" style="width: 0.2036355587527322%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <div class="bar" style="width: 0.22736437830052808%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     <span class="value">
                       0%
                     </span>
