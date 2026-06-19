@@ -41,8 +41,7 @@
 #      (the only API-touching step; PNG is no longer a second full fetch)
 #   2. docker run --entrypoint svg2png → rasterize the raw SVG to PNG
 #      through the same chromedp path --output png uses (no API)
-#   3. go run ./internal/tools/normalize-svg-stream < svg → mask dynamic
-#   4. mv svg + png into docs/examples/ atomically
+#   3. mv svg + png into docs/examples/ atomically
 #
 # Pre-conditions:
 #   - GITHUB_TOKEN exported (classic PAT with at minimum read:user + repo;
@@ -117,9 +116,7 @@ FAILURES=()
 # (see Dockerfile) and is invoked through the same image as the render
 # so no local chromium install is required; it reads/writes inside the
 # mounted ${WORKDIR} (/out). The conversion is API-free and deterministic,
-# so it gets a single attempt (no retry loop). It converts the RAW SVG
-# (before normalize-svg-stream) to match what production `--output png`
-# emits — the committed PNG is binary and not normalized.
+# so it gets a single attempt (no retry loop).
 # Returns 0 on success (PNG present at ${WORKDIR}/<base>.png), 1 otherwise.
 svg_to_png() {
 	local svg_name="$1"
@@ -143,9 +140,7 @@ render_one() {
 	# caller passes `--template classic` (or nothing — classic is the
 	# default) and any `--plugin key=value` overrides. Renders the .svg
 	# once (the only API-touching step) and derives the .png from it via
-	# svg2png (no API). SVG is piped through normalize-svg-stream for
-	# idempotency; the PNG is rasterized from the raw SVG and moved
-	# directly.
+	# svg2png (no API). Both files are then moved into ${OUTDIR}.
 	local base="$1"
 	shift
 
@@ -192,13 +187,14 @@ render_one() {
 		echo "    OK png ($(wc -c <"${OUTDIR}/${base}.png" | tr -d ' ') bytes)"
 	fi
 
-	local tmp_norm="${WORKDIR}/${outfile}.norm"
-	if ! go run ./internal/tools/normalize-svg-stream <"$tmp_raw" >"$tmp_norm" 2>"${WORKDIR}/${outfile}.norm.log"; then
-		echo "    FAIL svg (normalize)"
-		FAILURES+=("$outfile")
-		return
-	fi
-	mv "$tmp_norm" "${OUTDIR}/${outfile}"
+	# The committed SVG keeps the real `Last updated <timestamp>` and
+	# `github-metrics@<version>` strings — they're the regen run's
+	# point-in-time provenance and a user-visible signal that the
+	# sample is up to date. Each regen run produces a fresh PR whose
+	# diff already brackets the timestamp change, so the FR-008
+	# idempotency story (no spurious churn) is satisfied at the PR
+	# layer rather than by masking the SVG itself.
+	mv "$tmp_raw" "${OUTDIR}/${outfile}"
 	echo "    OK svg ($(wc -c <"${OUTDIR}/${outfile}" | tr -d ' ') bytes)"
 }
 
@@ -210,7 +206,7 @@ render_one_repo() {
 	# suppress the default base sections + `--plugin plugin_<slug>=yes`
 	# to enable a single plugin). Output handling is identical to
 	# render_one: render the .svg once, derive the .png from it via
-	# svg2png (no API), normalize-svg-stream the svg.
+	# svg2png (no API), then move both into ${OUTDIR}.
 	local base="$1"
 	shift
 
@@ -259,13 +255,14 @@ render_one_repo() {
 		echo "    OK png ($(wc -c <"${OUTDIR}/${base}.png" | tr -d ' ') bytes)"
 	fi
 
-	local tmp_norm="${WORKDIR}/${outfile}.norm"
-	if ! go run ./internal/tools/normalize-svg-stream <"$tmp_raw" >"$tmp_norm" 2>"${WORKDIR}/${outfile}.norm.log"; then
-		echo "    FAIL svg (normalize)"
-		FAILURES+=("$outfile")
-		return
-	fi
-	mv "$tmp_norm" "${OUTDIR}/${outfile}"
+	# The committed SVG keeps the real `Last updated <timestamp>` and
+	# `github-metrics@<version>` strings — they're the regen run's
+	# point-in-time provenance and a user-visible signal that the
+	# sample is up to date. Each regen run produces a fresh PR whose
+	# diff already brackets the timestamp change, so the FR-008
+	# idempotency story (no spurious churn) is satisfied at the PR
+	# layer rather than by masking the SVG itself.
+	mv "$tmp_raw" "${OUTDIR}/${outfile}"
 	echo "    OK svg ($(wc -c <"${OUTDIR}/${outfile}" | tr -d ' ') bytes)"
 }
 
