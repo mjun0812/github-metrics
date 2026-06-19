@@ -194,10 +194,10 @@ func metadataFooter(pc *templates.PartialContext, sections map[string]struct{}) 
 	b.WriteString(`<footer>`)
 	stamp := time.Now().UTC().Format(time.RFC3339)
 	if tz != "" && tz != "UTC" {
-		fmt.Fprintf(&b, `<span>Last updated %s (timezone %s) with mjun0812/github-metrics@%s</span>`,
+		fmt.Fprintf(&b, `<span>Last updated %s (timezone %s) with github-metrics@%s</span>`,
 			stamp, classicpart.EscapeXML(tz), classicpart.EscapeXML(engine.Version()))
 	} else {
-		fmt.Fprintf(&b, `<span>Last updated %s with mjun0812/github-metrics@%s</span>`,
+		fmt.Fprintf(&b, `<span>Last updated %s with github-metrics@%s</span>`,
 			stamp, classicpart.EscapeXML(engine.Version()))
 	}
 	b.WriteString(`</footer>`)
