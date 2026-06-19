@@ -184,7 +184,7 @@ func TestCLI_ConfigYAML_Equivalence(t *testing.T) {
 }
 
 // volatileLastUpdated matches the classic footer's "Last updated
-// <timestamp> ... with github-metrics@<ver>" span. The timestamp is
+// <timestamp> ... with mjun0812/github-metrics@<ver>" span. The timestamp is
 // captured from the wall clock at render time (classic.go uses
 // time.Now()), so two back-to-back subprocesses can straddle a
 // one-second boundary and diverge on that byte range alone.
