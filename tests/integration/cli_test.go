@@ -184,18 +184,17 @@ func TestCLI_ConfigYAML_Equivalence(t *testing.T) {
 }
 
 // volatileLastUpdated matches the classic footer's "Last updated
-// <timestamp> ... with mjun0812/github-metrics@<ver>" span. The
-// timestamp is captured from the wall clock at render time
-// (classic.go uses time.Now()), so two back-to-back subprocesses can
-// straddle a one-second boundary and diverge on that byte range alone.
+// <timestamp> ... with github-metrics@<ver>" span. The timestamp is
+// captured from the wall clock at render time (classic.go uses
+// time.Now()), so two back-to-back subprocesses can straddle a
+// one-second boundary and diverge on that byte range alone.
 var volatileLastUpdated = regexp.MustCompile(`Last updated [^<]+`)
 
 // stripVolatile masks the footer timestamp so the YAML-vs-flags
 // equivalence assertion compares only config-derived bytes. The
 // timestamp is config-independent, so masking it preserves the
 // equivalence check while removing the sole nondeterministic field —
-// mirroring the normalize-svg-stream tool the golden/content suites
-// already apply.
+// mirroring the golden/content suites' svg_normalize helper.
 func stripVolatile(svg string) string {
 	return volatileLastUpdated.ReplaceAllString(svg, "Last updated __MASKED__")
 }
