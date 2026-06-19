@@ -23,7 +23,7 @@
               Recently used languages
             </h3>
             <small>
-              activity from 81 repositories analysed over last 30 days
+              activity from 92 repositories analysed over last 30 days
             </small>
             <svg xmlns="http://www.w3.org/2000/svg" class="bar" width="460" height="8" role="img" aria-label="Recently used languages distribution">
               <title>
@@ -34,28 +34,28 @@
               </mask>
               <rect mask="url(#languages-bar-recent)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-recent">
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="221.45" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="221.45" y="0" width="189.05" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="410.51" y="0" width="42.80" height="8" fill="#000080" data-language="Lua"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="453.31" y="0" width="6.39" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.70" y="0" width="0.30" height="8" fill="#f1e05a" data-language="JavaScript"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="310.13" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="310.13" y="0" width="89.63" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="399.76" y="0" width="51.58" height="8" fill="#000080" data-language="Lua"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="451.34" y="0" width="8.28" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.62" y="0" width="0.38" height="8" fill="#f1e05a" data-language="JavaScript"/>
               </g>
             </svg>
             <div class="row fill-width">
               <section>
-                <div class="field language details" data-language="Go">
+                <div class="field language details" data-language="Shell">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#00ADD8" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#89e051" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    Go
+                    Shell
                   </div>
                   <small>
                     <div>
-                      4.4 kB
+                      4.7 kB
                     </div>
                     <div>
-                      48.1%
+                      67.4%
                     </div>
                   </small>
                 </div>
@@ -68,10 +68,10 @@
                   </div>
                   <small>
                     <div>
-                      864 B
+                      804 B
                     </div>
                     <div>
-                      9.3%
+                      11.2%
                     </div>
                   </small>
                 </div>
@@ -93,19 +93,19 @@
                 </div>
               </section>
               <section>
-                <div class="field language details" data-language="Shell">
+                <div class="field language details" data-language="Go">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#89e051" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#00ADD8" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    Shell
+                    Go
                   </div>
                   <small>
                     <div>
-                      3.7 kB
+                      1.4 kB
                     </div>
                     <div>
-                      41.1%
+                      19.5%
                     </div>
                   </small>
                 </div>
@@ -121,7 +121,7 @@
                       129 B
                     </div>
                     <div>
-                      1.4%
+                      1.8%
                     </div>
                   </small>
                 </div>
