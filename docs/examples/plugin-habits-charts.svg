@@ -18,9 +18,9 @@
               <div class="chart-bars">
                 <div class="entry">
                   <span class="value">
-                    2
+                    3
                   </span>
-                  <div class="bar" style="height: 7px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                  <div class="bar" style="height: 10px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                   00
                 </div>
                 <div class="entry">
@@ -95,9 +95,9 @@
                 </div>
                 <div class="entry">
                   <span class="value">
-                    5
+                    3
                   </span>
-                  <div class="bar" style="height: 17px; background-color: var(--color-calendar-graph-day-L2-bg)"></div>
+                  <div class="bar" style="height: 10px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                   11
                 </div>
                 <div class="entry">
@@ -194,9 +194,9 @@
                 <div class="chart-bars">
                   <div class="entry">
                     <span class="value">
-                      9
+                      6
                     </span>
-                    <div class="bar" style="height: 19px; background-color: var(--color-calendar-graph-day-L2-bg)"></div>
+                    <div class="bar" style="height: 12px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     Sun
                   </div>
                   <div class="entry">
@@ -222,9 +222,9 @@
                   </div>
                   <div class="entry">
                     <span class="value">
-                      1
+                      3
                     </span>
-                    <div class="bar" style="height: 2px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <div class="bar" style="height: 6px; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     Thu
                   </div>
                   <div class="entry">
@@ -252,7 +252,7 @@
                     <span class="name">
                       Markdown
                     </span>
-                    <div class="bar" style="width: 52.197023523763804%; background-color: var(--color-calendar-graph-day-L3-bg)"></div>
+                    <div class="bar" style="width: 51.66984514455717%; background-color: var(--color-calendar-graph-day-L3-bg)"></div>
                     <span class="value">
                       65%
                     </span>
@@ -261,16 +261,16 @@
                     <span class="name">
                       SVG
                     </span>
-                    <div class="bar" style="width: 10.002496399423908%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <div class="bar" style="width: 11.172476924250514%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     <span class="value">
-                      13%
+                      14%
                     </span>
                   </div>
                   <div class="entry">
                     <span class="name">
                       TOML
                     </span>
-                    <div class="bar" style="width: 6.0574171867498805%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <div class="bar" style="width: 6.015714394690671%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     <span class="value">
                       8%
                     </span>
@@ -279,7 +279,7 @@
                     <span class="name">
                       Shell
                     </span>
-                    <div class="bar" style="width: 5.796255400864139%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <div class="bar" style="width: 5.821954382485316%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     <span class="value">
                       7%
                     </span>
@@ -288,16 +288,16 @@
                     <span class="name">
                       Go
                     </span>
-                    <div class="bar" style="width: 3.0955352856457035%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <div class="bar" style="width: 2.4898924403081852%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     <span class="value">
-                      4%
+                      3%
                     </span>
                   </div>
                   <div class="entry">
                     <span class="name">
                       Lua
                     </span>
-                    <div class="bar" style="width: 1.3273163706192992%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <div class="bar" style="width: 1.3181783507513922%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     <span class="value">
                       2%
                     </span>
@@ -306,7 +306,7 @@
                     <span class="name">
                       SCSS
                     </span>
-                    <div class="bar" style="width: 0.7788766202592414%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <div class="bar" style="width: 0.7735143794339766%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     <span class="value">
                       1%
                     </span>
@@ -315,7 +315,7 @@
                     <span class="name">
                       JSON
                     </span>
-                    <div class="bar" style="width: 0.22736437830052808%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
+                    <div class="bar" style="width: 0.22579906934167365%; background-color: var(--color-calendar-graph-day-L1-bg)"></div>
                     <span class="value">
                       0%
                     </span>
