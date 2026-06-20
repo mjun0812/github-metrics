@@ -16,6 +16,7 @@ import (
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -170,7 +171,7 @@ func parseInputs(raw map[string]any) inputs {
 	return inputs{
 		base:          readString(raw, "plugin_contributors_base", ""),
 		head:          readString(raw, "plugin_contributors_head", "master"),
-		contributions: readBool(raw, "plugin_contributors_contributions"),
+		contributions: pluginutil.ReadBool(raw, "plugin_contributors_contributions"),
 		sections:      readStringSlice(raw, "plugin_contributors_sections", []string{"contributors"}),
 		ignored:       readStringSet(raw, "plugin_contributors_ignored"),
 	}
@@ -326,28 +327,6 @@ func defaultString(v, def string) string {
 		return def
 	}
 	return v
-}
-
-func readBool(in map[string]any, key string) bool {
-	if in == nil {
-		return false
-	}
-	switch v := in[key].(type) {
-	case bool:
-		return v
-	case string:
-		switch strings.ToLower(strings.TrimSpace(v)) {
-		case "true", "1", "yes", "on":
-			return true
-		}
-	case int:
-		return v != 0
-	case int64:
-		return v != 0
-	case float64:
-		return v != 0
-	}
-	return false
 }
 
 func readStringSlice(in map[string]any, key string, def []string) []string {

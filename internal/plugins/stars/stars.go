@@ -6,13 +6,12 @@ package stars
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -73,17 +72,17 @@ func (p *starsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, 
 	}
 	// Per the contract a plugin runs only when plugin_<name> is truthy.
 	// Engine glue does not gate today, so each plugin self-gates.
-	if !truthyInput(pc.Inputs, "plugin_"+Name) {
+	if !pluginutil.TruthyInput(pc.Inputs, "plugin_"+Name) {
 		return &Result{Skipped: true, SkippedReason: "plugin disabled", List: []StarredRepo{}}, nil
 	}
 	if pc.GraphQL == nil {
 		return &Result{Skipped: true, SkippedReason: "GraphQL client unavailable", List: []StarredRepo{}}, nil
 	}
-	login := loginFromInputs(pc.Inputs)
+	login := pluginutil.LoginFromInputs(pc.Inputs)
 	if login == "" {
 		return &Result{Skipped: true, SkippedReason: "no login", List: []StarredRepo{}}, nil
 	}
-	limit := readIntDefault(pc.Inputs, "plugin_stars_limit", 4)
+	limit := pluginutil.ReadIntDefault(pc.Inputs, "plugin_stars_limit", 4)
 	if limit <= 0 {
 		limit = 4
 	}
@@ -157,55 +156,4 @@ func formatLicense(name string, spdxID *string) string {
 		return name
 	}
 	return spdx
-}
-
-func truthyInput(in map[string]any, key string) bool {
-	v, ok := in[key]
-	if !ok {
-		return false
-	}
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := strings.ToLower(strings.TrimSpace(x))
-		return s == "true" || s == "1" || s == "yes"
-	case int:
-		return x != 0
-	case float64:
-		return x != 0
-	}
-	return false
-}
-
-func loginFromInputs(in map[string]any) string {
-	if v, ok := in["user"].(string); ok && v != "" {
-		return v
-	}
-	if v, ok := in["login"].(string); ok {
-		return v
-	}
-	return ""
-}
-
-func readIntDefault(in map[string]any, key string, def int) int {
-	v, ok := in[key]
-	if !ok {
-		return def
-	}
-	switch x := v.(type) {
-	case int:
-		return x
-	case int64:
-		return int(x)
-	case float64:
-		return int(x)
-	case string:
-		n, err := strconv.Atoi(strings.TrimSpace(x))
-		if err != nil {
-			return def
-		}
-		return n
-	}
-	return def
 }

@@ -15,6 +15,7 @@ import (
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -102,19 +103,19 @@ func (p *notablePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
-	indepth := truthy(pc.Inputs["plugin_notable_indepth"])
+	indepth := pluginutil.Truthy(pc.Inputs["plugin_notable_indepth"])
 	base := &Result{List: []NotableContrib{}}
 	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
 		base.Skipped = true
 		base.SkippedReason = reason
 		return base, nil
 	}
-	if pc.GraphQL == nil || !truthy(pc.Inputs["plugin_notable"]) {
+	if pc.GraphQL == nil || !pluginutil.Truthy(pc.Inputs["plugin_notable"]) {
 		base.Skipped = true
 		base.SkippedReason = "GraphQL client unavailable"
 		return base, nil
 	}
-	login := loginFromInputs(pc.Inputs)
+	login := pluginutil.LoginFromInputs(pc.Inputs)
 	if login == "" {
 		base.Skipped = true
 		base.SkippedReason = "user login unavailable"
@@ -124,7 +125,7 @@ func (p *notablePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	from := ownerTypeFilter(pc.Inputs)    // default "organization"
 	self := includeSelf(pc.Inputs)        // default false (exclude own repos)
 	types := contributionTypes(pc.Inputs) // default [COMMIT]
-	useHandle := truthy(pc.Inputs["plugin_notable_repositories"])
+	useHandle := pluginutil.Truthy(pc.Inputs["plugin_notable_repositories"])
 	skipped := skippedSet(pc.Inputs)
 	limit := notableLimit(pc.Inputs)
 
@@ -263,7 +264,7 @@ func ownerTypeMatches(from string, isOrg bool) bool {
 
 // includeSelf reads plugin_notable_self (default no = exclude own repos).
 func includeSelf(in map[string]any) bool {
-	return truthy(in["plugin_notable_self"])
+	return pluginutil.Truthy(in["plugin_notable_self"])
 }
 
 // contributionTypes reads plugin_notable_types (default "commit"),
@@ -355,20 +356,6 @@ func notableLimit(in map[string]any) int {
 	return defaultLimit
 }
 
-// loginFromInputs resolves the page user's login from the plugin inputs.
-func loginFromInputs(in map[string]any) string {
-	if in == nil {
-		return ""
-	}
-	if v, ok := in["user"].(string); ok && v != "" {
-		return v
-	}
-	if v, ok := in["login"].(string); ok {
-		return v
-	}
-	return ""
-}
-
 // stringInput returns the string value for key, or "".
 func stringInput(in map[string]any, key string) string {
 	if in == nil {
@@ -437,20 +424,4 @@ func pullCount(n *notableRepoNode) int {
 		return 0
 	}
 	return n.PullRequests.TotalCount
-}
-
-// truthy mirrors the shared helper across plugins; spec 013 uses it to
-// gate the GraphQL fetch on the `plugin_notable` input.
-func truthy(v any) bool {
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		return x == "true" || x == "1" || x == "yes"
-	case int:
-		return x != 0
-	case float64:
-		return x != 0
-	}
-	return false
 }

@@ -2,10 +2,10 @@ package isocalendar
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // chunkDays is the width of one contributionsCollection(from,to) query
@@ -60,7 +60,7 @@ func fetchWindowedWeeks(ctx context.Context, pc *plugins.PluginContext, duration
 	// core.RunPlugins drives every registered plugin regardless of
 	// inputs, so gate the network fetch on the plugin actually being
 	// enabled — disabled runs stay on the shared-calendar path.
-	if pc.GraphQL == nil || !truthyInput(pc.Inputs, "plugin_isocalendar") {
+	if pc.GraphQL == nil || !pluginutil.TruthyInput(pc.Inputs, "plugin_isocalendar") {
 		return nil, nil
 	}
 	login := resolveLogin(pc)
@@ -98,27 +98,6 @@ func fetchWindowedWeeks(ctx context.Context, pc *plugins.PluginContext, duration
 		}
 	}
 	return weeks, nil
-}
-
-// truthyInput collapses an input-map value to a bool (same shape as
-// the other plugins' local helpers).
-func truthyInput(in map[string]any, key string) bool {
-	v, ok := in[key]
-	if !ok {
-		return false
-	}
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := strings.ToLower(strings.TrimSpace(x))
-		return s == "true" || s == "1" || s == "yes"
-	case int:
-		return x != 0
-	case float64:
-		return x != 0
-	}
-	return false
 }
 
 // resolveLogin returns the page user's login, preferring the base

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
@@ -24,14 +25,6 @@ const projectRowOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 
 // clockOcticon is the upstream `<%- octicon "clock" %>` icon used in the
 // "Updated YYYY-MM-DD" line (EJS line 34).
 const clockOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0zM8 0a8 8 0 100 16A8 8 0 008 0zm.5 4.75a.75.75 0 00-1.5 0v3.5a.75.75 0 00.471.696l2.5 1a.75.75 0 00.557-1.392L8.5 7.742V4.75z"></path></svg>`
-
-// pluralS mirrors upstream's `s()` helper.
-func pluralS(n int) string {
-	if n == 1 {
-		return ""
-	}
-	return "s"
-}
 
 // Partial renders the classic SVG fragment for the projects plugin.
 // Mirrors upstream org_repo/source/templates/classic/partials/projects.ejs
@@ -84,7 +77,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	fmt.Fprintf(
 		&b,
 		`<h2 class="field">%s%d Project%s</h2>`,
-		projectsOcticon, len(r.List), pluralS(len(r.List)),
+		projectsOcticon, len(r.List), pluginutil.Plural(len(r.List)),
 	)
 	b.WriteString(`<div class="row">`)
 	b.WriteString(`<section class="project">`)
