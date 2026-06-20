@@ -176,13 +176,6 @@ func (r *REST) Post(ctx context.Context, path string, body []byte, extra http.He
 	return r.doBody(ctx, http.MethodPost, path, body, extra)
 }
 
-// Delete issues an authenticated DELETE. No body. Used by the M6
-// committer for `DELETE /git/refs/heads/<branch>` (PR head branch
-// cleanup, Phase 4).
-func (r *REST) Delete(ctx context.Context, path string, extra http.Header) ([]byte, *http.Response, error) {
-	return r.doBody(ctx, http.MethodDelete, path, nil, extra)
-}
-
 // doBody is the shared helper for non-GET requests. Builds the
 // http.Request via the underlying *http.Client so we bypass the
 // retryablehttp body re-read mechanic — committer-class operations
