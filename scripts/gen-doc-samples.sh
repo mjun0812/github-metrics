@@ -478,6 +478,17 @@ render_one_repo "plugin-people-repo-types" \
 	--plugin "plugin_people=yes" \
 	--plugin "plugin_people_types=stargazers,watchers,contributors"
 
+# `languages` in repository mode reads the per-language byte
+# breakdown straight from the GraphQL Repository payload (no
+# `plugin_languages_indepth` analyzer needed). The Run() gate at
+# internal/plugins/languages/languages.go requires the
+# `plugin_languages=yes` toggle; without it the card is skipped, so
+# the default repo render does not surface it.
+render_one_repo "plugin-languages-repo" \
+	--plugin "base=" \
+	--plugin "plugin_languages=yes" \
+	--plugin "plugin_languages_details=bytes-size,percentage"
+
 echo
 echo "== repository foundational base render =="
 # `plugin-base-repo` renders the repository template chrome on its
@@ -529,15 +540,16 @@ echo "== Summary =="
 # (multi-plugin composite render).
 # Repository mode adds:
 #   - 1 foundational `plugin-base-repo` render
-#   - 1 stand-alone repo-mode plugin sample (`plugin-people-repo`)
+#   - 2 stand-alone repo-mode plugin samples (`plugin-people-repo`,
+#     `plugin-languages-repo`)
 #   - 2 repo-context variants (`plugin-contributors-repo-contributions`,
 #     `plugin-people-repo-types`)
 #   - 1 `metrics-repository` overview composite
-# = 5 repo-mode logical samples. The 14 user-mode-only plugins +
-# 4 plugins with byte-identical repo output are intentionally NOT
+# = 6 repo-mode logical samples. The user-mode-only plugins and the
+# plugins with byte-identical repo output are intentionally NOT
 # emitted as repo-mode samples (see "per-plugin repository-mode
 # renders" section above for the rationale).
-REPO_LOGICAL=5
+REPO_LOGICAL=6
 TOTAL=$(((${#PLUGINS[@]} + 3 + 9 + 1 + 1 + REPO_LOGICAL) * 2))
 OK=$((TOTAL - ${#FAILURES[@]}))
 echo "  OK:   ${OK}/${TOTAL}"
