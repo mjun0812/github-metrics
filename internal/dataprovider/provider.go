@@ -150,6 +150,14 @@ func (p *Provider) CommitCalendar(ctx context.Context) (*plugins.ContributionCal
 // memoize collapses concurrent callers for key, then caches the
 // outcome (success or error) permanently. Subsequent callers short
 // circuit through the cache without re-entering singleflight.
+//
+// One exception: context.Canceled / context.DeadlineExceeded are NOT
+// cached. Such errors describe a property of the in-flight caller's
+// ctx (it was canceled or timed out), not of the upstream resource —
+// caching them would poison the Provider for the rest of the request
+// scope, including callers that arrived later with a fresh ctx. The
+// caller that observed the cancellation still gets the error; the next
+// caller re-enters the fetch under its own ctx.
 func (p *Provider) memoize(ctx context.Context, key string, fn func(context.Context) (any, error)) (any, error) {
 	if cached, ok := p.cache.Load(key); ok {
 		r := cached.(*result)
@@ -165,6 +173,12 @@ func (p *Provider) memoize(ctx context.Context, key string, fn func(context.Cont
 			return r.value, r.err
 		}
 		val, fetchErr := fn(ctx)
+		if fetchErr != nil && (errors.Is(fetchErr, context.Canceled) || errors.Is(fetchErr, context.DeadlineExceeded)) {
+			// Skip cache.Store so a later caller with a fresh ctx
+			// can re-enter the fetch. The current caller still
+			// receives fetchErr below.
+			return val, fetchErr
+		}
 		p.cache.Store(key, &result{value: val, err: fetchErr})
 		return val, fetchErr
 	})
