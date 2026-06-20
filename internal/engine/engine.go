@@ -11,12 +11,14 @@ import (
 	"log/slog"
 
 	"github.com/mjun0812/github-metrics/internal/config"
+	"github.com/mjun0812/github-metrics/internal/dataprovider"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/base"
 	"github.com/mjun0812/github-metrics/internal/plugins/core"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/render"
 	"github.com/mjun0812/github-metrics/internal/templates"
 )
@@ -153,9 +155,22 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 		return nil, err
 	}
 
+	inputs := mergeLogin(req.Inputs, req.Login)
+
+	// dataprovider (#603) lazily memoizes the user/organization profile
+	// + repository paging + indepth commit calendar fetches each plugin
+	// shares. Construct once per Compute so concurrent plugin
+	// goroutines collapse onto a single GraphQL call per resource.
+	provider := dataprovider.New(
+		pluginutil.LoginFromInputs(inputs),
+		deps.GraphQL,
+		deps.REST,
+		deps.Logger,
+	)
+
 	pc := &plugins.PluginContext{
 		Settings:   deps.Settings,
-		Inputs:     mergeLogin(req.Inputs, req.Login),
+		Inputs:     inputs,
 		Logger:     deps.Logger,
 		HTTPClient: deps.HTTPClient,
 		REST:       deps.REST,
@@ -163,6 +178,7 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 		Data:       data,
 		Metadata:   deps.Metadata,
 		Imports:    plugins.NewImports(data),
+		Provider:   provider,
 		Render:     deps.Render,
 	}
 
