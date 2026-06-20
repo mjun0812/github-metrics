@@ -232,10 +232,10 @@ The left column uses a different data source, so the numbers will not match. The
 
 `--template repository --user mjun0812 --repo flash-attention-prebuild-wheels`.
 
-| Type         | upstream (mjun0812)                                                                   | Go                                                                          |
-| ------------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| repository   | <img src="reference_examples/metrics.repository.svg" width="420">                     | <img src="examples/metrics-repository.svg" width="420">                     |
-| languages    | <img src="reference_examples/metrics.repository.plugin.languages.svg" width="420">    | — _requires `plugin_languages=yes` to opt in_                               |
-| contributors | <img src="reference_examples/metrics.repository.plugin.contributors.svg" width="420"> | <img src="examples/plugin-contributors-repo-contributions.svg" width="420"> |
-| people       | <img src="reference_examples/metrics.repository.plugin.people.svg" width="420">       | <img src="examples/plugin-people-repo-types.svg" width="420">               |
-| stargazers   | <img src="reference_examples/metrics.repository.plugin.stargazers.svg" width="420">   | <img src="examples/plugin-base-repo.svg" width="420">                       |
+| Type         | upstream (mjun0812)                                                                   | Go                                                                           |
+| ------------ | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| repository   | <img src="reference_examples/metrics.repository.svg" width="420">                     | <img src="examples/metrics-repository.svg" width="420">                      |
+| languages    | <img src="reference_examples/metrics.repository.plugin.languages.svg" width="420">    | — _requires `plugin_languages=yes` to opt in_                                |
+| contributors | <img src="reference_examples/metrics.repository.plugin.contributors.svg" width="420"> | <img src="examples/plugin-contributors-repo-contributions.svg" width="420">  |
+| people       | <img src="reference_examples/metrics.repository.plugin.people.svg" width="420">       | <img src="examples/plugin-people-repo-types.svg" width="420">                |
+| stargazers   | <img src="reference_examples/metrics.repository.plugin.stargazers.svg" width="420">   | — _the partial emits nothing in repo mode; totals fold into the base chrome_ |
