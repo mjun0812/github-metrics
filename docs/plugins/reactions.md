@@ -4,21 +4,17 @@
 This plugin displays overall user reactions on recent issues, comments and discussions.
 <!-- AUTOGEN_END: title-and-description -->
 
-## サンプル出力
+## Sample
 
 ![reactions sample](../examples/plugin-reactions.svg)
 
-> サンプルは `--user mjun0812` のデータで本プラグインのみを有効化してレンダリングした例です。再生成は `make docs-examples`。
-
-## このプラグインを使うべきケース
-
-<!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
+> Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
-## 設定 (inputs)
+## Configuration (inputs)
 
-| Input | 説明 | デフォルト | 必須 | 型 |
-|-------|------|------------|------|----|
+| Input | Description | Default | Required | Type |
+| ----- | ----------- | ------- | -------- | ---- |
 | `plugin_reactions` | Enable reactions plugin | `no` | no | boolean |
 | `plugin_reactions_limit` | Display limit (issues and pull requests comments) | `200` | no | number |
 | `plugin_reactions_limit_issues` | Display limit (issues and pull requests, first comment) | `100` | no | number |
@@ -31,7 +27,7 @@ This plugin displays overall user reactions on recent issues, comments and discu
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
-## 使い方
+## Usage
 
 ### GitHub Action
 
@@ -52,17 +48,9 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
-## Requirements
-
-**Public comments / issues / pull requests authored by the user that received reactions** (❤️ 👍 👎 😄 😕 👀 🚀 🎉). The card renders an 8-emoji gauge panel where each emoji is a circular gauge scaled by its share of total reactions. `plugin_reactions_days` (default `0` = disabled) bounds comment age. Accounts with no reactions produce gauges at 0%.
-
-## 既知の制約 / 注意点
-
-<!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->
-
-## 参照
+## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
 - [`assets/plugins/reactions/metadata.yml`](../../assets/plugins/reactions/metadata.yml) — upstream metadata
-- 対応アカウント種別: user
-- 必要スコープ: public_access
+- Supported account types: user
+- Required scopes: public_access

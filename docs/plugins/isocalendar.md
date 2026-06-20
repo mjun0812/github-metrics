@@ -4,27 +4,23 @@
 This plugin displays an isometric view of a user commit calendar along with a few additional statistics like current streak and average number of commit per day.
 <!-- AUTOGEN_END: title-and-description -->
 
-## サンプル出力
+## Sample
 
 ![isocalendar sample](../examples/plugin-isocalendar.svg)
 
-> サンプルは `--user mjun0812` のデータで本プラグインのみを有効化してレンダリングした例です。再生成は `make docs-examples`。
-
-## このプラグインを使うべきケース
-
-<!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
+> Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
-## 設定 (inputs)
+## Configuration (inputs)
 
-| Input | 説明 | デフォルト | 必須 | 型 |
-|-------|------|------------|------|----|
+| Input | Description | Default | Required | Type |
+| ----- | ----------- | ------- | -------- | ---- |
 | `plugin_isocalendar` | Enable isocalendar plugin | `no` | no | boolean |
 | `plugin_isocalendar_duration` | Time range | `half-year` | no | string |
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
-## 使い方
+## Usage
 
 ### GitHub Action
 
@@ -49,7 +45,7 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 
 Same data source as the `calendar` plugin (the user's public contribution calendar). Public contributions within the past year are required for a non-empty heatmap. The `full-year` mode renders 52 weeks of the same dataset.
 
-## 既知の制約 / 注意点
+## Notes
 
 - 表示上は "Commits per day" ですが、データソースは GitHub GraphQL の
   `contributionsCollection.contributionCalendar` の日別 `contributionCount` であり、
@@ -69,9 +65,9 @@ Same data source as the `calendar` plugin (the user's public contribution calend
   indepth カレンダー (過去 1 年) から末尾 26 週 / 53 週をスライスする
   degraded path にフォールバックします。
 
-## 参照
+## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
 - [`assets/plugins/isocalendar/metadata.yml`](../../assets/plugins/isocalendar/metadata.yml) — upstream metadata
-- 対応アカウント種別: user
-- 必要スコープ: public_access
+- Supported account types: user
+- Required scopes: public_access

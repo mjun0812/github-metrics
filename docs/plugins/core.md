@@ -4,19 +4,15 @@
 Global configuration and options
 <!-- AUTOGEN_END: title-and-description -->
 
-## サンプル出力
+## Sample
 
-このプラグインは独立した SVG 断片を描画しません (No standalone visual output)。グローバル設定とプラグイン並列ランナーを実装するプラグインで、入力のみがこのページの対象です。
-
-## このプラグインを使うべきケース
-
-<!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
+This plugin emits no standalone SVG; its inputs are documented below.
 
 <!-- AUTOGEN_START: config-table -->
-## 設定 (inputs)
+## Configuration (inputs)
 
-| Input | 説明 | デフォルト | 必須 | 型 |
-|-------|------|------------|------|----|
+| Input | Description | Default | Required | Type |
+| ----- | ----------- | ------- | -------- | ---- |
 | `token` | GitHub Personal Access Token | `` | yes | token |
 | `user` | GitHub username | `` | no | string |
 | `repo` | GitHub repository | `` | no | string |
@@ -71,7 +67,7 @@ Global configuration and options
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
-## 使い方
+## Usage
 
 ### GitHub Action
 
@@ -99,12 +95,8 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 
 Core has no standalone visual output; this page documents its inputs only. The plugin implements global configuration parsing (template selection, timezone, animations, output format, etc.) and the parallel plugin runner that drives every other plugin. There are no API scopes or render prerequisites of its own — every other plugin in this repository depends on `core` having populated `data.Config` before it runs.
 
-## 既知の制約 / 注意点
-
-<!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->
-
-## 参照
+## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
 - [`assets/plugins/core/metadata.yml`](../../assets/plugins/core/metadata.yml) — upstream metadata
-- 対応アカウント種別: user, organization, repository
+- Supported account types: user, organization, repository

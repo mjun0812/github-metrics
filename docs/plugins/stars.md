@@ -1,35 +1,26 @@
 <!-- AUTOGEN_START: title-and-description -->
-
 # Plugin: stars
 
 This plugin displays recently starred repositories.
-
 <!-- AUTOGEN_END: title-and-description -->
 
-## サンプル出力
+## Sample
 
 ![stars sample](../examples/plugin-stars.svg)
 
-> サンプルは `--user mjun0812` のデータで本プラグインのみを有効化してレンダリングした例です。再生成は `make docs-examples`。
-
-## このプラグインを使うべきケース
-
-<!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
+> Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
+## Configuration (inputs)
 
-## 設定 (inputs)
-
-| Input                | 説明                | デフォルト | 必須 | 型      |
-| -------------------- | ------------------- | ---------- | ---- | ------- |
-| `plugin_stars`       | Enable stars plugin | `no`       | no   | boolean |
-| `plugin_stars_limit` | Display limit       | `4`        | no   | number  |
-
+| Input | Description | Default | Required | Type |
+| ----- | ----------- | ------- | -------- | ---- |
+| `plugin_stars` | Enable stars plugin | `no` | no | boolean |
+| `plugin_stars_limit` | Display limit | `4` | no | number |
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
-
-## 使い方
+## Usage
 
 ### GitHub Action
 
@@ -48,20 +39,19 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_stars=yes
 ```
-
 <!-- AUTOGEN_END: usage-snippet -->
 
 ## Requirements
 
 **At least one starred repository.** Reads starred repositories via GraphQL (`user.starredRepositories`). Accounts that never starred anything see an empty card.
 
-## 既知の制約 / 注意点
+## Notes
 
 - Starred dates are rendered as relative labels (`3 days ago`, `2 hours ago`) when recent, and fall back to the absolute date for older entries.
 
-## 参照
+## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
 - [`assets/plugins/stars/metadata.yml`](../../assets/plugins/stars/metadata.yml) — upstream metadata
-- 対応アカウント種別: user
-- 必要スコープ: public_access
+- Supported account types: user
+- Required scopes: public_access
