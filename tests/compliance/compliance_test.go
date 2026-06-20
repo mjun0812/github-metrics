@@ -473,6 +473,14 @@ func TestCompliance_M7_NonAffectedPluginsAreInvariantOnRepo(t *testing.T) {
 	}
 }
 
+// nonTemplateInternalDirs lists subdirectories of
+// `internal/templates/` that are NOT template implementations — they
+// are shared helpers consumed by the real templates. They MUST be
+// excluded from the adopted-template comparison.
+var nonTemplateInternalDirs = map[string]struct{}{
+	"chrome": {}, // shared footer / base-section / styles-loader helpers used by classic + repository
+}
+
 // TestCompliance_M7_TemplateInvariant asserts that `internal/templates/`
 // hosts exactly the adopted templates (classic from M2, repository
 // from M7) and nothing else. Adding `markdown`/`terminal`/etc. would
@@ -493,7 +501,11 @@ func TestCompliance_M7_TemplateInvariant(t *testing.T) {
 		if !e.IsDir() {
 			continue
 		}
-		have[e.Name()] = struct{}{}
+		name := e.Name()
+		if _, skip := nonTemplateInternalDirs[name]; skip {
+			continue
+		}
+		have[name] = struct{}{}
 	}
 	for name := range want {
 		if _, ok := have[name]; !ok {
@@ -587,7 +599,11 @@ func TestCompliance_M10_PluginTemplateInvariant(t *testing.T) {
 		if !e.IsDir() {
 			continue
 		}
-		haveTemplates[e.Name()] = struct{}{}
+		name := e.Name()
+		if _, skip := nonTemplateInternalDirs[name]; skip {
+			continue
+		}
+		haveTemplates[name] = struct{}{}
 	}
 
 	diff := func(label string, want, have map[string]struct{}) {
