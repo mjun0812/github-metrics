@@ -22,6 +22,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/format"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 )
 
 // nowFunc is the time source used by BaseHeader's "Joined GitHub <N>
@@ -106,7 +107,7 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 	// 429 Phase 3: calendar rendered as a single horizontal SVG row.
 	// 429 Phase 2: "Contributed to N repositories".
 	var rightRows []string
-	if row := contributionRow(u.RecentContributions); row != "" {
+	if row := chrome.ContributionRow(u.RecentContributions); row != "" {
 		rightRows = append(rightRows, row)
 	}
 	if u.ContributedTo > 0 {
@@ -141,62 +142,6 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 
 	b.WriteString(`</section>`)
 	return b.String(), nil
-}
-
-// Contribution mini-grid geometry. Mirrors upstream's 11x11 cell size
-// with a 2px gap, giving a 13px column / row pitch. The SVG is sized
-// just large enough to bound the 11x7 cell array; the partial omits
-// itself entirely when the underlying data is empty so the SVG never
-// reserves blank space.
-const (
-	calendarCellSize = 11
-	// calendarCellPitch is the per-day horizontal step. Upstream
-	// `base.header.ejs` lays each cell at `x = index*15`, so the 11px
-	// cell sits in a 15px slot (4px gap).
-	calendarCellPitch = 15
-)
-
-// emptyCellColor is the canonical GitHub no-contribution color used for
-// padding (e.g. when the trailing week of a fresh account has < 7 days)
-// and as a defensive fallback when the GraphQL `color` field is empty.
-const emptyCellColor = "#ebedf0"
-
-// contributionRow renders the BaseHeader mini contribution calendar as
-// a single horizontal row of day cells embedded in an HTML container so
-// the existing `.calendar.field` CSS rule (margin-left/top tweak)
-// applies. This mirrors upstream `base.header.ejs`, which lays the last
-// 14 days out left-to-right (oldest -> newest).
-//
-// Each cell is a `class="day"` rect whose `fill` carries the
-// GitHub-supplied hex so plain renderers (no CSS) draw the correct
-// color; the `.calendar .day` CSS rule adds the cell outline. Returns
-// "" when no days are present so the partial hides the block.
-func contributionRow(days []plugins.ContributionDay) string {
-	if len(days) == 0 {
-		return ""
-	}
-	width := len(days) * calendarCellPitch
-	var b strings.Builder
-	b.WriteString(`<div class="field calendar" data-block="calendar-grid">`)
-	fmt.Fprintf(
-		&b,
-		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" width="%d" height="16">`,
-		width, calendarCellSize, width,
-	)
-	b.WriteString(`<g>`)
-	for i, d := range days {
-		color := emptyCellColor
-		if d.Color != "" {
-			color = d.Color
-		}
-		fmt.Fprintf(
-			&b,
-			`<rect class="day" fill=%q x="%d" y="0" width="%d" height="%d" rx="2" ry="2"/>`,
-			color, i*calendarCellPitch, calendarCellSize, calendarCellSize,
-		)
-	}
-	b.WriteString(`</g></svg></div>`)
-	return b.String()
 }
 
 // Introduction is a stub: the introduction plugin lands in M4. Until
