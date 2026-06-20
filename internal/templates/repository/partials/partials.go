@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/format"
-	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	classicpart "github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -32,16 +32,6 @@ func SetNow(now func() time.Time) func() {
 	nowFunc = now
 	return func() { nowFunc = prev }
 }
-
-// calendar cell geometry mirrors upstream `base.header.ejs`: 11px cells
-// laid out at a 15px horizontal pitch.
-const (
-	calendarCellSize  = 11
-	calendarCellPitch = 15
-	// emptyCellColor is the GitHub no-contribution color, used as a
-	// defensive fallback when the GraphQL `color` field is empty.
-	emptyCellColor = "#ebedf0"
-)
 
 // BaseHeader renders the upstream `base.header.ejs`-equivalent repo
 // chrome: the repository name plus the two-column stats row (Created /
@@ -78,7 +68,7 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 
 	// Right column: contribution calendar + Environments.
 	b.WriteString(`<section>`)
-	if row := contributionRow(r.Calendar); row != "" {
+	if row := chrome.ContributionRow(r.Calendar); row != "" {
 		b.WriteString(row)
 	}
 	fmt.Fprintf(&b, `<div class="field">:octicon-server:%d Environment%s</div>`,
@@ -88,38 +78,6 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 	b.WriteString(`</div>`)
 	b.WriteString(`</section>`)
 	return b.String(), nil
-}
-
-// contributionRow renders the BaseHeader mini contribution calendar as
-// a single horizontal row of `class="day"` cells, mirroring upstream
-// `base.header.ejs` (last 14 days, oldest → newest). Returns "" when no
-// days are present so the block hides for repos with no signal.
-func contributionRow(days []plugins.ContributionDay) string {
-	if len(days) == 0 {
-		return ""
-	}
-	width := len(days) * calendarCellPitch
-	var b strings.Builder
-	b.WriteString(`<div class="field calendar" data-block="calendar-grid">`)
-	fmt.Fprintf(
-		&b,
-		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" width="%d" height="16">`,
-		width, calendarCellSize, width,
-	)
-	b.WriteString(`<g>`)
-	for i, d := range days {
-		color := emptyCellColor
-		if d.Color != "" {
-			color = d.Color
-		}
-		fmt.Fprintf(
-			&b,
-			`<rect class="day" fill=%q x="%d" y="0" width="%d" height="%d" rx="2" ry="2"/>`,
-			color, i*calendarCellPitch, calendarCellSize, calendarCellSize,
-		)
-	}
-	b.WriteString(`</g></svg></div>`)
-	return b.String()
 }
 
 // Introduction surfaces the repo's about text + primary language /
@@ -232,90 +190,4 @@ func maxNonNegative(n int) int {
 		return 0
 	}
 	return n
-}
-
-// TruthyInput reports whether the input keyed by `key` is a truthy
-// toggle ("true" / "yes" / "1" / bool true). Mirrors the classic
-// dispatcher's gate so the repository template applies identical
-// `plugin_<slug>` semantics. #464.
-func TruthyInput(in map[string]any, key string) bool {
-	v, ok := in[key]
-	if !ok {
-		return false
-	}
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		return x == "true" || x == "yes" || x == "1"
-	default:
-		return false
-	}
-}
-
-// ResolveBaseSections reads the `base` input and returns the set of
-// enabled base section names. Mirrors the classic template:
-//
-//   - input absent → all sections on (default render).
-//   - input present but empty string → no base sections (`base=` /
-//     per-plugin renders strip the base.header chrome).
-//   - input is a CSV → split, trim, lowercase each entry.
-//
-// #464.
-func ResolveBaseSections(in map[string]any) map[string]struct{} {
-	const allSections = "header, activity, community, repositories, metadata"
-	raw, present := readBaseInput(in)
-	if !present {
-		raw = allSections
-	}
-	out := map[string]struct{}{}
-	for _, part := range strings.Split(raw, ",") {
-		s := strings.ToLower(strings.TrimSpace(part))
-		if s == "" {
-			continue
-		}
-		out[s] = struct{}{}
-	}
-	return out
-}
-
-// readBaseInput extracts the `base` input. Returns (value, true) when
-// the key is present even if the value is "" so callers can tell
-// "user set base to empty" from "user did not set base".
-func readBaseInput(in map[string]any) (string, bool) {
-	if in == nil {
-		return "", false
-	}
-	v, ok := in["base"]
-	if !ok {
-		return "", false
-	}
-	switch x := v.(type) {
-	case string:
-		return x, true
-	case []string:
-		return strings.Join(x, ","), true
-	case []any:
-		parts := make([]string, 0, len(x))
-		for _, p := range x {
-			if s, ok := p.(string); ok {
-				parts = append(parts, s)
-			}
-		}
-		return strings.Join(parts, ","), true
-	}
-	return "", false
-}
-
-// PartialEnabledByBase reports whether the named repository-owned
-// partial should render given the resolved base sections. Only
-// `base.header` is gated here (mapped to the "header" section); every
-// other `_.json` entry is a plugin partial that passes through (its
-// `plugin_<slug>` toggle is applied separately by the caller). #464.
-func PartialEnabledByBase(name string, sections map[string]struct{}) bool {
-	if name == "base.header" {
-		_, ok := sections["header"]
-		return ok
-	}
-	return true
 }
