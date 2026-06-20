@@ -98,14 +98,3 @@ func MatchCount(raw []byte, re *regexp.Regexp) (int, error) {
 	}
 	return len(re.FindAllString(text, -1)), nil
 }
-
-// SelectorCount returns how many nodes match the goquery selector
-// (after style/defs/script removal). Use for "the card body is not
-// empty" structural assertions where text alone is insufficient.
-func SelectorCount(raw []byte, selector string) (int, error) {
-	doc, err := Doc(raw)
-	if err != nil {
-		return 0, err
-	}
-	return doc.Find(selector).Length(), nil
-}
