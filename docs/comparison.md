@@ -32,9 +32,9 @@ The left column uses a different data source, so the numbers will not match. The
 
 **variant: recent**
 
-| upstream (lowlighter)                                                         | upstream (mjun0812) | Go                                                           |
-| ----------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------ |
-| <img src="original_examples/metrics.plugin.languages.recent.svg" width="420"> | —                   | <img src="examples/plugin-languages-recent.svg" width="420"> |
+| upstream (lowlighter)                                                         | upstream (mjun0812)                                | Go                                                           |
+| ----------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------ |
+| <img src="original_examples/metrics.plugin.languages.recent.svg" width="420"> | — _upstream v3.34 bug (TypeError in `recent.mjs`)_ | <img src="examples/plugin-languages-recent.svg" width="420"> |
 
 **variant: indepth**
 
@@ -44,21 +44,21 @@ The left column uses a different data source, so the numbers will not match. The
 
 ### activity
 
-| upstream (lowlighter)                                                 | upstream (mjun0812) | Go (`plugin-activity.svg`)                           |
-| --------------------------------------------------------------------- | ------------------- | ---------------------------------------------------- |
-| <img src="original_examples/metrics.plugin.activity.svg" width="420"> | —                   | <img src="examples/plugin-activity.svg" width="420"> |
+| upstream (lowlighter)                                                 | upstream (mjun0812)                                                       | Go (`plugin-activity.svg`)                           |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.activity.svg" width="420"> | — _upstream v3.34 bug (`TypeError: Cannot read properties of undefined`)_ | <img src="examples/plugin-activity.svg" width="420"> |
 
 ### achievements
 
-| upstream (lowlighter)                                                     | upstream (mjun0812) | Go (`plugin-achievements.svg`)                           |
-| ------------------------------------------------------------------------- | ------------------- | -------------------------------------------------------- |
-| <img src="original_examples/metrics.plugin.achievements.svg" width="420"> | —                   | <img src="examples/plugin-achievements.svg" width="420"> |
+| upstream (lowlighter)                                                     | upstream (mjun0812)                                                            | Go (`plugin-achievements.svg`)                           |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.achievements.svg" width="420"> | — _GitHub deprecated the Projects (classic) API; upstream returns `NOT_FOUND`_ | <img src="examples/plugin-achievements.svg" width="420"> |
 
 **variant: compact**
 
-| upstream (lowlighter)                                                             | upstream (mjun0812) | Go                                                               |
-| --------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------- |
-| <img src="original_examples/metrics.plugin.achievements.compact.svg" width="420"> | —                   | <img src="examples/plugin-achievements-compact.svg" width="420"> |
+| upstream (lowlighter)                                                             | upstream (mjun0812)                                                            | Go                                                               |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.achievements.compact.svg" width="420"> | — _GitHub deprecated the Projects (classic) API; upstream returns `NOT_FOUND`_ | <img src="examples/plugin-achievements-compact.svg" width="420"> |
 
 ### repositories
 
@@ -98,21 +98,21 @@ The left column uses a different data source, so the numbers will not match. The
 
 ### habits
 
-| upstream (lowlighter)                                                      | upstream (mjun0812) | Go (`plugin-habits.svg`)                           |
-| -------------------------------------------------------------------------- | ------------------- | -------------------------------------------------- |
-| <img src="original_examples/metrics.plugin.habits.charts.svg" width="420"> | —                   | <img src="examples/plugin-habits.svg" width="420"> |
+| upstream (lowlighter)                                                      | upstream (mjun0812)                                                            | Go (`plugin-habits.svg`)                           |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.habits.charts.svg" width="420"> | — _upstream v3.34 bug (`TypeError: Cannot destructure 'author' of undefined`)_ | <img src="examples/plugin-habits.svg" width="420"> |
 
 **variant: facts**
 
-| upstream (lowlighter)                                                     | upstream (mjun0812) | Go                                                       |
-| ------------------------------------------------------------------------- | ------------------- | -------------------------------------------------------- |
-| <img src="original_examples/metrics.plugin.habits.facts.svg" width="420"> | —                   | <img src="examples/plugin-habits-facts.svg" width="420"> |
+| upstream (lowlighter)                                                     | upstream (mjun0812)                                                            | Go                                                       |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.habits.facts.svg" width="420"> | — _upstream v3.34 bug (`TypeError: Cannot destructure 'author' of undefined`)_ | <img src="examples/plugin-habits-facts.svg" width="420"> |
 
 **variant: charts**
 
-| upstream (lowlighter)                                                      | upstream (mjun0812) | Go                                                        |
-| -------------------------------------------------------------------------- | ------------------- | --------------------------------------------------------- |
-| <img src="original_examples/metrics.plugin.habits.charts.svg" width="420"> | —                   | <img src="examples/plugin-habits-charts.svg" width="420"> |
+| upstream (lowlighter)                                                      | upstream (mjun0812)                                                            | Go                                                        |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.habits.charts.svg" width="420"> | — _upstream v3.34 bug (`TypeError: Cannot destructure 'author' of undefined`)_ | <img src="examples/plugin-habits-charts.svg" width="420"> |
 
 ### stars
 
@@ -128,9 +128,9 @@ The left column uses a different data source, so the numbers will not match. The
 
 **variant: icons**
 
-| upstream (lowlighter)                                                     | upstream (mjun0812)                                                        | Go  |
-| ------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --- |
-| <img src="original_examples/metrics.plugin.topics.icons.svg" width="420"> | <img src="reference_examples/metrics.plugin.topics.icons.svg" width="420"> | —   |
+| upstream (lowlighter)                                                     | upstream (mjun0812)                                                        | Go                                                 |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.topics.icons.svg" width="420"> | <img src="reference_examples/metrics.plugin.topics.icons.svg" width="420"> | — _the sample user has no topics on starred repos_ |
 
 ### starlists
 
@@ -140,9 +140,9 @@ The left column uses a different data source, so the numbers will not match. The
 
 **variant: languages**
 
-| upstream (lowlighter)                                                            | upstream (mjun0812) | Go  |
-| -------------------------------------------------------------------------------- | ------------------- | --- |
-| <img src="original_examples/metrics.plugin.starlists.languages.svg" width="420"> | —                   | —   |
+| upstream (lowlighter)                                                            | upstream (mjun0812)                  | Go                                   |
+| -------------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------ |
+| <img src="original_examples/metrics.plugin.starlists.languages.svg" width="420"> | — _the sample user has no starlists_ | — _the sample user has no starlists_ |
 
 ### people
 
@@ -188,9 +188,9 @@ The left column uses a different data source, so the numbers will not match. The
 
 ### projects
 
-| upstream (lowlighter)                                                 | upstream (mjun0812) | Go (`plugin-projects.svg`)                           |
-| --------------------------------------------------------------------- | ------------------- | ---------------------------------------------------- |
-| <img src="original_examples/metrics.plugin.projects.svg" width="420"> | —                   | <img src="examples/plugin-projects.svg" width="420"> |
+| upstream (lowlighter)                                                 | upstream (mjun0812)                                                            | Go (`plugin-projects.svg`)                           |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| <img src="original_examples/metrics.plugin.projects.svg" width="420"> | — _GitHub deprecated the Projects (classic) API; upstream returns `NOT_FOUND`_ | <img src="examples/plugin-projects.svg" width="420"> |
 
 ### sponsors
 
@@ -200,9 +200,9 @@ The left column uses a different data source, so the numbers will not match. The
 
 **variant: full**
 
-| upstream (lowlighter)                                                      | upstream (mjun0812) | Go  |
-| -------------------------------------------------------------------------- | ------------------- | --- |
-| <img src="original_examples/metrics.plugin.sponsors.full.svg" width="420"> | —                   | —   |
+| upstream (lowlighter)                                                      | upstream (mjun0812)                 | Go                                  |
+| -------------------------------------------------------------------------- | ----------------------------------- | ----------------------------------- |
+| <img src="original_examples/metrics.plugin.sponsors.full.svg" width="420"> | — _the sample user has no sponsors_ | — _the sample user has no sponsors_ |
 
 ### sponsorships
 
@@ -235,7 +235,7 @@ The left column uses a different data source, so the numbers will not match. The
 | Type         | upstream (mjun0812)                                                                   | Go                                                                          |
 | ------------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | repository   | <img src="reference_examples/metrics.repository.svg" width="420">                     | <img src="examples/metrics-repository.svg" width="420">                     |
-| languages    | <img src="reference_examples/metrics.repository.plugin.languages.svg" width="420">    | —                                                                           |
+| languages    | <img src="reference_examples/metrics.repository.plugin.languages.svg" width="420">    | — _requires `plugin_languages=yes` to opt in_                               |
 | contributors | <img src="reference_examples/metrics.repository.plugin.contributors.svg" width="420"> | <img src="examples/plugin-contributors-repo-contributions.svg" width="420"> |
 | people       | <img src="reference_examples/metrics.repository.plugin.people.svg" width="420">       | <img src="examples/plugin-people-repo-types.svg" width="420">               |
 | stargazers   | <img src="reference_examples/metrics.repository.plugin.stargazers.svg" width="420">   | <img src="examples/plugin-base-repo.svg" width="420">                       |
