@@ -13,14 +13,11 @@ import (
 	"fmt"
 	"io/fs"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/mjun0812/github-metrics/assets"
 	"github.com/mjun0812/github-metrics/internal/config"
-	"github.com/mjun0812/github-metrics/internal/engine"
-	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 	"gopkg.in/yaml.v3"
 )
@@ -51,14 +48,7 @@ type classicTemplate struct {
 	meta     *config.TemplateMetadata
 	partials []string
 
-	mu     sync.Mutex
-	styles cachedCSS
-}
-
-type cachedCSS struct {
-	loaded bool
-	fonts  string
-	style  string
+	styles chrome.Styles
 }
 
 func newClassicTemplate() (*classicTemplate, error) {
@@ -117,13 +107,13 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 	if pc == nil {
 		return "", fmt.Errorf("classic: nil PartialContext")
 	}
-	if err := t.loadStyles(); err != nil {
+	if err := t.styles.Load(t.fsys); err != nil {
 		return "", err
 	}
 	var b strings.Builder
 	b.WriteString(`<svg xmlns="http://www.w3.org/2000/svg" width="480" height="99999" class="">`)
-	fmt.Fprintf(&b, `<defs><style>%s</style></defs>`, t.styles.fonts)
-	fmt.Fprintf(&b, `<style data-optimizable="true">%s</style>`, t.styles.style)
+	fmt.Fprintf(&b, `<defs><style>%s</style></defs>`, t.styles.Fonts)
+	fmt.Fprintf(&b, `<style data-optimizable="true">%s</style>`, t.styles.Style)
 	b.WriteString(`<style></style>`)
 	b.WriteString(`<foreignObject x="0" y="0" width="100%" height="100%">`)
 	b.WriteString(`<div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper">`)
@@ -134,7 +124,7 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 	// input is absent we render all sections (preserves v1 behaviour).
 	// When the input is the empty string we render NONE (used by
 	// per-plugin renders like mjun0812's metrics_languages.svg etc.).
-	baseSections := resolveBaseSections(pc.Inputs)
+	baseSections := chrome.ResolveBaseSections(pc.Inputs)
 
 	for _, name := range t.partials {
 		if !partialEnabledByBase(name, baseSections) {
@@ -164,7 +154,7 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 	// so downstream DOM diffing (data-changed mode, M6) can locate each
 	// plugin's output unambiguously.
 	for _, slug := range partials.PluginPartialOrder {
-		if !truthyInput(pc.Inputs, "plugin_"+slug) {
+		if !chrome.TruthyInput(pc.Inputs, "plugin_"+slug) {
 			continue
 		}
 		// Plugin result must exist and not be Skipped. We use the
@@ -203,7 +193,7 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 		b.WriteString(`</div>`)
 	}
 
-	if footer := metadataFooter(pc, baseSections); footer != "" {
+	if footer := chrome.MetadataFooter(pc, baseSections, chrome.FooterOpts{IncludePrivateNotice: true}); footer != "" {
 		b.WriteString(footer)
 	}
 	// #metrics-end sits at the very end of the foreignObject so the
@@ -214,127 +204,6 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 
 	b.WriteString(`</div></foreignObject></svg>`)
 	return b.String(), nil
-}
-
-// loadStyles lazily reads fonts.css + style.css from the embedded FS
-// the first time Run is called. Held under a mutex so concurrent
-// Compute calls do not race on the first hit.
-func (t *classicTemplate) loadStyles() error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	if t.styles.loaded {
-		return nil
-	}
-	fonts, err := fs.ReadFile(t.fsys, "fonts.css")
-	if err != nil {
-		return fmt.Errorf("classic: read fonts.css: %w", err)
-	}
-	style, err := fs.ReadFile(t.fsys, "style.css")
-	if err != nil {
-		return fmt.Errorf("classic: read style.css: %w", err)
-	}
-	t.styles = cachedCSS{
-		loaded: true,
-		fonts:  string(fonts),
-		style:  string(style),
-	}
-	return nil
-}
-
-// metadataFooter renders the optional metadata block when the
-// `metadata` base section is enabled, or when the legacy expanded
-// `base.metadata` input is truthy.
-//
-// The metadata block is emitted as
-// `<section data-section="metadata"><footer>…</footer></section>` so
-// the five base sections (header, activity-community, repositories,
-// metadata, plus the activity-community fallback) all carry a
-// `data-section` attribute and downstream DOM diffing (data-changed
-// mode) can locate the block unambiguously. The inner `<footer>` is
-// preserved so the M3 render.Hash footer-stripping rule still drops
-// the timestamp before hashing (see internal/render/svg_hash.go).
-func metadataFooter(pc *templates.PartialContext, sections map[string]struct{}) string {
-	_, enabledByBase := sections["metadata"]
-	if !enabledByBase && (pc == nil || pc.Inputs == nil || !truthyInput(pc.Inputs, "base.metadata")) {
-		return ""
-	}
-	tz := ""
-	if pc.Data != nil {
-		tz = pc.Data.Config.Timezone.Name
-	}
-	var b strings.Builder
-	b.WriteString(`<section data-section="metadata">`)
-	b.WriteString(`<footer>`)
-	if pc.Data != nil && pc.Data.Account == plugins.AccountUser {
-		b.WriteString(`<span>These metrics include private contributions</span>`)
-	}
-	stamp := time.Now().UTC().Format(time.RFC3339)
-	if tz != "" && tz != "UTC" {
-		fmt.Fprintf(&b, `<span>Last updated %s (timezone %s) with mjun0812/github-metrics@%s</span>`,
-			stamp, partials.EscapeXML(tz), partials.EscapeXML(engine.Version()))
-	} else {
-		fmt.Fprintf(&b, `<span>Last updated %s with mjun0812/github-metrics@%s</span>`,
-			stamp, partials.EscapeXML(engine.Version()))
-	}
-	b.WriteString(`</footer>`)
-	b.WriteString(`</section>`)
-	return b.String()
-}
-
-// resolveBaseSections reads the `base` input and returns a set of
-// enabled base section names. Mirrors upstream behaviour:
-//
-//   - input absent → default to all sections (preserves backwards
-//     compatibility with v1.0.0 pipelines that don't set `base`).
-//   - input present but empty string → no base sections (used by
-//     per-plugin renders to strip the base header / repo counts).
-//   - input is a CSV → split, trim, lowercase each entry.
-//
-// Returned map keys are the canonical section names that
-// partialEnabledByBase below checks against.
-func resolveBaseSections(in map[string]any) map[string]struct{} {
-	const allSections = "header, activity, community, repositories, metadata"
-	raw, present := readBaseInput(in)
-	if !present {
-		raw = allSections
-	}
-	out := map[string]struct{}{}
-	for _, part := range strings.Split(raw, ",") {
-		s := strings.ToLower(strings.TrimSpace(part))
-		if s == "" {
-			continue
-		}
-		out[s] = struct{}{}
-	}
-	return out
-}
-
-// readBaseInput extracts the `base` input from the inputs map. Returns
-// (value, true) when the key is present even if the value is "" — this
-// distinguishes "user set base to empty" from "user did not set base".
-func readBaseInput(in map[string]any) (string, bool) {
-	if in == nil {
-		return "", false
-	}
-	v, ok := in["base"]
-	if !ok {
-		return "", false
-	}
-	switch x := v.(type) {
-	case string:
-		return x, true
-	case []string:
-		return strings.Join(x, ","), true
-	case []any:
-		parts := make([]string, 0, len(x))
-		for _, p := range x {
-			if s, ok := p.(string); ok {
-				parts = append(parts, s)
-			}
-		}
-		return strings.Join(parts, ","), true
-	}
-	return "", false
 }
 
 // partialEnabledByBase reports whether the named partial should be
@@ -349,7 +218,7 @@ func readBaseInput(in map[string]any) (string, bool) {
 //	base.activity+community → "activity" OR "community" (either flips it on)
 //	base.repositories      → "repositories"
 //
-// `metadata` is gated separately by metadataFooter.
+// `metadata` is gated separately by chrome.MetadataFooter.
 func partialEnabledByBase(name string, sections map[string]struct{}) bool {
 	switch name {
 	case "base.header":
@@ -369,19 +238,4 @@ func partialEnabledByBase(name string, sections map[string]struct{}) bool {
 	// Non-base partials (anything else listed in _.json) render
 	// unconditionally — they don't have a `base` gate semantic.
 	return true
-}
-
-func truthyInput(in map[string]any, key string) bool {
-	v, ok := in[key]
-	if !ok {
-		return false
-	}
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		return x == "true" || x == "yes" || x == "1"
-	default:
-		return false
-	}
 }

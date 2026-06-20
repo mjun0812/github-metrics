@@ -17,13 +17,11 @@ import (
 	"fmt"
 	"io/fs"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/mjun0812/github-metrics/assets"
 	"github.com/mjun0812/github-metrics/internal/config"
-	"github.com/mjun0812/github-metrics/internal/engine"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	classicpart "github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 	repopart "github.com/mjun0812/github-metrics/internal/templates/repository/partials"
 
@@ -52,10 +50,7 @@ type repositoryTemplate struct {
 	meta     *config.TemplateMetadata
 	partials []string
 
-	mu          sync.Mutex
-	stylesReady bool
-	fonts       string
-	style       string
+	styles chrome.Styles
 }
 
 func newRepositoryTemplate() (*repositoryTemplate, error) {
@@ -124,13 +119,17 @@ func (t *repositoryTemplate) Run(ctx context.Context, pc *templates.PartialConte
 	if pc == nil {
 		return "", fmt.Errorf("repository: nil PartialContext")
 	}
-	if err := t.loadStyles(); err != nil {
+	classicFS, err := fs.Sub(assets.FS(), "templates/classic")
+	if err != nil {
+		return "", fmt.Errorf("repository: locate classic fs: %w", err)
+	}
+	if err := t.styles.Load(classicFS); err != nil {
 		return "", err
 	}
 	var b strings.Builder
 	b.WriteString(`<svg xmlns="http://www.w3.org/2000/svg" width="480" height="99999" class="">`)
-	fmt.Fprintf(&b, `<defs><style>%s</style></defs>`, t.fonts)
-	fmt.Fprintf(&b, `<style data-optimizable="true">%s</style>`, t.style)
+	fmt.Fprintf(&b, `<defs><style>%s</style></defs>`, t.styles.Fonts)
+	fmt.Fprintf(&b, `<style data-optimizable="true">%s</style>`, t.styles.Style)
 	b.WriteString(`<style></style>`)
 	b.WriteString(`<foreignObject x="0" y="0" width="100%" height="100%">`)
 	b.WriteString(`<div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper">`)
@@ -139,7 +138,7 @@ func (t *repositoryTemplate) Run(ctx context.Context, pc *templates.PartialConte
 	// template: `base` is a CSV of section names. Absent → all on;
 	// present-but-empty → none (used by per-plugin / `base=` renders to
 	// strip the base.header chrome). #464.
-	baseSections := repopart.ResolveBaseSections(pc.Inputs)
+	baseSections := chrome.ResolveBaseSections(pc.Inputs)
 
 	// Dispatch partials in `_.json` order. Unknown / not-yet-adopted
 	// partial names are silently skipped (constitution III: zero
@@ -153,7 +152,7 @@ func (t *repositoryTemplate) Run(ctx context.Context, pc *templates.PartialConte
 	//     plain `base` run renders only the repo chrome (matching
 	//     upstream `metrics.repository.svg`).
 	for _, name := range t.partials {
-		if !repopart.PartialEnabledByBase(name, baseSections) {
+		if !partialEnabledByBase(name, baseSections) {
 			continue
 		}
 		if pluginPartialName(name) && !pluginEnabled(pc, name) {
@@ -170,7 +169,7 @@ func (t *repositoryTemplate) Run(ctx context.Context, pc *templates.PartialConte
 		b.WriteString(frag)
 	}
 
-	if footer := metadataFooter(pc, baseSections); footer != "" {
+	if footer := chrome.MetadataFooter(pc, baseSections, chrome.FooterOpts{}); footer != "" {
 		b.WriteString(footer)
 	}
 	// #metrics-end sits at the very end of the foreignObject so the
@@ -182,29 +181,17 @@ func (t *repositoryTemplate) Run(ctx context.Context, pc *templates.PartialConte
 	return b.String(), nil
 }
 
-func metadataFooter(pc *templates.PartialContext, sections map[string]struct{}) string {
-	_, enabledByBase := sections["metadata"]
-	if !enabledByBase && (pc == nil || pc.Inputs == nil || !repopart.TruthyInput(pc.Inputs, "base.metadata")) {
-		return ""
+// partialEnabledByBase reports whether the named repository-owned
+// partial should render given the resolved base sections. Only
+// `base.header` is gated here (mapped to the "header" section); every
+// other `_.json` entry is a plugin partial whose `plugin_<slug>`
+// toggle is applied separately by pluginEnabled.
+func partialEnabledByBase(name string, sections map[string]struct{}) bool {
+	if name == "base.header" {
+		_, ok := sections["header"]
+		return ok
 	}
-	tz := ""
-	if pc != nil && pc.Data != nil {
-		tz = pc.Data.Config.Timezone.Name
-	}
-	var b strings.Builder
-	b.WriteString(`<section data-section="metadata">`)
-	b.WriteString(`<footer>`)
-	stamp := time.Now().UTC().Format(time.RFC3339)
-	if tz != "" && tz != "UTC" {
-		fmt.Fprintf(&b, `<span>Last updated %s (timezone %s) with mjun0812/github-metrics@%s</span>`,
-			stamp, classicpart.EscapeXML(tz), classicpart.EscapeXML(engine.Version()))
-	} else {
-		fmt.Fprintf(&b, `<span>Last updated %s with mjun0812/github-metrics@%s</span>`,
-			stamp, classicpart.EscapeXML(engine.Version()))
-	}
-	b.WriteString(`</footer>`)
-	b.WriteString(`</section>`)
-	return b.String()
+	return true
 }
 
 // pluginPartialName reports whether a `_.json` entry is a plugin
@@ -235,7 +222,7 @@ func pluginEnabled(pc *templates.PartialContext, slug string) bool {
 		}
 		return true
 	}
-	if !repopart.TruthyInput(pc.Inputs, "plugin_"+slug) {
+	if !chrome.TruthyInput(pc.Inputs, "plugin_"+slug) {
 		return false
 	}
 	if pc.Data == nil {
@@ -275,31 +262,4 @@ func lookupPartial(name string) (templates.PartialFunc, bool) {
 		return fn, true
 	}
 	return nil, false
-}
-
-// loadStyles lazily reads fonts.css + style.css from the classic
-// template's embedded assets (they're template-agnostic — both
-// templates render with the same upstream-equivalent CSS).
-func (t *repositoryTemplate) loadStyles() error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	if t.stylesReady {
-		return nil
-	}
-	classicFS, err := fs.Sub(assets.FS(), "templates/classic")
-	if err != nil {
-		return fmt.Errorf("repository: locate classic fs: %w", err)
-	}
-	fonts, err := fs.ReadFile(classicFS, "fonts.css")
-	if err != nil {
-		return fmt.Errorf("repository: read fonts.css: %w", err)
-	}
-	style, err := fs.ReadFile(classicFS, "style.css")
-	if err != nil {
-		return fmt.Errorf("repository: read style.css: %w", err)
-	}
-	t.fonts = string(fonts)
-	t.style = string(style)
-	t.stylesReady = true
-	return nil
 }
