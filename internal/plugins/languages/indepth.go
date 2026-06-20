@@ -28,6 +28,7 @@ import (
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // IndepthName is the canonical plugin slug for the indepth sub-mode.
@@ -111,7 +112,7 @@ func (p *indepthPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	// when the parent languages plugin AND the dedicated indepth input
 	// are both truthy. This keeps the plugin silent (no Data.Errors
 	// pollution) when never requested.
-	if !truthy(pc.Inputs["plugin_languages"]) {
+	if !pluginutil.Truthy(pc.Inputs["plugin_languages"]) {
 		return &IndepthResult{
 			Skipped:       true,
 			SkippedReason: "plugin_languages not enabled",
@@ -120,7 +121,7 @@ func (p *indepthPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 			Analyzed:      []string{},
 		}, nil
 	}
-	if !truthy(pc.Inputs["plugin_languages_indepth"]) {
+	if !pluginutil.Truthy(pc.Inputs["plugin_languages_indepth"]) {
 		return &IndepthResult{
 			Skipped:       true,
 			SkippedReason: "plugin_languages_indepth not enabled",
@@ -129,9 +130,9 @@ func (p *indepthPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 			Analyzed:      []string{},
 		}, nil
 	}
-	if !extrasEnabled(pc.Inputs, "extras.metrics.cpu.overuse") ||
-		!extrasEnabled(pc.Inputs, "extras.metrics.run.git") ||
-		!extrasEnabled(pc.Inputs, "extras.metrics.run.linguist") {
+	if !pluginutil.ExtrasEnabled(pc.Inputs, "extras.metrics.cpu.overuse") ||
+		!pluginutil.ExtrasEnabled(pc.Inputs, "extras.metrics.run.git") ||
+		!pluginutil.ExtrasEnabled(pc.Inputs, "extras.metrics.run.linguist") {
 		return &IndepthResult{
 			Skipped:       true,
 			SkippedReason: "indepth extras not satisfied",

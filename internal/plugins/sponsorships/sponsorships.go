@@ -7,7 +7,7 @@ package sponsorships
 
 import (
 	"context"
-	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -15,6 +15,7 @@ import (
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -92,12 +93,12 @@ func (p *sponsorshipsPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 		base.SkippedReason = reason
 		return base, nil
 	}
-	if !truthy(pc.Inputs["plugin_sponsorships"]) {
+	if !pluginutil.Truthy(pc.Inputs["plugin_sponsorships"]) {
 		return base, nil
 	}
 	// When the "amount" section is requested we surface the heart image
 	// even before the fetch so the zero-state still renders it.
-	if containsString(sections, sectionAmount) {
+	if slices.Contains(sections, sectionAmount) {
 		base.Image = amountImageURL
 	}
 	if pc.GraphQL == nil {
@@ -122,7 +123,7 @@ func (p *sponsorshipsPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 // keeping only the recognized upstream values in input order. Falls back
 // to the upstream default "amount, sponsorships" when unset/empty.
 func readSections(in map[string]any) []string {
-	raw := readCSV(in["plugin_sponsorships_sections"])
+	raw := pluginutil.ReadCSVValue(in["plugin_sponsorships_sections"])
 	out := make([]string, 0, len(raw))
 	for _, s := range raw {
 		switch strings.ToLower(s) {
@@ -136,40 +137,6 @@ func readSections(in map[string]any) []string {
 		return []string{sectionAmount, sectionSponsorships}
 	}
 	return out
-}
-
-// readCSV normalizes a comma-separated input value into a trimmed slice.
-func readCSV(v any) []string {
-	var parts []string
-	switch x := v.(type) {
-	case []string:
-		parts = x
-	case []any:
-		for _, item := range x {
-			parts = append(parts, fmt.Sprint(item))
-		}
-	case string:
-		parts = strings.Split(x, ",")
-	default:
-		return nil
-	}
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		if p = strings.TrimSpace(p); p != "" {
-			out = append(out, p)
-		}
-	}
-	return out
-}
-
-// containsString reports whether xs contains s.
-func containsString(xs []string, s string) bool {
-	for _, x := range xs {
-		if x == s {
-			return true
-		}
-	}
-	return false
 }
 
 // amountFromResponse converts totalSponsorshipAmountAsSponsorInCents to
@@ -231,21 +198,4 @@ func collectViewerSponsorships(resp *githubapi.ViewerSponsorshipsResponse) (acti
 		}
 	}
 	return active, past
-}
-
-// truthy mirrors the shared helper across plugins; spec 013 wiring uses
-// it to gate the GraphQL fetch on the `plugin_sponsorships` input.
-func truthy(v any) bool {
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := x
-		return s == "true" || s == "1" || s == "yes"
-	case int:
-		return x != 0
-	case float64:
-		return x != 0
-	}
-	return false
 }

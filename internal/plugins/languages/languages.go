@@ -18,6 +18,7 @@ import (
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -97,7 +98,7 @@ func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any
 	// / metrics-repository). Gating here also keeps the JSON output
 	// upstream-parity by omitting languages from data.plugins when
 	// the toggle is off.
-	if !truthy(pc.Inputs["plugin_languages"]) {
+	if !pluginutil.Truthy(pc.Inputs["plugin_languages"]) {
 		return &Result{
 			Skipped:       true,
 			SkippedReason: "plugin_languages not enabled",
@@ -131,8 +132,8 @@ func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any
 	// pollute the user's distribution with code they didn't write.
 	// Mirror upstream's default by skipping forks unless the caller
 	// explicitly opts in via `plugin_repositories_forks` / `repositories_forks`.
-	includeForks := truthy(pc.Inputs["plugin_repositories_forks"]) ||
-		truthy(pc.Inputs["repositories_forks"])
+	includeForks := pluginutil.Truthy(pc.Inputs["plugin_repositories_forks"]) ||
+		pluginutil.Truthy(pc.Inputs["repositories_forks"])
 
 	totals := map[string]*acc{}
 	for _, repo := range repos {
@@ -246,7 +247,7 @@ func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any
 	// the lines column (which would otherwise show "0 lines" since no
 	// linguist line counts exist outside indepth mode).
 	details := append([]string(nil), in.details...)
-	if !truthy(pc.Inputs["plugin_languages_indepth"]) {
+	if !pluginutil.Truthy(pc.Inputs["plugin_languages_indepth"]) {
 		filtered := details[:0]
 		for _, d := range details {
 			if d != "lines" {
@@ -297,22 +298,22 @@ func parseInputs(in map[string]any) inputs {
 		aliases:  map[string]string{},
 		colors:   map[string]string{},
 	}
-	if v, ok := readInt(in, "plugin_languages_limit"); ok {
+	if v, ok := pluginutil.ReadInt(in, "plugin_languages_limit"); ok {
 		out.limit = v
 	}
 	if v, ok := in["plugin_languages_threshold"]; ok {
 		out.threshold = parseThreshold(fmt.Sprint(v))
 	}
 	if v, ok := in["plugin_languages_other"]; ok {
-		out.other = truthy(v)
+		out.other = pluginutil.Truthy(v)
 	}
-	for _, s := range readCSV(in, "plugin_languages_ignored") {
+	for _, s := range pluginutil.ReadCSV(in, "plugin_languages_ignored") {
 		out.ignored[s] = struct{}{}
 	}
-	for _, s := range readCSV(in, "plugin_languages_skipped") {
+	for _, s := range pluginutil.ReadCSV(in, "plugin_languages_skipped") {
 		out.skipped[s] = struct{}{}
 	}
-	for _, s := range readCSV(in, "plugin_languages_aliases") {
+	for _, s := range pluginutil.ReadCSV(in, "plugin_languages_aliases") {
 		from, to, ok := splitPair(s, ":")
 		if !ok {
 			continue
@@ -320,7 +321,7 @@ func parseInputs(in map[string]any) inputs {
 		out.aliases[from] = to
 		out.aliases[strings.ToLower(from)] = to
 	}
-	for _, s := range readCSV(in, "plugin_languages_colors") {
+	for _, s := range pluginutil.ReadCSV(in, "plugin_languages_colors") {
 		from, to, ok := splitPair(s, ":")
 		if !ok {
 			continue
@@ -328,7 +329,7 @@ func parseInputs(in map[string]any) inputs {
 		out.colors[from] = to
 	}
 	if v, ok := in["plugin_languages_sections"]; ok {
-		out.sections = readCSVValue(v)
+		out.sections = pluginutil.ReadCSVValue(v)
 		if len(out.sections) == 0 {
 			out.sections = []string{"most-used"}
 		}
@@ -336,7 +337,7 @@ func parseInputs(in map[string]any) inputs {
 	// 011 v2: plugin_languages_details — mjun0812 uses
 	// "bytes-size, percentage, lines".
 	if v, ok := in["plugin_languages_details"]; ok {
-		out.details = readCSVValue(v)
+		out.details = pluginutil.ReadCSVValue(v)
 	}
 	return out
 }
@@ -361,70 +362,6 @@ func parseThreshold(s string) float64 {
 	return v
 }
 
-func readInt(in map[string]any, key string) (int, bool) {
-	v, ok := in[key]
-	if !ok {
-		return 0, false
-	}
-	switch x := v.(type) {
-	case int:
-		return x, true
-	case int64:
-		return int(x), true
-	case float64:
-		return int(x), true
-	case string:
-		n, err := strconv.Atoi(strings.TrimSpace(x))
-		if err != nil {
-			return 0, false
-		}
-		return n, true
-	}
-	return 0, false
-}
-
-func readCSV(in map[string]any, key string) []string {
-	v, ok := in[key]
-	if !ok {
-		return nil
-	}
-	return readCSVValue(v)
-}
-
-func readCSVValue(v any) []string {
-	switch x := v.(type) {
-	case []string:
-		out := make([]string, 0, len(x))
-		for _, s := range x {
-			s = strings.TrimSpace(s)
-			if s != "" {
-				out = append(out, s)
-			}
-		}
-		return out
-	case []any:
-		out := make([]string, 0, len(x))
-		for _, item := range x {
-			s := strings.TrimSpace(fmt.Sprint(item))
-			if s != "" {
-				out = append(out, s)
-			}
-		}
-		return out
-	case string:
-		parts := strings.Split(x, ",")
-		out := make([]string, 0, len(parts))
-		for _, p := range parts {
-			p = strings.TrimSpace(p)
-			if p != "" {
-				out = append(out, p)
-			}
-		}
-		return out
-	}
-	return nil
-}
-
 func splitPair(s, sep string) (string, string, bool) {
 	i := strings.Index(s, sep)
 	if i < 0 {
@@ -436,19 +373,4 @@ func splitPair(s, sep string) (string, string, bool) {
 		return "", "", false
 	}
 	return left, right, true
-}
-
-func truthy(v any) bool {
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := strings.ToLower(strings.TrimSpace(x))
-		return s == "true" || s == "1" || s == "yes"
-	case int:
-		return x != 0
-	case float64:
-		return x != 0
-	}
-	return false
 }

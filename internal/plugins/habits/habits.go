@@ -20,6 +20,7 @@ import (
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -131,8 +132,8 @@ func (p *habitsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
-	factsEnabled := readBoolDefault(pc.Inputs, "plugin_habits_facts", true)
-	chartsEnabled := readBoolDefault(pc.Inputs, "plugin_habits_charts", true)
+	factsEnabled := pluginutil.ReadBoolDefault(pc.Inputs, "plugin_habits_facts", true)
+	chartsEnabled := pluginutil.ReadBoolDefault(pc.Inputs, "plugin_habits_charts", true)
 	skipped := func(reason string) *Result {
 		return &Result{
 			Skipped:       true,
@@ -147,14 +148,14 @@ func (p *habitsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	if pc.REST == nil {
 		return skipped("REST client unavailable"), nil
 	}
-	login := loginFromInputs(pc.Inputs)
+	login := pluginutil.LoginFromInputs(pc.Inputs)
 	if login == "" {
 		return skipped("no login"), nil
 	}
-	from := readIntDefault(pc.Inputs, "plugin_habits_from", 200)
-	days := readIntDefault(pc.Inputs, "plugin_habits_days", 14)
-	trim := readBool(pc.Inputs, "plugin_habits_trim")
-	langLimit := readIntDefault(pc.Inputs, "plugin_habits_languages_limit", 8)
+	from := pluginutil.ReadIntDefault(pc.Inputs, "plugin_habits_from", 200)
+	days := pluginutil.ReadIntDefault(pc.Inputs, "plugin_habits_days", 14)
+	trim := pluginutil.ReadBool(pc.Inputs, "plugin_habits_trim")
+	langLimit := pluginutil.ReadIntDefault(pc.Inputs, "plugin_habits_languages_limit", 8)
 	langThreshold := readPercent(pc.Inputs, "plugin_habits_languages_threshold")
 
 	events, err := fetchPushEvents(ctx, pc, login, from)
@@ -366,12 +367,6 @@ type rawCompare struct {
 	Files []rawCommitFile `json:"files"`
 }
 
-// zeroSHA is git's all-zero object id, sent as a push's `before` when a
-// brand-new branch is created (nothing to diff against).
-const zeroSHA = "0000000000000000000000000000000000000000"
-
-func isZeroSHA(sha string) bool { return sha == "" || sha == zeroSHA }
-
 // fetchCommitFiles loads the per-file change list for a single commit.
 func fetchCommitFiles(ctx context.Context, pc *plugins.PluginContext, repo, sha string) ([]rawCommitFile, error) {
 	path := fmt.Sprintf("/repos/%s/commits/%s", repo, sha)
@@ -402,7 +397,7 @@ func fetchPushFiles(ctx context.Context, pc *plugins.PluginContext, repo, before
 	if head == "" {
 		return nil, nil
 	}
-	if isZeroSHA(before) {
+	if pluginutil.IsZeroSHA(before) {
 		return fetchCommitFiles(ctx, pc, repo, head)
 	}
 	path := fmt.Sprintf("/repos/%s/compare/%s...%s", repo, before, head)
@@ -421,38 +416,6 @@ func fetchPushFiles(ctx context.Context, pc *plugins.PluginContext, repo, before
 		return nil, fmt.Errorf("habits: decode compare: %w", err)
 	}
 	return c.Files, nil
-}
-
-func loginFromInputs(in map[string]any) string {
-	if v, ok := in["user"].(string); ok && v != "" {
-		return v
-	}
-	if v, ok := in["login"].(string); ok {
-		return v
-	}
-	return ""
-}
-
-func readIntDefault(in map[string]any, key string, def int) int {
-	v, ok := in[key]
-	if !ok {
-		return def
-	}
-	switch x := v.(type) {
-	case int:
-		return x
-	case int64:
-		return int(x)
-	case float64:
-		return int(x)
-	case string:
-		n, err := strconv.Atoi(strings.TrimSpace(x))
-		if err != nil {
-			return def
-		}
-		return n
-	}
-	return def
 }
 
 // readPercent parses a "N%" string input into a 0..1 fraction, mirroring
@@ -483,34 +446,4 @@ func readPercent(in map[string]any, key string) float64 {
 		return 0
 	}
 	return n / 100
-}
-
-func readBool(in map[string]any, key string) bool {
-	v, ok := in[key]
-	if !ok {
-		return false
-	}
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := strings.ToLower(strings.TrimSpace(x))
-		return s == "true" || s == "1" || s == "yes"
-	}
-	return false
-}
-
-func readBoolDefault(in map[string]any, key string, def bool) bool {
-	v, ok := in[key]
-	if !ok {
-		return def
-	}
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := strings.ToLower(strings.TrimSpace(x))
-		return s == "true" || s == "1" || s == "yes"
-	}
-	return false
 }

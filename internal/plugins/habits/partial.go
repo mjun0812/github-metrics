@@ -6,6 +6,7 @@ import (
 	"math"
 	"strings"
 
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
@@ -133,7 +134,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 			fmt.Fprintf(
 				&b,
 				`<small class="h-details">(computed from last %d commit%s)</small>`,
-				r.From, pluralS(r.From),
+				r.From, pluginutil.Plural(r.From),
 			)
 		}
 		b.WriteString(`</h2>`)
@@ -264,12 +265,4 @@ func writeBarEntry(b *strings.Builder, label string, value int, share float64) {
 		`<div class="entry"><span class="value">%d</span><div class="bar" style="height: %.0fpx; background-color: var(--color-calendar-graph-day-L%d-bg)"></div>%s</div>`,
 		value, height, lvl, partials.EscapeXML(label),
 	)
-}
-
-// pluralS mirrors upstream's `s()` helper.
-func pluralS(n int) string {
-	if n == 1 {
-		return ""
-	}
-	return "s"
 }

@@ -2,11 +2,11 @@ package calendar
 
 import (
 	"context"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 var (
@@ -35,7 +35,7 @@ func currentNow() time.Time {
 }
 
 func fetchYearlyWeeks(ctx context.Context, pc *plugins.PluginContext, limit int) ([]plugins.ContributionWeek, error) {
-	if pc == nil || pc.Data == nil || pc.GraphQL == nil || !truthyInput(pc.Inputs, "plugin_calendar") {
+	if pc == nil || pc.Data == nil || pc.GraphQL == nil || !pluginutil.TruthyInput(pc.Inputs, "plugin_calendar") {
 		return nil, nil
 	}
 	login := resolveLogin(pc)
@@ -89,25 +89,6 @@ func fetchYearlyWeeks(ctx context.Context, pc *plugins.PluginContext, limit int)
 		}
 	}
 	return weeks, nil
-}
-
-func truthyInput(in map[string]any, key string) bool {
-	v, ok := in[key]
-	if !ok {
-		return false
-	}
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := strings.ToLower(strings.TrimSpace(x))
-		return s == "true" || s == "1" || s == "yes"
-	case int:
-		return x != 0
-	case float64:
-		return x != 0
-	}
-	return false
 }
 
 func resolveLogin(pc *plugins.PluginContext) string {

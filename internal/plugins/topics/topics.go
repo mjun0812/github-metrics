@@ -15,12 +15,12 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -103,7 +103,7 @@ func (p *topicsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	// this gate the plugin would always run and pollute Result.Errors
 	// with "chromedp not available" entries even when topics was never
 	// requested.
-	if !truthy(pc.Inputs["plugin_topics"]) {
+	if !pluginutil.Truthy(pc.Inputs["plugin_topics"]) {
 		return &Result{
 			Skipped:       true,
 			SkippedReason: "plugin_topics not enabled",
@@ -114,7 +114,7 @@ func (p *topicsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		}, nil
 	}
 
-	if !extrasEnabled(pc.Inputs, "extras.metrics.run.puppeteer.scrapping") {
+	if !pluginutil.ExtrasEnabled(pc.Inputs, "extras.metrics.run.puppeteer.scrapping") {
 		return &Result{
 			Skipped:       true,
 			SkippedReason: "puppeteer scrapping disabled via extras",
@@ -131,7 +131,7 @@ func (p *topicsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	// httpNavigator. (No external dependency on chromedp / browsers any
 	// more — the GitHub stars-topics page is fully SSR.)
 
-	login := loginFromInputs(pc.Inputs)
+	login := pluginutil.LoginFromInputs(pc.Inputs)
 	if login == "" {
 		return &Result{
 			Skipped:       true,
@@ -210,7 +210,7 @@ func parseInputs(in map[string]any) topicsInputs {
 			out.mode = s
 		}
 	}
-	if v, ok := readInt(in, "plugin_topics_limit"); ok {
+	if v, ok := pluginutil.ReadInt(in, "plugin_topics_limit"); ok {
 		out.limit = v
 	}
 	if v, ok := in["plugin_topics_sort"]; ok {
@@ -219,71 +219,4 @@ func parseInputs(in map[string]any) topicsInputs {
 		}
 	}
 	return out
-}
-
-func loginFromInputs(in map[string]any) string {
-	if in == nil {
-		return ""
-	}
-	if v, ok := in["user"].(string); ok && v != "" {
-		return v
-	}
-	if v, ok := in["login"].(string); ok {
-		return v
-	}
-	return ""
-}
-
-func readInt(in map[string]any, key string) (int, bool) {
-	v, ok := in[key]
-	if !ok {
-		return 0, false
-	}
-	switch x := v.(type) {
-	case int:
-		return x, true
-	case int64:
-		return int(x), true
-	case float64:
-		return int(x), true
-	case string:
-		n, err := strconv.Atoi(strings.TrimSpace(x))
-		if err != nil {
-			return 0, false
-		}
-		return n, true
-	}
-	return 0, false
-}
-
-// extrasEnabled mirrors the languages plugin helper: absent → enabled,
-// explicit false → disabled. Avoids importing the languages package
-// just for this util.
-func extrasEnabled(in map[string]any, key string) bool {
-	if in == nil {
-		return true
-	}
-	v, ok := in[key]
-	if !ok {
-		return true
-	}
-	return truthy(v)
-}
-
-// truthy normalizes the various input shapes into a bool. Mirrors the
-// helper in the languages package so we don't introduce a cross-package
-// dependency just for this util.
-func truthy(v any) bool {
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := strings.ToLower(strings.TrimSpace(x))
-		return s == "true" || s == "1" || s == "yes"
-	case int:
-		return x != 0
-	case float64:
-		return x != 0
-	}
-	return false
 }

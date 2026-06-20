@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
@@ -30,13 +31,6 @@ const (
 
 	arrowsOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.896 2H8.75V.75a.75.75 0 00-1.5 0V2H5.104a.25.25 0 00-.177.427l2.896 2.896a.25.25 0 00.354 0l2.896-2.896A.25.25 0 0010.896 2zM8.75 15.25a.75.75 0 01-1.5 0V14H5.104a.25.25 0 01-.177-.427l2.896-2.896a.25.25 0 01.354 0l2.896 2.896a.25.25 0 01-.177.427H8.75v1.25zm-6.5-6.5a.75.75 0 000-1.5h-.5a.75.75 0 000 1.5h.5zM6 8a.75.75 0 01-.75.75h-.5a.75.75 0 010-1.5h.5A.75.75 0 016 8zm2.25.75a.75.75 0 000-1.5h-.5a.75.75 0 000 1.5h.5zM12 8a.75.75 0 01-.75.75h-.5a.75.75 0 010-1.5h.5A.75.75 0 0112 8zm2.25.75a.75.75 0 000-1.5h-.5a.75.75 0 000 1.5h.5z"></path></svg>`
 )
-
-func pluralS(n int) string {
-	if n == 1 {
-		return ""
-	}
-	return "s"
-}
 
 // Partial renders the classic SVG fragment for the isocalendar plugin.
 // Output structure mirrors upstream
@@ -102,13 +96,13 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		fmt.Fprintf(
 			&b,
 			`<div class="field">%sCurrent streak %d day%s</div>`,
-			flameOcticon, r.Streak.Current, pluralS(r.Streak.Current),
+			flameOcticon, r.Streak.Current, pluginutil.Plural(r.Streak.Current),
 		)
 	}
 	fmt.Fprintf(
 		&b,
 		`<div class="field">%sBest streak %d day%s</div>`,
-		plusXOcticon, r.Streak.Max, pluralS(r.Streak.Max),
+		plusXOcticon, r.Streak.Max, pluginutil.Plural(r.Streak.Max),
 	)
 	fmt.Fprintf(&b, `<h3 class="field">%sCommits per day</h3>`, commitsPerDayOcticon)
 	fmt.Fprintf(

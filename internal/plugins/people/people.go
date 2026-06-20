@@ -13,13 +13,13 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -66,7 +66,7 @@ const (
 // readPeopleSize resolves plugin_people_size, applying the metadata
 // default (28) and clamping to [min 8, max 64].
 func readPeopleSize(in map[string]any) int {
-	size := readIntDefault(in, "plugin_people_size", defaultPeopleSize)
+	size := pluginutil.ReadIntDefault(in, "plugin_people_size", defaultPeopleSize)
 	if size < minPeopleSize {
 		size = minPeopleSize
 	}
@@ -104,7 +104,7 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
-	if !truthyInput(pc.Inputs, "plugin_"+Name) {
+	if !pluginutil.TruthyInput(pc.Inputs, "plugin_"+Name) {
 		return &Result{Skipped: true, SkippedReason: "plugin disabled", Types: map[string][]Person{}}, nil
 	}
 	repo := pc.Data.RepoRef()
@@ -113,9 +113,9 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		defaultTypes = []string{"stargazers", "watchers"}
 	}
 	types := readCSVDefault(pc.Inputs, "plugin_people_types", defaultTypes)
-	limit := readIntDefault(pc.Inputs, "plugin_people_limit", 24)
+	limit := pluginutil.ReadIntDefault(pc.Inputs, "plugin_people_limit", 24)
 	size := readPeopleSize(pc.Inputs)
-	shuffle := readBool(pc.Inputs, "plugin_people_shuffle")
+	shuffle := pluginutil.ReadBool(pc.Inputs, "plugin_people_shuffle")
 
 	out := make(map[string][]Person, len(types))
 	counts := make(map[string]int)
@@ -146,7 +146,7 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		if pc.GraphQL == nil {
 			return &Result{Skipped: true, SkippedReason: "GraphQL client unavailable", Types: map[string][]Person{}}, nil
 		}
-		login := loginFromInputs(pc.Inputs)
+		login := pluginutil.LoginFromInputs(pc.Inputs)
 		if login == "" {
 			return &Result{Skipped: true, SkippedReason: "no login", Types: map[string][]Person{}}, nil
 		}
@@ -183,7 +183,7 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	}
 
 	if shuffle {
-		seed := readIntDefault(pc.Inputs, "plugin_people_shuffle_seed", 1)
+		seed := pluginutil.ReadIntDefault(pc.Inputs, "plugin_people_shuffle_seed", 1)
 		// #nosec G404 -- deterministic shuffle for tests
 		r := rand.New(rand.NewSource(int64(seed)))
 		for k, list := range out {
@@ -286,99 +286,9 @@ func followingToPeople(nodes []*githubapi.UserFollowersUserFollowingUserConnecti
 	return out
 }
 
-func truthyInput(in map[string]any, key string) bool {
-	v, ok := in[key]
-	if !ok {
-		return false
-	}
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := strings.ToLower(strings.TrimSpace(x))
-		return s == "true" || s == "1" || s == "yes"
-	case int:
-		return x != 0
-	case float64:
-		return x != 0
-	}
-	return false
-}
-
-func loginFromInputs(in map[string]any) string {
-	if v, ok := in["user"].(string); ok && v != "" {
-		return v
-	}
-	if v, ok := in["login"].(string); ok {
-		return v
-	}
-	return ""
-}
-
-func readIntDefault(in map[string]any, key string, def int) int {
-	v, ok := in[key]
-	if !ok {
-		return def
-	}
-	switch x := v.(type) {
-	case int:
-		return x
-	case int64:
-		return int(x)
-	case float64:
-		return int(x)
-	case string:
-		n, err := strconv.Atoi(strings.TrimSpace(x))
-		if err != nil {
-			return def
-		}
-		return n
-	}
-	return def
-}
-
-func readBool(in map[string]any, key string) bool {
-	v, ok := in[key]
-	if !ok {
-		return false
-	}
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := strings.ToLower(strings.TrimSpace(x))
-		return s == "true" || s == "1" || s == "yes"
-	}
-	return false
-}
-
 func readCSVDefault(in map[string]any, key string, def []string) []string {
-	v, ok := in[key]
-	if !ok {
+	if _, ok := in[key]; !ok {
 		return def
 	}
-	switch x := v.(type) {
-	case []string:
-		return trimEmpty(x)
-	case []any:
-		out := make([]string, 0, len(x))
-		for _, item := range x {
-			out = append(out, fmt.Sprint(item))
-		}
-		return trimEmpty(out)
-	case string:
-		return trimEmpty(strings.Split(x, ","))
-	}
-	return def
-}
-
-func trimEmpty(in []string) []string {
-	out := make([]string, 0, len(in))
-	for _, s := range in {
-		s = strings.TrimSpace(s)
-		if s != "" {
-			out = append(out, s)
-		}
-	}
-	return out
+	return pluginutil.ReadCSV(in, key)
 }
