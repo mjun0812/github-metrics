@@ -8,12 +8,14 @@ package projects
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -85,7 +87,7 @@ func (p *projectsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 			List:          []Project{},
 		}, nil
 	}
-	if !hasScope(scopes, "read:project") {
+	if !slices.Contains(scopes, "read:project") {
 		return &Result{
 			Skipped:       true,
 			SkippedReason: "missing read:project scope",
@@ -100,7 +102,7 @@ func (p *projectsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 		}
 	}
 	base := &Result{Mode: plugins.AggregationMode(pc.Data), List: []Project{}, Limit: limit}
-	if pc.GraphQL == nil || !truthy(pc.Inputs["plugin_projects"]) {
+	if pc.GraphQL == nil || !pluginutil.Truthy(pc.Inputs["plugin_projects"]) {
 		return base, nil
 	}
 	resp, err := pc.GraphQL.ViewerProjects(ctx, limit)
@@ -137,29 +139,4 @@ func collectProjects(resp *githubapi.ViewerProjectsResponse) []Project {
 		})
 	}
 	return out
-}
-
-func hasScope(scopes []string, want string) bool {
-	for _, s := range scopes {
-		if s == want {
-			return true
-		}
-	}
-	return false
-}
-
-// truthy mirrors the shared helper across plugins; spec 013 uses it to
-// gate the GraphQL fetch on the `plugin_projects` input.
-func truthy(v any) bool {
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		return x == "true" || x == "1" || x == "yes"
-	case int:
-		return x != 0
-	case float64:
-		return x != 0
-	}
-	return false
 }

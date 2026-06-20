@@ -7,6 +7,7 @@ import (
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // indepthInputKeys lists the plugin-input flags whose presence triggers
@@ -26,30 +27,12 @@ func indepthTriggered(inputs map[string]any) bool {
 		return false
 	}
 	for _, key := range indepthInputKeys {
-		if truthyInput(inputs[key]) {
+		if pluginutil.Truthy(inputs[key]) {
 			return true
 		}
 	}
-	if truthyInput(inputs["plugin_notable"]) && truthyInput(inputs["plugin_notable_indepth"]) {
+	if pluginutil.Truthy(inputs["plugin_notable"]) && pluginutil.Truthy(inputs["plugin_notable_indepth"]) {
 		return true
-	}
-	return false
-}
-
-// truthyInput collapses the input-map's any to a bool. Numeric/string
-// representations of "true" are accepted because the metadata.yml
-// loader normalizes them to bool but tests sometimes pass the raw
-// values.
-func truthyInput(v any) bool {
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		return x == "true" || x == "1" || x == "yes"
-	case int:
-		return x != 0
-	case float64:
-		return x != 0
 	}
 	return false
 }

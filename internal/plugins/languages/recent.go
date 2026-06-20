@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -27,6 +28,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // RecentName is the canonical plugin slug for the recent sub-mode.
@@ -79,7 +81,7 @@ func (p *recentPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	// "recently-used". The plugin shares a top-level slug with standard
 	// mode, so it only fires when both the languages dispatcher and the
 	// recently-used section flag are on.
-	if !truthy(pc.Inputs["plugin_languages"]) {
+	if !pluginutil.Truthy(pc.Inputs["plugin_languages"]) {
 		return &RecentResult{
 			Skipped:       true,
 			SkippedReason: "plugin_languages not enabled",
@@ -89,7 +91,7 @@ func (p *recentPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 			Repos:         []string{},
 		}, nil
 	}
-	if !containsString(in.sections, "recently-used") {
+	if !slices.Contains(in.sections, "recently-used") {
 		return &RecentResult{
 			Skipped:       true,
 			SkippedReason: "recently-used section not requested",
@@ -99,7 +101,7 @@ func (p *recentPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 			Repos:         []string{},
 		}, nil
 	}
-	if !extrasEnabled(pc.Inputs, "extras.metrics.run.linguist") {
+	if !pluginutil.ExtrasEnabled(pc.Inputs, "extras.metrics.run.linguist") {
 		return &RecentResult{
 			Skipped:       true,
 			SkippedReason: "linguist disabled via extras",
@@ -392,12 +394,6 @@ func fetchCommitFiles(ctx context.Context, pc *plugins.PluginContext, repo, sha 
 	return c.Files, nil
 }
 
-// zeroSHA is git's all-zero object id. GitHub sends it as a push's
-// `before` when a brand-new branch is created (nothing to diff against).
-const zeroSHA = "0000000000000000000000000000000000000000"
-
-func isZeroSHA(sha string) bool { return sha == "" || sha == zeroSHA }
-
 func shortSHA(sha string) string {
 	if len(sha) > 7 {
 		return sha[:7]
@@ -421,7 +417,7 @@ func fetchPushFiles(ctx context.Context, pc *plugins.PluginContext, repo, before
 	if head == "" {
 		return nil, nil
 	}
-	if isZeroSHA(before) {
+	if pluginutil.IsZeroSHA(before) {
 		return fetchCommitFiles(ctx, pc, repo, head)
 	}
 	path := fmt.Sprintf("/repos/%s/compare/%s...%s", repo, before, head)
@@ -452,20 +448,20 @@ func parseRecentInputs(in map[string]any) recentInputs {
 		sections:   []string{"most-used"},
 		standard:   parseInputs(in),
 	}
-	if v, ok := readInt(in, "plugin_languages_recent_days"); ok {
+	if v, ok := pluginutil.ReadInt(in, "plugin_languages_recent_days"); ok {
 		out.days = v
 	}
-	if v, ok := readInt(in, "plugin_languages_recent_load"); ok {
+	if v, ok := pluginutil.ReadInt(in, "plugin_languages_recent_load"); ok {
 		out.load = v
 	}
-	if cats := readCSV(in, "plugin_languages_recent_categories"); len(cats) > 0 {
+	if cats := pluginutil.ReadCSV(in, "plugin_languages_recent_categories"); len(cats) > 0 {
 		out.categories = map[string]struct{}{}
 		for _, c := range cats {
 			out.categories[strings.ToLower(c)] = struct{}{}
 		}
 	}
 	if v, ok := in["plugin_languages_sections"]; ok {
-		out.sections = readCSVValue(v)
+		out.sections = pluginutil.ReadCSVValue(v)
 		if len(out.sections) == 0 {
 			out.sections = []string{"most-used"}
 		}
@@ -474,39 +470,7 @@ func parseRecentInputs(in map[string]any) recentInputs {
 }
 
 func recentLoginFromInputs(in map[string]any) string {
-	if in == nil {
-		return ""
-	}
-	if v, ok := in["user"].(string); ok && v != "" {
-		return v
-	}
-	if v, ok := in["login"].(string); ok {
-		return v
-	}
-	return ""
-}
-
-func containsString(xs []string, want string) bool {
-	for _, x := range xs {
-		if x == want {
-			return true
-		}
-	}
-	return false
-}
-
-// extrasEnabled returns true when the input key is absent OR truthy.
-// Upstream's extras feature flags default to enabled; only an explicit
-// false value disables them.
-func extrasEnabled(in map[string]any, key string) bool {
-	if in == nil {
-		return true
-	}
-	v, ok := in[key]
-	if !ok {
-		return true
-	}
-	return truthy(v)
+	return pluginutil.LoginFromInputs(in)
 }
 
 func categoryAllowed(lang string, allowed map[string]struct{}) bool {

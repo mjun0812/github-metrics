@@ -11,12 +11,12 @@ package reactions
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -77,20 +77,20 @@ func (p *reactionsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
 		return &Result{Skipped: true, SkippedReason: reason}, nil
 	}
-	if !truthyInput(pc.Inputs, "plugin_"+Name) {
+	if !pluginutil.TruthyInput(pc.Inputs, "plugin_"+Name) {
 		return &Result{Skipped: true, SkippedReason: "plugin disabled"}, nil
 	}
 	if pc.GraphQL == nil {
 		return &Result{Skipped: true, SkippedReason: "GraphQL client unavailable"}, nil
 	}
-	login := loginFromInputs(pc.Inputs)
+	login := pluginutil.LoginFromInputs(pc.Inputs)
 	if login == "" {
 		return &Result{Skipped: true, SkippedReason: "no login"}, nil
 	}
 	// Upstream defaults: plugin_reactions_limit=200 (issue comments),
 	// plugin_reactions_limit_issues=100, plugin_reactions_days=0.
-	commentsLimit := readIntDefault(pc.Inputs, "plugin_reactions_limit", 200)
-	issuesLimit := readIntDefault(pc.Inputs, "plugin_reactions_limit_issues", 100)
+	commentsLimit := pluginutil.ReadIntDefault(pc.Inputs, "plugin_reactions_limit", 200)
+	issuesLimit := pluginutil.ReadIntDefault(pc.Inputs, "plugin_reactions_limit_issues", 100)
 	// GitHub's GraphQL connections reject first > 100 with
 	// EXCESSIVE_PAGINATION, which fails the entire UserReactions query
 	// and blanks the card. The upstream plugin_reactions_limit default
@@ -101,7 +101,7 @@ func (p *reactionsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 	if issuesLimit > 100 {
 		issuesLimit = 100
 	}
-	days := readIntDefault(pc.Inputs, "plugin_reactions_days", 0)
+	days := pluginutil.ReadIntDefault(pc.Inputs, "plugin_reactions_days", 0)
 	display := readDisplay(pc.Inputs)
 	details := readDetails(pc.Inputs)
 
@@ -242,55 +242,4 @@ func readDetails(in map[string]any) []string {
 		return nil
 	}
 	return out
-}
-
-func truthyInput(in map[string]any, key string) bool {
-	v, ok := in[key]
-	if !ok {
-		return false
-	}
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := strings.ToLower(strings.TrimSpace(x))
-		return s == "true" || s == "1" || s == "yes"
-	case int:
-		return x != 0
-	case float64:
-		return x != 0
-	}
-	return false
-}
-
-func loginFromInputs(in map[string]any) string {
-	if v, ok := in["user"].(string); ok && v != "" {
-		return v
-	}
-	if v, ok := in["login"].(string); ok {
-		return v
-	}
-	return ""
-}
-
-func readIntDefault(in map[string]any, key string, def int) int {
-	v, ok := in[key]
-	if !ok {
-		return def
-	}
-	switch x := v.(type) {
-	case int:
-		return x
-	case int64:
-		return int(x)
-	case float64:
-		return int(x)
-	case string:
-		n, err := strconv.Atoi(strings.TrimSpace(x))
-		if err != nil {
-			return def
-		}
-		return n
-	}
-	return def
 }

@@ -15,6 +15,7 @@ import (
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -136,7 +137,7 @@ func (p *sponsorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 	}
 	past := false
 	if v, ok := pc.Inputs["plugin_sponsors_past"]; ok {
-		past = truthy(v)
+		past = pluginutil.Truthy(v)
 	}
 	size := 24
 	if v, ok := pc.Inputs["plugin_sponsors_size"]; ok {
@@ -282,22 +283,6 @@ func splitCSV(s string) []string {
 	return parts
 }
 
-// truthy mirrors the helper used in other plugins.
-func truthy(v any) bool {
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := strings.ToLower(strings.TrimSpace(x))
-		return s == "true" || s == "1" || s == "yes"
-	case int:
-		return x != 0
-	case float64:
-		return x != 0
-	}
-	return false
-}
-
 // pluginEnabled returns true when the named input is truthy. Used by
 // spec-013 wiring to short-circuit GraphQL fetches when the consuming
 // workflow has not opted into the plugin (test paths + dryrun CLI).
@@ -306,5 +291,5 @@ func pluginEnabled(in map[string]any, key string) bool {
 	if !ok {
 		return false
 	}
-	return truthy(v)
+	return pluginutil.Truthy(v)
 }

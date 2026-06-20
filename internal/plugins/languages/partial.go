@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
@@ -29,14 +30,6 @@ func colorDotOcticon(color string) string {
 		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="%s" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"></path></svg>`,
 		partials.EscapeXML(colorOrDefault(color)),
 	)
-}
-
-// pluralS mirrors upstream's `s()` helper: returns "s" when n != 1, else "".
-func pluralS(n int) string {
-	if n == 1 {
-		return ""
-	}
-	return "s"
 }
 
 // Partial renders the classic SVG fragment for the languages plugin.
@@ -113,7 +106,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	fmt.Fprintf(
 		&b,
 		`<section><h2 class="field">%s%d Language%s</h2></section>`,
-		codeOcticon, uniqueCount, pluralS(uniqueCount),
+		codeOcticon, uniqueCount, pluginutil.Plural(uniqueCount),
 	)
 
 	// ── Per-section blocks (upstream EJS lines 8-100) ────────────
@@ -260,7 +253,7 @@ func writeRecentlyUsedSection(b *strings.Builder, pc *templates.PartialContext) 
 			fmt.Fprintf(
 				b,
 				`<small>No recent push activity found over last %d day%s</small>`,
-				r.Days, pluralS(r.Days),
+				r.Days, pluginutil.Plural(r.Days),
 			)
 		} else {
 			b.WriteString(`<small>No recent push activity found</small>`)
@@ -276,7 +269,7 @@ func writeRecentlyUsedSection(b *strings.Builder, pc *templates.PartialContext) 
 		fmt.Fprintf(
 			b,
 			`<small>activity from %d repositor%s analysed over last %d day%s</small>`,
-			r.Load, pluralRepository(r.Load), r.Days, pluralS(r.Days),
+			r.Load, pluralRepository(r.Load), r.Days, pluginutil.Plural(r.Days),
 		)
 	}
 

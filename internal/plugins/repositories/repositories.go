@@ -28,7 +28,6 @@ import (
 	"math/rand"
 	"net/http"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -36,6 +35,7 @@ import (
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -370,97 +370,29 @@ func parseInputs(in map[string]any) inputs {
 		}
 	}
 	if v, ok := in["plugin_repositories_pinned"]; ok {
-		out.pinned = truthy(v)
+		out.pinned = pluginutil.Truthy(v)
 	}
 	if v, ok := in["plugin_repositories_starred"]; ok {
-		out.starred = truthy(v)
+		out.starred = pluginutil.Truthy(v)
 	}
 	if v, ok := in["plugin_repositories_random"]; ok {
-		out.random = truthy(v)
+		out.random = pluginutil.Truthy(v)
 	}
 	if v, ok := in["plugin_repositories_forks"]; ok {
-		out.includeForks = truthy(v)
+		out.includeForks = pluginutil.Truthy(v)
 	}
-	for _, s := range readCSV(in, "plugin_repositories_affiliations") {
+	for _, s := range pluginutil.ReadCSV(in, "plugin_repositories_affiliations") {
 		out.affiliations[strings.ToUpper(s)] = struct{}{}
 	}
-	out.featured = readCSV(in, "plugin_repositories_featured")
-	for _, s := range readCSV(in, "plugin_repositories_skipped") {
+	out.featured = pluginutil.ReadCSV(in, "plugin_repositories_featured")
+	for _, s := range pluginutil.ReadCSV(in, "plugin_repositories_skipped") {
 		out.skipped[s] = struct{}{}
 	}
-	if v, ok := readInt(in, "plugin_repositories_batch"); ok {
+	if v, ok := pluginutil.ReadInt(in, "plugin_repositories_batch"); ok {
 		out.limit = v
 	}
-	if v, ok := readInt(in, "plugin_repositories_random_seed"); ok {
+	if v, ok := pluginutil.ReadInt(in, "plugin_repositories_random_seed"); ok {
 		out.randomSeed = int64(v)
-	}
-	return out
-}
-
-func truthy(v any) bool {
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := strings.ToLower(strings.TrimSpace(x))
-		return s == "true" || s == "1" || s == "yes"
-	case int:
-		return x != 0
-	case float64:
-		return x != 0
-	}
-	return false
-}
-
-func readInt(in map[string]any, key string) (int, bool) {
-	v, ok := in[key]
-	if !ok {
-		return 0, false
-	}
-	switch x := v.(type) {
-	case int:
-		return x, true
-	case int64:
-		return int(x), true
-	case float64:
-		return int(x), true
-	case string:
-		n, err := strconv.Atoi(strings.TrimSpace(x))
-		if err != nil {
-			return 0, false
-		}
-		return n, true
-	}
-	return 0, false
-}
-
-func readCSV(in map[string]any, key string) []string {
-	v, ok := in[key]
-	if !ok {
-		return nil
-	}
-	switch x := v.(type) {
-	case []string:
-		return trimEmpty(x)
-	case []any:
-		out := make([]string, 0, len(x))
-		for _, item := range x {
-			out = append(out, fmt.Sprint(item))
-		}
-		return trimEmpty(out)
-	case string:
-		return trimEmpty(strings.Split(x, ","))
-	}
-	return nil
-}
-
-func trimEmpty(in []string) []string {
-	out := make([]string, 0, len(in))
-	for _, s := range in {
-		s = strings.TrimSpace(s)
-		if s != "" {
-			out = append(out, s)
-		}
 	}
 	return out
 }

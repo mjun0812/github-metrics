@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
@@ -30,14 +31,6 @@ func pluralRepository(n int) string {
 		return "y"
 	}
 	return "ies"
-}
-
-// pluralS mirrors upstream's `s()` helper.
-func pluralS(n int) string {
-	if n == 1 {
-		return ""
-	}
-	return "s"
 }
 
 // Partial renders the classic SVG fragment for the starlists plugin.
@@ -93,7 +86,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	fmt.Fprintf(
 		&b,
 		`<h2 class="field">%s%d Star list%s</h2>`,
-		listOcticon, len(r.List), pluralS(len(r.List)),
+		listOcticon, len(r.List), pluginutil.Plural(len(r.List)),
 	)
 	b.WriteString(`<div class="row"><section>`)
 	for i, s := range r.List {

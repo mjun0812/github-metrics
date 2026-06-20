@@ -12,12 +12,12 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -96,7 +96,7 @@ func (p *starlistsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 
 	// Gate on the user-facing `plugin_starlists` input so the plugin
 	// stays silent (no Data.Errors entries) when never requested.
-	if !truthy(pc.Inputs["plugin_starlists"]) {
+	if !pluginutil.Truthy(pc.Inputs["plugin_starlists"]) {
 		return &Result{
 			Skipped:       true,
 			SkippedReason: "plugin_starlists not enabled",
@@ -105,7 +105,7 @@ func (p *starlistsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 		}, nil
 	}
 
-	if !extrasEnabled(pc.Inputs, "extras.metrics.run.puppeteer.scrapping") {
+	if !pluginutil.ExtrasEnabled(pc.Inputs, "extras.metrics.run.puppeteer.scrapping") {
 		return &Result{
 			Skipped:       true,
 			SkippedReason: "puppeteer scrapping disabled via extras",
@@ -114,7 +114,7 @@ func (p *starlistsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 		}, nil
 	}
 
-	login := loginFromInputs(pc.Inputs)
+	login := pluginutil.LoginFromInputs(pc.Inputs)
 	if login == "" {
 		return &Result{
 			Skipped:       true,
@@ -255,72 +255,11 @@ func parseInputs(in map[string]any) starlistsInputs {
 		limit:     4,
 		languages: false,
 	}
-	if v, ok := readInt(in, "plugin_starlists_limit"); ok {
+	if v, ok := pluginutil.ReadInt(in, "plugin_starlists_limit"); ok {
 		out.limit = v
 	}
 	if v, ok := in["plugin_starlists_languages"]; ok {
-		out.languages = truthy(v)
+		out.languages = pluginutil.Truthy(v)
 	}
 	return out
-}
-
-func loginFromInputs(in map[string]any) string {
-	if in == nil {
-		return ""
-	}
-	if v, ok := in["user"].(string); ok && v != "" {
-		return v
-	}
-	if v, ok := in["login"].(string); ok {
-		return v
-	}
-	return ""
-}
-
-func readInt(in map[string]any, key string) (int, bool) {
-	v, ok := in[key]
-	if !ok {
-		return 0, false
-	}
-	switch x := v.(type) {
-	case int:
-		return x, true
-	case int64:
-		return int(x), true
-	case float64:
-		return int(x), true
-	case string:
-		n, err := strconv.Atoi(strings.TrimSpace(x))
-		if err != nil {
-			return 0, false
-		}
-		return n, true
-	}
-	return 0, false
-}
-
-func extrasEnabled(in map[string]any, key string) bool {
-	if in == nil {
-		return true
-	}
-	v, ok := in[key]
-	if !ok {
-		return true
-	}
-	return truthy(v)
-}
-
-func truthy(v any) bool {
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := strings.ToLower(strings.TrimSpace(x))
-		return s == "true" || s == "1" || s == "yes"
-	case int:
-		return x != 0
-	case float64:
-		return x != 0
-	}
-	return false
 }

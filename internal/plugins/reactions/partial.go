@@ -6,6 +6,7 @@ import (
 	"math"
 	"strings"
 
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
@@ -62,7 +63,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	fmt.Fprintf(
 		&b,
 		`<h2 class="field">%sOverall users reactions from last %d comment%s</h2>`,
-		commentDiscussionOcticon, r.Comments, pluralS(r.Comments),
+		commentDiscussionOcticon, r.Comments, pluginutil.Plural(r.Comments),
 	)
 	b.WriteString(`<div class="row"><section>`)
 	b.WriteString(`<div class="row fill-width"><section class="categories">`)
@@ -123,12 +124,4 @@ func formatDash(v float64) string {
 	s = strings.TrimRight(s, "0")
 	s = strings.TrimRight(s, ".")
 	return s
-}
-
-// pluralS mirrors upstream's `s()` helper.
-func pluralS(n int) string {
-	if n == 1 {
-		return ""
-	}
-	return "s"
 }
