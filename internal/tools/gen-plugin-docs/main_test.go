@@ -116,8 +116,8 @@ func TestRenderPluginPage_CoreOmitsSampleImage(t *testing.T) {
 	if strings.Contains(got, "plugin-core.svg") {
 		t.Errorf("core page must not reference plugin-core.svg sample image:\n%s", got)
 	}
-	if !strings.Contains(got, "No standalone visual output") {
-		t.Errorf("core page should carry the No-standalone-visual-output notice:\n%s", got)
+	if !strings.Contains(got, "This plugin emits no standalone SVG") {
+		t.Errorf("core page should carry the no-standalone-SVG notice:\n%s", got)
 	}
 	if !strings.Contains(got, "## Requirements") {
 		t.Errorf("core page should emit Requirements section on first gen:\n%s", got)
@@ -151,8 +151,7 @@ func TestRenderPluginPage_BaseEmitsCustomUsageSnippet(t *testing.T) {
 }
 
 // TestRenderPluginPage_HasRequiredSections enforces that the rendered
-// plugin page contains the 3 AUTOGEN sections + a `## サンプル出力`
-// heading.
+// plugin page contains the 3 AUTOGEN sections + a `## Sample` heading.
 func TestRenderPluginPage_HasRequiredSections(t *testing.T) {
 	t.Parallel()
 	meta := pluginMetadata{
@@ -170,7 +169,10 @@ func TestRenderPluginPage_HasRequiredSections(t *testing.T) {
 		"<!-- AUTOGEN_END: config-table -->",
 		"<!-- AUTOGEN_START: usage-snippet -->",
 		"<!-- AUTOGEN_END: usage-snippet -->",
-		"## サンプル出力",
+		"## Sample",
+		"## Configuration (inputs)",
+		"## Usage",
+		"## References",
 		"![languages sample](../examples/plugin-languages.svg)",
 		"plugin_languages: yes",
 	} {
@@ -183,7 +185,7 @@ func TestRenderPluginPage_HasRequiredSections(t *testing.T) {
 // TestRenderPluginPage_PreservesHumanZones verifies the re-generation
 // path: existing prose between AUTOGEN markers and headings is pulled
 // forward into the new render. Covers all three human-authored zones
-// (when-to-use, Requirements, 既知の制約).
+// (When to use, Requirements, Notes) under English headings.
 func TestRenderPluginPage_PreservesHumanZones(t *testing.T) {
 	t.Parallel()
 	meta := pluginMetadata{
@@ -196,14 +198,14 @@ func TestRenderPluginPage_PreservesHumanZones(t *testing.T) {
 old description
 <!-- AUTOGEN_END: title-and-description -->
 
-## サンプル出力
+## Sample
 
 ![languages sample](../examples/plugin-languages.svg)
 
-## このプラグインを使うべきケース
+## When to use
 
-ハンドメイドの説明文があります。
-複数行にわたります。
+Hand-authored prose for the when-to-use section.
+Spanning multiple lines.
 
 <!-- AUTOGEN_START: config-table -->
 old config
@@ -215,40 +217,67 @@ old usage
 
 ## Requirements
 
-**Public repositories with detectable source code.** This zone was added by PR #410.
+**Public repositories with detectable source code.** Hand-authored Requirements paragraph.
 
-## 既知の制約 / 注意点
+## Notes
 
-注意点もハンドメイドで書かれた内容です。
+Hand-authored notes preserved across regeneration.
 
-## 参照
+## References
 
 - ...
 `
 	got := renderPluginPage("languages", meta, nil, []byte(existing))
-	if !strings.Contains(got, "ハンドメイドの説明文があります") {
+	if !strings.Contains(got, "Hand-authored prose for the when-to-use section.") {
 		t.Errorf("when-section human zone lost:\n%s", got)
 	}
 	if !strings.Contains(got, "Public repositories with detectable source code") {
 		t.Errorf("Requirements human zone lost:\n%s", got)
 	}
-	if !strings.Contains(got, "注意点もハンドメイドで書かれた内容です") {
-		t.Errorf("pitfalls human zone lost:\n%s", got)
-	}
-	if strings.Contains(got, "<!-- TODO:") {
-		t.Errorf("TODO placeholder should NOT appear when human zones are present:\n%s", got)
+	if !strings.Contains(got, "Hand-authored notes preserved across regeneration.") {
+		t.Errorf("notes human zone lost:\n%s", got)
 	}
 }
 
-// TestRenderPluginPage_EmitsTODOOnFirstGen verifies that first
-// generation (no existing file) inserts the maintainer TODO placeholders.
-func TestRenderPluginPage_EmitsTODOOnFirstGen(t *testing.T) {
+// TestRenderPluginPage_RequirementsRegexHandlesMissingNotes pins the
+// regex behaviour when a previously-generated page has Requirements
+// but no Notes section: the Requirements prose must still be pulled
+// forward into the new render.
+func TestRenderPluginPage_RequirementsRegexHandlesMissingNotes(t *testing.T) {
+	t.Parallel()
+	meta := pluginMetadata{Name: "languages", Description: "languages desc"}
+	existing := "<!-- AUTOGEN_START: title-and-description -->\n" +
+		"# Plugin: languages\n\nold description\n" +
+		"<!-- AUTOGEN_END: title-and-description -->\n\n" +
+		"<!-- AUTOGEN_START: config-table -->\nold config\n<!-- AUTOGEN_END: config-table -->\n\n" +
+		"<!-- AUTOGEN_START: usage-snippet -->\nold usage\n<!-- AUTOGEN_END: usage-snippet -->\n\n" +
+		"## Requirements\n\nHand-authored Requirements without a Notes section.\n\n" +
+		"## References\n\n- ...\n"
+	got := renderPluginPage("languages", meta, nil, []byte(existing))
+	if !strings.Contains(got, "Hand-authored Requirements without a Notes section.") {
+		t.Errorf("Requirements prose lost when Notes is absent:\n%s", got)
+	}
+	if strings.Contains(got, "## Notes") {
+		t.Errorf("Notes section should not be emitted when there is no prose:\n%s", got)
+	}
+}
+
+// TestRenderPluginPage_SkipsEmptySections verifies that first-gen
+// pages (no existing human prose) omit the "When to use" and "Notes"
+// section headers entirely instead of leaving them empty or filled
+// with a TODO placeholder.
+func TestRenderPluginPage_SkipsEmptySections(t *testing.T) {
 	t.Parallel()
 	meta := pluginMetadata{Name: "habits", Description: "habits desc"}
 	got := renderPluginPage("habits", meta, nil, nil)
-	occurrences := strings.Count(got, "<!-- TODO:")
-	if occurrences != 2 {
-		t.Errorf("expected 2 TODO placeholders on first-gen, got %d:\n%s", occurrences, got)
+	if strings.Contains(got, "<!-- TODO:") {
+		t.Errorf("TODO placeholder should not be emitted:\n%s", got)
+	}
+	if strings.Contains(got, "## When to use") {
+		t.Errorf("empty When-to-use section should be omitted:\n%s", got)
+	}
+	if strings.Contains(got, "## Notes") {
+		t.Errorf("empty Notes section should be omitted:\n%s", got)
 	}
 }
 
@@ -344,18 +373,6 @@ func TestExtractInputKeys_PreservesYAMLOrder(t *testing.T) {
 	}
 	if keys[0] != "plugin_languages" {
 		t.Errorf("expected first key to be plugin_languages, got %q", keys[0])
-	}
-}
-
-func TestCountTODOs_HandlesMissingDir(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	n, err := CountTODOs(dir) // no docs/plugins/ subdir
-	if err != nil {
-		t.Fatalf("CountTODOs: %v", err)
-	}
-	if n != 0 {
-		t.Errorf("CountTODOs on empty repo = %d, want 0", n)
 	}
 }
 

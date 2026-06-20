@@ -4,21 +4,17 @@
 `base` is the foundational plugin that runs before every other plugin and populates the shared `data.User` / `data.Organization` / `data.Computed` fields downstream plugins depend on. It also owns the user/org header card (avatar, login, follower/sponsor counts, two-week commit calendar) that every other plugin's output sits on top of.
 <!-- AUTOGEN_END: title-and-description -->
 
-## サンプル出力
+## Sample
 
 ![base sample](../examples/plugin-base.svg)
 
-> サンプルは `--user mjun0812` のデータで本プラグインのみを有効化してレンダリングした例です。再生成は `make docs-examples`。
-
-## このプラグインを使うべきケース
-
-<!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
+> Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
-## 設定 (inputs)
+## Configuration (inputs)
 
-| Input | 説明 | デフォルト | 必須 | 型 |
-|-------|------|------------|------|----|
+| Input | Description | Default | Required | Type |
+| ----- | ----------- | ------- | -------- | ---- |
 | `base` | Base content | `header, activity, community, repositories, metadata` | no | array |
 | `base_indepth` | Indepth mode | `no` | no | boolean |
 | `base_hireable` | Show `Available for hire!` in header section | `no` | no | boolean |
@@ -33,7 +29,7 @@
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
-## 使い方
+## Usage
 
 ### GitHub Action
 
@@ -58,13 +54,9 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 
 **A valid GitHub username (or organization login) and a token with at minimum `read:user` + `public_repo`.** The base plugin queries the GraphQL `user(login:)` / `organization(login:)` endpoint to populate the header card and walks the repositories connection (paged, with batch-halving on transient 5xx) to seed `Computed.RepositoryList` for every downstream plugin. Setting `base: ""` disables every base section but **does not** skip the GraphQL fetch — to fully skip base data fetching, use `base_skip: yes` and pair it with a plugin that supports `token: NOT_NEEDED`.
 
-## 既知の制約 / 注意点
-
-<!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->
-
-## 参照
+## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
 - [`assets/plugins/base/metadata.yml`](../../assets/plugins/base/metadata.yml) — upstream metadata
-- 対応アカウント種別: user, organization, repository
-- 必要スコープ: public_access
+- Supported account types: user, organization, repository
+- Required scopes: public_access

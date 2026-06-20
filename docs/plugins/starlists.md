@@ -4,21 +4,17 @@
 This plugin displays star lists.
 <!-- AUTOGEN_END: title-and-description -->
 
-## サンプル出力
+## Sample
 
 ![starlists sample](../examples/plugin-starlists.svg)
 
-> サンプルは `--user mjun0812` のデータで本プラグインのみを有効化してレンダリングした例です。再生成は `make docs-examples`。
-
-## このプラグインを使うべきケース
-
-<!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
+> Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
-## 設定 (inputs)
+## Configuration (inputs)
 
-| Input | 説明 | デフォルト | 必須 | 型 |
-|-------|------|------------|------|----|
+| Input | Description | Default | Required | Type |
+| ----- | ----------- | ------- | -------- | ---- |
 | `plugin_starlists` | Enable starlists plugin | `no` | no | boolean |
 | `plugin_starlists_limit` | Display limit (star lists) | `2` | no | number |
 | `plugin_starlists_limit_repositories` | Display limit (repositories per star list) | `2` | no | number |
@@ -32,7 +28,7 @@ This plugin displays star lists.
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
-## 使い方
+## Usage
 
 ### GitHub Action
 
@@ -53,16 +49,8 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
-## Requirements
-
-**At least one starred list** ("My Lists") created via GitHub's web UI (any starred repository → "Create a list"). Data is fetched from the official GraphQL `user.lists` field — an empty list collection yields a skipped card. No token scope beyond `read:user` is required for public lists.
-
-## 既知の制約 / 注意点
-
-<!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->
-
-## 参照
+## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
 - [`assets/plugins/starlists/metadata.yml`](../../assets/plugins/starlists/metadata.yml) — upstream metadata
-- 対応アカウント種別: user
+- Supported account types: user
