@@ -4,21 +4,17 @@
 This plugin displays progress of profile and repository projects.
 <!-- AUTOGEN_END: title-and-description -->
 
-## サンプル出力
+## Sample
 
 ![projects sample](../examples/plugin-projects.svg)
 
-> サンプルは `--user mjun0812` のデータで本プラグインのみを有効化してレンダリングした例です。再生成は `make docs-examples`。
-
-## このプラグインを使うべきケース
-
-<!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
+> Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
-## 設定 (inputs)
+## Configuration (inputs)
 
-| Input | 説明 | デフォルト | 必須 | 型 |
-|-------|------|------------|------|----|
+| Input | Description | Default | Required | Type |
+| ----- | ----------- | ------- | -------- | ---- |
 | `plugin_projects` | Enable projects plugin | `no` | no | boolean |
 | `plugin_projects_limit` | Display limit | `4` | no | number |
 | `plugin_projects_repositories` | Featured repositories projects | `` | no | array |
@@ -26,7 +22,7 @@ This plugin displays progress of profile and repository projects.
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
-## 使い方
+## Usage
 
 ### GitHub Action
 
@@ -47,17 +43,9 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
-## Requirements
-
-**Classic GitHub Projects owned by the user.** Users with no projects see an empty card. Projects v2 (the newer "Projects beta") is not currently surfaced by this plugin.
-
-## 既知の制約 / 注意点
-
-<!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->
-
-## 参照
+## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
 - [`assets/plugins/projects/metadata.yml`](../../assets/plugins/projects/metadata.yml) — upstream metadata
-- 対応アカウント種別: user, organization, repository
-- 必要スコープ: public_access, public_repo, read:project
+- Supported account types: user, organization, repository
+- Required scopes: public_access, public_repo, read:project
