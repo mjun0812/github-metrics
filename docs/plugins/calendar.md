@@ -1,35 +1,26 @@
 <!-- AUTOGEN_START: title-and-description -->
-
 # Plugin: calendar
 
 This plugin can display commit calendar across several years.
-
 <!-- AUTOGEN_END: title-and-description -->
 
-## サンプル出力
+## Sample
 
 ![calendar sample](../examples/plugin-calendar.svg)
 
-> サンプルは `--user mjun0812` のデータで本プラグインのみを有効化してレンダリングした例です。再生成は `make docs-examples`。
-
-## このプラグインを使うべきケース
-
-<!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
+> Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
+## Configuration (inputs)
 
-## 設定 (inputs)
-
-| Input                   | 説明                   | デフォルト | 必須 | 型      |
-| ----------------------- | ---------------------- | ---------- | ---- | ------- |
-| `plugin_calendar`       | Enable calendar plugin | `no`       | no   | boolean |
-| `plugin_calendar_limit` | Years to display       | `1`        | no   | number  |
-
+| Input | Description | Default | Required | Type |
+| ----- | ----------- | ------- | -------- | ---- |
+| `plugin_calendar` | Enable calendar plugin | `no` | no | boolean |
+| `plugin_calendar_limit` | Years to display | `1` | no | number |
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
-
-## 使い方
+## Usage
 
 ### GitHub Action
 
@@ -48,20 +39,11 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_calendar=yes
 ```
-
 <!-- AUTOGEN_END: usage-snippet -->
 
-## Requirements
-
-A non-empty **GitHub contribution calendar** — i.e. public contributions (commits to default branches, opened issues / pull requests, code reviews). `plugin_calendar_limit=0` fetches all calendar years from the account creation year through the current year; positive values fetch that many recent years. Empty contribution graphs produce an empty heatmap.
-
-## 既知の制約 / 注意点
-
-<!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->
-
-## 参照
+## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
 - [`assets/plugins/calendar/metadata.yml`](../../assets/plugins/calendar/metadata.yml) — upstream metadata
-- 対応アカウント種別: user
-- 必要スコープ: public_access
+- Supported account types: user
+- Required scopes: public_access

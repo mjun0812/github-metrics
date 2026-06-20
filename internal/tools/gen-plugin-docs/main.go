@@ -14,7 +14,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -214,8 +213,8 @@ func generatePluginPage(root, slug string) error {
 
 // renderPluginPage emits the full markdown for one plugin. When
 // `existing` is non-empty, the human-authored zones (the three prose
-// sections between AUTOGEN blocks: "このプラグインを使うべきケース",
-// "Requirements", "既知の制約 / 注意点") are pulled forward.
+// sections between AUTOGEN blocks: "When to use", "Requirements",
+// "Notes") are pulled forward.
 func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existing []byte) string {
 	whenSection, requirementsSection, pitfallsSection := extractHumanZones(string(existing))
 
@@ -234,31 +233,30 @@ func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existin
 	// output, e.g. `core` — it implements configuration parsing and the
 	// parallel plugin runner, with no card of its own).
 	if _, skip := slugsWithoutSample[slug]; skip {
-		b.WriteString("## サンプル出力\n\n")
-		b.WriteString("このプラグインは独立した SVG 断片を描画しません (No standalone visual output)。グローバル設定とプラグイン並列ランナーを実装するプラグインで、入力のみがこのページの対象です。\n\n")
+		b.WriteString("## Sample\n\n")
+		b.WriteString("This plugin emits no standalone SVG; its inputs are documented below.\n\n")
 	} else {
-		b.WriteString("## サンプル出力\n\n")
+		b.WriteString("## Sample\n\n")
 		fmt.Fprintf(&b, "![%s sample](../examples/%s.svg)\n\n", slug, sampleImageBase(slug))
-		b.WriteString("> サンプルは `--user mjun0812` のデータで本プラグインのみを有効化してレンダリングした例です。再生成は `make docs-examples`。\n\n")
+		b.WriteString("> Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.\n\n")
 	}
 
-	// Human-authored: when-to-use
-	b.WriteString("## このプラグインを使うべきケース\n\n")
+	// Human-authored: when-to-use. Skip the header entirely when no
+	// prose exists so the page does not show an empty heading.
 	if whenSection != "" {
+		b.WriteString("## When to use\n\n")
 		b.WriteString(whenSection)
-	} else {
-		b.WriteString("<!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->\n")
+		b.WriteString("\n\n")
 	}
-	b.WriteString("\n")
 
 	// AUTOGEN: config table
 	b.WriteString("<!-- AUTOGEN_START: config-table -->\n")
-	b.WriteString("## 設定 (inputs)\n\n")
+	b.WriteString("## Configuration (inputs)\n\n")
 	if len(inputKeys) == 0 {
-		b.WriteString("(このプラグインには専用 input がありません。)\n")
+		b.WriteString("(This plugin has no dedicated inputs.)\n")
 	} else {
-		b.WriteString("| Input | 説明 | デフォルト | 必須 | 型 |\n")
-		b.WriteString("|-------|------|------------|------|----|\n")
+		b.WriteString("| Input | Description | Default | Required | Type |\n")
+		b.WriteString("| ----- | ----------- | ------- | -------- | ---- |\n")
 		for _, k := range inputKeys {
 			in := m.Inputs[k]
 			b.WriteString(formatInputRow(k, in))
@@ -268,7 +266,7 @@ func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existin
 
 	// AUTOGEN: usage snippet
 	b.WriteString("<!-- AUTOGEN_START: usage-snippet -->\n")
-	b.WriteString("## 使い方\n\n")
+	b.WriteString("## Usage\n\n")
 	switch slug {
 	case "base":
 		// `base` is always active (it populates the user/org header
@@ -331,12 +329,11 @@ func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existin
 	}
 	b.WriteString("<!-- AUTOGEN_END: usage-snippet -->\n\n")
 
-	// Human-authored: Requirements (English; pulled forward from PR #410).
-	// This section lives BETWEEN the usage-snippet AUTOGEN block and the
-	// "既知の制約 / 注意点" heading. It is preserved verbatim when
-	// `existing` already contains one. For the two foundational plugins
-	// (`base`, `core`) we inject a canonical first-gen Requirements
-	// paragraph so the page is self-explanatory without manual editing.
+	// Human-authored: Requirements. Lives between the usage-snippet
+	// AUTOGEN block and the "Notes" heading and is preserved verbatim
+	// when `existing` already contains one. For the foundational `base`
+	// and `core` plugins we inject a canonical first-gen paragraph so
+	// the page is self-explanatory without manual editing.
 	if requirementsSection != "" {
 		b.WriteString("## Requirements\n\n")
 		b.WriteString(requirementsSection)
@@ -347,24 +344,22 @@ func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existin
 		b.WriteString("\n\n")
 	}
 
-	// Human-authored: known constraints
-	b.WriteString("## 既知の制約 / 注意点\n\n")
+	// Human-authored: notes. Skip the header entirely when empty.
 	if pitfallsSection != "" {
+		b.WriteString("## Notes\n\n")
 		b.WriteString(pitfallsSection)
-	} else {
-		b.WriteString("<!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->\n")
+		b.WriteString("\n\n")
 	}
-	b.WriteString("\n")
 
 	// References
-	b.WriteString("## 参照\n\n")
+	b.WriteString("## References\n\n")
 	b.WriteString("- [`action.yml`](../../action.yml) — canonical input schema\n")
 	fmt.Fprintf(&b, "- [`assets/plugins/%s/metadata.yml`](../../assets/plugins/%s/metadata.yml) — upstream metadata\n", slug, slug)
 	if len(m.Supports) > 0 {
-		fmt.Fprintf(&b, "- 対応アカウント種別: %s\n", strings.Join(m.Supports, ", "))
+		fmt.Fprintf(&b, "- Supported account types: %s\n", strings.Join(m.Supports, ", "))
 	}
 	if len(m.Scopes) > 0 {
-		fmt.Fprintf(&b, "- 必要スコープ: %s\n", strings.Join(m.Scopes, ", "))
+		fmt.Fprintf(&b, "- Required scopes: %s\n", strings.Join(m.Scopes, ", "))
 	}
 
 	return b.String()
@@ -380,6 +375,12 @@ func formatInputRow(key string, in pluginInput) string {
 	}
 
 	def := formatDefault(in.Default)
+	// Collapse newlines that appear in multi-line JSON / YAML defaults
+	// (e.g. `plugin_contributors_categories`) so the table row stays on
+	// a single line; trim surrounding whitespace introduced by YAML
+	// folding.
+	def = strings.Join(strings.Fields(def), " ")
+	def = strings.ReplaceAll(def, "|", `\|`)
 	req := "no"
 	if in.Required {
 		req = "yes"
@@ -458,17 +459,17 @@ func firstParagraph(s string) string {
 // existing file to pull forward the maintainer's prose.
 //
 // Three human-authored zones live in a previously-generated page:
-//  1. ## このプラグインを使うべきケース  — between title-and-description
-//     and the config-table AUTOGEN block.
-//  2. ## Requirements                  — added by PR #410, lives between
-//     the usage-snippet AUTOGEN block and the "既知の制約" heading.
-//     Optional (not every plugin had one before PR #410 landed).
-//  3. ## 既知の制約 / 注意点             — between Requirements (or the
-//     usage-snippet block when Requirements is absent) and "## 参照".
+//  1. ## When to use   — between title-and-description and the
+//     config-table AUTOGEN block.
+//  2. ## Requirements  — between the usage-snippet AUTOGEN block and
+//     the next heading (## Notes or ## References when Notes is
+//     absent). Optional.
+//  3. ## Notes         — between Requirements (or the usage-snippet
+//     block when Requirements is absent) and "## References".
 var (
-	whenSectionRe         = regexp.MustCompile(`(?s)## このプラグインを使うべきケース\s*\n+(.*?)\n+<!-- AUTOGEN_START: config-table -->`)
-	requirementsSectionRe = regexp.MustCompile(`(?s)## Requirements\s*\n+(.*?)\n+## 既知の制約 / 注意点`)
-	pitfallsSectionRe     = regexp.MustCompile(`(?s)## 既知の制約 / 注意点\s*\n+(.*?)\n+## 参照`)
+	whenSectionRe         = regexp.MustCompile(`(?s)## When to use\s*\n+(.*?)\n+<!-- AUTOGEN_START: config-table -->`)
+	requirementsSectionRe = regexp.MustCompile(`(?s)## Requirements\s*\n+(.*?)\n+## (?:Notes|References)`)
+	pitfallsSectionRe     = regexp.MustCompile(`(?s)## Notes\s*\n+(.*?)\n+## References`)
 )
 
 // extractHumanZones returns the prose that lives in the three
@@ -486,20 +487,7 @@ func extractHumanZones(existing string) (when, requirements, pitfalls string) {
 	if m := pitfallsSectionRe.FindStringSubmatch(existing); len(m) == 2 {
 		pitfalls = strings.TrimSpace(m[1])
 	}
-	// TODO placeholders are not pulled forward — first-gen file paths
-	// will re-emit them next run.
-	if isTODOPlaceholder(when) {
-		when = ""
-	}
-	if isTODOPlaceholder(pitfalls) {
-		pitfalls = ""
-	}
 	return when, requirements, pitfalls
-}
-
-func isTODOPlaceholder(s string) bool {
-	s = strings.TrimSpace(s)
-	return strings.HasPrefix(s, "<!-- TODO:") && strings.HasSuffix(s, "-->")
 }
 
 // ---------- README plugins-gallery ----------
@@ -601,37 +589,4 @@ func repoRoot() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("could not find go.mod above %s", cwd)
-}
-
-// ---------- linting helper: count TODO blocks under docs/plugins/ ----------
-
-// CountTODOs walks docs/plugins/ and counts files containing the
-// `<!-- TODO:` placeholder. Returned separately so a future Makefile
-// `docs-lint` target (and the package's own tests) can share the
-// behavior without forking a bash one-liner. Currently unused by main
-// but kept as a stable API for the lint target.
-func CountTODOs(root string) (int, error) {
-	dir := filepath.Join(root, "docs", "plugins")
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return 0, nil
-		}
-		return 0, err
-	}
-	needle := []byte("<!-- TODO:")
-	n := 0
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
-			continue
-		}
-		raw, err := os.ReadFile(filepath.Join(dir, e.Name())) //nolint:gosec // operator-controlled docs/plugins path
-		if err != nil {
-			return 0, err
-		}
-		if bytes.Contains(raw, needle) {
-			n++
-		}
-	}
-	return n, nil
 }

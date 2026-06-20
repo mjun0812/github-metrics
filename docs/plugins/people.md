@@ -4,21 +4,17 @@
 This plugin can display relationships with users, such as followers, sponsors, contributors, stargazers, watchers, members, etc.
 <!-- AUTOGEN_END: title-and-description -->
 
-## サンプル出力
+## Sample
 
 ![people sample](../examples/plugin-people.svg)
 
-> サンプルは `--user mjun0812` のデータで本プラグインのみを有効化してレンダリングした例です。再生成は `make docs-examples`。
-
-## このプラグインを使うべきケース
-
-<!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
+> Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
-## 設定 (inputs)
+## Configuration (inputs)
 
-| Input | 説明 | デフォルト | 必須 | 型 |
-|-------|------|------------|------|----|
+| Input | Description | Default | Required | Type |
+| ----- | ----------- | ------- | -------- | ---- |
 | `plugin_people` | Enable people plugin | `no` | no | boolean |
 | `plugin_people_limit` | Display limit | `24` | no | number |
 | `plugin_people_identicons` | Force identicons pictures | `no` | no | boolean |
@@ -31,7 +27,7 @@ This plugin can display relationships with users, such as followers, sponsors, c
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
-## 使い方
+## Usage
 
 ### GitHub Action
 
@@ -52,19 +48,9 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
-## Requirements
-
-For **user mode** (default): non-empty `followers` and/or `following` lists. Configure types via `plugin_people_types` (e.g. `followers,following`).
-
-For **repository mode** (`--account=repository`): supports `contributors` / `stargazers` / `watchers` types — the target repository must have those people for a non-empty card.
-
-## 既知の制約 / 注意点
-
-<!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->
-
-## 参照
+## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
 - [`assets/plugins/people/metadata.yml`](../../assets/plugins/people/metadata.yml) — upstream metadata
-- 対応アカウント種別: user, organization, repository
-- 必要スコープ: public_access
+- Supported account types: user, organization, repository
+- Required scopes: public_access

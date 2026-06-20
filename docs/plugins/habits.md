@@ -4,21 +4,17 @@
 This plugin displays coding habits based on recent activity, such as active hours and languages recently used.
 <!-- AUTOGEN_END: title-and-description -->
 
-## サンプル出力
+## Sample
 
 ![habits sample](../examples/plugin-habits.svg)
 
-> サンプルは `--user mjun0812` のデータで本プラグインのみを有効化してレンダリングした例です。再生成は `make docs-examples`。
-
-## このプラグインを使うべきケース
-
-<!-- TODO: 1-2段落で記述。このプラグインがどんなユーザー / リポジトリで価値を持つか、どんな入力データに依存するか、を書いてください。 -->
+> Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
-## 設定 (inputs)
+## Configuration (inputs)
 
-| Input | 説明 | デフォルト | 必須 | 型 |
-|-------|------|------------|------|----|
+| Input | Description | Default | Required | Type |
+| ----- | ----------- | ------- | -------- | ---- |
 | `plugin_habits` | Enable habits plugin | `no` | no | boolean |
 | `plugin_habits_from` | Events to use | `200` | no | number |
 | `plugin_habits_skipped` | Skipped repositories | `` | no | array |
@@ -32,7 +28,7 @@ This plugin displays coding habits based on recent activity, such as active hour
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
-## 使い方
+## Usage
 
 ### GitHub Action
 
@@ -53,17 +49,9 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
-## Requirements
-
-**Recent PushEvent activity.** The plugin walks the user's events feed for push events from the last `plugin_habits_days` days (default `14`). Without any push events the plugin is skipped with `"no recent commits"`. Active developers see a 24-hour / weekday histogram; inactive accounts produce an empty card.
-
-## 既知の制約 / 注意点
-
-<!-- TODO: token scope の要件、empty-state の挙動、関連プラグインとの相互作用などを書いてください。 -->
-
-## 参照
+## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
 - [`assets/plugins/habits/metadata.yml`](../../assets/plugins/habits/metadata.yml) — upstream metadata
-- 対応アカウント種別: user, organization
-- 必要スコープ: public_access
+- Supported account types: user, organization
+- Required scopes: public_access
