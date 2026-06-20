@@ -272,3 +272,65 @@ func TestProvider_User_RejectsOrganizationProfile(t *testing.T) {
 		t.Fatalf("expected ErrWrongAccountKind, got %v", err)
 	}
 }
+
+// ctxAwareTransport returns ctx.Err() when the request's ctx is
+// already canceled / past its deadline; otherwise it delegates to the
+// embedded countingTransport. This lets us simulate the "caller A
+// observed a context cancellation" scenario without depending on real
+// network timing.
+type ctxAwareTransport struct {
+	inner *countingTransport
+}
+
+func (c *ctxAwareTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if err := req.Context().Err(); err != nil {
+		// Mirror net/http's behaviour when a transport observes a
+		// canceled ctx: surface ctx.Err() so callers can detect it
+		// via errors.Is(err, context.Canceled).
+		return nil, err
+	}
+	return c.inner.RoundTrip(req)
+}
+
+func TestProvider_Profile_DoesNotCacheContextCanceled(t *testing.T) {
+	t.Parallel()
+	inner := newCountingTransport()
+	inner.setResponse("User", userResponseBody)
+	tr := &ctxAwareTransport{inner: inner}
+	p := newProviderWith(t, tr)
+
+	// Caller A: pre-cancel the ctx, then call Profile. The transport
+	// surfaces context.Canceled; fetchProfile wraps it. memoize must
+	// NOT store the error so a later caller with a fresh ctx can
+	// re-enter the fetch.
+	ctxA, cancelA := context.WithCancel(context.Background())
+	cancelA()
+	_, errA := p.Profile(ctxA)
+	if errA == nil {
+		t.Fatalf("caller A: expected context.Canceled-derived error, got nil")
+	}
+	if !errors.Is(errA, context.Canceled) {
+		t.Fatalf("caller A: expected errors.Is(context.Canceled), got %v", errA)
+	}
+
+	// Caller B: fresh ctx. If the cache poisoned the result, B would
+	// observe errA replayed without any new RoundTrip. Instead, B
+	// must trigger a fresh fetch and observe success.
+	prof, errB := p.Profile(context.Background())
+	if errB != nil {
+		t.Fatalf("caller B: expected fresh fetch to succeed, got %v", errB)
+	}
+	if prof == nil {
+		t.Fatalf("caller B: expected non-nil profile after retry")
+	}
+	if prof.Kind != plugins.ProfileKindUser || prof.User == nil {
+		t.Fatalf("caller B: expected user profile, got kind=%q user=%v", prof.Kind, prof.User)
+	}
+
+	// Caller B's success MUST have hit the transport at least once
+	// (the User op count is the load-bearing assertion: zero would
+	// mean B was served the cached error).
+	if got := inner.count("User"); got == 0 {
+		t.Fatalf("User op never reached transport on caller B; cache replayed the canceled error")
+	}
+}
