@@ -37,11 +37,6 @@ func WithREST(mux *RESTMux) PluginContextOption {
 	return func(c *pluginContextConfig) { c.restMux = mux }
 }
 
-// WithSettings overrides the default Settings (Repositories: 100).
-func WithSettings(s *config.Settings) PluginContextOption {
-	return func(c *pluginContextConfig) { c.settings = s }
-}
-
 // WithInputs overrides the default inputs map.
 func WithInputs(in map[string]any) PluginContextOption {
 	return func(c *pluginContextConfig) { c.inputs = in }
@@ -50,16 +45,6 @@ func WithInputs(in map[string]any) PluginContextOption {
 // WithData overrides the default empty Data envelope.
 func WithData(d *plugins.Data) PluginContextOption {
 	return func(c *pluginContextConfig) { c.data = d }
-}
-
-// WithLogger overrides the default no-op logger.
-func WithLogger(l *slog.Logger) PluginContextOption {
-	return func(c *pluginContextConfig) { c.logger = l }
-}
-
-// WithToken overrides the default MOCKED_TOKEN sentinel.
-func WithToken(tok config.Token) PluginContextOption {
-	return func(c *pluginContextConfig) { c.token = tok }
 }
 
 // NewPluginContext bundles a *GraphQLMux + *RESTMux into a
