@@ -23,6 +23,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -52,7 +53,7 @@ func (p *basePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, e
 	if pc.GraphQL == nil {
 		return nil, fmt.Errorf("base: nil GraphQL client")
 	}
-	login := loginFromInputs(pc.Inputs)
+	login := pluginutil.LoginFromInputs(pc.Inputs)
 	if login == "" {
 		return nil, fmt.Errorf("base: input %q is required", "user")
 	}
@@ -212,20 +213,6 @@ func (p *basePlugin) runUser(ctx context.Context, pc *plugins.PluginContext, log
 		}
 	}
 	return nil, nil
-}
-
-// loginFromInputs returns the configured GitHub login.
-func loginFromInputs(inputs map[string]any) string {
-	if inputs == nil {
-		return ""
-	}
-	if v, ok := inputs["user"].(string); ok && v != "" {
-		return v
-	}
-	if v, ok := inputs["login"].(string); ok {
-		return v
-	}
-	return ""
 }
 
 // repositoriesLimit reads Settings.Repositories with a default of 100

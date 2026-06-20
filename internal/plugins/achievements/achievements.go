@@ -23,6 +23,7 @@ import (
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -520,13 +521,13 @@ func parseInputs(in map[string]any) inputs {
 			out.threshold = strings.ToUpper(strings.TrimSpace(s))
 		}
 	}
-	for _, s := range readCSV(in, "plugin_achievements_only") {
+	for _, s := range pluginutil.ReadCSV(in, "plugin_achievements_only") {
 		out.only[s] = struct{}{}
 	}
-	for _, s := range readCSV(in, "plugin_achievements_ignored") {
+	for _, s := range pluginutil.ReadCSV(in, "plugin_achievements_ignored") {
 		out.ignored[s] = struct{}{}
 	}
-	if v, ok := readInt(in, "plugin_achievements_limit"); ok {
+	if v, ok := pluginutil.ReadInt(in, "plugin_achievements_limit"); ok {
 		out.limit = v
 	}
 	return out
@@ -539,51 +540,4 @@ func normalizeDisplay(display string) string {
 	default:
 		return displayDetailed
 	}
-}
-
-func readInt(in map[string]any, key string) (int, bool) {
-	v, ok := in[key]
-	if !ok {
-		return 0, false
-	}
-	switch x := v.(type) {
-	case int:
-		return x, true
-	case int64:
-		return int(x), true
-	case float64:
-		return int(x), true
-	}
-	return 0, false
-}
-
-func readCSV(in map[string]any, key string) []string {
-	v, ok := in[key]
-	if !ok {
-		return nil
-	}
-	switch x := v.(type) {
-	case []string:
-		return trimEmpty(x)
-	case []any:
-		out := make([]string, 0, len(x))
-		for _, item := range x {
-			out = append(out, fmt.Sprint(item))
-		}
-		return trimEmpty(out)
-	case string:
-		return trimEmpty(strings.Split(x, ","))
-	}
-	return nil
-}
-
-func trimEmpty(in []string) []string {
-	out := make([]string, 0, len(in))
-	for _, s := range in {
-		s = strings.TrimSpace(s)
-		if s != "" {
-			out = append(out, s)
-		}
-	}
-	return out
 }

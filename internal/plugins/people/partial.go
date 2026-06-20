@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
@@ -17,14 +18,6 @@ func init() {
 // peopleOcticon is the upstream `<%- octicon "people" %>` 16x16 path
 // used in the per-type section header (EJS lines 5-9, 24-28).
 const peopleOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M5.5 3.5a2 2 0 100 4 2 2 0 000-4zM2 5.5a3.5 3.5 0 115.898 2.549 5.507 5.507 0 013.034 4.084.75.75 0 11-1.482.235 4.001 4.001 0 00-7.9 0 .75.75 0 01-1.482-.236A5.507 5.507 0 013.102 8.05 3.49 3.49 0 012 5.5zM11 4a.75.75 0 100 1.5 1.5 1.5 0 01.666 2.844.75.75 0 00-.416.672v.352a.75.75 0 00.574.73c1.2.289 2.162 1.2 2.522 2.372a.75.75 0 101.434-.44 5.01 5.01 0 00-2.56-3.012A3 3 0 0011 4z"></path></svg>`
-
-// pluralS mirrors upstream's `s()` helper.
-func pluralS(n int) string {
-	if n == 1 {
-		return ""
-	}
-	return "s"
-}
 
 // labelForType returns the upstream per-type header label
 // (EJS lines 26-30). The mapping mirrors the upstream object literal:
@@ -44,21 +37,21 @@ func labelForType(t string, n int) string {
 	case "thanks":
 		return "Special thanks"
 	case "followers":
-		return fmt.Sprintf("%d follower%s", n, pluralS(n))
+		return fmt.Sprintf("%d follower%s", n, pluginutil.Plural(n))
 	case "following":
 		return fmt.Sprintf("%d followed", n)
 	case "sponsorshipsAsSponsor", "sponsors":
 		return fmt.Sprintf("%d sponsored", n)
 	case "sponsorshipsAsMaintainer":
-		return fmt.Sprintf("%d sponsor%s", n, pluralS(n))
+		return fmt.Sprintf("%d sponsor%s", n, pluginutil.Plural(n))
 	case "membersWithRole", "members":
-		return fmt.Sprintf("%d member%s", n, pluralS(n))
+		return fmt.Sprintf("%d member%s", n, pluginutil.Plural(n))
 	case "contributors":
-		return fmt.Sprintf("%d contributor%s", n, pluralS(n))
+		return fmt.Sprintf("%d contributor%s", n, pluginutil.Plural(n))
 	case "stargazers":
-		return fmt.Sprintf("%d stargazer%s", n, pluralS(n))
+		return fmt.Sprintf("%d stargazer%s", n, pluginutil.Plural(n))
 	case "watchers":
-		return fmt.Sprintf("%d watcher%s", n, pluralS(n))
+		return fmt.Sprintf("%d watcher%s", n, pluginutil.Plural(n))
 	}
 	return fmt.Sprintf("%d %s", n, t)
 }

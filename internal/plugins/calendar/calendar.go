@@ -8,10 +8,10 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -86,7 +86,7 @@ func (p *calendarPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 	// (display the last year only). The key is absent unless the user sets it
 	// explicitly, so apply the metadata default here instead of falling back to
 	// the Go zero value (0 = "all years"), matching upstream's index.mjs.
-	limit := readIntDefault(pc.Inputs, "plugin_calendar_limit", 1)
+	limit := pluginutil.ReadIntDefault(pc.Inputs, "plugin_calendar_limit", 1)
 	cal := pc.Data.Computed.ContributionCalendar
 	weeks := []plugins.ContributionWeek{}
 	if fetched, err := fetchYearlyWeeks(ctx, pc, limit); err != nil {
@@ -207,29 +207,4 @@ func sortInts(s []int) {
 			s[j], s[j-1] = s[j-1], s[j]
 		}
 	}
-}
-
-// readIntDefault reads an integer plugin input by key, returning def when the
-// key is absent or the value cannot be parsed. This honors metadata `default:`
-// values (the input map only contains keys the user set explicitly).
-func readIntDefault(in map[string]any, key string, def int) int {
-	v, ok := in[key]
-	if !ok {
-		return def
-	}
-	switch x := v.(type) {
-	case int:
-		return x
-	case int64:
-		return int(x)
-	case float64:
-		return int(x)
-	case string:
-		n, err := strconv.Atoi(strings.TrimSpace(x))
-		if err != nil {
-			return def
-		}
-		return n
-	}
-	return def
 }

@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -24,6 +25,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // Name is the canonical plugin slug.
@@ -86,7 +88,7 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
-	hideEmpty := readBoolDefault(pc.Inputs, "plugin_traffic_hide_empty", true)
+	hideEmpty := pluginutil.ReadBoolDefault(pc.Inputs, "plugin_traffic_hide_empty", true)
 	if pc.REST == nil {
 		return &Result{
 			Skipped:       true,
@@ -105,7 +107,7 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 			HideEmpty:     hideEmpty,
 		}, nil
 	}
-	if !hasScope(scopes, "repo") {
+	if !slices.Contains(scopes, "repo") {
 		return &Result{
 			Skipped:       true,
 			SkippedReason: "missing repo scope",
@@ -208,30 +210,6 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	}, nil
 }
 
-// readBoolDefault mirrors the helper used by other plugins
-// (cf. internal/plugins/habits/habits.go::readBoolDefault). It accepts
-// bool, "true"/"false", "yes"/"no", or "1"/"0" string variants. Any
-// other shape (including missing key) returns def.
-func readBoolDefault(in map[string]any, key string, def bool) bool {
-	v, ok := in[key]
-	if !ok {
-		return def
-	}
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		s := strings.ToLower(strings.TrimSpace(x))
-		switch s {
-		case "true", "1", "yes":
-			return true
-		case "false", "0", "no":
-			return false
-		}
-	}
-	return def
-}
-
 // urlPath splits "owner/name" into url.PathEscape("owner")/url.PathEscape("name")
 // so that names with slashes (forks etc.) do not corrupt the path.
 func urlPath(nameWithOwner string) string {
@@ -240,13 +218,4 @@ func urlPath(nameWithOwner string) string {
 		return url.PathEscape(nameWithOwner)
 	}
 	return url.PathEscape(parts[0]) + "/" + url.PathEscape(parts[1])
-}
-
-func hasScope(scopes []string, want string) bool {
-	for _, s := range scopes {
-		if s == want {
-			return true
-		}
-	}
-	return false
 }
