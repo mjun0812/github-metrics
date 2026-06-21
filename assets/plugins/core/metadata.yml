@@ -72,13 +72,33 @@ inputs:
     default: ""
     preset: no
 
+  combined:
+    description: |
+      Render a single combined SVG instead of per-plugin files
+      - `yes`: produce one combined SVG at `filename` (classic mode)
+      - `no`: produce one SVG per enabled plugin inside `output_dir`
+    type: boolean
+    default: "no"
+
   filename:
     description: |
-      Output path
+      Output path (used only when combined=yes)
 
       When using an asterisk (`*`), correct extension will automatically be applied according to [`config_output`](/source/plugins/core/README.md#config_output) value
     type: string
     default: github-metrics.*
+
+  output_dir:
+    description: |
+      Per-plugin SVG output directory (used when combined=no)
+    type: string
+    default: ./metrics-renders/
+
+  plugins:
+    description: |
+      Comma-separated plugin allowlist for per-plugin mode (default = all enabled plugins)
+    type: string
+    default: ""
 
   markdown:
     description: |
