@@ -17,5 +17,5 @@ func TestLanguagesRecent_RequiresDeclaration(t *testing.T) {
 }
 
 func TestLanguagesIndepth_RequiresDeclaration(t *testing.T) {
-	requirestesting.AssertExpected(t, languages.IndepthPlugin, []plugins.DataKey{})
+	requirestesting.AssertExpected(t, languages.IndepthPlugin, []plugins.DataKey{plugins.KeyRepositories})
 }
