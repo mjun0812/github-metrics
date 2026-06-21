@@ -377,7 +377,7 @@ type inputs struct {
 	limit     int
 }
 
-func (p *achievementsPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any, error) {
+func (p *achievementsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
@@ -392,7 +392,7 @@ func (p *achievementsPlugin) Run(_ context.Context, pc *plugins.PluginContext) (
 		}, nil
 	}
 	c := pc.Data.Computed
-	if c.Repositories.Count == 0 && c.TotalCommits == 0 && len(c.RepositoryList) == 0 && pc.Data.User == nil {
+	if c.Repositories.Count == 0 && c.TotalCommits == 0 && len(c.RepositoryList) == 0 && !providerHasUser(ctx, pc) {
 		return &Result{
 			Skipped:       true,
 			SkippedReason: "base data unavailable",
@@ -540,4 +540,21 @@ func normalizeDisplay(display string) string {
 	default:
 		return displayDetailed
 	}
+}
+
+// providerHasUser reports whether the shared dataprovider (#603)
+// resolved the page subject as a user account. Falls back to
+// pc.Data.User for unit tests that build PluginContext by hand without
+// wiring a Provider. Used by the "no data at all" short-circuit so an
+// empty payload still produces an empty Result instead of nil.
+func providerHasUser(ctx context.Context, pc *plugins.PluginContext) bool {
+	if pc == nil {
+		return false
+	}
+	if pc.Provider != nil {
+		if u, err := pc.Provider.User(ctx); err == nil && u != nil {
+			return true
+		}
+	}
+	return pc.Data != nil && pc.Data.User != nil
 }
