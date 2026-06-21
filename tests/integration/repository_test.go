@@ -16,8 +16,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/testutil/golden"
 
 	// Side-effect imports to register the M7 repository template +
-	// the base/core plugin pipeline + the classic template (sibling).
-	_ "github.com/mjun0812/github-metrics/internal/plugins/base"
+	// the core plugin pipeline + the classic template (sibling).
 	_ "github.com/mjun0812/github-metrics/internal/plugins/core"
 	_ "github.com/mjun0812/github-metrics/internal/templates/classic"
 	_ "github.com/mjun0812/github-metrics/internal/templates/repository"

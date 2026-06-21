@@ -1,7 +1,7 @@
-// Package engine wires together the base plugin, the core plugin
-// runner, and the active template into a single Compute call. The
-// engine owns no business logic of its own; it sequences pieces from
-// internal/plugins, internal/templates, and internal/config.
+// Package engine wires together the core plugin runner and the active
+// template into a single Compute call. The engine owns no business
+// logic of its own; it sequences pieces from internal/plugins,
+// internal/templates, and internal/config.
 package engine
 
 import (
@@ -16,7 +16,6 @@ import (
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
-	"github.com/mjun0812/github-metrics/internal/plugins/base"
 	"github.com/mjun0812/github-metrics/internal/plugins/core"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/render"
@@ -182,17 +181,23 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 		Render:     deps.Render,
 	}
 
-	// Stage 1: base plugin. This populates data.User and the
-	// repository totals every downstream plugin keys off of.
-	if _, err := base.Plugin.Run(ctx, pc); err != nil {
-		return nil, fmt.Errorf("engine: base: %w", err)
-	}
-
-	// Stage 2: core plugin pulls the global config into Data.Config /
+	// Stage 1: core plugin pulls the global config into Data.Config /
 	// Data.Computed and is responsible for the per-request setup that
 	// the parallel runner expects.
 	if _, err := core.Plugin.Run(ctx, pc); err != nil {
 		return nil, fmt.Errorf("engine: core: %w", err)
+	}
+
+	// Stage 2: populate pc.Data from Provider. Plugins read Data.User /
+	// Data.Organization / Data.Computed.RepositoryList to avoid
+	// per-plugin Provider calls in the common case. Errors here are
+	// non-fatal: if the profile is unavailable the parallel plugins will
+	// see a nil Data.User and skip gracefully (matching upstream
+	// degraded-payload semantics). Repositories failures are handled the
+	// same way.
+	if err := applyProfile(ctx, pc, req, deps); err != nil {
+		deps.Logger.Warn("engine: profile fetch failed; plugins will degrade gracefully",
+			"err", err)
 	}
 
 	// Stage 3: the rest of the registered plugins, in parallel. The
@@ -266,4 +271,111 @@ func collectPluginErrors(d *plugins.Data) []error {
 	}
 	out = append(out, d.SnapshotErrors()...)
 	return out
+}
+
+// applyProfile fetches the account profile and repository list via
+// pc.Provider and writes them into pc.Data so downstream plugins can
+// read Data.User / Data.Organization / Data.Computed.RepositoryList
+// without issuing per-plugin Provider calls. This replaces the eager
+// population that the legacy base plugin performed synchronously before
+// the parallel runner started (#605).
+//
+// For repository template requests (pc.Data.Account == AccountRepository),
+// it also fetches Data.Repo via the GraphQL Repository query and
+// synthesizes a single-element RepositoryList so user-centric plugins
+// (languages, activity, stargazers, etc.) naturally produce repo-scoped
+// output, mirroring upstream template.mjs:14-17.
+//
+// Failures are surfaced to the caller so the engine can decide whether
+// to abort or degrade. Partial success (profile OK, repositories fail)
+// is possible: the engine logs and continues in both cases.
+func applyProfile(ctx context.Context, pc *plugins.PluginContext, req Request, deps Deps) error {
+	if pc == nil || pc.Provider == nil || pc.Data == nil {
+		return nil
+	}
+
+	// Repository template: fetch the single repo via GraphQL, then
+	// populate Data.Repo and synthesize a one-element RepositoryList so
+	// the user-centric plugins (languages, activity, etc.) operate in
+	// repo scope. User profile is also fetched so Data.User is available
+	// for header chrome, sponsorships, etc.
+	if req.Account == plugins.AccountRepository {
+		if req.Login == "" || req.Repo == "" {
+			return nil
+		}
+		repo, err := fetchRepo(ctx, req.Login, req.Repo, deps.REST, deps.GraphQL)
+		if err != nil {
+			return fmt.Errorf("engine: applyProfile (repo): %w", err)
+		}
+		pc.Data.Account = plugins.AccountRepository
+
+		// Populate Data.User from Provider for header + sponsorships chrome.
+		if u, uerr := pc.Provider.User(ctx); uerr == nil && u != nil {
+			pc.Data.User = u
+			if repo.Calendar == nil {
+				repo.Calendar = u.RecentContributions
+			}
+		}
+		pc.Data.SetRepo(repo)
+
+		// Synthesize a single-element RepositoryList mirroring upstream
+		// template.mjs:14-17 so user-centric plugins produce repo-scoped output.
+		syntheticRepo := plugins.Repository{
+			NameWithOwner: repo.Owner + "/" + repo.Name,
+			Description:   repo.Description,
+			Stars:         repo.Stargazers,
+			Forks:         repo.Forks,
+			Watchers:      repo.Watchers,
+			Languages:     append([]plugins.LanguageStat(nil), repo.Languages...),
+		}
+		if repo.PrimaryLanguage != "" {
+			lang := plugins.LanguageStat{
+				Name:  repo.PrimaryLanguage,
+				Color: repo.PrimaryLanguageColor,
+			}
+			syntheticRepo.Language = &lang
+			if len(syntheticRepo.Languages) == 0 {
+				syntheticRepo.Languages = []plugins.LanguageStat{{
+					Name:  repo.PrimaryLanguage,
+					Color: repo.PrimaryLanguageColor,
+					Size:  1,
+				}}
+			}
+		}
+		pc.Data.Computed.RepositoryList = []plugins.Repository{syntheticRepo}
+		pc.Data.Computed.Repositories.Count = 1
+		pc.Data.Computed.Repositories.Stargazers = repo.Stargazers
+		pc.Data.Computed.Repositories.Forks = repo.Forks
+		pc.Data.Computed.Repositories.Watchers = repo.Watchers
+		return nil
+	}
+
+	// User / organization account: resolve profile and repository list.
+	prof, err := pc.Provider.Profile(ctx)
+	if err != nil {
+		return fmt.Errorf("engine: applyProfile: %w", err)
+	}
+	switch prof.Kind {
+	case plugins.ProfileKindUser:
+		pc.Data.User = prof.User
+		pc.Data.Account = plugins.AccountUser
+	case plugins.ProfileKindOrganization:
+		pc.Data.Organization = prof.Organization
+		pc.Data.Account = plugins.AccountOrganization
+	}
+
+	// Populate repository list. Failures are non-fatal: plugins that
+	// depend on RepositoryList will see an empty slice and skip gracefully.
+	repos, reposErr := pc.Provider.Repositories(ctx)
+	if reposErr == nil && len(repos) > 0 {
+		pc.Data.Computed.RepositoryList = repos
+		pc.Data.Computed.Repositories.Count = len(repos)
+		for _, r := range repos {
+			pc.Data.Computed.Repositories.Stargazers += r.Stars
+			pc.Data.Computed.Repositories.Forks += r.Forks
+			pc.Data.Computed.Repositories.Watchers += r.Watchers
+		}
+	}
+
+	return nil
 }

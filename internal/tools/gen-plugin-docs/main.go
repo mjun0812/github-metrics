@@ -53,20 +53,19 @@ var adoptedSlugs = []string{
 	"traffic",
 }
 
-// foundationalSlugs are the infrastructure plugins (`base`, `core`)
-// that ship alongside the 19 adopted user-facing plugins. They live
-// under `internal/plugins/` and `assets/plugins/` like the others,
-// but they are intentionally excluded from `adoptedSlugs` (the README
-// gallery is reserved for plugins that emit user-visible cards).
-// We still generate a `docs/plugins/<slug>.md` page for each so the
-// inputs they accept are documented in one place.
+// foundationalSlugs is the infrastructure plugin (`core`) that ships
+// alongside the 19 adopted user-facing plugins. It lives under
+// `internal/plugins/` and `assets/plugins/` like the others, but is
+// intentionally excluded from `adoptedSlugs` (the README gallery is
+// reserved for plugins that emit user-visible cards). We still
+// generate a `docs/plugins/<slug>.md` page for it so the inputs it
+// accepts are documented in one place.
 //
-// `base` populates the user/org header card every other plugin sits
-// on top of (header / activity / community / repositories / metadata
-// sections); `core` is the configuration + parallel-runner plugin and
-// has no standalone visual output.
+// `core` is the configuration + parallel-runner plugin and has no
+// standalone visual output. The legacy `base` slug was deleted in
+// #613 (its data-fetch responsibilities migrated to the engine's
+// `applyProfile` step via the dataprovider).
 var foundationalSlugs = []string{
-	"base",
 	"core",
 }
 
@@ -76,13 +75,8 @@ var foundationalSlugs = []string{
 //   - `core` — implements configuration parsing and the parallel plugin
 //     runner, with no card of its own; an example image would be either
 //     empty or misleading.
-//   - `base` — after #602 the base plugin is a data-fetch / shared-settings
-//     shim with no rendering output. The user-visible card moved to the
-//     `header` plugin; base only seeds the shared computed fields every
-//     other plugin reads.
 var slugsWithoutSample = map[string]struct{}{
 	"core": {},
-	"base": {},
 }
 
 // sampleOverrides maps a plugin slug to the example SVG basename (without
@@ -275,27 +269,6 @@ func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existin
 	b.WriteString("<!-- AUTOGEN_START: usage-snippet -->\n")
 	b.WriteString("## Usage\n\n")
 	switch slug {
-	case "base":
-		// After #602 `base` is purely a data-fetch / settings plugin
-		// (no per-section toggles, no `plugin_base` switch). The
-		// only inputs users normally tweak are the global repository
-		// fetcher knobs (`repositories`, `repositories_batch`,
-		// `repositories_forks`, ...) which take effect regardless of
-		// any other toggle.
-		b.WriteString("### GitHub Action\n\n")
-		b.WriteString("```yaml\n")
-		b.WriteString("- uses: mjun0812/github-metrics@v1\n")
-		b.WriteString("  with:\n")
-		b.WriteString("    user: <your-login>\n")
-		b.WriteString("    token: ${{ secrets.METRICS_TOKEN }}\n")
-		b.WriteString("    repositories: 100\n")
-		b.WriteString("```\n\n")
-		b.WriteString("### CLI\n\n")
-		b.WriteString("```sh\n")
-		b.WriteString("metrics-cli --user <your-login> --token-env GITHUB_TOKEN \\\n")
-		b.WriteString("  --output svg --filename - \\\n")
-		b.WriteString("  --setting 'repositories=100'\n")
-		b.WriteString("```\n")
 	case "core":
 		// `core` is the configuration / parallel-runner plugin. It is
 		// never toggled on/off; users interact with it by supplying the
@@ -420,15 +393,12 @@ func formatDefault(d any) string {
 }
 
 // defaultRequirements returns the first-gen Requirements paragraph for
-// the foundational `base` / `core` plugins. Returns "" for every other
-// slug — the 19 adopted plugins have Requirements text that landed
+// the foundational `core` plugin. Returns "" for every other slug —
+// the 19 adopted plugins have Requirements text that landed
 // hand-written in PR #410 and is pulled forward from the existing file
 // via extractHumanZones rather than emitted here.
 func defaultRequirements(slug string) string {
-	switch slug {
-	case "base":
-		return "**A valid GitHub username (or organization login) and a token with at minimum `read:user` + `public_repo`.** The base plugin queries the GraphQL `user(login:)` / `organization(login:)` endpoint to populate the header card and walks the repositories connection (paged, with batch-halving on transient 5xx) to seed `Computed.RepositoryList` for every downstream plugin. Setting `base: \"\"` disables every base section but **does not** skip the GraphQL fetch — to fully skip base data fetching, use `base_skip: yes` and pair it with a plugin that supports `token: NOT_NEEDED`."
-	case "core":
+	if slug == "core" {
 		return "Core has no standalone visual output; this page documents its inputs only. The plugin implements global configuration parsing (template selection, timezone, animations, output format, etc.) and the parallel plugin runner that drives every other plugin. There are no API scopes or render prerequisites of its own — every other plugin in this repository depends on `core` having populated `data.Config` before it runs."
 	}
 	return ""
@@ -436,17 +406,14 @@ func defaultRequirements(slug string) string {
 
 // defaultDescription returns the AUTOGEN title-and-description fallback
 // text for plugins whose `assets/plugins/<slug>/metadata.yml` does not
-// supply a `description:` field. The `base` and `core` foundational
-// plugins use this path because their upstream metadata leaves
-// `description` empty; the generic fallback ("`<slug>` plugin output
-// for GitHub metrics.") would be misleading for them, so we provide
-// purpose-written summaries instead.
+// supply a `description:` field. The `core` foundational plugin uses
+// this path because its upstream metadata leaves `description` empty;
+// the generic fallback ("`<slug>` plugin output for GitHub metrics.")
+// would be misleading for it, so we provide a purpose-written summary
+// instead.
 func defaultDescription(slug string) string {
-	switch slug {
-	case "base":
-		return "`base` is the foundational plugin that runs before every other plugin and populates the shared `data.User` / `data.Organization` / `data.Computed` fields downstream plugins depend on. It also owns the user/org header card (avatar, login, follower/sponsor counts, two-week commit calendar) that every other plugin's output sits on top of."
-	case "core":
-		return "`core` is the configuration plugin: it parses the global `config_*` / `template` / `optimize` inputs into `data.Config` and drives the parallel runner that fans every other plugin out across workers. It has no card of its own — every visible output comes from another plugin running on top of the state `core` and `base` produce."
+	if slug == "core" {
+		return "`core` is the configuration plugin: it parses the global `config_*` / `template` / `optimize` inputs into `data.Config` and drives the parallel runner that fans every other plugin out across workers. It has no card of its own — every visible output comes from another plugin running on top of the state `core` produces alongside the engine's `applyProfile` step."
 	}
 	return fmt.Sprintf("`%s` plugin output for GitHub metrics.", slug)
 }

@@ -20,10 +20,9 @@ import (
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/render"
 
-	// Side-effect imports register the classic template + base plugin
+	// Side-effect imports register the classic template + core plugin
 	// so engine.Compute can resolve them. Without these the engine
-	// errors with "template not found" / "base plugin missing".
-	_ "github.com/mjun0812/github-metrics/internal/plugins/base"
+	// errors with "template not found".
 	_ "github.com/mjun0812/github-metrics/internal/plugins/core"
 	_ "github.com/mjun0812/github-metrics/internal/templates/classic"
 )
