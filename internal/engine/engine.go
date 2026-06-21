@@ -292,19 +292,40 @@ func ComputePerPlugin(ctx context.Context, req Request, deps Deps, pluginAllowli
 }
 
 // pluginError returns the error recorded for the named plugin in Result.Errors,
-// or nil if no error was recorded for that plugin. It inspects both the typed
-// plugin-slot errors (wrapped as "plugin %q: <err>") and the flat Errors slice.
+// or nil if no error was recorded for that plugin. It covers both error
+// shapes produced by the engine:
+//
+//   - typed plugin-slot errors stored via Data.SetPlugin(name, err) and
+//     wrapped by collectPluginErrors as `plugin %q: <err>` (prefix match);
+//   - free-form errors recorded via Data.AppendError(...) which carry no
+//     wrapping prefix but typically mention the plugin name (substring match).
+//
+// The substring fallback is intentionally permissive: ComputePerPlugin runs
+// the engine with only one plugin enabled at a time, so res.Errors should
+// be attributable to the currently rendered plugin even when the message
+// does not name it explicitly.
 func pluginError(res *Result, name string) error {
 	if res == nil {
 		return nil
 	}
 	prefix := fmt.Sprintf("plugin %q:", name)
+	var fallback error
 	for _, e := range res.Errors {
-		if e != nil && strings.HasPrefix(e.Error(), prefix) {
+		if e == nil {
+			continue
+		}
+		msg := e.Error()
+		if strings.HasPrefix(msg, prefix) {
 			return e
 		}
+		if fallback == nil {
+			// Per-plugin mode runs one plugin at a time, so any AppendError
+			// surfaced here belongs to that plugin even if the message does
+			// not embed its name. Keep the first such error as a fallback.
+			fallback = e
+		}
 	}
-	return nil
+	return fallback
 }
 
 // resolveEnabledPlugins returns the plugin names to render in per-plugin
@@ -333,14 +354,20 @@ func resolveEnabledPlugins(inputs map[string]any, allowlist []string) []string {
 }
 
 // disableAllPluginGates sets every plugin_<name> gate in inputs to "no".
+// It walks the plugin registry rather than scanning input keys, so it
+// remains correct for plugin names that contain underscores and does not
+// risk clearing sub-option keys like `plugin_languages_limit`.
 func disableAllPluginGates(inputs map[string]any) {
-	for k := range inputs {
-		if strings.HasPrefix(k, "plugin_") && !strings.Contains(k[7:], "_") {
-			// Only top-level gates (no underscore after the prefix means
-			// it is a gate like plugin_languages, not plugin_languages_limit).
-			inputs[k] = "no"
+	_ = plugins.Each(func(name string, _ plugins.Plugin) error {
+		if name == "core" {
+			return nil
 		}
-	}
+		gateKey := "plugin_" + name
+		if _, ok := inputs[gateKey]; ok {
+			inputs[gateKey] = "no"
+		}
+		return nil
+	})
 }
 
 // isTruthyValue mirrors the action package's isTruthy logic for use in engine.
