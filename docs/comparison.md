@@ -12,7 +12,7 @@ The left column uses a different data source, so the numbers will not match. The
 
 | Type       | upstream (lowlighter)                                            | upstream (mjun0812)                                               | Go (mjun0812)                                           |
 | ---------- | ---------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
-| base       | <img src="original_examples/metrics.base.svg" width="420">       | <img src="reference_examples/metrics.base.svg" width="420">       | <img src="examples/plugin-base.svg" width="420">        |
+| header     | <img src="original_examples/metrics.base.svg" width="420">       | <img src="reference_examples/metrics.base.svg" width="420">       | <img src="examples/plugin-header.svg" width="420">      |
 | classic    | <img src="original_examples/metrics.classic.svg" width="420">    | <img src="reference_examples/metrics.classic.svg" width="420">    | <img src="examples/metrics-classic.svg" width="420">    |
 | repository | <img src="original_examples/metrics.repository.svg" width="420"> | <img src="reference_examples/metrics.repository.svg" width="420"> | <img src="examples/metrics-repository.svg" width="420"> |
 
@@ -238,4 +238,4 @@ The left column uses a different data source, so the numbers will not match. The
 | languages    | <img src="reference_examples/metrics.repository.plugin.languages.svg" width="420">    | <img src="examples/plugin-languages-repo.svg" width="420">                  |
 | contributors | <img src="reference_examples/metrics.repository.plugin.contributors.svg" width="420"> | <img src="examples/plugin-contributors-repo-contributions.svg" width="420"> |
 | people       | <img src="reference_examples/metrics.repository.plugin.people.svg" width="420">       | <img src="examples/plugin-people-repo-types.svg" width="420">               |
-| stargazers   | <img src="reference_examples/metrics.repository.plugin.stargazers.svg" width="420">   | <img src="examples/plugin-base-repo.svg" width="420">                       |
+| stargazers   | <img src="reference_examples/metrics.repository.plugin.stargazers.svg" width="420">   | <img src="examples/metrics-repository.svg" width="420">                     |
