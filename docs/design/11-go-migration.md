@@ -1,5 +1,7 @@
 # 11. Go 移植方針・ライブラリ対応表
 
+> NOTE: This document describes pre-refactor (pre-#601) architecture. See [15-selection-answer.md](./15-selection-answer.md) for the current state.
+
 ## 目次
 
 - [1. 全体方針](#1-全体方針)
