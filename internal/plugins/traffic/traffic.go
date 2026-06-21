@@ -43,6 +43,13 @@ type trafficPlugin struct{}
 func (p *trafficPlugin) Name() string                     { return Name }
 func (p *trafficPlugin) Metadata() *config.PluginMetadata { return nil }
 
+// Requires reports the Provider data sources Run reads. traffic walks
+// the repository list via pc.Provider.Repositories and aggregates per-
+// repo views/clones from REST.
+func (p *trafficPlugin) Requires() []plugins.DataKey {
+	return []plugins.DataKey{plugins.KeyRepositories}
+}
+
 // Result is the JSON payload published under data.Plugins["traffic"].
 type Result struct {
 	Skipped       bool                   `json:"skipped,omitempty"`

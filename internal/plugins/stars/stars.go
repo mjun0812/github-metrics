@@ -29,6 +29,11 @@ type starsPlugin struct{}
 func (p *starsPlugin) Name() string                     { return Name }
 func (p *starsPlugin) Metadata() *config.PluginMetadata { return nil }
 
+// Requires reports the Provider data sources Run reads. stars walks the
+// user's starred repositories via REST for pc.Inputs's login and
+// touches no Provider methods.
+func (p *starsPlugin) Requires() []plugins.DataKey { return nil }
+
 // Result is the JSON payload published under data.Plugins["stars"].
 type Result struct {
 	Skipped       bool          `json:"skipped,omitempty"`

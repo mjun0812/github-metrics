@@ -33,6 +33,11 @@ type projectsPlugin struct{}
 func (p *projectsPlugin) Name() string                     { return Name }
 func (p *projectsPlugin) Metadata() *config.PluginMetadata { return nil }
 
+// Requires reports the Provider data sources Run reads. projects
+// queries ProjectsV2 GraphQL for pc.Inputs's login directly and
+// touches no Provider methods.
+func (p *projectsPlugin) Requires() []plugins.DataKey { return nil }
+
 // Result is the JSON payload published under data.Plugins["projects"].
 type Result struct {
 	Skipped       bool      `json:"skipped,omitempty"`

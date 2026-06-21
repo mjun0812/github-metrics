@@ -47,6 +47,11 @@ type indepthPlugin struct{}
 func (p *indepthPlugin) Name() string                     { return IndepthName }
 func (p *indepthPlugin) Metadata() *config.PluginMetadata { return nil }
 
+// Requires reports the Provider data sources Run reads. languages.indepth
+// clones repositories and runs linguist locally; it resolves repositories
+// through its own input/list machinery rather than pc.Provider.
+func (p *indepthPlugin) Requires() []plugins.DataKey { return nil }
+
 // IndepthResult is the JSON payload published under
 // data.Plugins["languages.indepth"]. Field set mirrors data-model E-012.
 type IndepthResult struct {
