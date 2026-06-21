@@ -11,9 +11,7 @@
 // The generator walks `assets/plugins/<slug>/metadata.yml` for the
 // adopted plugin set (constitution 原則 III). `core` contributes the
 // shared inputs (token / user / repo / committer_* / filename /
-// output / etc.) without any `plugin_<slug>` gate. `base` contributes
-// its section selector and repository-fetching inputs without any
-// `plugin_base` gate.
+// output / etc.) without any `plugin_<slug>` gate.
 package main
 
 import (
@@ -32,16 +30,14 @@ import (
 // share the `languages` directory; we don't iterate the dotted forms
 // because their `inputs:` are already enumerated in `languages`.
 //
-// `base` and `core` are included for their non-plugin inputs. They do
-// not expose `plugin_base` / `plugin_core` gates, but their metadata
-// still defines user-facing controls such as the global repository
-// fetcher knobs.
+// `core` is included for its non-plugin inputs. It does not expose a
+// `plugin_core` gate, but its metadata defines user-facing controls
+// such as the global token / user / output knobs.
 //
 // `header` (added in #602) is a regular adopted plugin that took over
 // the identity card the legacy `base` plugin used to own.
 var adoptedSlugs = []string{
 	"core",
-	"base",
 	"achievements",
 	"activity",
 	"calendar",
@@ -121,7 +117,7 @@ func generate(assetsRoot, version string) (string, error) {
 	b.WriteString("#\n")
 	b.WriteString("# This file is the GitHub Action interface for github-metrics. It mirrors\n")
 	b.WriteString("# the input contract upstream lowlighter/metrics exposes, scoped to the\n")
-	b.WriteString("# 21 採用 plugins (constitution 原則 III). The lefthook pre-commit hook\n")
+	b.WriteString("# 20 採用 plugins (constitution 原則 III). The lefthook pre-commit hook\n")
 	b.WriteString("# verifies 'git diff --quiet action.yml' after re-running the generator\n")
 	b.WriteString("# so metadata.yml and action.yml never drift.\n")
 	b.WriteString(`name: 'github-metrics'
