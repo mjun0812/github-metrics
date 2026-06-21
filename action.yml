@@ -14,26 +14,6 @@ branding:
   color: 'blue'
 
 inputs:
-  base:
-    description: 'Base content'
-    default: 'header, activity, community, repositories, metadata'
-    required: false
-
-  base_hireable:
-    description: 'Show `Available for hire!` in header section'
-    default: 'no'
-    required: false
-
-  base_indepth:
-    description: 'Indepth mode'
-    default: 'no'
-    required: false
-
-  base_skip:
-    description: 'Skip base content'
-    default: 'no'
-    required: false
-
   clean_workflows:
     description: 'Clean previous workflows jobs'
     required: false
@@ -367,6 +347,21 @@ inputs:
 
   plugin_habits_trim:
     description: 'Trim unused hours on charts'
+    default: 'no'
+    required: false
+
+  plugin_header:
+    description: 'Enable header plugin'
+    default: 'no'
+    required: false
+
+  plugin_header_hireable:
+    description: 'Show `Available for hire!` in the header section'
+    default: 'no'
+    required: false
+
+  plugin_header_indepth:
+    description: 'Indepth mode'
     default: 'no'
     required: false
 
