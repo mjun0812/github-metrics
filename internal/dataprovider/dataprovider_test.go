@@ -9,6 +9,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/dataprovider"
@@ -332,5 +333,46 @@ func TestProvider_Profile_DoesNotCacheContextCanceled(t *testing.T) {
 	// mean B was served the cached error).
 	if got := inner.count("User"); got == 0 {
 		t.Fatalf("User op never reached transport on caller B; cache replayed the canceled error")
+	}
+}
+
+func TestProvider_Profile_DoesNotCacheContextDeadlineExceeded(t *testing.T) {
+	t.Parallel()
+	inner := newCountingTransport()
+	inner.setResponse("User", userResponseBody)
+	tr := &ctxAwareTransport{inner: inner}
+	p := newProviderWith(t, tr)
+
+	// Caller A: deadline already in the past, so the transport surfaces
+	// context.DeadlineExceeded. memoize must NOT cache this error — it
+	// is the partner branch of the context.Canceled carve-out and a
+	// regression here would silently re-introduce request-wide cache
+	// poisoning whenever any single plugin hits its timeout.
+	ctxA, cancelA := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
+	defer cancelA()
+	_, errA := p.Profile(ctxA)
+	if errA == nil {
+		t.Fatalf("caller A: expected context.DeadlineExceeded-derived error, got nil")
+	}
+	if !errors.Is(errA, context.DeadlineExceeded) {
+		t.Fatalf("caller A: expected errors.Is(context.DeadlineExceeded), got %v", errA)
+	}
+
+	// Caller B: fresh ctx. If the cache poisoned the result, B would
+	// observe errA replayed without any new RoundTrip. Instead, B must
+	// trigger a fresh fetch and observe success.
+	prof, errB := p.Profile(context.Background())
+	if errB != nil {
+		t.Fatalf("caller B: expected fresh fetch to succeed, got %v", errB)
+	}
+	if prof == nil {
+		t.Fatalf("caller B: expected non-nil profile after retry")
+	}
+	if prof.Kind != plugins.ProfileKindUser || prof.User == nil {
+		t.Fatalf("caller B: expected user profile, got kind=%q user=%v", prof.Kind, prof.User)
+	}
+
+	if got := inner.count("User"); got == 0 {
+		t.Fatalf("User op never reached transport on caller B; cache replayed the deadline-exceeded error")
 	}
 }
