@@ -213,7 +213,7 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 		return nil, res.Errors[0]
 	}
 
-	// Stage 3: dispatch the requested output format. M1 was a noop
+	// Stage 4: dispatch the requested output format. M1 was a noop
 	// here; M2 implements [dispatchOutput] which routes "json" to the
 	// engine.Marshal path and "svg"/"png"/"jpeg" to Template.Run.
 	pcPartial := &templates.PartialContext{
