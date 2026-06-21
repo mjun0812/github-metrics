@@ -47,6 +47,11 @@ type recentPlugin struct{}
 func (p *recentPlugin) Name() string                     { return RecentName }
 func (p *recentPlugin) Metadata() *config.PluginMetadata { return nil }
 
+// Requires reports the Provider data sources Run reads. languages.recent
+// walks the compare API directly via pc.REST/pc.GraphQL using the login
+// from pc.Inputs, so it touches no Provider methods.
+func (p *recentPlugin) Requires() []plugins.DataKey { return nil }
+
 // RecentResult is the JSON payload published under
 // data.Plugins["languages.recent"]. Field set mirrors data-model E-011.
 type RecentResult struct {

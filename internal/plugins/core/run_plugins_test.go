@@ -21,6 +21,7 @@ type stubPlugin struct {
 
 func (s *stubPlugin) Name() string                     { return s.name }
 func (s *stubPlugin) Metadata() *config.PluginMetadata { return nil }
+func (s *stubPlugin) Requires() []plugins.DataKey      { return nil }
 func (s *stubPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	return s.run(ctx, pc)
 }
