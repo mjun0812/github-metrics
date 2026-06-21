@@ -51,7 +51,7 @@
 | トークン値 | 動作 |
 |----------|------|
 | `<PAT>` | 通常 |
-| `NOT_NEEDED` | base plugin をスキップする (静的 partial のみ生成) |
+| `NOT_NEEDED` | dataprovider をスキップする (静的 partial のみ生成) |
 | `MOCKED_TOKEN` | mocked サブシステム経由でレスポンスを返す (テスト用) |
 
 `conf.settings.notoken = token === "NOT_NEEDED"` の getter を Go では `func (s *Settings) NoToken() bool` で実装する。

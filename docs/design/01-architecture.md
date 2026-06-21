@@ -27,8 +27,9 @@
                         ┌────────────────────────────┐
                         │ engine.Compute(q, deps)    │
                         │  - load conf               │
-                        │  - run base plugin         │
-                        │  - run user plugins        │
+                        │  - run dataprovider        │
+                        │  - run plugins (incl.      │
+                        │    header, user plugins)   │
                         │  - run template            │
                         │  - render output           │
                         └────────────────────────────┘
@@ -240,10 +241,9 @@ engine.Compute(ctx, req, deps) →
    2. Convert 形式の決定 (req.Convert / metadata.formats[0])
    3. partial 順の決定 (config.order と template の partials を merge)
    4. Imports を組み立てる (formatters, puppeteer, svg, plugins map, …)
-   5. base plugin 実行 (Plugins["base"].Run)
-      - GraphQL: queries.base.user(login)
-      - 拡張クエリ (calendar / contributions / repositories)
+   5. dataprovider 実行 (user data fetching — GraphQL: user/calendar/contributions/repositories)
       - data.user, data.calendar, data.contributions, … を埋める
+      - header plugin (plugin_header=yes のとき) も並列 plugin として実行
    6. template.Run() 実行
       - 中で plugins.core を呼び、pending に各 plugin Run を投入
       - 並列実行

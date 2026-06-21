@@ -177,22 +177,23 @@ func init() { plugins.Register(&Plugin{}) }
 
 - `internal/plugins/base` と `internal/plugins/core` は `internal/engine` から直接 import して呼び出す (registry でも引けるが、固定参照を持つ)。
 
-## 5. base プラグインの特殊扱い
+## 5. dataprovider / header プラグインの特殊扱い
 
-### 5.1 役割
+> NOTE: PR #601–#614 リファクタで、旧 `base` プラグインは `dataprovider` (データ取得、常時実行) と `header` (プロフィールカード表示、opt-in) に分割されました。以下は分割後の説明です。
+
+### 5.1 dataprovider の役割
 
 - `data.User`, `data.User.Calendar`, `data.User.ContributionsCollection`, `data.User.Repositories` 等の **共通データ** を取得する。
 - 他プラグインはこのデータを再利用する (重複クエリの回避)。
 
-### 5.2 動作
+### 5.2 dataprovider の動作
 
-1. 入力 `base`, `base_indepth`, `base_hireable`, `base_skip`, `repositories.{forks,affiliations,batch}` を取得。
-2. `data.Base[part]` (header / activity / community / repositories / metadata) のオン/オフ判定。
-3. アカウント種別ループ (`user`, `organization`) で bulk クエリ → 失敗時に field 単位 fallback。
-4. `base_indepth=true` のとき、過去アカウントライフタイム全体に対する `contributionsCollection.*` を 4 週間単位で集計し、`search.commits(author:<login>)` で全期間の commits を補正。
-5. リポジトリ詳細を `repositories.batch` 件ずつページング (timeout 時は batch を半減してリトライ)。
-6. `postprocess.user(...)` / `postprocess.organization(...)` で派生フィールド (計算済 commits, license aggregation) を埋める。
-7. `skip` 指定または `token=NOT_NEEDED` の場合は `postprocess.skip` のみ実行して終了。
+1. 入力 `plugin_header_indepth`, `plugin_header_hireable`, `repositories.{forks,affiliations,batch}` 等を取得。
+2. アカウント種別ループ (`user`, `organization`) で bulk クエリ → 失敗時に field 単位 fallback。
+3. `plugin_header_indepth=true` のとき、過去アカウントライフタイム全体に対する `contributionsCollection.*` を 4 週間単位で集計し、`search.commits(author:<login>)` で全期間の commits を補正。
+4. リポジトリ詳細を `repositories.batch` 件ずつページング (timeout 時は batch を半減してリトライ)。
+5. `postprocess.user(...)` / `postprocess.organization(...)` で派生フィールド (計算済 commits, license aggregation) を埋める。
+6. `token=NOT_NEEDED` の場合は `postprocess.skip` のみ実行して終了。
 
 具体的なアルゴリズム (擬似コード) と fallback フィールド一覧、`postprocess.skip` の初期値は [13-appendix.md §B](./13-appendix.md#b-base-プラグインの取得アルゴリズム-擬似コード) を参照。
 GraphQL クエリ全文は [13-appendix.md §A](./13-appendix.md#a-base-プラグインの-graphql-クエリ全文) を参照。

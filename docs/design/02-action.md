@@ -40,7 +40,7 @@ Go 版でも上記フローを完全に踏襲する。`action.yml` 自体は今�
 | カテゴリ | 接頭辞 | 例 |
 |--------|------|----|
 | 基本 | (なし) | `user`, `template`, `token`, `filename` |
-| Base content | `base_` | `base`, `base_indepth`, `base_hireable`, `repositories`, `repositories_batch` |
+| Header plugin | `plugin_header` | `plugin_header`, `plugin_header_indepth`, `plugin_header_hireable` |
 | Core 設定 | `config_` / `output_` / `committer_` / `delay` / `retries` … | `config_timezone`, `config_output`, `output_action`, `committer_branch` |
 | プラグイン有効化 | `plugin_<name>` | `plugin_languages`, `plugin_achievements` |
 | プラグイン設定 | `plugin_<name>_<opt>` | `plugin_languages_indepth`, `plugin_languages_limit` |

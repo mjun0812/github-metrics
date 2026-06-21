@@ -20,18 +20,33 @@
 
 ## 1. コアプラグイン
 
-### 1.1 `base`
+### 1.1 `dataprovider` + `header`
 
-| 項目             | 内容                                                                                                                                                                                                                   |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| カテゴリ         | core                                                                                                                                                                                                                   |
-| supports         | U, O, R                                                                                                                                                                                                                |
-| scopes           | public_access                                                                                                                                                                                                          |
-| deps             | GitHub GraphQL (`queries/*.graphql`)                                                                                                                                                                                   |
-| 主要 inputs      | `base` (sections), `base_indepth`, `base_hireable`, `base_skip`, `repositories`, `repositories_batch`, `repositories_forks`, `repositories_affiliations`, `repositories_skipped`, `users_ignored`, `commits_authoring` |
-| 出力 (data 書換) | `data.User`, `data.User.Calendar`, `data.User.ContributionsCollection`, `data.User.Repositories`, `data.Base[<section>]` ほか                                                                                          |
+> NOTE: PR #601–#614 リファクタで旧 `base` プラグインは `dataprovider` と `header` に分割されました。
 
-詳細は [05-plugins.md §5](./05-plugins.md#5-base-プラグインの特殊扱い)。
+#### dataprovider (常時実行)
+
+| 項目             | 内容                                                                                                                                                                                                     |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| カテゴリ         | core                                                                                                                                                                                                     |
+| supports         | U, O, R                                                                                                                                                                                                  |
+| scopes           | public_access                                                                                                                                                                                            |
+| deps             | GitHub GraphQL (`queries/*.graphql`)                                                                                                                                                                     |
+| 主要 inputs      | `plugin_header_indepth`, `plugin_header_hireable`, `repositories`, `repositories_batch`, `repositories_forks`, `repositories_affiliations`, `repositories_skipped`, `users_ignored`, `commits_authoring` |
+| 出力 (data 書換) | `data.User`, `data.User.Calendar`, `data.User.ContributionsCollection`, `data.User.Repositories` ほか                                                                                                   |
+
+#### header (opt-in: `plugin_header=yes`)
+
+| 項目             | 内容                                                                                            |
+| ---------------- | ----------------------------------------------------------------------------------------------- |
+| カテゴリ         | plugin                                                                                          |
+| supports         | U, O, R                                                                                         |
+| scopes           | public_access                                                                                   |
+| deps             | dataprovider の `data.User`                                                                     |
+| 主要 inputs      | `plugin_header`, `plugin_header_indepth`, `plugin_header_hireable`                              |
+| 出力 (data 書換) | `data.Plugins["header"]`                                                                        |
+
+詳細は [05-plugins.md §5](./05-plugins.md#5-dataprovider--header-プラグインの特殊扱い)。
 
 ### 1.2 `core`
 

@@ -159,7 +159,7 @@ type Extras struct {
 
 - `default: .user.login` のように `.path` 形式の値は data の field path を参照する。
 - `default: .user.twitter` など。
-- 解決順は base plugin 実行後の `data.User` を参照する。
+- 解決順は dataprovider 実行後の `data.User` を参照する。
 
 ## 4. metadata.yml ローダ
 
@@ -195,7 +195,7 @@ func (i *Inputs) ForWeb(q map[string]string) map[string]any
 func (i *Inputs) ForData(data *Data, q Query, account string) map[string]any
 ```
 
-ForData は base plugin の動的プレースホルダ (`.user.login` 等) を解決する。
+ForData は dataprovider 実行後の動的プレースホルダ (`.user.login` 等) を解決する。
 
 ### 4.2 extras 解決
 

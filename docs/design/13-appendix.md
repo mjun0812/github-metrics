@@ -419,7 +419,7 @@ function RunBase(ctx, login, q):
 
 ### B.3 `PostprocessSkip` の初期値
 
-`token == "NOT_NEEDED"` または `base_skip=true` のとき:
+`token == "NOT_NEEDED"` のとき (header plugin を無効化するには `plugin_header` を省略する):
 
 ```text
 data.Account = "bypass"

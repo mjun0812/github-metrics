@@ -20,7 +20,7 @@
 `engine.Compute` は次の順に出力を生成する:
 
 ```
-1. base plugin → data.user 等の共通データ収集
+1. dataprovider → data.user 等の共通データ収集 (header plugin は opt-in で並列実行)
 2. 各 plugin → data.plugins[name] にプラグイン固有 data
 3. template.Run → 中で plugins.core を呼び、partial 順を確定
 4. ejs.Render(image.svg, data) → 生 SVG (or Markdown)
