@@ -6,7 +6,8 @@ SVG file.
 
 ## How it works
 
-When `combined: 'no'` (the default for the Action input), the Action runs
+Set `combined: 'no'` in the Action input (the Action default is `'yes'`
+for back-compat with classic single-SVG workflows). The Action then runs
 once and writes one SVG per enabled plugin into `output_dir` (default:
 `./metrics-renders/`).  Each file is named `<plugin>.svg`, e.g.
 `header.svg`, `languages.svg`, `stars.svg`.

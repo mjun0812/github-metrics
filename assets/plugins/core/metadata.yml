@@ -75,10 +75,10 @@ inputs:
   combined:
     description: |
       Render a single combined SVG instead of per-plugin files
-      - `yes`: produce one combined SVG at `filename` (classic mode)
+      - `yes`: produce one combined SVG at `filename` (classic mode, Action default for back-compat)
       - `no`: produce one SVG per enabled plugin inside `output_dir`
     type: boolean
-    default: "no"
+    default: "yes"
 
   filename:
     description: |
