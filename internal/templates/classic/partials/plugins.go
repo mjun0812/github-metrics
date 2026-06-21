@@ -31,6 +31,11 @@ package partials
 // is not yet registered are silently skipped during incremental M4
 // landing so the build stays green between US1/US2/US3 PRs.
 var PluginPartialOrder = []string{
+	// Header card — extracted from `base` in #602. Renders the
+	// avatar / display name / counters / two-week commit calendar
+	// block historically owned by the `base.header` partial. Sits at
+	// the top so the identity block stays above the per-plugin cards.
+	"header",
 	// P1 MVP — US1
 	"languages",
 	"activity",

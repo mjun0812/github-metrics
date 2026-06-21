@@ -17,6 +17,7 @@ import (
 // docs/design/15-selection-answer.md §6.4.
 var adoptedPlugins = []string{
 	"base", "core",
+	"header",
 	"languages", "activity", "achievements", "repositories",
 	"isocalendar", "calendar", "habits", "stars", "topics", "starlists",
 	"people", "notable", "contributors", "reactions", "projects",

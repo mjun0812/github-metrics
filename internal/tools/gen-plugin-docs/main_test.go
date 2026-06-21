@@ -127,11 +127,12 @@ func TestRenderPluginPage_CoreOmitsSampleImage(t *testing.T) {
 	}
 }
 
-// TestRenderPluginPage_BaseEmitsCustomUsageSnippet — `base` is always
-// active and does not respond to a `plugin_base: yes` toggle. The usage
-// snippet must show the canonical `base: header, ...` sections input
-// instead of the generic `plugin_<slug>: yes` shape used by the 19
-// adopted plugins.
+// TestRenderPluginPage_BaseEmitsCustomUsageSnippet — after #602 `base`
+// is a data-fetch / shared-settings plugin only (no per-section
+// toggles, no `plugin_base` switch; the header card moved to the
+// dedicated `header` plugin). The usage snippet must show the
+// repository-fetcher settings instead of the generic
+// `plugin_<slug>: yes` shape used by the other adopted plugins.
 func TestRenderPluginPage_BaseEmitsCustomUsageSnippet(t *testing.T) {
 	t.Parallel()
 	meta := pluginMetadata{Name: "base", Description: ""}
@@ -139,11 +140,8 @@ func TestRenderPluginPage_BaseEmitsCustomUsageSnippet(t *testing.T) {
 	if strings.Contains(got, "plugin_base: yes") {
 		t.Errorf("base usage snippet must not use the generic plugin_<slug>=yes shape:\n%s", got)
 	}
-	if !strings.Contains(got, "base: header, activity, community, repositories, metadata") {
-		t.Errorf("base usage snippet should show the canonical sections list:\n%s", got)
-	}
-	if !strings.Contains(got, "plugin-base.svg") {
-		t.Errorf("base page should reference its sample SVG (base has visual output):\n%s", got)
+	if !strings.Contains(got, "repositories: 100") {
+		t.Errorf("base usage snippet should show the repository fetcher knobs:\n%s", got)
 	}
 	if !strings.Contains(got, "## Requirements") {
 		t.Errorf("base page should emit Requirements section on first gen:\n%s", got)
