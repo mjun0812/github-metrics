@@ -8,7 +8,7 @@ description: |
   embedded standalone in profile READMEs (mjun0812/mjun0812 style)
   without dragging the every-plugin base fetch with it.
 examples:
-  default: https://github.com/mjun0812/github-metrics/blob/main/docs/examples/plugin-base.svg
+  default: https://github.com/mjun0812/github-metrics/blob/main/docs/examples/plugin-header.svg
 index: 1
 supports:
   - user
