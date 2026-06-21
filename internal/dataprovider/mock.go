@@ -8,11 +8,15 @@ import (
 )
 
 // CountingMock is a test-only plugins.Provider implementation that
-// records which methods were invoked. Per-plugin _requires_test.go
-// files build one, run Plugin.Run against a PluginContext wired with
-// it, then compare CalledKeys() against Plugin.Requires() so a plugin
-// that silently adds a Provider call without updating Requires() fails
-// CI.
+// records which methods were invoked. A _requires_test.go that opts
+// into the runtime drift check (rather than relying solely on the
+// static AssertExpected tautology) builds one, runs Plugin.Run against
+// a PluginContext wired with it, then compares CalledKeys() against
+// Plugin.Requires() via requirestesting.AssertCalledMatchesRequires.
+// This catches the regression AssertExpected cannot: a plugin silently
+// starts calling pc.Provider.X without updating Requires(). Calendar
+// is the proof-of-life caller for this path; other plugins adopt
+// incrementally as their Run paths become test-friendly.
 //
 // The mock satisfies plugins.Provider with stubbed return values
 // (configurable via the Stub fields). Concurrent calls are safe.

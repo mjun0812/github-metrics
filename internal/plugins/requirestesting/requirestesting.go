@@ -1,11 +1,18 @@
 // Package requirestesting provides shared helpers for the per-plugin
 // _requires_test.go files introduced by #604.
 //
-// Each adopted plugin owns one _requires_test.go that wires the plugin
-// to a dataprovider.CountingMock, optionally invokes Run, and then
-// compares Plugin.Requires() against the mock's recorded call set.
-// AssertExpected captures the common shape so per-plugin tests stay a
-// single function call.
+// Every adopted plugin owns one _requires_test.go. At minimum it calls
+// AssertExpected, which pins Plugin.Requires() against a hand-curated
+// expectation slice — a cheap drift guard for the declared contract.
+//
+// The richer AssertCalledMatchesRequires path (backed by
+// dataprovider.CountingMock) additionally drives Plugin.Run and
+// asserts the actually-invoked Provider methods match Plugin.Requires().
+// It catches the regression AssertExpected cannot: a plugin silently
+// starts calling pc.Provider.X without updating Requires(). Adoption
+// is incremental — calendar is the proof-of-life caller; other
+// plugins migrate as their Run paths become test-friendly (most need
+// GraphQL/REST fixture wiring to reach their Provider calls).
 package requirestesting
 
 import (
