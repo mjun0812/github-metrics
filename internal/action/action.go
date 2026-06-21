@@ -640,6 +640,14 @@ func newInvocation(mode RunMode, inputs map[string]any, env map[string]string, o
 	// because per-plugin mode cannot write multiple SVGs to a single stream.
 	combinedDefault := mode == ModeAction || inv.OutputFilename == "-"
 	inv.Combined = boolInput(inputs, "combined", combinedDefault)
+	// Alias: the Action input is named `plugins` (action.yml) while CLI
+	// uses `plugin_list` internally. Bridge them so the Action surface
+	// actually populates inv.PluginList.
+	if _, ok := inputs["plugin_list"]; !ok {
+		if v, ok := inputs["plugins"]; ok {
+			inputs["plugin_list"] = v
+		}
+	}
 	if pl, ok := inputs["plugin_list"]; ok {
 		switch v := pl.(type) {
 		case []string:
