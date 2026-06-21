@@ -1,24 +1,22 @@
 <!-- AUTOGEN_START: title-and-description -->
 # Plugin: base
 
-`base` is the foundational plugin that runs before every other plugin and populates the shared `data.User` / `data.Organization` / `data.Computed` fields downstream plugins depend on. It also owns the user/org header card (avatar, login, follower/sponsor counts, two-week commit calendar) that every other plugin's output sits on top of.
+Foundational data-fetching plugin: walks the user / organization
+/ repository pages and seeds the shared computed fields downstream
+plugins consume. Owns no rendering of its own after #602 — the
+identity card moved to the `header` plugin and the activity /
+community / repositories summary panels were dropped outright.
 <!-- AUTOGEN_END: title-and-description -->
 
 ## Sample
 
-![base sample](../examples/plugin-base.svg)
-
-> Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
+This plugin emits no standalone SVG; its inputs are documented below.
 
 <!-- AUTOGEN_START: config-table -->
 ## Configuration (inputs)
 
 | Input | Description | Default | Required | Type |
 | ----- | ----------- | ------- | -------- | ---- |
-| `base` | Base content | `header, activity, community, repositories, metadata` | no | array |
-| `base_indepth` | Indepth mode | `no` | no | boolean |
-| `base_hireable` | Show `Available for hire!` in header section | `no` | no | boolean |
-| `base_skip` | Skip base content | `no` | no | boolean |
 | `repositories` | Fetched repositories | `100` | no | number |
 | `repositories_batch` | Fetched repositories per query | `100` | no | number |
 | `repositories_forks` | Include forks | `no` | no | boolean |
@@ -38,7 +36,7 @@
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
-    base: header, activity, community, repositories, metadata
+    repositories: 100
 ```
 
 ### CLI
@@ -46,13 +44,15 @@
 ```sh
 metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
-  --plugin 'base=header, activity, community, repositories, metadata'
+  --setting 'repositories=100'
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
 ## Requirements
 
-**A valid GitHub username (or organization login) and a token with at minimum `read:user` + `public_repo`.** The base plugin queries the GraphQL `user(login:)` / `organization(login:)` endpoint to populate the header card and walks the repositories connection (paged, with batch-halving on transient 5xx) to seed `Computed.RepositoryList` for every downstream plugin. Setting `base: ""` disables every base section but **does not** skip the GraphQL fetch — to fully skip base data fetching, use `base_skip: yes` and pair it with a plugin that supports `token: NOT_NEEDED`.
+**A valid GitHub username (or organization login) and a token with at minimum `read:user` + `public_repo`.** The base plugin queries the GraphQL `user(login:)` / `organization(login:)` endpoint to populate the shared `Data.User` / `Data.Organization` payload and walks the repositories connection (paged, with batch-halving on transient 5xx) to seed `Computed.RepositoryList` for every downstream plugin.
+
+Per #602 the identity card moved to the dedicated [`header` plugin](header.md); enable it with `plugin_header: yes` to render the avatar / login / counters / two-week commit calendar block.
 
 ## References
 

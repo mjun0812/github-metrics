@@ -206,33 +206,17 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 	return b.String(), nil
 }
 
-// partialEnabledByBase reports whether the named partial should be
-// rendered given the resolved baseSections set. Only partials whose
-// name starts with "base." (plus "introduction") are gated by this
-// check; other partials (plugin.*) pass through unaffected.
-//
-// Mapping mirrors upstream's classic template:
-//
-//	base.header            → "header"
-//	introduction           → "introduction"
-//	base.activity+community → "activity" OR "community" (either flips it on)
-//	base.repositories      → "repositories"
+// partialEnabledByBase reports whether the named static partial should
+// be rendered given the resolved baseSections set. After #602 only
+// `introduction` is left in `_.json` (the header was extracted into the
+// `header` plugin and the activity+community / repositories partials
+// were deleted); the gate is preserved so a future re-introduction of a
+// base-section toggle has a wiring point.
 //
 // `metadata` is gated separately by chrome.MetadataFooter.
 func partialEnabledByBase(name string, sections map[string]struct{}) bool {
-	switch name {
-	case "base.header":
-		_, ok := sections["header"]
-		return ok
-	case "introduction":
+	if name == "introduction" {
 		_, ok := sections["introduction"]
-		return ok
-	case "base.activity+community":
-		_, a := sections["activity"]
-		_, c := sections["community"]
-		return a || c
-	case "base.repositories":
-		_, ok := sections["repositories"]
 		return ok
 	}
 	// Non-base partials (anything else listed in _.json) render
