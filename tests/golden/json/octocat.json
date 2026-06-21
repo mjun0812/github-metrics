@@ -3,7 +3,7 @@
   "computed": {
     "commits": 0,
     "repositories": {
-      "count": 250,
+      "count": 2,
       "forks": 13,
       "issues": 0,
       "languages": {},
@@ -28,14 +28,6 @@
     "achievements": {
       "display": "detailed",
       "list": [
-        {
-          "description": "Published 250 public repositories",
-          "icon": "repo",
-          "id": "developer",
-          "rank": "S",
-          "title": "Developer",
-          "value": 250
-        },
         {
           "description": "Followed by 1555 users",
           "icon": "people",
@@ -85,6 +77,14 @@
           "value": 2
         },
         {
+          "description": "Published 2 public repositories",
+          "icon": "repo",
+          "id": "developer",
+          "rank": "C",
+          "title": "Developer",
+          "value": 2
+        },
+        {
           "description": "Most forked repository has 10 forks",
           "icon": "repo-forked",
           "id": "inspirer",
@@ -113,7 +113,7 @@
         "chatter": "X",
         "contributor": "B",
         "deployer": "X",
-        "developer": "S",
+        "developer": "C",
         "follower": "A",
         "forker": "X",
         "gister": "X",
