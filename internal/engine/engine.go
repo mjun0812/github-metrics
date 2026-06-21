@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/dataprovider"
@@ -231,6 +232,131 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 	res.MIME = mime
 
 	return res, nil
+}
+
+// PerPluginResult holds the output for a single plugin's SVG render.
+type PerPluginResult struct {
+	PluginName string
+	Output     []byte
+	MIME       string
+	Err        error // non-nil = this plugin failed; others may still succeed
+}
+
+// ComputePerPlugin runs the engine for each enabled plugin and produces
+// one SVG per plugin. For each plugin in pluginAllowlist (or all enabled
+// plugins when allowlist is empty), it calls Compute with a modified input
+// set that enables only that one plugin. This reuses the full pipeline
+// and guarantees isolation between plugins.
+func ComputePerPlugin(ctx context.Context, req Request, deps Deps, pluginAllowlist []string) ([]*PerPluginResult, error) {
+	// Determine which plugin gates are enabled in the base inputs.
+	enabledPlugins := resolveEnabledPlugins(req.Inputs, pluginAllowlist)
+
+	results := make([]*PerPluginResult, 0, len(enabledPlugins))
+	for _, name := range enabledPlugins {
+		// Build a copy of inputs with only this plugin enabled.
+		singleInputs := make(map[string]any, len(req.Inputs))
+		for k, v := range req.Inputs {
+			singleInputs[k] = v
+		}
+		// Disable all plugin gates, then re-enable only this one.
+		disableAllPluginGates(singleInputs)
+		singleInputs["plugin_"+name] = "yes"
+		// Force config_order to only this plugin so the template renders
+		// just this panel.
+		singleInputs["config_order"] = name
+
+		singleReq := req
+		singleReq.Inputs = singleInputs
+
+		res, err := Compute(ctx, singleReq, deps)
+		pr := &PerPluginResult{PluginName: name}
+		if err != nil {
+			pr.Err = err
+		} else if res != nil {
+			// Check whether this specific plugin recorded an error. Compute
+			// records per-plugin errors in Result.Errors (Die=false semantics)
+			// rather than returning a non-nil error from Compute itself. We
+			// treat a plugin-scoped error as a failure for this result so the
+			// caller can skip writing an empty or degraded file.
+			pluginErr := pluginError(res, name)
+			if pluginErr != nil {
+				pr.Err = pluginErr
+			} else {
+				pr.Output = res.Output
+				pr.MIME = res.MIME
+			}
+		}
+		results = append(results, pr)
+	}
+	return results, nil
+}
+
+// pluginError returns the error recorded for the named plugin in Result.Errors,
+// or nil if no error was recorded for that plugin. It inspects both the typed
+// plugin-slot errors (wrapped as "plugin %q: <err>") and the flat Errors slice.
+func pluginError(res *Result, name string) error {
+	if res == nil {
+		return nil
+	}
+	prefix := fmt.Sprintf("plugin %q:", name)
+	for _, e := range res.Errors {
+		if e != nil && strings.HasPrefix(e.Error(), prefix) {
+			return e
+		}
+	}
+	return nil
+}
+
+// resolveEnabledPlugins returns the plugin names to render in per-plugin
+// mode. When allowlist is non-empty it is used as-is; otherwise all plugin_*
+// gates set to a truthy value in inputs are included.
+func resolveEnabledPlugins(inputs map[string]any, allowlist []string) []string {
+	if len(allowlist) > 0 {
+		return allowlist
+	}
+	var names []string
+	_ = plugins.Each(func(name string, _ plugins.Plugin) error {
+		if name == "core" {
+			return nil
+		}
+		gateKey := "plugin_" + name
+		v, ok := inputs[gateKey]
+		if !ok {
+			return nil
+		}
+		if isTruthyValue(v) {
+			names = append(names, name)
+		}
+		return nil
+	})
+	return names
+}
+
+// disableAllPluginGates sets every plugin_<name> gate in inputs to "no".
+func disableAllPluginGates(inputs map[string]any) {
+	for k := range inputs {
+		if strings.HasPrefix(k, "plugin_") && !strings.Contains(k[7:], "_") {
+			// Only top-level gates (no underscore after the prefix means
+			// it is a gate like plugin_languages, not plugin_languages_limit).
+			inputs[k] = "no"
+		}
+	}
+}
+
+// isTruthyValue mirrors the action package's isTruthy logic for use in engine.
+func isTruthyValue(v any) bool {
+	switch x := v.(type) {
+	case bool:
+		return x
+	case string:
+		s := strings.ToLower(strings.TrimSpace(x))
+		return s == "true" || s == "yes" || s == "1" || s == "on"
+	case int:
+		return x != 0
+	case float64:
+		return x != 0
+	}
+	return false
 }
 
 // mergeLogin injects req.Login into the inputs map so plugins that
