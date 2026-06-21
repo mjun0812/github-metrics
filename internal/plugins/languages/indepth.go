@@ -48,9 +48,14 @@ func (p *indepthPlugin) Name() string                     { return IndepthName }
 func (p *indepthPlugin) Metadata() *config.PluginMetadata { return nil }
 
 // Requires reports the Provider data sources Run reads. languages.indepth
-// clones repositories and runs linguist locally; it resolves repositories
-// through its own input/list machinery rather than pc.Provider.
-func (p *indepthPlugin) Requires() []plugins.DataKey { return nil }
+// clones repositories and runs linguist locally, but resolves the repository
+// list via the shared resolveRepositoryList helper (see languages.go), which
+// reads pc.Provider.Repositories when a Provider is wired. Mirrors the
+// declaration of the sibling languages plugin that funnels through the same
+// helper.
+func (p *indepthPlugin) Requires() []plugins.DataKey {
+	return []plugins.DataKey{plugins.KeyRepositories}
+}
 
 // IndepthResult is the JSON payload published under
 // data.Plugins["languages.indepth"]. Field set mirrors data-model E-012.
