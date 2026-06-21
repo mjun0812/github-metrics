@@ -253,9 +253,10 @@ var adoptedM4Plugins = []string{
 // infrastructure, not plugin slugs. They MUST be excluded from the
 // adopted-set comparison.
 var nonPluginInternalDirs = map[string]struct{}{
-	"base":       {}, // base plugin (account-kind dispatcher; not a user-facing slug)
-	"core":       {}, // core plugin (settings + parallel runner)
-	"pluginutil": {}, // shared input-parsing / formatting helpers; not a user-facing plugin slug
+	"base":            {}, // base plugin (account-kind dispatcher; not a user-facing slug)
+	"core":            {}, // core plugin (settings + parallel runner)
+	"pluginutil":      {}, // shared input-parsing / formatting helpers; not a user-facing plugin slug
+	"requirestesting": {}, // shared test helpers for per-plugin Requires() assertions (#604)
 }
 
 // TestCompliance_M4_AdoptedPlugins (T096 / SC-007) scans

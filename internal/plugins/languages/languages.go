@@ -36,6 +36,13 @@ type languagesPlugin struct{}
 func (p *languagesPlugin) Name() string                     { return Name }
 func (p *languagesPlugin) Metadata() *config.PluginMetadata { return nil }
 
+// Requires reports the Provider data sources Run reads. languages
+// aggregates language bytes over the repository list, sourced via
+// pc.Provider.Repositories.
+func (p *languagesPlugin) Requires() []plugins.DataKey {
+	return []plugins.DataKey{plugins.KeyRepositories}
+}
+
 // Result is the JSON payload the plugin publishes under
 // data.Plugins["languages"]. Field set mirrors upstream
 // data.plugins.languages (constitution 原則 II).
