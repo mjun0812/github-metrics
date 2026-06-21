@@ -638,7 +638,14 @@ func newInvocation(mode RunMode, inputs map[string]any, env map[string]string, o
 	// CLI mode defaults to combined=no (per-plugin SVG output).
 	// When filename=- (stdout), combined mode is implicitly required
 	// because per-plugin mode cannot write multiple SVGs to a single stream.
-	combinedDefault := mode == ModeAction || inv.OutputFilename == "-"
+	// When the caller passed an explicit --filename / filename input,
+	// combined mode is also implied: a single file path cannot fan out
+	// into N per-plugin SVGs. Without this, --filename foo.svg would
+	// trigger per-plugin mode and the per-plugin writer would attempt
+	// to write to /foo.svg (root) and fail. The user can still override
+	// by passing --combined=false explicitly.
+	_, filenameExplicit := inputs["filename"]
+	combinedDefault := mode == ModeAction || inv.OutputFilename == "-" || filenameExplicit
 	inv.Combined = boolInput(inputs, "combined", combinedDefault)
 	// Alias: the Action input is named `plugins` (action.yml) while CLI
 	// uses `plugin_list` internally. Bridge them so the Action surface
