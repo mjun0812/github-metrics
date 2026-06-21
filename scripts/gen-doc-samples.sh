@@ -5,27 +5,27 @@
 # Runs the 19 adopted plugins (mjun0812 user by default) + 10 sub-mode
 # variants (achievements compact + languages recent/indepth/details +
 # isocalendar full-year + calendar full + stargazers graph + notable
-# indepth + habits facts + habits charts) + 1 foundational `plugin-base` render + 1
+# indepth + habits facts + habits charts) + 1 foundational `plugin-header` render + 1
 # classic template sample (`metrics-classic`, base-only upstream-parity
 # render — see issue #463) = 30
 # user-mode
 # logical samples. (`contributors` is NOT rendered in user mode — it is a
 # repository-mode-only plugin and would emit an empty card; see issue #448
 # and the PLUGINS array note below.) On top of that the repository-mode section renders
-# the foundational `plugin-base-repo` chrome, the one repo-context
-# plugin that produces a unique panel on its own (`plugin-people-repo`),
-# 2 repo-context variants (`plugin-contributors-repo-contributions`
-# adds the per-contributor adds/dels columns, `plugin-people-repo-types`
-# pins all three people types) and 1 `metrics-repository` composite
-# overview = 5 logical repo-mode samples. The 14 user-mode-only plugins
+# the one repo-context plugin that produces a unique panel on its own
+# (`plugin-people-repo`), 2 repo-context variants
+# (`plugin-contributors-repo-contributions` adds the per-contributor adds/dels
+# columns, `plugin-people-repo-types` pins all three people types) and 1
+# `metrics-repository` composite overview = 4 logical repo-mode samples.
+# The 14 user-mode-only plugins
 # (achievements/activity/calendar/habits/isocalendar/notable/projects/
 # reactions/repositories/sponsors/sponsorships/starlists/stars/topics)
-# and the 4 plugins whose repo-mode panel is byte-identical to
-# `plugin-base-repo` for ${REPO} (languages/contributors/stargazers/
+# and the 4 plugins whose repo-mode panel is byte-identical to the
+# repository chrome for ${REPO} (languages/contributors/stargazers/
 # traffic) are intentionally NOT rendered as repository-mode samples —
-# they would just duplicate `plugin-base-repo`. The user-mode-only
+# they would just duplicate `metrics-repository`. The user-mode-only
 # plugins also emit a WARN log when invoked under `--template
-# repository` (see internal/plugins/modegate.go). Grand total: 35
+# repository` (see internal/plugins/modegate.go). Grand total: 34
 # logical samples (svg + png each).
 # The default `plugin-languages` sample is emitted via a one-off
 # `render_one` call (not the PLUGINS loop) so it can pass
@@ -402,9 +402,9 @@ echo "== classic template overview (upstream-parity base render) =="
 # the per-plugin gallery samples already demonstrate each adopted
 # plugin's panel individually.
 #
-# This naturally renders close to `plugin-base.svg` (both are the classic
-# base chrome). That is expected and correct, since upstream classic is
-# also effectively base-only.
+# This naturally renders close to `plugin-header.svg` (both are the classic
+# header chrome). That is expected and correct, since upstream classic is
+# also effectively header-only.
 #
 # CSS is minified automatically: the metadata `optimize` default
 # ("css, xml") flows through the render pipeline (see
@@ -415,34 +415,35 @@ render_one "metrics-classic" \
 	--plugin "base=header, repositories"
 
 echo
-echo "== foundational base render =="
-# `base` is the upstream-special plugin that draws the user/org header
-# card every other plugin sits on top of. We render it on its own so
-# docs/plugins/base.md has a visual reference. Default `base` value
-# is "header, activity, community, repositories, metadata"; passing
-# no plugin_<name>=yes toggle means only the base sections render.
+echo "== foundational header render =="
+# Post-refactor (PR #601–#614) the old monolithic `base` plugin was
+# dissolved into `dataprovider` (user data fetching, always-on) and
+# `header` (the profile card visual section, opt-in via plugin_header=yes).
+# We render header on its own here so docs/plugins/header.md has a
+# visual reference.
 #
 # `core` is intentionally absent here — it has no standalone visual
 # output (configuration + parallel runner only). See
 # docs/plugins/core.md.
-render_one "plugin-base" \
-	--template classic
+render_one "plugin-header" \
+	--template classic \
+	--plugin "plugin_header=yes"
 
 echo
 echo "== per-plugin repository-mode renders (only plugins with visible delta) =="
 # The repository template's partial order is hard-coded in
-# `assets/templates/repository/partials/_.json`. base.runRepository
+# `assets/templates/repository/partials/_.json`. The dataprovider
 # pre-populates the chrome (header / introduction / languages /
 # activity / contributors) before any plugin partial runs, so those
 # sections appear in every sample regardless of the `--plugin X=yes`
 # toggles. Empirically, on ${REPO}, only ONE plugin toggle produces
-# a stand-alone visible delta from `plugin-base-repo`:
+# a stand-alone visible delta from the base repository chrome:
 #   - `plugin_people=yes` (adds the `<section data-section="people">`
 #     block with default stargazers + watchers)
 # The other 18 adopted plugins toggled in repo mode produce SVG
-# byte-identical to `plugin-base-repo` on this sample repo (verified
+# byte-identical to `metrics-repository` on this sample repo (verified
 # md5sum) and are therefore NOT emitted as separate samples — they
-# would just duplicate `plugin-base-repo` and bloat the docs gallery.
+# would just duplicate `metrics-repository` and bloat the docs gallery.
 # Two of them surface their value only via variants (people-types and
 # contributors-contributions, rendered below).
 #
@@ -490,24 +491,6 @@ render_one_repo "plugin-languages-repo" \
 	--plugin "plugin_languages_details=bytes-size,percentage"
 
 echo
-echo "== repository foundational base render =="
-# `plugin-base-repo` renders the repository template chrome on its
-# own (no plugin toggles). It is the canonical reference for the
-# "what does the repository template look like with no plugin
-# partials triggered" case. Eighteen of the 19 adopted plugins produce
-# a SVG byte-identical to this sample when rendered alone under
-# `--template repository` against ${REPO} — either because their slug
-# is absent from `assets/templates/repository/partials/_.json`, or
-# because their Run() short-circuits via the mode gate in
-# internal/plugins/modegate.go (the 14 user-mode-only plugins), or
-# because their repo-mode panel happens to render empty on this
-# sample repo (languages / contributors / stargazers / traffic).
-# Only `plugin_people=yes` produces a stand-alone delta and is
-# emitted separately above. See docs/comparison.md "repository mode
-# サンプル一覧" for the parity table.
-render_one_repo "plugin-base-repo"
-
-echo
 echo "== repository template base overview =="
 # `metrics-repository` is the apples-to-apples counterpart of upstream's
 # `docs/reference_examples/metrics.repository.svg` (issue #464): a plain
@@ -523,8 +506,8 @@ echo "== repository template base overview =="
 # (issue #464). Plugin partials are now gated by `plugin_<slug>` in the
 # repository template dispatcher (internal/templates/repository/
 # repository.go), so a toggle-free render emits the base chrome only.
-# The per-plugin repository-mode samples above (plugin-base-repo,
-# plugin-people-repo, plugin-contributors-repo-contributions,
+# The per-plugin repository-mode samples above (plugin-people-repo,
+# plugin-contributors-repo-contributions,
 # plugin-people-repo-types) still cover each plugin partial individually.
 render_one_repo "metrics-repository"
 
@@ -536,20 +519,19 @@ echo "== Summary =="
 # entries (default, recent, indepth) +7 parity variants
 # (achievements.compact, notable.indepth, habits.facts, habits.charts,
 #  languages.details, isocalendar.fullyear, stargazers.graph)
-# +1 foundational base render +1 classic template overview
+# +1 foundational header render +1 classic template overview
 # (multi-plugin composite render).
 # Repository mode adds:
-#   - 1 foundational `plugin-base-repo` render
 #   - 2 stand-alone repo-mode plugin samples (`plugin-people-repo`,
 #     `plugin-languages-repo`)
 #   - 2 repo-context variants (`plugin-contributors-repo-contributions`,
 #     `plugin-people-repo-types`)
 #   - 1 `metrics-repository` overview composite
-# = 6 repo-mode logical samples. The user-mode-only plugins and the
+# = 5 repo-mode logical samples. The user-mode-only plugins and the
 # plugins with byte-identical repo output are intentionally NOT
 # emitted as repo-mode samples (see "per-plugin repository-mode
 # renders" section above for the rationale).
-REPO_LOGICAL=6
+REPO_LOGICAL=5
 TOTAL=$(((${#PLUGINS[@]} + 3 + 9 + 1 + 1 + REPO_LOGICAL) * 2))
 OK=$((TOTAL - ${#FAILURES[@]}))
 echo "  OK:   ${OK}/${TOTAL}"
