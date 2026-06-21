@@ -20,7 +20,7 @@ inputs:
 
   combined:
     description: 'Render a single combined SVG instead of per-plugin files'
-    default: 'no'
+    default: 'yes'
     required: false
 
   committer_branch:
