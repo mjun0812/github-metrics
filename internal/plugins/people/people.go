@@ -37,6 +37,11 @@ type peoplePlugin struct{}
 func (p *peoplePlugin) Name() string                     { return Name }
 func (p *peoplePlugin) Metadata() *config.PluginMetadata { return nil }
 
+// Requires reports the Provider data sources Run reads. people walks
+// followers/following GraphQL paging for pc.Inputs's login and touches
+// no Provider methods.
+func (p *peoplePlugin) Requires() []plugins.DataKey { return nil }
+
 // Result is the JSON payload published under data.Plugins["people"].
 //
 // Counts carries the true total per type as reported by the API

@@ -36,6 +36,11 @@ type activityPlugin struct{}
 func (p *activityPlugin) Name() string                     { return Name }
 func (p *activityPlugin) Metadata() *config.PluginMetadata { return nil }
 
+// Requires reports the Provider data sources Run reads. activity walks
+// /users/<login>/events directly via pc.REST and resolves the login
+// from pc.Inputs, so it touches no Provider methods.
+func (p *activityPlugin) Requires() []plugins.DataKey { return nil }
+
 // Result is the JSON payload the plugin publishes under
 // data.Plugins["activity"]. Field set mirrors upstream
 // data.plugins.activity.
