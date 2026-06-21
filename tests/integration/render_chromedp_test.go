@@ -71,6 +71,9 @@ func TestComputePNG_E2E(t *testing.T) {
 		Login:    "octocat",
 		Template: "classic",
 		Format:   "png",
+		// #602: header is now a regular plugin; enable it so the rendered
+		// PNG contains the identity block and the height check passes.
+		Inputs: map[string]any{"plugin_header": "yes"},
 	}, deps)
 	if err != nil {
 		t.Fatalf("Compute(png): %v", err)
