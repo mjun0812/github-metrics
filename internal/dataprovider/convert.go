@@ -41,9 +41,8 @@ func connTotalWatching(u *githubapi.UserUser) int {
 }
 
 // The following helpers wrap each contributionsCollection / connection
-// subfield in a nil-safe accessor mirroring the originals in
-// internal/plugins/base/base.go. Centralising them here lets the base
-// package shrink without losing the degraded-payload semantics
+// subfield in a nil-safe accessor. They were migrated from the legacy
+// base plugin in #603 and provide degraded-payload semantics
 // downstream consumers depend on.
 
 func connTotalSponsorMaintainer(u *githubapi.UserUser) int {
