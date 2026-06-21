@@ -247,6 +247,11 @@ var adoptedM4Plugins = []string{
 	// P3 chromedp / heavy (2 with own directories; the recent/indepth
 	// sub-modes live in internal/plugins/languages/)
 	"topics", "starlists",
+	// #602: header extracted from the legacy base plugin. base/ stays
+	// as the empty shim from #603 (registered in nonPluginInternalDirs
+	// below) until #605 deletes it; header is a regular adopted plugin
+	// from the registry's perspective.
+	"header",
 }
 
 // nonPluginInternalDirs are internal/plugins/ children that are
@@ -308,14 +313,14 @@ func TestCompliance_M4_AdoptedPlugins(t *testing.T) {
 
 	if len(missing) > 0 {
 		sort.Strings(missing)
-		t.Errorf("constitution 原則 III (採用 21): missing adopted plugin dirs: %v", missing)
+		t.Errorf("constitution 原則 III (採用 20): missing adopted plugin dirs: %v", missing)
 	}
 	if len(extra) > 0 {
 		sort.Strings(extra)
-		t.Errorf("constitution 原則 III (採用 21): unadopted plugin dirs landed in internal/plugins/: %v", extra)
+		t.Errorf("constitution 原則 III (採用 20): unadopted plugin dirs landed in internal/plugins/: %v", extra)
 	}
 	if len(missing) == 0 && len(extra) == 0 {
-		t.Logf("M4 採用 21 plugin compliance OK (dirs: %d adopted + base + core)", len(have))
+		t.Logf("M4 採用 20 plugin compliance OK (dirs: %d adopted + base shim + core)", len(have))
 	}
 }
 

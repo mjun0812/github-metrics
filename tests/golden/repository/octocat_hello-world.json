@@ -109,6 +109,11 @@
       "skipped": true,
       "trim": false
     },
+    "header": {
+      "calendar": null,
+      "profile": null,
+      "skipped": true
+    },
     "isocalendar": {
       "average": 0,
       "duration": "",
