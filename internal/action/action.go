@@ -67,8 +67,6 @@ type Invocation struct {
 	RetryPolicy      RetryPolicy
 	GitHubAPIRest    string
 	GitHubAPIGraphQL string
-	Combined         bool     // combined=yes → single-SVG mode; no → per-plugin mode
-	PluginList       []string // allowlist for per-plugin mode; empty = all enabled
 }
 
 // Run is the Action-mode entry point. Spec FR-001 / FR-002.
@@ -207,92 +205,57 @@ func runWith(ctx context.Context, opts runOptions) error {
 	}
 
 	// 9. Compute (with retry).
-	engineReq := engine.Request{
-		Login:    inv.Login,
-		Repo:     stringInput(inv.Inputs, "repo", ""),
-		Account:  accountForTemplate(inv.Template),
-		Template: inv.Template,
-		Format:   inv.Format,
-		Inputs:   inv.Inputs,
-	}
-
-	if inv.Combined {
-		// Combined mode: single SVG at OutputDir/OutputFilename.
-		var res *engine.Result
-		cerr := inv.RetryPolicy.Do(ctx, func() error {
-			var e error
-			res, e = engine.Compute(ctx, engineReq, deps)
-			return e
-		})
-		if cerr != nil {
-			return fmt.Errorf("action: engine.Compute: %w", cerr)
-		}
-		if res == nil {
-			return errors.New("action: engine.Compute returned nil result")
-		}
-
-		// 10. Write output.
-		outputPath := filepath.Join(inv.OutputDir, inv.OutputFilename)
-		if werr := writeOutputFile(outputPath, res.Output); werr != nil {
-			return fmt.Errorf("action: write output: %w", werr)
-		}
-
-		// 11. metrics_sha output (always set, even on dryrun + skipped Committer).
-		sha, hashErr := render.Hash(string(res.Output))
-		if hashErr != nil {
-			slog.Warn("render.Hash failed; metrics_sha output skipped", "err", hashErr)
-		} else if oerr := SetOutput("metrics_sha", sha); oerr != nil {
-			slog.Warn("metrics_sha output write failed", "err", oerr)
-		}
-
-		// 12. Committer — only when not dryrun and output_action != none.
-		if !inv.Dryrun && inv.OutputAction != "none" {
-			committer, nerr := NewCommitter(deps.REST, inv, res.Output)
-			if nerr != nil {
-				return fmt.Errorf("action: committer init: %w", nerr)
-			}
-			if cerr := committer.Run(ctx); cerr != nil {
-				// FR-016: committer failure does not block the workflow.
-				slog.Warn("committer failed (action continues)", "err", cerr)
-			}
-			if committer.MetricsURL != "" {
-				if oerr := SetOutput("metrics_url", committer.MetricsURL); oerr != nil {
-					slog.Warn("metrics_url output write failed", "err", oerr)
-				}
-			}
-		}
-		return nil
-	}
-
-	// Per-plugin mode: one SVG per enabled plugin under OutputDir.
-	actionOutputDir := stringInput(inv.Inputs, "output_dir", "./metrics-renders/")
-	if actionOutputDir == "" {
-		actionOutputDir = "./metrics-renders/"
-	}
-	if err := os.MkdirAll(actionOutputDir, 0o755); err != nil { //nolint:gosec // operator-configured path
-		return fmt.Errorf("action: mkdir per-plugin output dir %s: %w", actionOutputDir, err)
-	}
-
-	var perPluginResults []*engine.PerPluginResult
+	var res *engine.Result
 	cerr := inv.RetryPolicy.Do(ctx, func() error {
 		var e error
-		perPluginResults, e = engine.ComputePerPlugin(ctx, engineReq, deps, inv.PluginList)
+		res, e = engine.Compute(ctx, engine.Request{
+			Login:    inv.Login,
+			Repo:     stringInput(inv.Inputs, "repo", ""),
+			Account:  accountForTemplate(inv.Template),
+			Template: inv.Template,
+			Format:   inv.Format,
+			Inputs:   inv.Inputs,
+		}, deps)
 		return e
 	})
 	if cerr != nil {
-		return fmt.Errorf("action: engine.ComputePerPlugin: %w", cerr)
+		return fmt.Errorf("action: engine.Compute: %w", cerr)
+	}
+	if res == nil {
+		return errors.New("action: engine.Compute returned nil result")
 	}
 
-	for _, pr := range perPluginResults {
-		if pr.Err != nil {
-			slog.Warn("per-plugin render failed; skipping file", "plugin", pr.PluginName, "err", pr.Err)
-			continue
+	// 10. Write output.
+	outputPath := filepath.Join(inv.OutputDir, inv.OutputFilename)
+	if werr := writeOutputFile(outputPath, res.Output); werr != nil {
+		return fmt.Errorf("action: write output: %w", werr)
+	}
+
+	// 11. metrics_sha output (always set, even on dryrun + skipped Committer).
+	sha, hashErr := render.Hash(string(res.Output))
+	if hashErr != nil {
+		slog.Warn("render.Hash failed; metrics_sha output skipped", "err", hashErr)
+	} else if oerr := SetOutput("metrics_sha", sha); oerr != nil {
+		slog.Warn("metrics_sha output write failed", "err", oerr)
+	}
+
+	// 12. Committer — only when not dryrun and output_action != none.
+	if !inv.Dryrun && inv.OutputAction != "none" {
+		committer, nerr := NewCommitter(deps.REST, inv, res.Output)
+		if nerr != nil {
+			return fmt.Errorf("action: committer init: %w", nerr)
 		}
-		outPath := filepath.Join(actionOutputDir, pr.PluginName+".svg")
-		if werr := writeOutputFile(outPath, pr.Output); werr != nil {
-			slog.Warn("per-plugin write failed", "plugin", pr.PluginName, "err", werr)
+		if cerr := committer.Run(ctx); cerr != nil {
+			// FR-016: committer failure does not block the workflow.
+			slog.Warn("committer failed (action continues)", "err", cerr)
+		}
+		if committer.MetricsURL != "" {
+			if oerr := SetOutput("metrics_url", committer.MetricsURL); oerr != nil {
+				slog.Warn("metrics_url output write failed", "err", oerr)
+			}
 		}
 	}
+
 	return nil
 }
 
@@ -406,93 +369,44 @@ func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
 		OSArch:      runtime.GOOS + "/" + runtime.GOARCH,
 	})
 
-	engineReq := engine.Request{
-		Login:    inv.Login,
-		Repo:     stringInput(inv.Inputs, "repo", ""),
-		Account:  accountForTemplate(inv.Template),
-		Template: inv.Template,
-		Format:   inv.Format,
-		Inputs:   inv.Inputs,
-	}
-
-	if inv.Combined {
-		// Combined mode: produce a single SVG at the configured output path.
-		var res *engine.Result
-		cerr := inv.RetryPolicy.Do(ctx, func() error {
-			var e error
-			res, e = engine.Compute(ctx, engineReq, deps)
-			return e
-		})
-		if cerr != nil {
-			return fmt.Errorf("action: engine.Compute: %w", cerr)
-		}
-		if res == nil {
-			return errors.New("action: engine.Compute returned nil result")
-		}
-
-		w, closeFn, oerr := ResolveOutputWriter(targetOutputPath(inv), inv.Format)
-		if oerr != nil {
-			return fmt.Errorf("action: open output: %w", oerr)
-		}
-		defer func() { _ = closeFn() }()
-		if _, werr := w.Write(res.Output); werr != nil {
-			return fmt.Errorf("action: write output: %w", werr)
-		}
-
-		if !inv.Dryrun && inv.OutputAction != "none" {
-			committer, nerr := NewCommitter(deps.REST, inv, res.Output)
-			if nerr != nil {
-				return fmt.Errorf("action: committer init: %w", nerr)
-			}
-			if cerr := committer.Run(ctx); cerr != nil {
-				slog.Warn("committer failed (action continues)", "err", cerr)
-			}
-		}
-		return nil
-	}
-
-	// Per-plugin mode: produce one SVG per enabled plugin.
-	outDir := stringInput(inv.Inputs, "output_dir", "")
-	if outDir == "" {
-		outDir = inv.OutputDir // CLI --output-dir or cwd
-	}
-	if outDir == "" {
-		outDir = "."
-	}
-	if err := os.MkdirAll(outDir, 0o755); err != nil { //nolint:gosec // user-chosen path
-		return fmt.Errorf("action: mkdir per-plugin output dir %s: %w", outDir, err)
-	}
-
-	var perPluginResults []*engine.PerPluginResult
+	var res *engine.Result
 	cerr := inv.RetryPolicy.Do(ctx, func() error {
 		var e error
-		perPluginResults, e = engine.ComputePerPlugin(ctx, engineReq, deps, inv.PluginList)
+		res, e = engine.Compute(ctx, engine.Request{
+			Login:    inv.Login,
+			Repo:     stringInput(inv.Inputs, "repo", ""),
+			Account:  accountForTemplate(inv.Template),
+			Template: inv.Template,
+			Format:   inv.Format,
+			Inputs:   inv.Inputs,
+		}, deps)
 		return e
 	})
 	if cerr != nil {
-		return fmt.Errorf("action: engine.ComputePerPlugin: %w", cerr)
+		return fmt.Errorf("action: engine.Compute: %w", cerr)
+	}
+	if res == nil {
+		return errors.New("action: engine.Compute returned nil result")
 	}
 
-	var firstErr error
-	for _, pr := range perPluginResults {
-		if pr.Err != nil {
-			slog.Warn("per-plugin render failed; skipping file", "plugin", pr.PluginName, "err", pr.Err)
-			if firstErr == nil {
-				firstErr = pr.Err
-			}
-			continue
+	w, closeFn, oerr := ResolveOutputWriter(targetOutputPath(inv), inv.Format)
+	if oerr != nil {
+		return fmt.Errorf("action: open output: %w", oerr)
+	}
+	defer func() { _ = closeFn() }()
+	if _, werr := w.Write(res.Output); werr != nil {
+		return fmt.Errorf("action: write output: %w", werr)
+	}
+
+	if !inv.Dryrun && inv.OutputAction != "none" {
+		committer, nerr := NewCommitter(deps.REST, inv, res.Output)
+		if nerr != nil {
+			return fmt.Errorf("action: committer init: %w", nerr)
 		}
-		outPath := filepath.Join(outDir, pr.PluginName+".svg")
-		if werr := os.WriteFile(outPath, pr.Output, 0o600); werr != nil {
-			slog.Warn("per-plugin write failed", "plugin", pr.PluginName, "err", werr)
-			if firstErr == nil {
-				firstErr = werr
-			}
+		if cerr := committer.Run(ctx); cerr != nil {
+			slog.Warn("committer failed (action continues)", "err", cerr)
 		}
 	}
-	// In per-plugin mode, partial failures are warned but not fatal so
-	// that successful plugins still produce output.
-	_ = firstErr
 	return nil
 }
 
@@ -631,36 +545,6 @@ func newInvocation(mode RunMode, inputs map[string]any, env map[string]string, o
 
 	if inv.Login == "" {
 		return nil, errors.New("action: input 'user' (or GITHUB_ACTOR fallback) is required")
-	}
-
-	// Per-plugin mode fields.
-	// Action mode defaults to combined=yes for backward compatibility;
-	// CLI mode defaults to combined=no (per-plugin SVG output).
-	// When filename=- (stdout), combined mode is implicitly required
-	// because per-plugin mode cannot write multiple SVGs to a single stream.
-	combinedDefault := mode == ModeAction || inv.OutputFilename == "-"
-	inv.Combined = boolInput(inputs, "combined", combinedDefault)
-	// Alias: the Action input is named `plugins` (action.yml) while CLI
-	// uses `plugin_list` internally. Bridge them so the Action surface
-	// actually populates inv.PluginList.
-	if _, ok := inputs["plugin_list"]; !ok {
-		if v, ok := inputs["plugins"]; ok {
-			inputs["plugin_list"] = v
-		}
-	}
-	if pl, ok := inputs["plugin_list"]; ok {
-		switch v := pl.(type) {
-		case []string:
-			inv.PluginList = v
-		case string:
-			if v != "" {
-				for _, p := range strings.Split(v, ",") {
-					if name := strings.TrimSpace(p); name != "" {
-						inv.PluginList = append(inv.PluginList, name)
-					}
-				}
-			}
-		}
 	}
 
 	return inv, nil
