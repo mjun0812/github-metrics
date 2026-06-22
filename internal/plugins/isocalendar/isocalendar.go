@@ -28,13 +28,6 @@ type isocalendarPlugin struct{}
 func (p *isocalendarPlugin) Name() string                     { return Name }
 func (p *isocalendarPlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Requires reports the Provider data sources Run reads. isocalendar
-// pulls the user payload via pc.Provider.User (with a pc.Data.User
-// fallback for legacy harnesses).
-func (p *isocalendarPlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{plugins.KeyUser}
-}
-
 // Result is the JSON payload published under data.Plugins["isocalendar"].
 type Result struct {
 	Skipped       bool      `json:"skipped,omitempty"`

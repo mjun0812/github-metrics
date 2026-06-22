@@ -53,13 +53,6 @@ type repositoriesPlugin struct{}
 func (p *repositoriesPlugin) Name() string                     { return Name }
 func (p *repositoriesPlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Requires reports the Provider data sources Run reads. repositories
-// resolves both the user payload (for fork/private filtering signals)
-// and the full repository list via Provider.
-func (p *repositoriesPlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{plugins.KeyUser, plugins.KeyRepositories}
-}
-
 // Result is the JSON payload published under data.Plugins["repositories"].
 type Result struct {
 	Skipped       bool                 `json:"skipped,omitempty"`

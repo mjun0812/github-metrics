@@ -29,14 +29,6 @@ type calendarPlugin struct{}
 func (p *calendarPlugin) Name() string                     { return Name }
 func (p *calendarPlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Requires reports the Provider data sources Run reads. calendar pulls
-// the user payload via pc.Provider.User (with a pc.Data.User fallback
-// for legacy harnesses) and never asks for the repository list or
-// contribution calendar from Provider.
-func (p *calendarPlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{plugins.KeyUser}
-}
-
 // Result is the JSON payload published under data.Plugins["calendar"].
 type Result struct {
 	Skipped       bool           `json:"skipped,omitempty"`

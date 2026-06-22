@@ -38,11 +38,6 @@ type habitsPlugin struct{}
 func (p *habitsPlugin) Name() string                     { return Name }
 func (p *habitsPlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Requires reports the Provider data sources Run reads. habits walks
-// /users/<login>/events directly via pc.REST and resolves the login
-// from pc.Inputs, so it touches no Provider methods.
-func (p *habitsPlugin) Requires() []plugins.DataKey { return nil }
-
 // Result is the JSON payload published under data.Plugins["habits"].
 type Result struct {
 	Skipped       bool          `json:"skipped,omitempty"`
