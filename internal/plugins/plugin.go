@@ -33,11 +33,58 @@ type PluginContext struct {
 	Data       *Data
 	Metadata   *config.MetadataLoader
 	Imports    PluginImports
+	// Provider is the lazy + memoized fetcher introduced by #603.
+	// Plugins call Provider.User(ctx) / Organization(ctx) /
+	// Repositories(ctx) / CommitCalendar(ctx) instead of reading the
+	// eagerly-populated Data.User / Data.Organization fields. Concrete
+	// implementation lives in internal/dataprovider; the engine
+	// constructs one per request after template validation. Nil in
+	// legacy code paths and in plugin unit tests that do not exercise
+	// profile-dependent branches.
+	Provider Provider
 	// Render carries the engine's renderer. Only the SVG -> PNG/JPEG
 	// resize pipeline (engine.dispatch.go) consumes this field today;
 	// plugins themselves never type-assert it. Tests inject a
 	// *render.FakeRenderer to avoid launching chromium.
 	Render render.Renderer
+}
+
+// Provider is the contract the dataprovider implementation satisfies.
+// It exposes the profile fetches (user / organization / repositories /
+// contribution-calendar) every plugin shares so the eager Data fields
+// can fade out in favour of a lazy, memoized accessor (#603).
+//
+// All methods are safe for concurrent use: the implementation collapses
+// duplicate in-flight calls and caches both the first success and the
+// first error forever, so callers can invoke them from every plugin
+// goroutine without worrying about thundering herds. The returned
+// pointers are read-only — mutation is not safe across plugins.
+type Provider interface {
+	Profile(ctx context.Context) (*Profile, error)
+	User(ctx context.Context) (*User, error)
+	Organization(ctx context.Context) (*Organization, error)
+	Repositories(ctx context.Context) ([]Repository, error)
+	CommitCalendar(ctx context.Context) (*ContributionCalendar, error)
+}
+
+// ProfileKind discriminates the union value carried by Profile.
+type ProfileKind string
+
+// ProfileKind values returned by Provider.Profile.
+const (
+	ProfileKindUser         ProfileKind = "user"
+	ProfileKindOrganization ProfileKind = "organization"
+)
+
+// Profile is the discriminated union returned by Provider.Profile.
+// Exactly one of User / Organization is non-nil; Kind matches the
+// populated field. Callers that already know the expected kind should
+// use Provider.User / Provider.Organization instead, which error out
+// when the underlying account is the wrong kind.
+type Profile struct {
+	Kind         ProfileKind
+	User         *User
+	Organization *Organization
 }
 
 // PluginImports lets a plugin read another plugin's published result

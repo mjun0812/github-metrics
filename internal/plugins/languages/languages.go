@@ -81,7 +81,7 @@ type inputs struct {
 // Returns a *Result; never returns a non-nil error in standard mode
 // (the contract reserves *RetryableError for plugins that hit the
 // network).
-func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any, error) {
+func (p *languagesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
@@ -107,7 +107,7 @@ func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any
 			Colors:        map[string]string{},
 		}, nil
 	}
-	repos := pc.Data.Computed.RepositoryList
+	repos := resolveRepositoryList(ctx, pc)
 	if len(repos) == 0 {
 		return &Result{
 			Skipped:       true,
@@ -373,4 +373,35 @@ func splitPair(s, sep string) (string, string, bool) {
 		return "", "", false
 	}
 	return left, right, true
+}
+
+// resolveRepositoryList reads the paged repository accumulator via the
+// shared dataprovider (#603), falling back to
+// pc.Data.Computed.RepositoryList for unit tests that build
+// PluginContext by hand without wiring a Provider.
+//
+// Repository mode (Account == AccountRepository) is a special case:
+// base.runRepository synthesizes a 1-element list in
+// pc.Data.Computed.RepositoryList that wraps the target repo's
+// Languages edges, while pc.Provider.Repositories(ctx) returns the
+// user's full repository list (account-agnostic). Using the Provider's
+// user-wide list in repo mode would cause this plugin to render the
+// user's aggregated language distribution instead of the target repo's
+// own. Prefer the synthetic list in that case.
+func resolveRepositoryList(ctx context.Context, pc *plugins.PluginContext) []plugins.Repository {
+	if pc == nil {
+		return nil
+	}
+	if pc.Data != nil && pc.Data.Account == plugins.AccountRepository {
+		return pc.Data.Computed.RepositoryList
+	}
+	if pc.Provider != nil {
+		if repos, err := pc.Provider.Repositories(ctx); err == nil && repos != nil {
+			return repos
+		}
+	}
+	if pc.Data != nil {
+		return pc.Data.Computed.RepositoryList
+	}
+	return nil
 }
