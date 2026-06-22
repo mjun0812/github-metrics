@@ -81,7 +81,7 @@ type inputs struct {
 // Returns a *Result; never returns a non-nil error in standard mode
 // (the contract reserves *RetryableError for plugins that hit the
 // network).
-func (p *languagesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
+func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
@@ -107,7 +107,7 @@ func (p *languagesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 			Colors:        map[string]string{},
 		}, nil
 	}
-	repos := resolveRepositoryList(ctx, pc)
+	repos := pc.Data.Computed.RepositoryList
 	if len(repos) == 0 {
 		return &Result{
 			Skipped:       true,
@@ -373,23 +373,4 @@ func splitPair(s, sep string) (string, string, bool) {
 		return "", "", false
 	}
 	return left, right, true
-}
-
-// resolveRepositoryList reads the paged repository accumulator via the
-// shared dataprovider (#603), falling back to
-// pc.Data.Computed.RepositoryList for unit tests that build
-// PluginContext by hand without wiring a Provider.
-func resolveRepositoryList(ctx context.Context, pc *plugins.PluginContext) []plugins.Repository {
-	if pc == nil {
-		return nil
-	}
-	if pc.Provider != nil {
-		if repos, err := pc.Provider.Repositories(ctx); err == nil && repos != nil {
-			return repos
-		}
-	}
-	if pc.Data != nil {
-		return pc.Data.Computed.RepositoryList
-	}
-	return nil
 }

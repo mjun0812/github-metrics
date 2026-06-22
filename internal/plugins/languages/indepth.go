@@ -142,7 +142,7 @@ func (p *indepthPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 		}, nil
 	}
 	in := parseIndepthInputs(pc.Inputs)
-	repos := resolveRepositoryList(ctx, pc)
+	repos := pc.Data.Computed.RepositoryList
 	if len(repos) == 0 {
 		return &IndepthResult{
 			Repositories: map[string]LanguageBytes{},
