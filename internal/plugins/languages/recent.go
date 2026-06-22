@@ -47,6 +47,12 @@ type recentPlugin struct{}
 func (p *recentPlugin) Name() string                     { return RecentName }
 func (p *recentPlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *recentPlugin) Requires() []plugins.DataKey {
+	// languages-recent does not call Provider directly; it fetches data
+	// through the GitHub REST API directly.
+	return []plugins.DataKey{}
+}
+
 // RecentResult is the JSON payload published under
 // data.Plugins["languages.recent"]. Field set mirrors data-model E-011.
 type RecentResult struct {

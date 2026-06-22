@@ -41,6 +41,13 @@ type basePlugin struct{}
 func (p *basePlugin) Name() string                     { return Name }
 func (p *basePlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *basePlugin) Requires() []plugins.DataKey {
+	// base is the foundational plugin that populates pc.Data from the
+	// GitHub API. It does not consume Provider (a higher-level abstraction
+	// built on Data); it is the source of truth.
+	return []plugins.DataKey{}
+}
+
 // Run dispatches by account kind. Each branch populates data.User /
 // data.Organization and data.Computed.{Repositories, RepositoryList,
 // ContributionCalendar, TotalCommits / Issues / PullRequests} from the
