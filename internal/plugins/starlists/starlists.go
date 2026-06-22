@@ -258,6 +258,14 @@ func resolveRepositories(ctx context.Context, pc *plugins.PluginContext) []plugi
 	if pc == nil {
 		return nil
 	}
+	// Repository mode (Account == AccountRepository): base.runRepository
+	// synthesized a 1-element list in pc.Data.Computed.RepositoryList
+	// wrapping the target repo. Provider.Repositories(ctx) is
+	// account-agnostic and returns the user's full list; using it here
+	// would attribute stars from every user repo to the target one.
+	if pc.Data != nil && pc.Data.Account == plugins.AccountRepository {
+		return pc.Data.Computed.RepositoryList
+	}
 	if pc.Provider != nil {
 		if repos, err := pc.Provider.Repositories(ctx); err == nil && repos != nil {
 			return repos
