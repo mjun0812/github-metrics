@@ -30,7 +30,11 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/engine"
+	"github.com/mjun0812/github-metrics/internal/plugins/base"
+	"github.com/mjun0812/github-metrics/internal/plugins/calendar"
+	"github.com/mjun0812/github-metrics/internal/plugins/stargazers"
 	"github.com/mjun0812/github-metrics/internal/plugins/starlists"
+	"github.com/mjun0812/github-metrics/internal/plugins/stars"
 	"github.com/mjun0812/github-metrics/internal/plugins/topics"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 	"github.com/mjun0812/github-metrics/internal/testutil/golden"
@@ -63,9 +67,12 @@ type perPluginCase struct {
 	slug        string
 	extraInputs map[string]any
 	fixtures    map[string]string // GraphQL op name -> response body
-	useREST     bool
-	restSetup   func(*mocks.RESTMux)
-	goldenPath  string
+	// restSetup is non-nil for plugins that touch the REST surface
+	// (activity, habits, projects, repositories, traffic). Leaving it
+	// nil signals a pure GraphQL test and skips REST wiring entirely so
+	// the activity default events handler is not registered either.
+	restSetup  func(*mocks.RESTMux)
+	goldenPath string
 }
 
 var perPluginCases = []perPluginCase{
@@ -79,7 +86,6 @@ var perPluginCases = []perPluginCase{
 		name:     "activity",
 		slug:     "activity",
 		fixtures: map[string]string{},
-		useREST:  true,
 		restSetup: func(m *mocks.RESTMux) {
 			// activity paginates /users/{login}/events; empty first page terminates loop.
 			m.OnBody("/users/octocat/events", 200, "[]")
@@ -104,7 +110,6 @@ var perPluginCases = []perPluginCase{
 		fixtures: map[string]string{
 			"UserIndepth": `{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"totalContributions":0,"weeks":[]}},"repositories":{"totalCount":0,"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}`,
 		},
-		useREST: true,
 		restSetup: func(m *mocks.RESTMux) {
 			// habits pages /users/{login}/events; empty first page terminates loop.
 			m.OnBody("/users/octocat/events", 200, "[]")
@@ -148,7 +153,6 @@ var perPluginCases = []perPluginCase{
 		fixtures: map[string]string{
 			"ViewerProjects": `{"data":{"viewer":{"projectsV2":{"totalCount":0,"nodes":[]}}}}`,
 		},
-		useREST: true,
 		restSetup: func(m *mocks.RESTMux) {
 			// projects checks read:project scope via REST.Scopes() → GET /
 			m.OnHeader("/", 200, `{}`, map[string][]string{
@@ -176,7 +180,6 @@ var perPluginCases = []perPluginCase{
 		extraInputs: map[string]any{
 			"plugin_repositories_pinned": "yes",
 		},
-		useREST: true,
 		restSetup: func(m *mocks.RESTMux) {
 			// repositories.starred fetches /users/{login}/starred when enabled
 			m.OnBody("/users/octocat/starred", 200, "[]")
@@ -243,7 +246,6 @@ var perPluginCases = []perPluginCase{
 		name:     "traffic",
 		slug:     "traffic",
 		fixtures: map[string]string{},
-		useREST:  true,
 		restSetup: func(m *mocks.RESTMux) {
 			// traffic checks `repo` scope via REST.Scopes() → GET /
 			m.OnHeader("/", 200, `{}`, map[string][]string{
@@ -259,16 +261,26 @@ var perPluginCases = []perPluginCase{
 }
 
 func TestComputeSVG_PerPluginGolden(t *testing.T) {
+	t.Parallel()
 	for _, tc := range perPluginCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			engine.SetVersionForTest(t, "test-version")
-			restore := partials.SetNowForTest(func() time.Time {
+			// Anchor every package-level clock so byte-stable goldens
+			// do not drift across years. Each plugin owns its own
+			// nowFunc (intentional — they have different semantics);
+			// see internal/plugins/{base,calendar,stargazers,stars}/*
+			// and templates/classic/partials/partials.go.
+			fixedNow := func() time.Time {
 				return time.Date(2026, 1, 14, 0, 0, 0, 0, time.UTC)
-			})
-			t.Cleanup(restore)
+			}
+			t.Cleanup(partials.SetNowForTest(fixedNow))
+			t.Cleanup(base.SetNowForTest(fixedNow))
+			t.Cleanup(calendar.SetNowForTest(fixedNow))
+			t.Cleanup(stargazers.SetNowForTest(fixedNow))
+			t.Cleanup(stars.SetNowForTest(fixedNow))
 
 			fixtures := map[string]string{
 				"User":             userOctocat,
@@ -279,8 +291,8 @@ func TestComputeSVG_PerPluginGolden(t *testing.T) {
 			}
 
 			var deps engine.Deps
-			if tc.useREST {
-				deps, _ = newEngineDepsWithREST(t, fixtures, tc.restSetup)
+			if tc.restSetup != nil {
+				deps, _ = newEngineDepsWithREST(t, "octocat", fixtures, tc.restSetup)
 			} else {
 				deps, _ = newEngineDeps(t, fixtures)
 			}
@@ -300,6 +312,11 @@ func TestComputeSVG_PerPluginGolden(t *testing.T) {
 			}, deps)
 			if err != nil {
 				t.Fatalf("Compute: %v", err)
+			}
+			// Surface plugin-level errors so silent skips or fixture
+			// gaps do not slip past a stale golden file.
+			if len(res.Errors) != 0 {
+				t.Fatalf("Result.Errors = %v", res.Errors)
 			}
 			golden.CompareSVG(t, res.Output, tc.goldenPath)
 		})

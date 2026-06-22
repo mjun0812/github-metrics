@@ -222,10 +222,20 @@ func newEngineDeps(t testing.TB, gqlBody map[string]string) (engine.Deps, *graph
 // client is constructed, allowing callers to register path handlers.
 // Plugins that gate behavior on OAuth scopes (projects, sponsors,
 // traffic) need the "/" path registered with an X-OAuth-Scopes header.
-func newEngineDepsWithREST(t *testing.T, gqlBody map[string]string, restSetup func(*mocks.RESTMux)) (engine.Deps, *graphQLFixture) {
+//
+// The activity plugin has no enable gate and always runs whenever a
+// REST client is wired in (see internal/plugins/activity/activity.go),
+// so we register an empty `/users/{login}/events` feed by default. The
+// `login` argument is consulted to keep the path stable across logins.
+// Callers may override the handler via restSetup if they need real
+// events data.
+func newEngineDepsWithREST(t *testing.T, login string, gqlBody map[string]string, restSetup func(*mocks.RESTMux)) (engine.Deps, *graphQLFixture) {
 	t.Helper()
 	deps, fixture := newEngineDeps(t, gqlBody)
 	restMux := mocks.NewRESTMux(t)
+	if login != "" {
+		restMux.OnBody("/users/"+login+"/events", 200, "[]")
+	}
 	if restSetup != nil {
 		restSetup(restMux)
 	}
