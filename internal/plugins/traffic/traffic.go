@@ -116,7 +116,7 @@ func (p *trafficPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 		}, nil
 	}
 
-	repos := pc.Data.Computed.RepositoryList
+	repos := resolveRepositories(ctx, pc)
 	views := make(map[string]TrafficView, len(repos))
 	var total TrafficView
 	var mu sync.Mutex
@@ -218,4 +218,31 @@ func urlPath(nameWithOwner string) string {
 		return url.PathEscape(nameWithOwner)
 	}
 	return url.PathEscape(parts[0]) + "/" + url.PathEscape(parts[1])
+}
+
+// resolveRepositories reads the per-node accumulator via the shared
+// dataprovider (#603), falling back to pc.Data.Computed.RepositoryList
+// for unit tests that build PluginContext by hand without wiring a
+// Provider. Returns nil when neither source carries any entries.
+func resolveRepositories(ctx context.Context, pc *plugins.PluginContext) []plugins.Repository {
+	if pc == nil {
+		return nil
+	}
+	// Repository mode (Account == AccountRepository): base.runRepository
+	// synthesized a 1-element list in pc.Data.Computed.RepositoryList
+	// wrapping the target repo. Provider.Repositories(ctx) is
+	// account-agnostic and returns the user's full list, which would
+	// pull traffic for every user repo instead of just the target one.
+	if pc.Data != nil && pc.Data.Account == plugins.AccountRepository {
+		return pc.Data.Computed.RepositoryList
+	}
+	if pc.Provider != nil {
+		if repos, err := pc.Provider.Repositories(ctx); err == nil && repos != nil {
+			return repos
+		}
+	}
+	if pc.Data != nil {
+		return pc.Data.Computed.RepositoryList
+	}
+	return nil
 }

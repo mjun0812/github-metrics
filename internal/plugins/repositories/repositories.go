@@ -95,7 +95,7 @@ func (p *repositoriesPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 			Featured:      []plugins.Repository{},
 		}, nil
 	}
-	repos := pc.Data.Computed.RepositoryList
+	repos := resolveRepositoryList(ctx, pc)
 	if len(repos) == 0 {
 		return &Result{
 			Skipped:       true,
@@ -131,7 +131,7 @@ func (p *repositoriesPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 	//     extension), truncated to `in.limit`.
 	featured := filtered
 	if len(in.featured) > 0 {
-		featured = selectFeatured(filtered, in.featured, pc.Data.User)
+		featured = selectFeatured(filtered, in.featured, resolveUserFromProvider(ctx, pc))
 	} else if in.limit > 0 && len(featured) > in.limit {
 		featured = featured[:in.limit]
 	}
@@ -177,8 +177,8 @@ const starredFetchTimeout = 30 * time.Second
 //  3. Login empty → return an empty slice (no network call).
 func resolveStarred(ctx context.Context, pc *plugins.PluginContext, featured []plugins.Repository, limit int) []plugins.Repository {
 	login := ""
-	if pc.Data != nil && pc.Data.User != nil {
-		login = pc.Data.User.Login
+	if u := resolveUserFromProvider(ctx, pc); u != nil {
+		login = u.Login
 	}
 	if login == "" {
 		return []plugins.Repository{}
@@ -471,4 +471,55 @@ func pinnableToRepository(node githubapi.ViewerPinnedItemsViewerUserPinnedItemsP
 		repo.Language = &plugins.LanguageStat{Name: r.PrimaryLanguage.Name, Color: color}
 	}
 	return repo, true
+}
+
+// resolveRepositoryList reads the paged repository accumulator via the
+// shared dataprovider (#603), falling back to
+// pc.Data.Computed.RepositoryList for unit tests that build
+// PluginContext by hand without wiring a Provider.
+//
+// Repository mode (Account == AccountRepository) is a special case:
+// base.runRepository synthesizes a 1-element list in
+// pc.Data.Computed.RepositoryList that wraps the target repo's
+// Languages edges, while pc.Provider.Repositories(ctx) returns the
+// user's full repository list (account-agnostic, populated for the
+// header / activity / sponsors plugins that need the user's footprint).
+// Using the Provider's user-wide list in repo mode would cause the
+// languages plugin to render the user's aggregated language
+// distribution instead of the target repo's own. Prefer the synthetic
+// list in that case.
+func resolveRepositoryList(ctx context.Context, pc *plugins.PluginContext) []plugins.Repository {
+	if pc == nil {
+		return nil
+	}
+	if pc.Data != nil && pc.Data.Account == plugins.AccountRepository {
+		return pc.Data.Computed.RepositoryList
+	}
+	if pc.Provider != nil {
+		if repos, err := pc.Provider.Repositories(ctx); err == nil && repos != nil {
+			return repos
+		}
+	}
+	if pc.Data != nil {
+		return pc.Data.Computed.RepositoryList
+	}
+	return nil
+}
+
+// resolveUserFromProvider reads the user profile via the shared
+// dataprovider (#603), falling back to pc.Data.User for unit tests
+// that build PluginContext by hand without wiring a Provider.
+func resolveUserFromProvider(ctx context.Context, pc *plugins.PluginContext) *plugins.User {
+	if pc == nil {
+		return nil
+	}
+	if pc.Provider != nil {
+		if u, err := pc.Provider.User(ctx); err == nil && u != nil {
+			return u
+		}
+	}
+	if pc.Data != nil {
+		return pc.Data.User
+	}
+	return nil
 }
