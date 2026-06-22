@@ -77,6 +77,10 @@ type achievementsPlugin struct{}
 func (p *achievementsPlugin) Name() string                     { return Name }
 func (p *achievementsPlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *achievementsPlugin) Requires() []plugins.DataKey {
+	return []plugins.DataKey{plugins.KeyUser}
+}
+
 // Result is the JSON payload published under data.Plugins["achievements"].
 type Result struct {
 	Skipped       bool              `json:"skipped,omitempty"`

@@ -38,6 +38,12 @@ type habitsPlugin struct{}
 func (p *habitsPlugin) Name() string                     { return Name }
 func (p *habitsPlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *habitsPlugin) Requires() []plugins.DataKey {
+	// habits reads from pc.Data fields populated by base; it does not
+	// call Provider directly.
+	return []plugins.DataKey{}
+}
+
 // Result is the JSON payload published under data.Plugins["habits"].
 type Result struct {
 	Skipped       bool          `json:"skipped,omitempty"`

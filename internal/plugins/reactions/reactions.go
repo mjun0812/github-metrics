@@ -34,6 +34,12 @@ type reactionsPlugin struct{}
 func (p *reactionsPlugin) Name() string                     { return Name }
 func (p *reactionsPlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *reactionsPlugin) Requires() []plugins.DataKey {
+	// reactions reads from pc.Data fields populated by base; it does not
+	// call Provider directly.
+	return []plugins.DataKey{}
+}
+
 // Reaction is the per-content aggregate published for one emoji
 // category. Mirrors upstream's `list[content]` entry.
 type Reaction struct {

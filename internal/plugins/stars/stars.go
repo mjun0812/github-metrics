@@ -29,6 +29,12 @@ type starsPlugin struct{}
 func (p *starsPlugin) Name() string                     { return Name }
 func (p *starsPlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *starsPlugin) Requires() []plugins.DataKey {
+	// stars reads from pc.Data fields populated by base; it does not
+	// call Provider directly.
+	return []plugins.DataKey{}
+}
+
 // Result is the JSON payload published under data.Plugins["stars"].
 type Result struct {
 	Skipped       bool          `json:"skipped,omitempty"`

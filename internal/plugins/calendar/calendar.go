@@ -29,6 +29,10 @@ type calendarPlugin struct{}
 func (p *calendarPlugin) Name() string                     { return Name }
 func (p *calendarPlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *calendarPlugin) Requires() []plugins.DataKey {
+	return []plugins.DataKey{plugins.KeyUser}
+}
+
 // Result is the JSON payload published under data.Plugins["calendar"].
 type Result struct {
 	Skipped       bool           `json:"skipped,omitempty"`

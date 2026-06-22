@@ -39,6 +39,12 @@ type stargazersPlugin struct{}
 func (p *stargazersPlugin) Name() string                     { return Name }
 func (p *stargazersPlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *stargazersPlugin) Requires() []plugins.DataKey {
+	// stargazers reads from pc.Data fields populated by base; it does not
+	// call Provider directly.
+	return []plugins.DataKey{}
+}
+
 // Result is the JSON payload published under data.Plugins["stargazers"].
 // Worldmap is always nil in M4 (R-012).
 type Result struct {
