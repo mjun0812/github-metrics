@@ -17,6 +17,7 @@ type fakePlugin struct {
 
 func (f *fakePlugin) Name() string                     { return f.name }
 func (f *fakePlugin) Metadata() *config.PluginMetadata { return f.meta }
+func (f *fakePlugin) Requires() []plugins.DataKey      { return []plugins.DataKey{} }
 func (f *fakePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if f.run == nil {
 		return nil, nil

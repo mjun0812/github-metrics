@@ -1,0 +1,18 @@
+package notable_test
+
+import (
+	"testing"
+
+	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/plugins/notable"
+	"github.com/mjun0812/github-metrics/internal/plugins/requirestesting"
+)
+
+// TestNotable_Requires asserts that notable.Plugin.Requires() declares
+// exactly [] (no Provider dependencies). If a developer silently adds a Provider call
+// without updating Requires(), the drift-detector test in calendar
+// (TestCalendar_Requires_Dynamic) provides the end-to-end check; this
+// test anchors the static declaration.
+func TestNotable_Requires(t *testing.T) {
+	requirestesting.AssertExpected(t, notable.Plugin, []plugins.DataKey{})
+}
