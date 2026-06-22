@@ -133,7 +133,8 @@ func (p *languagesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 		count int
 		color string
 	}
-	// Upstream `repositories_forks: no` is the default. Without this filter, language
+	// Upstream `repositories_forks: no` is the default (org_repo/source/
+	// plugins/base/metadata.yml line 88). Without this filter, language
 	// stats from forked repos (e.g. a fork of a large EJS codebase)
 	// pollute the user's distribution with code they didn't write.
 	// Mirror upstream's default by skipping forks unless the caller

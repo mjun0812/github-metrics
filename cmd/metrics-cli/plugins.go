@@ -2,13 +2,17 @@ package main
 
 // Side-effect imports register the adopted plugins + the classic
 // template into their respective global registries. Without these
-// imports, engine.Compute returns "template not found". Keep this
-// list in sync with internal/plugins/* + spec
+// imports, engine.Compute returns "template not found" / "base plugin
+// missing". Keep this list in sync with internal/plugins/* + spec
 // docs/design/15-selection-answer.md.
+//
+// header (#602) was extracted from base; base remains as the empty
+// shim until #605 deletes it entirely.
 
 import (
 	_ "github.com/mjun0812/github-metrics/internal/plugins/achievements"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/activity"
+	_ "github.com/mjun0812/github-metrics/internal/plugins/base"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/calendar"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/contributors"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/core"

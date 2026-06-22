@@ -1,4 +1,4 @@
-package engine
+package base
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
-// fetchRepo populates a *plugins.Repo for the M7 repository template
+// FetchRepo populates a *plugins.Repo for the M7 repository template
 // flow. It runs once per request when the engine has selected the
 // repository template and the user supplied a non-empty `repo` input.
 //
@@ -31,17 +31,17 @@ import (
 //
 // 404 is surfaced as a typed *xerrors.InputError on "repo" so the M6
 // retry policy treats it as non-retryable (fail-fast).
-func fetchRepo(ctx context.Context, login, repo string, rest *githubapi.REST, gql *githubapi.GraphQL) (*plugins.Repo, error) {
+func FetchRepo(ctx context.Context, login, repo string, rest *githubapi.REST, gql *githubapi.GraphQL) (*plugins.Repo, error) {
 	if gql == nil {
-		return nil, fmt.Errorf("engine: fetchRepo: nil GraphQL client")
+		return nil, fmt.Errorf("base: FetchRepo: nil GraphQL client")
 	}
 	if login == "" || repo == "" {
-		return nil, fmt.Errorf("engine: fetchRepo: login and repo required (got %q/%q)", login, repo)
+		return nil, fmt.Errorf("base: FetchRepo: login and repo required (got %q/%q)", login, repo)
 	}
 
 	resp, err := gql.Repository(ctx, login, repo)
 	if err != nil {
-		return nil, fmt.Errorf("engine: Repository(%s/%s): %w", login, repo, err)
+		return nil, fmt.Errorf("base: Repository(%s/%s): %w", login, repo, err)
 	}
 	if resp == nil || resp.Repository == nil {
 		return nil, xerrors.NewInputError("repo",
@@ -52,9 +52,9 @@ func fetchRepo(ctx context.Context, login, repo string, rest *githubapi.REST, gq
 	out := &plugins.Repo{
 		Owner:         login,
 		Name:          r.Name,
-		Description:   derefStringRepo(r.Description),
+		Description:   derefString(r.Description),
 		CreatedAt:     r.CreatedAt,
-		DiskUsageKB:   derefIntRepo(r.DiskUsage),
+		DiskUsageKB:   derefInt(r.DiskUsage),
 		Stargazers:    r.StargazerCount,
 		Forks:         r.ForkCount,
 		IsArchived:    r.IsArchived,
@@ -110,13 +110,13 @@ func fetchRepo(ctx context.Context, login, repo string, rest *githubapi.REST, gq
 		if n, lerr := fetchContributorsCount(ctx, rest, out.Owner, r.Name); lerr == nil {
 			out.Contributors = n
 		} else {
-			slog.Warn("engine: fetchRepo: contributors REST best-effort failure",
+			slog.Warn("FetchRepo: contributors REST best-effort failure",
 				"owner", out.Owner, "repo", r.Name, "err", lerr)
 		}
 		if n, lerr := fetchRecentCommitCount(ctx, rest, out.Owner, r.Name); lerr == nil {
 			out.Activity.RecentCommits = n
 		} else {
-			slog.Warn("engine: fetchRepo: commits REST best-effort failure",
+			slog.Warn("FetchRepo: commits REST best-effort failure",
 				"owner", out.Owner, "repo", r.Name, "err", lerr)
 		}
 	}
@@ -129,20 +129,6 @@ func refName(ref *githubapi.RepositoryRepositoryDefaultBranchRef) string {
 		return ""
 	}
 	return ref.Name
-}
-
-func derefStringRepo(p *string) string {
-	if p == nil {
-		return ""
-	}
-	return *p
-}
-
-func derefIntRepo(p *int) int {
-	if p == nil {
-		return 0
-	}
-	return *p
 }
 
 // fetchContributorsCount uses the GitHub REST trick of asking for

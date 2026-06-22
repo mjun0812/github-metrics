@@ -1,0 +1,97 @@
+name: 🗃️ Base content
+category: core
+description: |
+  Foundational data-fetching plugin: walks the user / organization
+  / repository pages and seeds the shared computed fields downstream
+  plugins consume. Owns no rendering of its own after #602 — the
+  identity card moved to the `header` plugin and the activity /
+  community / repositories summary panels were dropped outright.
+examples:
+  default1: https://github.com/lowlighter/metrics/blob/examples/metrics.classic.svg
+  default2: https://github.com/lowlighter/metrics/blob/examples/metrics.organization.svg
+supports:
+  - user
+  - organization
+  - repository
+scopes:
+  - public_access
+inputs:
+
+  repositories:
+    description: |
+      Fetched repositories
+
+      A higher value result in more accurate metrics but can hit GitHub API rate-limit more easily (especially with a lot of plugins enabled)
+    type: number
+    default: 100
+    min: 0
+
+  repositories_batch:
+    description: |
+      Fetched repositories per query
+
+      If you receive `Something went wrong while executing your query` (which is usually caused by API timeouts), lowering this value may help.
+      This setting may not be supported by all plugins.
+    type: number
+    default: 100
+    max: 100
+    min: 1
+
+  repositories_forks:
+    description: |
+      Include forks
+    type: boolean
+    default: no
+
+  repositories_affiliations:
+    description: |
+      Repositories affiliations
+
+      - `owner`: owned repositories
+      - `collaborator`: repositories with push access
+      - `organization_member`: repositories from an organization where user is a member
+
+      Some plugin outputs may be affected by this setting too.
+
+      Set to `""` to disable and fetch all repositories related to given account.
+      Broad affiliations will result in less representative metrics.
+    type: array
+    format: comma-separated
+    default: owner
+    values:
+      - owner
+      - collaborator
+      - organization_member
+
+  repositories_skipped:
+    description: |
+      Default skipped repositories
+    type: array
+    format:
+      - newline-separated
+      - comma-separated
+    default: ""
+    example: my-repo-1, my-repo-2, owner/repo-3, ...
+    global: yes
+
+  users_ignored:
+    description: |
+      Default ignored users
+
+      Note that emails are only supported in commits-related elements.
+    type: array
+    format: comma-separated
+    default: github-actions[bot], dependabot[bot], dependabot-preview[bot], actions-user, action@github.com
+    global: yes
+
+  commits_authoring:
+    description: |
+      Identifiers that has been used for authoring commits
+
+      Specify names, surnames, username, email addresses that has been used in the past that can be used to detect commits ownerships in some plugins
+    type: array
+    format: comma-separated
+    default: .user.login
+    example: lowlighter, lowlighter@users.noreply.github.com
+    global: yes
+    preset: no
