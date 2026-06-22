@@ -17,6 +17,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/format"
@@ -27,16 +28,33 @@ import (
 
 // nowFunc is the time source used by BaseHeader's "Joined GitHub <N>
 // years ago" label. It defaults to time.Now; tests overwrite it via
-// SetNowForTest to anchor the rendered string. Not goroutine-safe;
-// production code never reassigns it.
-var nowFunc = time.Now
+// SetNowForTest to anchor the rendered string. nowMu guards reads and
+// writes so parallel test subtests sharing this package can safely
+// install and restore the fake clock without -race violations.
+var (
+	nowMu   sync.RWMutex
+	nowFunc = time.Now
+)
 
 // SetNowForTest overrides the time source used by BaseHeader. The
 // returned function restores the previous value.
 func SetNowForTest(now func() time.Time) func() {
+	nowMu.Lock()
 	prev := nowFunc
 	nowFunc = now
-	return func() { nowFunc = prev }
+	nowMu.Unlock()
+	return func() {
+		nowMu.Lock()
+		nowFunc = prev
+		nowMu.Unlock()
+	}
+}
+
+func currentNow() time.Time {
+	nowMu.RLock()
+	fn := nowFunc
+	nowMu.RUnlock()
+	return fn()
 }
 
 // BaseHeader renders the avatar + display name block at the top of the
@@ -85,7 +103,7 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 
 	// Left column: Joined / Followed by / Following.
 	var leftRows []string
-	if age := format.RelativeAge(u.CreatedAt, nowFunc()); age != "" {
+	if age := format.RelativeAge(u.CreatedAt, currentNow()); age != "" {
 		leftRows = append(leftRows, fmt.Sprintf(
 			`<div class="field">:octicon-clock:Joined GitHub %s</div>`, age,
 		))
