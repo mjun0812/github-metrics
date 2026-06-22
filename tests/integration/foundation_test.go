@@ -20,6 +20,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/render"
+	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 
 	// Side-effect imports keep the P3 plugins (topics, starlists)
 	// registered in the global plugin registry regardless of which
@@ -214,6 +215,30 @@ func newEngineDeps(t testing.TB, gqlBody map[string]string) (engine.Deps, *graph
 		// chromedp behavior live under the chromedp build tag.
 		Render: &render.FakeRenderer{},
 	}, fixture
+}
+
+// newEngineDepsWithREST extends newEngineDeps with a REST client backed
+// by a mocks.RESTMux. restSetup is called with the mux before the REST
+// client is constructed, allowing callers to register path handlers.
+// Plugins that gate behavior on OAuth scopes (projects, sponsors,
+// traffic) need the "/" path registered with an X-OAuth-Scopes header.
+func newEngineDepsWithREST(t *testing.T, gqlBody map[string]string, restSetup func(*mocks.RESTMux)) (engine.Deps, *graphQLFixture) {
+	t.Helper()
+	deps, fixture := newEngineDeps(t, gqlBody)
+	restMux := mocks.NewRESTMux(t)
+	if restSetup != nil {
+		restSetup(restMux)
+	}
+	rest, err := githubapi.NewREST(
+		config.NewToken("MOCKED_TOKEN"),
+		"http://mock.localhost",
+		httpx.Options{Transport: restMux, MaxRetries: 0},
+	)
+	if err != nil {
+		t.Fatalf("NewREST: %v", err)
+	}
+	deps.REST = rest
+	return deps, fixture
 }
 
 // TestEngine_ComputeUser is US5 AS1 + AS2 combined: with mocked
