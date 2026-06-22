@@ -46,6 +46,12 @@ type sponsorshipsPlugin struct{}
 func (p *sponsorshipsPlugin) Name() string                     { return Name }
 func (p *sponsorshipsPlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *sponsorshipsPlugin) Requires() []plugins.DataKey {
+	// sponsorships reads from pc.Data fields populated by base; it does not
+	// call Provider directly.
+	return []plugins.DataKey{}
+}
+
 // Result is the JSON payload published under data.Plugins["sponsorships"].
 type Result struct {
 	Skipped       bool        `json:"skipped,omitempty"`

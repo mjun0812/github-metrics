@@ -28,6 +28,10 @@ type isocalendarPlugin struct{}
 func (p *isocalendarPlugin) Name() string                     { return Name }
 func (p *isocalendarPlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *isocalendarPlugin) Requires() []plugins.DataKey {
+	return []plugins.DataKey{plugins.KeyUser}
+}
+
 // Result is the JSON payload published under data.Plugins["isocalendar"].
 type Result struct {
 	Skipped       bool      `json:"skipped,omitempty"`
