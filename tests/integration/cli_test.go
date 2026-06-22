@@ -117,6 +117,68 @@ func TestCLI_OctocatSVG_Stdout(t *testing.T) {
 	}
 }
 
+// TestCLI_FilenameWritesSingleCombinedSVG locks the pre-#606 CLI
+// compatibility contract: an explicit --filename foo.svg writes exactly
+// that combined SVG file and must not fan out into per-plugin files.
+func TestCLI_FilenameWritesSingleCombinedSVG(t *testing.T) {
+	t.Parallel()
+	srv := startGitHubMock(t)
+
+	dir := t.TempDir()
+	outfile := filepath.Join(dir, "metrics.svg")
+	cfg := filepath.Join(dir, "inputs.yaml")
+	body := fmt.Sprintf(`user: octocat
+template: classic
+output: svg
+filename: %s
+dryrun: true
+use_mocked_data: true
+github_api_rest: %s
+github_api_graphql: %s/graphql
+`, outfile, srv.URL, srv.URL)
+	if err := os.WriteFile(cfg, []byte(body), 0o600); err != nil {
+		t.Fatalf("write yaml: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(
+		ctx, actionBin, //nolint:gosec // actionBin is an absolute path from TestMain
+		"--config", cfg,
+		"--token-env", "GH_TOKEN_FOR_CLI_TEST",
+	)
+	cmd.Env = append(stripGitHubActionsEnv(os.Environ()), "GH_TOKEN_FOR_CLI_TEST=ghp_mock_pat_valid")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("metrics-cli run: %v\nstderr=%s", err, stderr.String())
+	}
+
+	raw, err := os.ReadFile(outfile)
+	if err != nil {
+		t.Fatalf("read output file: %v", err)
+	}
+	out := string(raw)
+	if !strings.Contains(out, "<svg") || !strings.Contains(out, "</svg>") {
+		t.Fatalf("output file is not an SVG: %q", trunc(out, 400))
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("ReadDir: %v", err)
+	}
+	var files []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			files = append(files, entry.Name())
+		}
+	}
+	if len(files) != 2 || files[0] != "inputs.yaml" || files[1] != "metrics.svg" {
+		t.Fatalf("--filename should write only metrics.svg beside inputs.yaml; got files=%v", files)
+	}
+}
+
 // TestCLI_ConfigYAML_Equivalence verifies that 4 representative inputs
 // produce the same merged Invocation regardless of whether they came
 // from --config YAML, --plugin flags, or INPUT_<UPPER> env vars.
