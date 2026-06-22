@@ -27,18 +27,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// adoptedSlugs is the canonical adopted plugin directory set the
+// adoptedSlugs is the canonical 21-採用 plugin directory set the
 // generator walks. Two-dir entries (`languages.recent` + `.indepth`)
 // share the `languages` directory; we don't iterate the dotted forms
 // because their `inputs:` are already enumerated in `languages`.
 //
 // `base` and `core` are included for their non-plugin inputs. They do
 // not expose `plugin_base` / `plugin_core` gates, but their metadata
-// still defines user-facing controls such as the global repository
-// fetcher knobs.
-//
-// `header` (added in #602) is a regular adopted plugin that took over
-// the identity card the legacy `base` plugin used to own.
+// still defines user-facing controls such as `base` and `repositories`.
 var adoptedSlugs = []string{
 	"core",
 	"base",
@@ -47,7 +43,6 @@ var adoptedSlugs = []string{
 	"calendar",
 	"contributors",
 	"habits",
-	"header",
 	"isocalendar",
 	"languages",
 	"notable",

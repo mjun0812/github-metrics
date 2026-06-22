@@ -96,7 +96,7 @@ trap 'rm -rf "$WORKDIR"' EXIT
 # contributors sample is the repo-mode `plugin-contributors-repo-contributions`
 # render below.
 PLUGINS=(
-	achievements activity calendar habits header isocalendar
+	achievements activity calendar habits isocalendar
 	notable people projects repositories sponsors
 	sponsorships stargazers starlists stars topics traffic
 )

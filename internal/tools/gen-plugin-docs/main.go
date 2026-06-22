@@ -36,7 +36,6 @@ var adoptedSlugs = []string{
 	"calendar",
 	"contributors",
 	"habits",
-	"header",
 	"isocalendar",
 	"languages",
 	"notable",
@@ -71,18 +70,12 @@ var foundationalSlugs = []string{
 }
 
 // slugsWithoutSample is the set of plugin slugs whose `docs/plugins/<slug>.md`
-// page intentionally omits the sample-image section. Members:
-//
-//   - `core` — implements configuration parsing and the parallel plugin
-//     runner, with no card of its own; an example image would be either
-//     empty or misleading.
-//   - `base` — after #602 the base plugin is a data-fetch / shared-settings
-//     shim with no rendering output. The user-visible card moved to the
-//     `header` plugin; base only seeds the shared computed fields every
-//     other plugin reads.
+// page intentionally omits the sample-image section. `core` is the only
+// member: it has no standalone visual output (it implements configuration
+// parsing and the parallel plugin runner) so an example image would be
+// either empty or misleading.
 var slugsWithoutSample = map[string]struct{}{
 	"core": {},
-	"base": {},
 }
 
 // sampleOverrides maps a plugin slug to the example SVG basename (without
@@ -276,25 +269,25 @@ func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existin
 	b.WriteString("## Usage\n\n")
 	switch slug {
 	case "base":
-		// After #602 `base` is purely a data-fetch / settings plugin
-		// (no per-section toggles, no `plugin_base` switch). The
-		// only inputs users normally tweak are the global repository
-		// fetcher knobs (`repositories`, `repositories_batch`,
-		// `repositories_forks`, ...) which take effect regardless of
-		// any other toggle.
+		// `base` is always active (it populates the user/org header
+		// every other plugin sits on top of). What the user configures
+		// is *which* base sections to render and a few related toggles
+		// (indepth / hireable / skip). The Action / CLI snippets reflect
+		// the canonical "tweak base sections" usage rather than a
+		// non-existent `plugin_base: yes` toggle.
 		b.WriteString("### GitHub Action\n\n")
 		b.WriteString("```yaml\n")
 		b.WriteString("- uses: mjun0812/github-metrics@v1\n")
 		b.WriteString("  with:\n")
 		b.WriteString("    user: <your-login>\n")
 		b.WriteString("    token: ${{ secrets.METRICS_TOKEN }}\n")
-		b.WriteString("    repositories: 100\n")
+		b.WriteString("    base: header, activity, community, repositories, metadata\n")
 		b.WriteString("```\n\n")
 		b.WriteString("### CLI\n\n")
 		b.WriteString("```sh\n")
 		b.WriteString("metrics-cli --user <your-login> --token-env GITHUB_TOKEN \\\n")
 		b.WriteString("  --output svg --filename - \\\n")
-		b.WriteString("  --setting 'repositories=100'\n")
+		b.WriteString("  --plugin 'base=header, activity, community, repositories, metadata'\n")
 		b.WriteString("```\n")
 	case "core":
 		// `core` is the configuration / parallel-runner plugin. It is
