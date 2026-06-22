@@ -19,6 +19,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
@@ -28,6 +29,36 @@ import (
 
 // Name is the canonical plugin slug.
 const Name = "achievements"
+
+// nowFunc is the time source consulted by the "member" achievement's
+// year-since-registration calculation. It defaults to time.Now; tests
+// overwrite it via SetNowForTest to anchor the rendered value so the
+// per-plugin golden does not drift across calendar years.
+var (
+	nowMu   sync.RWMutex
+	nowFunc = time.Now
+)
+
+// SetNowForTest overrides the time source used by the "member"
+// achievement. The returned function restores the previous value.
+func SetNowForTest(fn func() time.Time) func() {
+	nowMu.Lock()
+	prev := nowFunc
+	nowFunc = fn
+	nowMu.Unlock()
+	return func() {
+		nowMu.Lock()
+		nowFunc = prev
+		nowMu.Unlock()
+	}
+}
+
+func currentNow() time.Time {
+	nowMu.RLock()
+	fn := nowFunc
+	nowMu.RUnlock()
+	return fn()
+}
 
 const (
 	displayDetailed = "detailed"
@@ -300,7 +331,7 @@ var rankTable = []rankSpec{
 			if d.User == nil || d.User.CreatedAt.IsZero() {
 				return 0
 			}
-			years := time.Since(d.User.CreatedAt).Hours() / (24 * 365.25)
+			years := currentNow().Sub(d.User.CreatedAt).Hours() / (24 * 365.25)
 			if years <= 0 {
 				return 0
 			}
