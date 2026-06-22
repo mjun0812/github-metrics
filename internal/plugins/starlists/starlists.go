@@ -35,13 +35,6 @@ type starlistsPlugin struct{}
 func (p *starlistsPlugin) Name() string                     { return Name }
 func (p *starlistsPlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Requires reports the Provider data sources Run reads. starlists
-// reads the repository list via pc.Provider.Repositories to enrich the
-// scraped starlist payload.
-func (p *starlistsPlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{plugins.KeyRepositories}
-}
-
 // Result is the JSON payload published under data.Plugins["starlists"].
 // Field set mirrors data-model E-024.
 type Result struct {
@@ -179,7 +172,7 @@ func (p *starlistsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 // arbitrary external repos is out of scope for M4 — see contract §4.4).
 func analyzeLanguages(ctx context.Context, pc *plugins.PluginContext, list []Starlist, nav Navigator) {
 	repoIndex := map[string][]plugins.LanguageStat{}
-	for _, r := range resolveRepositories(ctx, pc) {
+	for _, r := range pc.Data.Computed.RepositoryList {
 		repoIndex[strings.ToLower(r.NameWithOwner)] = r.Languages
 	}
 	for i := range list {
@@ -255,25 +248,6 @@ func pickNavigator(pc *plugins.PluginContext, login string, in starlistsInputs) 
 	// stay well inside the per-query node budget. Items rarely exceed
 	// that in real starlists.
 	return NewGraphQLNavigator(pc.GraphQL, login, listsFirst, 50)
-}
-
-// resolveRepositories reads the per-node accumulator via the shared
-// dataprovider (#603), falling back to pc.Data.Computed.RepositoryList
-// for unit tests that build PluginContext by hand without wiring a
-// Provider.
-func resolveRepositories(ctx context.Context, pc *plugins.PluginContext) []plugins.Repository {
-	if pc == nil {
-		return nil
-	}
-	if pc.Provider != nil {
-		if repos, err := pc.Provider.Repositories(ctx); err == nil && repos != nil {
-			return repos
-		}
-	}
-	if pc.Data != nil {
-		return pc.Data.Computed.RepositoryList
-	}
-	return nil
 }
 
 func parseInputs(in map[string]any) starlistsInputs {

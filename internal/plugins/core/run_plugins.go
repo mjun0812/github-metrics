@@ -31,17 +31,6 @@ import (
 // Result.Errors by engine.Compute's collectPluginErrors. RunPlugins
 // itself does not touch Data.Errors so the mutex-protected accumulator
 // stays in one place.
-//
-// LAZY-ONLY POLICY (issue #604 decision #5): RunPlugins intentionally
-// does NOT prefetch Provider data based on Plugin.Requires(). The
-// Provider already collapses concurrent callers via singleflight and
-// caches both successes and errors for the lifetime of the request, so
-// the first plugin that asks for a given key triggers the fetch and
-// every later caller observes the cached outcome. A prefetch goroutine
-// would add error-routing complexity for marginal benefit. Requires()
-// is purely declarative — its only consumers are per-plugin
-// counting-mock tests that catch drift between declared and actual
-// reads. Do not "optimize" this back into a prefetch loop.
 func RunPlugins(ctx context.Context, pc *plugins.PluginContext, parallel int) error {
 	if pc == nil {
 		return fmt.Errorf("core.RunPlugins: nil PluginContext")
@@ -95,13 +84,14 @@ func RunPlugins(ctx context.Context, pc *plugins.PluginContext, parallel int) er
 }
 
 // pluginNamesExcludingCore returns the alphabetical list of registered
-// plugin names with the "core" entry removed. The core plugin wires
-// the parallel runner itself, so the engine drives it directly outside
-// the errgroup.
+// plugin names with the "core" and "base" entries removed. Both
+// plugins have ordering constraints (base must run before any data
+// plugin, core wires the parallel runner itself) so the engine drives
+// them directly outside the errgroup.
 func pluginNamesExcludingCore() []string {
 	var names []string
 	_ = plugins.Each(func(name string, _ plugins.Plugin) error {
-		if name == Name {
+		if name == Name || name == "base" {
 			return nil
 		}
 		names = append(names, name)

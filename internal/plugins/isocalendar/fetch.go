@@ -63,7 +63,7 @@ func fetchWindowedWeeks(ctx context.Context, pc *plugins.PluginContext, duration
 	if pc.GraphQL == nil || !pluginutil.TruthyInput(pc.Inputs, "plugin_isocalendar") {
 		return nil, nil
 	}
-	login := resolveLogin(ctx, pc)
+	login := resolveLogin(pc)
 	if login == "" {
 		return nil, nil
 	}
@@ -100,16 +100,9 @@ func fetchWindowedWeeks(ctx context.Context, pc *plugins.PluginContext, duration
 	return weeks, nil
 }
 
-// resolveLogin returns the page user's login, preferring the shared
-// dataprovider's resolved User payload (#603) over the raw inputs.
-// Falls back to pc.Data.User for unit tests that build PluginContext
-// by hand without wiring a Provider.
-func resolveLogin(ctx context.Context, pc *plugins.PluginContext) string {
-	if pc.Provider != nil {
-		if u, err := pc.Provider.User(ctx); err == nil && u != nil && u.Login != "" {
-			return u.Login
-		}
-	}
+// resolveLogin returns the page user's login, preferring the base
+// plugin's resolved User payload over the raw inputs.
+func resolveLogin(pc *plugins.PluginContext) string {
 	if pc.Data != nil && pc.Data.User != nil && pc.Data.User.Login != "" {
 		return pc.Data.User.Login
 	}

@@ -118,57 +118,6 @@ docker run --rm \
 The image is multi-arch — `docker pull` automatically resolves to your
 host architecture.
 
-## Profile README
-
-Use per-plugin SVG mode to compose a rich profile README where each section
-is an independent image that can be repositioned or removed without affecting
-the others.
-
-### Action workflow
-
-```yaml
-# .github/workflows/metrics.yml
-name: Profile metrics
-on:
-  schedule: [{cron: '0 0 * * *'}]
-  workflow_dispatch:
-
-jobs:
-  metrics:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: mjun0812/github-metrics@v1
-        with:
-          user: ${{ github.repository_owner }}
-          token: ${{ secrets.METRICS_TOKEN }}
-          output_dir: ./metrics/
-          combined: 'no'
-          plugin_header: 'yes'
-          plugin_languages: 'yes'
-          plugin_stars: 'yes'
-          plugin_activity: 'yes'
-          output_action: commit
-          committer_branch: main
-```
-
-### Embedding in your README
-
-```markdown
-<img src="metrics/header.svg" width="100%">
-
-<img src="metrics/languages.svg" align="left" width="48%">
-<img src="metrics/stars.svg" align="right" width="48%">
-
-<div style="clear: both;"></div>
-
-<img src="metrics/activity.svg" width="100%">
-```
-
-Each SVG is rendered independently — disabling a plugin or removing its
-`<img>` tag does not affect the others.
-
 ## Authentication
 
 Every invocation needs a GitHub token:
@@ -191,18 +140,18 @@ user's profile, so a missing token fails immediately.
 |:---:|:---:|:---:|
 | [![achievements](docs/examples/plugin-achievements.svg)](docs/plugins/achievements.md) | [![activity](docs/examples/plugin-activity.svg)](docs/plugins/activity.md) | [![calendar](docs/examples/plugin-calendar.svg)](docs/plugins/calendar.md) |
 | [`achievements`](docs/plugins/achievements.md) | [`activity`](docs/plugins/activity.md) | [`calendar`](docs/plugins/calendar.md) |
-| [![contributors](docs/examples/plugin-contributors-repo-contributions.svg)](docs/plugins/contributors.md) | [![habits](docs/examples/plugin-habits.svg)](docs/plugins/habits.md) | [![header](docs/examples/plugin-header.svg)](docs/plugins/header.md) |
-| [`contributors`](docs/plugins/contributors.md) | [`habits`](docs/plugins/habits.md) | [`header`](docs/plugins/header.md) |
-| [![isocalendar](docs/examples/plugin-isocalendar.svg)](docs/plugins/isocalendar.md) | [![languages](docs/examples/plugin-languages.svg)](docs/plugins/languages.md) | [![notable](docs/examples/plugin-notable.svg)](docs/plugins/notable.md) |
-| [`isocalendar`](docs/plugins/isocalendar.md) | [`languages`](docs/plugins/languages.md) | [`notable`](docs/plugins/notable.md) |
-| [![people](docs/examples/plugin-people.svg)](docs/plugins/people.md) | [![projects](docs/examples/plugin-projects.svg)](docs/plugins/projects.md) | [![reactions](docs/examples/plugin-reactions.svg)](docs/plugins/reactions.md) |
-| [`people`](docs/plugins/people.md) | [`projects`](docs/plugins/projects.md) | [`reactions`](docs/plugins/reactions.md) |
-| [![repositories](docs/examples/plugin-repositories.svg)](docs/plugins/repositories.md) | [![sponsors](docs/examples/plugin-sponsors.svg)](docs/plugins/sponsors.md) | [![sponsorships](docs/examples/plugin-sponsorships.svg)](docs/plugins/sponsorships.md) |
-| [`repositories`](docs/plugins/repositories.md) | [`sponsors`](docs/plugins/sponsors.md) | [`sponsorships`](docs/plugins/sponsorships.md) |
-| [![stargazers](docs/examples/plugin-stargazers.svg)](docs/plugins/stargazers.md) | [![starlists](docs/examples/plugin-starlists.svg)](docs/plugins/starlists.md) | [![stars](docs/examples/plugin-stars.svg)](docs/plugins/stars.md) |
-| [`stargazers`](docs/plugins/stargazers.md) | [`starlists`](docs/plugins/starlists.md) | [`stars`](docs/plugins/stars.md) |
-| [![topics](docs/examples/plugin-topics.svg)](docs/plugins/topics.md) | [![traffic](docs/examples/plugin-traffic.svg)](docs/plugins/traffic.md) | |
-| [`topics`](docs/plugins/topics.md) | [`traffic`](docs/plugins/traffic.md) | |
+| [![contributors](docs/examples/plugin-contributors-repo-contributions.svg)](docs/plugins/contributors.md) | [![habits](docs/examples/plugin-habits.svg)](docs/plugins/habits.md) | [![isocalendar](docs/examples/plugin-isocalendar.svg)](docs/plugins/isocalendar.md) |
+| [`contributors`](docs/plugins/contributors.md) | [`habits`](docs/plugins/habits.md) | [`isocalendar`](docs/plugins/isocalendar.md) |
+| [![languages](docs/examples/plugin-languages.svg)](docs/plugins/languages.md) | [![notable](docs/examples/plugin-notable.svg)](docs/plugins/notable.md) | [![people](docs/examples/plugin-people.svg)](docs/plugins/people.md) |
+| [`languages`](docs/plugins/languages.md) | [`notable`](docs/plugins/notable.md) | [`people`](docs/plugins/people.md) |
+| [![projects](docs/examples/plugin-projects.svg)](docs/plugins/projects.md) | [![reactions](docs/examples/plugin-reactions.svg)](docs/plugins/reactions.md) | [![repositories](docs/examples/plugin-repositories.svg)](docs/plugins/repositories.md) |
+| [`projects`](docs/plugins/projects.md) | [`reactions`](docs/plugins/reactions.md) | [`repositories`](docs/plugins/repositories.md) |
+| [![sponsors](docs/examples/plugin-sponsors.svg)](docs/plugins/sponsors.md) | [![sponsorships](docs/examples/plugin-sponsorships.svg)](docs/plugins/sponsorships.md) | [![stargazers](docs/examples/plugin-stargazers.svg)](docs/plugins/stargazers.md) |
+| [`sponsors`](docs/plugins/sponsors.md) | [`sponsorships`](docs/plugins/sponsorships.md) | [`stargazers`](docs/plugins/stargazers.md) |
+| [![starlists](docs/examples/plugin-starlists.svg)](docs/plugins/starlists.md) | [![stars](docs/examples/plugin-stars.svg)](docs/plugins/stars.md) | [![topics](docs/examples/plugin-topics.svg)](docs/plugins/topics.md) |
+| [`starlists`](docs/plugins/starlists.md) | [`stars`](docs/plugins/stars.md) | [`topics`](docs/plugins/topics.md) |
+| [![traffic](docs/examples/plugin-traffic.svg)](docs/plugins/traffic.md) | | |
+| [`traffic`](docs/plugins/traffic.md) | | |
 <!-- AUTOGEN_END: plugins-gallery -->
 
 The 19 user-facing plugins above are always available; enable each via

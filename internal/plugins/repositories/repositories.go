@@ -53,13 +53,6 @@ type repositoriesPlugin struct{}
 func (p *repositoriesPlugin) Name() string                     { return Name }
 func (p *repositoriesPlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Requires reports the Provider data sources Run reads. repositories
-// resolves both the user payload (for fork/private filtering signals)
-// and the full repository list via Provider.
-func (p *repositoriesPlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{plugins.KeyUser, plugins.KeyRepositories}
-}
-
 // Result is the JSON payload published under data.Plugins["repositories"].
 type Result struct {
 	Skipped       bool                 `json:"skipped,omitempty"`
@@ -102,7 +95,7 @@ func (p *repositoriesPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 			Featured:      []plugins.Repository{},
 		}, nil
 	}
-	repos := resolveRepositoryList(ctx, pc)
+	repos := pc.Data.Computed.RepositoryList
 	if len(repos) == 0 {
 		return &Result{
 			Skipped:       true,
@@ -138,7 +131,7 @@ func (p *repositoriesPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 	//     extension), truncated to `in.limit`.
 	featured := filtered
 	if len(in.featured) > 0 {
-		featured = selectFeatured(filtered, in.featured, resolveUserFromProvider(ctx, pc))
+		featured = selectFeatured(filtered, in.featured, pc.Data.User)
 	} else if in.limit > 0 && len(featured) > in.limit {
 		featured = featured[:in.limit]
 	}
@@ -184,8 +177,8 @@ const starredFetchTimeout = 30 * time.Second
 //  3. Login empty → return an empty slice (no network call).
 func resolveStarred(ctx context.Context, pc *plugins.PluginContext, featured []plugins.Repository, limit int) []plugins.Repository {
 	login := ""
-	if u := resolveUserFromProvider(ctx, pc); u != nil {
-		login = u.Login
+	if pc.Data != nil && pc.Data.User != nil {
+		login = pc.Data.User.Login
 	}
 	if login == "" {
 		return []plugins.Repository{}
@@ -478,41 +471,4 @@ func pinnableToRepository(node githubapi.ViewerPinnedItemsViewerUserPinnedItemsP
 		repo.Language = &plugins.LanguageStat{Name: r.PrimaryLanguage.Name, Color: color}
 	}
 	return repo, true
-}
-
-// resolveRepositoryList reads the paged repository accumulator via the
-// shared dataprovider (#603), falling back to
-// pc.Data.Computed.RepositoryList for unit tests that build
-// PluginContext by hand without wiring a Provider.
-func resolveRepositoryList(ctx context.Context, pc *plugins.PluginContext) []plugins.Repository {
-	if pc == nil {
-		return nil
-	}
-	if pc.Provider != nil {
-		if repos, err := pc.Provider.Repositories(ctx); err == nil && repos != nil {
-			return repos
-		}
-	}
-	if pc.Data != nil {
-		return pc.Data.Computed.RepositoryList
-	}
-	return nil
-}
-
-// resolveUserFromProvider reads the user profile via the shared
-// dataprovider (#603), falling back to pc.Data.User for unit tests
-// that build PluginContext by hand without wiring a Provider.
-func resolveUserFromProvider(ctx context.Context, pc *plugins.PluginContext) *plugins.User {
-	if pc == nil {
-		return nil
-	}
-	if pc.Provider != nil {
-		if u, err := pc.Provider.User(ctx); err == nil && u != nil {
-			return u
-		}
-	}
-	if pc.Data != nil {
-		return pc.Data.User
-	}
-	return nil
 }

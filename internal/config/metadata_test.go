@@ -16,8 +16,7 @@ import (
 // stay in sync with scripts/sync-assets.sh and
 // docs/design/15-selection-answer.md §6.4.
 var adoptedPlugins = []string{
-	"core",
-	"header",
+	"base", "core",
 	"languages", "activity", "achievements", "repositories",
 	"isocalendar", "calendar", "habits", "stars", "topics", "starlists",
 	"people", "notable", "contributors", "reactions", "projects",
@@ -85,16 +84,16 @@ func TestLoad_LoadsActionAndVersion(t *testing.T) {
 	t.Parallel()
 
 	mem := fstest.MapFS{
-		"plugins/core/metadata.yml":      {Data: []byte("name: core plugin\ncategory: core\n")},
+		"plugins/base/metadata.yml":      {Data: []byte("name: base plugin\ncategory: core\n")},
 		"templates/classic/metadata.yml": {Data: []byte("name: classic\nformats:\n  - svg\n")},
 		"action.yml": {Data: []byte(`
 name: metrics-action
 description: GitHub Action
 author: mjun0812
 inputs:
-  token:
-    description: GitHub token
-    required: true
+  base:
+    description: Base content
+    default: header, activity
   user:
     description: GitHub login
     required: true

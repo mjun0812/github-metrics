@@ -42,11 +42,6 @@ type notablePlugin struct{}
 func (p *notablePlugin) Name() string                     { return Name }
 func (p *notablePlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Requires reports the Provider data sources Run reads. notable walks
-// the contributions GraphQL query for pc.Inputs's login directly and
-// touches no Provider methods.
-func (p *notablePlugin) Requires() []plugins.DataKey { return nil }
-
 // Result is the JSON payload published under data.Plugins["notable"].
 type Result struct {
 	Skipped       bool             `json:"skipped,omitempty"`
