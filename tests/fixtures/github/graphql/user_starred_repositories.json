@@ -1,0 +1,10 @@
+{
+  "data": {
+    "user": {
+      "starredRepositories": {
+        "totalCount": 0,
+        "edges": []
+      }
+    }
+  }
+}
