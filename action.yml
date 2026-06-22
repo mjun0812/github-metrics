@@ -18,11 +18,6 @@ inputs:
     description: 'Clean previous workflows jobs'
     required: false
 
-  combined:
-    description: 'Render a single combined SVG instead of per-plugin files'
-    default: 'yes'
-    required: false
-
   committer_branch:
     description: 'Target branch'
     required: false
@@ -135,7 +130,7 @@ inputs:
     required: false
 
   filename:
-    description: 'Output path (used only when combined=yes)'
+    description: 'Output path'
     default: 'github-metrics.*'
     required: false
 
@@ -175,11 +170,6 @@ inputs:
   output_condition:
     description: 'Output condition'
     default: 'always'
-    required: false
-
-  output_dir:
-    description: 'Per-plugin SVG output directory (used when combined=no)'
-    default: './metrics-renders/'
     required: false
 
   plugin_achievements:
@@ -809,10 +799,6 @@ inputs:
 
   plugin_traffic_skipped:
     description: 'Skipped repositories'
-    required: false
-
-  plugins:
-    description: 'Comma-separated plugin allowlist for per-plugin mode (default = all enabled plugins)'
     required: false
 
   plugins_errors_fatal:

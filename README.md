@@ -118,57 +118,6 @@ docker run --rm \
 The image is multi-arch — `docker pull` automatically resolves to your
 host architecture.
 
-## Profile README
-
-Use per-plugin SVG mode to compose a rich profile README where each section
-is an independent image that can be repositioned or removed without affecting
-the others.
-
-### Action workflow
-
-```yaml
-# .github/workflows/metrics.yml
-name: Profile metrics
-on:
-  schedule: [{cron: '0 0 * * *'}]
-  workflow_dispatch:
-
-jobs:
-  metrics:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: mjun0812/github-metrics@v1
-        with:
-          user: ${{ github.repository_owner }}
-          token: ${{ secrets.METRICS_TOKEN }}
-          output_dir: ./metrics/
-          combined: 'no'
-          plugin_header: 'yes'
-          plugin_languages: 'yes'
-          plugin_stars: 'yes'
-          plugin_activity: 'yes'
-          output_action: commit
-          committer_branch: main
-```
-
-### Embedding in your README
-
-```markdown
-<img src="metrics/header.svg" width="100%">
-
-<img src="metrics/languages.svg" align="left" width="48%">
-<img src="metrics/stars.svg" align="right" width="48%">
-
-<div style="clear: both;"></div>
-
-<img src="metrics/activity.svg" width="100%">
-```
-
-Each SVG is rendered independently — disabling a plugin or removing its
-`<img>` tag does not affect the others.
-
 ## Authentication
 
 Every invocation needs a GitHub token:
