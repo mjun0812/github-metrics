@@ -95,13 +95,14 @@ func RunPlugins(ctx context.Context, pc *plugins.PluginContext, parallel int) er
 }
 
 // pluginNamesExcludingCore returns the alphabetical list of registered
-// plugin names with the "core" entry removed. The core plugin wires
-// the parallel runner itself, so the engine drives it directly outside
-// the errgroup.
+// plugin names with the "core" and "base" entries removed. Both
+// plugins have ordering constraints (base must run before any data
+// plugin, core wires the parallel runner itself) so the engine drives
+// them directly outside the errgroup.
 func pluginNamesExcludingCore() []string {
 	var names []string
 	_ = plugins.Each(func(name string, _ plugins.Plugin) error {
-		if name == Name {
+		if name == Name || name == "base" {
 			return nil
 		}
 		names = append(names, name)

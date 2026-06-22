@@ -3,7 +3,7 @@
 #
 # This file is the GitHub Action interface for github-metrics. It mirrors
 # the input contract upstream lowlighter/metrics exposes, scoped to the
-# 20 採用 plugins (constitution 原則 III). The lefthook pre-commit hook
+# 21 採用 plugins (constitution 原則 III). The lefthook pre-commit hook
 # verifies 'git diff --quiet action.yml' after re-running the generator
 # so metadata.yml and action.yml never drift.
 name: 'github-metrics'
@@ -16,6 +16,11 @@ branding:
 inputs:
   clean_workflows:
     description: 'Clean previous workflows jobs'
+    required: false
+
+  commits_authoring:
+    description: 'Identifiers that has been used for authoring commits'
+    default: '.user.login'
     required: false
 
   committer_branch:
@@ -830,6 +835,30 @@ inputs:
     description: 'GitHub repository'
     required: false
 
+  repositories:
+    description: 'Fetched repositories'
+    default: '100'
+    required: false
+
+  repositories_affiliations:
+    description: 'Repositories affiliations'
+    default: 'owner'
+    required: false
+
+  repositories_batch:
+    description: 'Fetched repositories per query'
+    default: '100'
+    required: false
+
+  repositories_forks:
+    description: 'Include forks'
+    default: 'no'
+    required: false
+
+  repositories_skipped:
+    description: 'Default skipped repositories'
+    required: false
+
   retries:
     description: 'Retries in case of failures (for rendering)'
     default: '3'
@@ -875,6 +904,11 @@ inputs:
 
   user:
     description: 'GitHub username'
+    required: false
+
+  users_ignored:
+    description: 'Default ignored users'
+    default: 'github-actions[bot], dependabot[bot], dependabot-preview[bot], actions-user, action@github.com'
     required: false
 
   verify:

@@ -9,7 +9,7 @@ import (
 
 // TestAdoptedSlugsMatchCompliance asserts the doc generator's plugin
 // list stays aligned with `tests/compliance/compliance_test.go::adoptedM4Plugins`
-// (minus core / languages.recent / languages.indepth).
+// (minus base / core / languages.recent / languages.indepth).
 func TestAdoptedSlugsMatchCompliance(t *testing.T) {
 	t.Parallel()
 	root := repoRootForTest(t)
@@ -58,7 +58,7 @@ func compliancePluginsFromSource(src string) map[string]struct{} {
 			// languages.recent / languages.indepth share the languages page.
 			continue
 		}
-		if tok == "core" {
+		if tok == "base" || tok == "core" {
 			continue
 		}
 		// Only accept tokens that look like plain slugs.
@@ -84,14 +84,12 @@ func isPlainSlug(s string) bool {
 	return true
 }
 
-// TestFoundationalSlugs_IsCoreOnly — after #613 the foundational set
-// is the exact singleton {core}. The legacy `base` slug was deleted
-// when its data-fetch responsibilities migrated to the engine's
-// `applyProfile` step. Adding a new foundational plugin would
+// TestFoundationalSlugs_AreBaseAndCore — the foundational set is the
+// exact pair {base, core}. Adding a third foundational plugin would
 // require a constitution amendment per docs/design/15-selection-answer.md.
-func TestFoundationalSlugs_IsCoreOnly(t *testing.T) {
+func TestFoundationalSlugs_AreBaseAndCore(t *testing.T) {
 	t.Parallel()
-	want := map[string]struct{}{"core": {}}
+	want := map[string]struct{}{"base": {}, "core": {}}
 	got := map[string]struct{}{}
 	for _, s := range foundationalSlugs {
 		got[s] = struct{}{}
@@ -126,6 +124,27 @@ func TestRenderPluginPage_CoreOmitsSampleImage(t *testing.T) {
 	}
 	if !strings.Contains(got, "Core has no standalone visual output") {
 		t.Errorf("core Requirements should explain why no image is rendered:\n%s", got)
+	}
+}
+
+// TestRenderPluginPage_BaseEmitsCustomUsageSnippet — after #602 `base`
+// is a data-fetch / shared-settings plugin only (no per-section
+// toggles, no `plugin_base` switch; the header card moved to the
+// dedicated `header` plugin). The usage snippet must show the
+// repository-fetcher settings instead of the generic
+// `plugin_<slug>: yes` shape used by the other adopted plugins.
+func TestRenderPluginPage_BaseEmitsCustomUsageSnippet(t *testing.T) {
+	t.Parallel()
+	meta := pluginMetadata{Name: "base", Description: ""}
+	got := renderPluginPage("base", meta, nil, nil)
+	if strings.Contains(got, "plugin_base: yes") {
+		t.Errorf("base usage snippet must not use the generic plugin_<slug>=yes shape:\n%s", got)
+	}
+	if !strings.Contains(got, "repositories: 100") {
+		t.Errorf("base usage snippet should show the repository fetcher knobs:\n%s", got)
+	}
+	if !strings.Contains(got, "## Requirements") {
+		t.Errorf("base page should emit Requirements section on first gen:\n%s", got)
 	}
 }
 
