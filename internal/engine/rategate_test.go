@@ -350,3 +350,37 @@ func TestRateGate_UnknownModeIsOff(t *testing.T) {
 		t.Errorf("unknown mode must not call /rate_limit; got %d", got)
 	}
 }
+
+// TestSleepCtx_ExpiresNormally verifies sleepCtx returns nil when the
+// timer fires before the context is cancelled.
+func TestSleepCtx_ExpiresNormally(t *testing.T) {
+	t.Parallel()
+
+	start := time.Now()
+	err := sleepCtx(context.Background(), 10*time.Millisecond)
+	elapsed := time.Since(start)
+
+	if err != nil {
+		t.Errorf("sleepCtx returned non-nil error: %v", err)
+	}
+	if elapsed < 5*time.Millisecond {
+		t.Errorf("sleepCtx returned too early: %s", elapsed)
+	}
+}
+
+// TestSleepCtx_CancelledContext verifies sleepCtx returns ctx.Err() when the
+// context is already cancelled before it is called.
+func TestSleepCtx_CancelledContext(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel before calling sleepCtx
+
+	err := sleepCtx(ctx, time.Hour)
+	if err == nil {
+		t.Fatal("sleepCtx should return an error for cancelled context")
+	}
+	if err != context.Canceled {
+		t.Errorf("sleepCtx error = %v, want context.Canceled", err)
+	}
+}

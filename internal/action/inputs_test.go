@@ -171,3 +171,13 @@ func TestLoadPreset_FileNotFound(t *testing.T) {
 		t.Errorf("expected error for missing file")
 	}
 }
+
+func TestPresetBundle_MergeInto_NilReceiver(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]any{"user": "octocat"}
+	var p *PresetBundle
+	p.MergeInto(inputs)
+	if inputs["user"] != "octocat" {
+		t.Errorf("nil MergeInto mutated inputs: %v", inputs)
+	}
+}

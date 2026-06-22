@@ -123,6 +123,17 @@ func TestLoadYAMLConfig_InvalidYAML(t *testing.T) {
 	}
 }
 
+func TestLoadYAMLConfig_NestedSectionMustBeMap(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "bad-section.yaml")
+	if err := os.WriteFile(path, []byte("plugins: true\n"), 0o600); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if _, err := LoadYAMLConfig(path); err == nil {
+		t.Errorf("expected nested section type error")
+	}
+}
+
 func TestToInvocation_PriorityCLIBeatsConfig(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -167,6 +178,32 @@ func TestToInvocation_PluginsMerged(t *testing.T) {
 	inputs, _ := cf.ToInvocation(map[string]string{})
 	if inputs["plugin_languages"] != "true" || inputs["plugin_languages_limit"] != "5" {
 		t.Errorf("plugins not merged: %v", inputs)
+	}
+}
+
+func TestToInvocation_RepoOwnerPrefixStripped(t *testing.T) {
+	t.Parallel()
+	cf := &CLIFlags{
+		User:     "octocat",
+		Template: "repository",
+		Repo:     "octocat/hello-world",
+		Output:   "svg",
+		Plugins:  map[string]string{},
+	}
+	inputs, err := cf.ToInvocation(map[string]string{})
+	if err != nil {
+		t.Fatalf("ToInvocation: %v", err)
+	}
+	if inputs["repo"] != "hello-world" {
+		t.Errorf("repo = %v, want hello-world", inputs["repo"])
+	}
+}
+
+func TestToInvocation_ConfigErrorPropagates(t *testing.T) {
+	t.Parallel()
+	cf := &CLIFlags{Config: filepath.Join(t.TempDir(), "missing.yaml"), Plugins: map[string]string{}}
+	if _, err := cf.ToInvocation(map[string]string{}); err == nil {
+		t.Errorf("expected config load error")
 	}
 }
 
@@ -241,6 +278,18 @@ func TestResolveOutputWriter_FilePath_MkdirP(t *testing.T) {
 	}
 	if _, err := os.Stat(target); err != nil {
 		t.Errorf("output file missing: %v", err)
+	}
+}
+
+func TestResolveOutputWriter_FilePathError(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	blocker := filepath.Join(dir, "file")
+	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
+		t.Fatalf("write blocker: %v", err)
+	}
+	if _, _, err := ResolveOutputWriter(filepath.Join(blocker, "out.svg"), "svg"); err == nil {
+		t.Errorf("expected mkdir error under file path")
 	}
 }
 
