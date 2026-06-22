@@ -6,10 +6,10 @@
 //     plugins that do not exercise end-to-end Run calls in unit tests.
 //
 //   - AssertCalledMatchesRequires: dynamic end-to-end check — calls
-//     Plugin.Run with a dataprovider.CountingMock and asserts that the set
-//     of Provider methods actually invoked equals the declared Requires()
-//     set. Fails immediately when a plugin silently starts calling a new
-//     Provider method without updating Requires().
+//     Plugin.Run with a dataprovidertest.CountingMock and asserts that
+//     the set of Provider methods actually invoked equals the declared
+//     Requires() set. Fails immediately when a plugin silently starts
+//     calling a new Provider method without updating Requires().
 package requirestesting
 
 import (
@@ -17,7 +17,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mjun0812/github-metrics/internal/dataprovider"
+	"github.com/mjun0812/github-metrics/internal/dataprovider/dataprovidertest"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
@@ -99,7 +99,7 @@ func AssertExpected(t TB, p plugins.Plugin, expected []plugins.DataKey) {
 // This is the dynamic drift detector: if a plugin starts calling an
 // undeclared Provider method, or stops calling a declared one, this
 // assertion fires.
-func AssertCalledMatchesRequires(t TB, p plugins.Plugin, mock *dataprovider.CountingMock) {
+func AssertCalledMatchesRequires(t TB, p plugins.Plugin, mock *dataprovidertest.CountingMock) {
 	t.Helper()
 
 	declared := KeySet(p.Requires())

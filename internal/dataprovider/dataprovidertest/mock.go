@@ -1,4 +1,10 @@
-package dataprovider
+// Package dataprovidertest provides test-only helpers for the
+// dataprovider package. Keeping these types in a sub-package that no
+// production code imports ensures they are not linked into release
+// binaries, even though they need to be reused from _test.go files
+// across multiple plugin packages (which prevents them from living in
+// a single _test.go file).
+package dataprovidertest
 
 import (
 	"context"

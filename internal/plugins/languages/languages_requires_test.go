@@ -18,3 +18,17 @@ func TestLanguages_Requires(t *testing.T) {
 		plugins.KeyRepositories,
 	})
 }
+
+// TestLanguagesIndepth_Requires asserts that languages.IndepthPlugin.Requires()
+// declares exactly [] (no Provider dependencies). languages-indepth reads
+// pc.Data fields populated by base and the languages plugin, not Provider.
+func TestLanguagesIndepth_Requires(t *testing.T) {
+	requirestesting.AssertExpected(t, languages.IndepthPlugin, []plugins.DataKey{})
+}
+
+// TestLanguagesRecent_Requires asserts that languages.RecentPlugin.Requires()
+// declares exactly [] (no Provider dependencies). languages-recent fetches
+// data through the GitHub REST API directly and does not consume Provider.
+func TestLanguagesRecent_Requires(t *testing.T) {
+	requirestesting.AssertExpected(t, languages.RecentPlugin, []plugins.DataKey{})
+}
