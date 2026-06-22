@@ -46,12 +46,6 @@ type sponsorshipsPlugin struct{}
 func (p *sponsorshipsPlugin) Name() string                     { return Name }
 func (p *sponsorshipsPlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Requires reports the Provider data sources Run reads. sponsorships
-// reads pc.Data.User (populated eagerly by base) plus dedicated
-// GraphQL queries; it does not call Provider.User and so declares no
-// Provider requirements.
-func (p *sponsorshipsPlugin) Requires() []plugins.DataKey { return nil }
-
 // Result is the JSON payload published under data.Plugins["sponsorships"].
 type Result struct {
 	Skipped       bool        `json:"skipped,omitempty"`

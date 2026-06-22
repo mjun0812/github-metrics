@@ -1,7 +1,7 @@
 {
-  "_comment": "Expected dimension ranges for engine.Compute(template=classic, format=png) against the mocked octocat GraphQL fixture. The values are an envelope, not a target — width_min guards the 480px canvas width (SC-001); the height bounds catch a 1x1 placeholder leaking through (lower) and accidental layout explosions (upper). After #602 the header is a regular plugin and the test enables only plugin_header, so the card is just the identity block (~130-180px); upper bound retained at 9000 for layout-explosion regressions.",
+  "_comment": "Expected dimension ranges for engine.Compute(template=classic, format=png) against the mocked octocat GraphQL fixture. The values are an envelope, not a target — width_min guards the 480px canvas width (SC-001); the height bounds catch a 1x1 placeholder leaking through (lower) and accidental layout explosions (upper). classic renders base-only since #463, so the card is ~200-290px tall, matching upstream metrics.classic.svg (height 203-223).",
   "width_min": 470,
   "width_max": 1000,
-  "height_min": 100,
+  "height_min": 200,
   "height_max": 9000
 }

@@ -33,13 +33,6 @@ type sponsorsPlugin struct{}
 func (p *sponsorsPlugin) Name() string                     { return Name }
 func (p *sponsorsPlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Requires reports the Provider data sources Run reads. sponsors
-// resolves the user payload via pc.Provider.User (with a pc.Data.User
-// fallback) to surface sponsor information.
-func (p *sponsorsPlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{plugins.KeyUser}
-}
-
 // Result is the JSON payload published under data.Plugins["sponsors"].
 type Result struct {
 	Skipped       bool      `json:"skipped,omitempty"`
@@ -153,7 +146,10 @@ func (p *sponsorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 		}
 	}
 	title := "Sponsor Me!"
-	user := loginFromProvider(ctx, pc)
+	user := ""
+	if pc.Data != nil && pc.Data.User != nil {
+		user = pc.Data.User.Login
+	}
 	if v, ok := pc.Inputs["plugin_sponsors_title"]; ok {
 		if s, ok := v.(string); ok && s != "" {
 			title = s
@@ -296,23 +292,4 @@ func pluginEnabled(in map[string]any, key string) bool {
 		return false
 	}
 	return pluginutil.Truthy(v)
-}
-
-// loginFromProvider reads the page user's login via the shared
-// dataprovider (#603), falling back to pc.Data.User for unit tests
-// that build PluginContext by hand without wiring a Provider. Returns
-// "" when neither source carries a login.
-func loginFromProvider(ctx context.Context, pc *plugins.PluginContext) string {
-	if pc == nil {
-		return ""
-	}
-	if pc.Provider != nil {
-		if u, err := pc.Provider.User(ctx); err == nil && u != nil && u.Login != "" {
-			return u.Login
-		}
-	}
-	if pc.Data != nil && pc.Data.User != nil {
-		return pc.Data.User.Login
-	}
-	return ""
 }

@@ -21,20 +21,17 @@ import (
 // *Invocation produced by ToInvocation is interchangeable with the
 // Action-mode pipeline.
 type CLIFlags struct {
-	Config     string            // --config <path>.yaml
-	User       string            // --user <login>
-	Template   string            // --template <name>
-	Token      string            // --token <PAT>
-	TokenEnv   string            // --token-env <ENV_NAME>
-	Repo       string            // --repo <name> (M7 — repository template input)
-	Plugins    map[string]string // --plugin key=value (repeatable)
-	Output     string            // --output svg|png|jpeg|json
-	Filename   string            // --filename <path-or-->
-	Dryrun     bool              // --dryrun
-	Preset     string            // --preset <path>.yaml
-	OutputDir  string            // --output-dir <dir>   (per-plugin mode, default = ".")
-	Combined   bool              // --combined            (single-SVG mode)
-	PluginList []string          // parsed from --plugins flag
+	Config   string            // --config <path>.yaml
+	User     string            // --user <login>
+	Template string            // --template <name>
+	Token    string            // --token <PAT>
+	TokenEnv string            // --token-env <ENV_NAME>
+	Repo     string            // --repo <name> (M7 — repository template input)
+	Plugins  map[string]string // --plugin key=value (repeatable)
+	Output   string            // --output svg|png|jpeg|json
+	Filename string            // --filename <path-or-->
+	Dryrun   bool              // --dryrun
+	Preset   string            // --preset <path>.yaml
 }
 
 // ParseFlags parses the supplied args (typically os.Args[1:] after
@@ -45,7 +42,6 @@ func ParseFlags(args []string) (*CLIFlags, error) {
 	fs := flag.NewFlagSet("metrics-cli", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 
-	var pluginsStr string
 	fs.StringVar(&cf.Config, "config", "", "YAML config path (action.yml-equivalent inputs)")
 	fs.StringVar(&cf.User, "user", "", "GitHub user / org login")
 	fs.StringVar(&cf.Repo, "repo", "", "repository name (required when --template=repository)")
@@ -53,12 +49,9 @@ func ParseFlags(args []string) (*CLIFlags, error) {
 	fs.StringVar(&cf.Token, "token", "", "GitHub PAT (history-visible; prefer --token-env)")
 	fs.StringVar(&cf.TokenEnv, "token-env", "", "read token from os.Getenv(<NAME>)")
 	fs.StringVar(&cf.Output, "output", "", "output format: svg|png|jpeg|json")
-	fs.StringVar(&cf.Filename, "filename", "", "output path; '-' for stdout (used when --combined)")
+	fs.StringVar(&cf.Filename, "filename", "", "output path; '-' for stdout")
 	fs.BoolVar(&cf.Dryrun, "dryrun", false, "skip commit/PR output_action side effects")
 	fs.StringVar(&cf.Preset, "preset", "", "preset YAML path (config_presets)")
-	fs.StringVar(&cf.OutputDir, "output-dir", "", "directory for per-plugin SVG output (default mode)")
-	fs.BoolVar(&cf.Combined, "combined", false, "render a single combined SVG (classic template)")
-	fs.StringVar(&pluginsStr, "plugins", "", "comma-separated plugin allowlist (default = all enabled)")
 
 	fs.Var(&pluginFlag{m: cf.Plugins}, "plugin", "key=value plugin input (repeatable)")
 
@@ -70,18 +63,6 @@ func ParseFlags(args []string) (*CLIFlags, error) {
 	}
 	if cf.Output == "" {
 		cf.Output = "svg"
-	}
-	if pluginsStr != "" {
-		for _, p := range strings.Split(pluginsStr, ",") {
-			if name := strings.TrimSpace(p); name != "" {
-				cf.PluginList = append(cf.PluginList, name)
-			}
-		}
-	}
-	// When --filename - (stdout) is requested, implicitly activate combined
-	// mode because per-plugin mode cannot write multiple SVGs to stdout.
-	if cf.Filename == "-" && !cf.Combined {
-		cf.Combined = true
 	}
 	return cf, nil
 }
@@ -229,15 +210,6 @@ func (c *CLIFlags) ToInvocation(env map[string]string) (map[string]any, error) {
 	}
 	if c.Token != "" {
 		inputs["token"] = c.Token
-	}
-	if c.OutputDir != "" {
-		inputs["output_dir"] = c.OutputDir
-	}
-	if c.Combined {
-		inputs["combined"] = true
-	}
-	if len(c.PluginList) > 0 {
-		inputs["plugin_list"] = c.PluginList
 	}
 	for k, v := range c.Plugins {
 		inputs[k] = v

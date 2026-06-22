@@ -35,42 +35,6 @@ func TestParseFlags_AllRecognized(t *testing.T) {
 	if cf.Preset != "p.yaml" {
 		t.Errorf("preset = %q", cf.Preset)
 	}
-	// `--filename -` must implicitly enable combined mode because
-	// per-plugin mode cannot fan out multiple SVGs to a single stream.
-	if !cf.Combined {
-		t.Errorf("--filename - should imply Combined=true; got false")
-	}
-}
-
-// TestParseFlags_PerPluginFlags covers the per-plugin surface added in
-// PR #606: --combined, --output-dir, and --plugins (including the
-// whitespace-trim path for comma-separated values).
-func TestParseFlags_PerPluginFlags(t *testing.T) {
-	t.Parallel()
-	cf, err := ParseFlags([]string{
-		"--user", "octocat",
-		"--combined",
-		"--output-dir", "./out",
-		"--plugins", "header, languages,stars",
-	})
-	if err != nil {
-		t.Fatalf("ParseFlags: %v", err)
-	}
-	if !cf.Combined {
-		t.Errorf("--combined: want true, got false")
-	}
-	if cf.OutputDir != "./out" {
-		t.Errorf("--output-dir: got %q", cf.OutputDir)
-	}
-	want := []string{"header", "languages", "stars"}
-	if len(cf.PluginList) != len(want) {
-		t.Fatalf("--plugins length: want %d, got %d (%v)", len(want), len(cf.PluginList), cf.PluginList)
-	}
-	for i, name := range want {
-		if cf.PluginList[i] != name {
-			t.Errorf("--plugins[%d]: want %q, got %q", i, name, cf.PluginList[i])
-		}
-	}
 }
 
 func TestParseFlags_DefaultsApplied(t *testing.T) {

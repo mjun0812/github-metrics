@@ -39,11 +39,6 @@ type stargazersPlugin struct{}
 func (p *stargazersPlugin) Name() string                     { return Name }
 func (p *stargazersPlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Requires reports the Provider data sources Run reads. stargazers is
-// repo-mode only and pages the stargazers REST endpoint for the
-// already-resolved pc.Data.Repo, so it touches no Provider methods.
-func (p *stargazersPlugin) Requires() []plugins.DataKey { return nil }
-
 // Result is the JSON payload published under data.Plugins["stargazers"].
 // Worldmap is always nil in M4 (R-012).
 type Result struct {

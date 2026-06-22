@@ -36,13 +36,6 @@ type languagesPlugin struct{}
 func (p *languagesPlugin) Name() string                     { return Name }
 func (p *languagesPlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Requires reports the Provider data sources Run reads. languages
-// aggregates language bytes over the repository list, sourced via
-// pc.Provider.Repositories.
-func (p *languagesPlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{plugins.KeyRepositories}
-}
-
 // Result is the JSON payload the plugin publishes under
 // data.Plugins["languages"]. Field set mirrors upstream
 // data.plugins.languages (constitution 原則 II).
@@ -88,7 +81,7 @@ type inputs struct {
 // Returns a *Result; never returns a non-nil error in standard mode
 // (the contract reserves *RetryableError for plugins that hit the
 // network).
-func (p *languagesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
+func (p *languagesPlugin) Run(_ context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
@@ -114,7 +107,7 @@ func (p *languagesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 			Colors:        map[string]string{},
 		}, nil
 	}
-	repos := resolveRepositoryList(ctx, pc)
+	repos := pc.Data.Computed.RepositoryList
 	if len(repos) == 0 {
 		return &Result{
 			Skipped:       true,
@@ -133,7 +126,8 @@ func (p *languagesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 		count int
 		color string
 	}
-	// Upstream `repositories_forks: no` is the default. Without this filter, language
+	// Upstream `repositories_forks: no` is the default (org_repo/source/
+	// plugins/base/metadata.yml line 88). Without this filter, language
 	// stats from forked repos (e.g. a fork of a large EJS codebase)
 	// pollute the user's distribution with code they didn't write.
 	// Mirror upstream's default by skipping forks unless the caller
@@ -379,23 +373,4 @@ func splitPair(s, sep string) (string, string, bool) {
 		return "", "", false
 	}
 	return left, right, true
-}
-
-// resolveRepositoryList reads the paged repository accumulator via the
-// shared dataprovider (#603), falling back to
-// pc.Data.Computed.RepositoryList for unit tests that build
-// PluginContext by hand without wiring a Provider.
-func resolveRepositoryList(ctx context.Context, pc *plugins.PluginContext) []plugins.Repository {
-	if pc == nil {
-		return nil
-	}
-	if pc.Provider != nil {
-		if repos, err := pc.Provider.Repositories(ctx); err == nil && repos != nil {
-			return repos
-		}
-	}
-	if pc.Data != nil {
-		return pc.Data.Computed.RepositoryList
-	}
-	return nil
 }

@@ -38,11 +38,6 @@ type topicsPlugin struct{}
 func (p *topicsPlugin) Name() string                     { return Name }
 func (p *topicsPlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Requires reports the Provider data sources Run reads. topics scrapes
-// the user's topics page directly via httpnav using pc.Inputs's login
-// and touches no Provider methods.
-func (p *topicsPlugin) Requires() []plugins.DataKey { return nil }
-
 // Result is the JSON payload published under data.Plugins["topics"].
 // Field set mirrors data-model E-023.
 type Result struct {

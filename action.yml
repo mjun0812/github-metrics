@@ -3,7 +3,7 @@
 #
 # This file is the GitHub Action interface for github-metrics. It mirrors
 # the input contract upstream lowlighter/metrics exposes, scoped to the
-# 20 採用 plugins (constitution 原則 III). The lefthook pre-commit hook
+# 21 採用 plugins (constitution 原則 III). The lefthook pre-commit hook
 # verifies 'git diff --quiet action.yml' after re-running the generator
 # so metadata.yml and action.yml never drift.
 name: 'github-metrics'
@@ -14,13 +14,33 @@ branding:
   color: 'blue'
 
 inputs:
+  base:
+    description: 'Base content'
+    default: 'header, activity, community, repositories, metadata'
+    required: false
+
+  base_hireable:
+    description: 'Show `Available for hire!` in header section'
+    default: 'no'
+    required: false
+
+  base_indepth:
+    description: 'Indepth mode'
+    default: 'no'
+    required: false
+
+  base_skip:
+    description: 'Skip base content'
+    default: 'no'
+    required: false
+
   clean_workflows:
     description: 'Clean previous workflows jobs'
     required: false
 
-  combined:
-    description: 'Render a single combined SVG instead of per-plugin files'
-    default: 'yes'
+  commits_authoring:
+    description: 'Identifiers that has been used for authoring commits'
+    default: '.user.login'
     required: false
 
   committer_branch:
@@ -135,7 +155,7 @@ inputs:
     required: false
 
   filename:
-    description: 'Output path (used only when combined=yes)'
+    description: 'Output path'
     default: 'github-metrics.*'
     required: false
 
@@ -175,11 +195,6 @@ inputs:
   output_condition:
     description: 'Output condition'
     default: 'always'
-    required: false
-
-  output_dir:
-    description: 'Per-plugin SVG output directory (used when combined=no)'
-    default: './metrics-renders/'
     required: false
 
   plugin_achievements:
@@ -352,21 +367,6 @@ inputs:
 
   plugin_habits_trim:
     description: 'Trim unused hours on charts'
-    default: 'no'
-    required: false
-
-  plugin_header:
-    description: 'Enable header plugin'
-    default: 'no'
-    required: false
-
-  plugin_header_hireable:
-    description: 'Show `Available for hire!` in the header section'
-    default: 'no'
-    required: false
-
-  plugin_header_indepth:
-    description: 'Indepth mode'
     default: 'no'
     required: false
 
@@ -811,10 +811,6 @@ inputs:
     description: 'Skipped repositories'
     required: false
 
-  plugins:
-    description: 'Comma-separated plugin allowlist for per-plugin mode (default = all enabled plugins)'
-    required: false
-
   plugins_errors_fatal:
     description: 'Fatal plugin errors'
     default: 'no'
@@ -842,6 +838,30 @@ inputs:
 
   repo:
     description: 'GitHub repository'
+    required: false
+
+  repositories:
+    description: 'Fetched repositories'
+    default: '100'
+    required: false
+
+  repositories_affiliations:
+    description: 'Repositories affiliations'
+    default: 'owner'
+    required: false
+
+  repositories_batch:
+    description: 'Fetched repositories per query'
+    default: '100'
+    required: false
+
+  repositories_forks:
+    description: 'Include forks'
+    default: 'no'
+    required: false
+
+  repositories_skipped:
+    description: 'Default skipped repositories'
     required: false
 
   retries:
@@ -889,6 +909,11 @@ inputs:
 
   user:
     description: 'GitHub username'
+    required: false
+
+  users_ignored:
+    description: 'Default ignored users'
+    default: 'github-actions[bot], dependabot[bot], dependabot-preview[bot], actions-user, action@github.com'
     required: false
 
   verify:

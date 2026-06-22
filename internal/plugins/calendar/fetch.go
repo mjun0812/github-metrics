@@ -38,20 +38,15 @@ func fetchYearlyWeeks(ctx context.Context, pc *plugins.PluginContext, limit int)
 	if pc == nil || pc.Data == nil || pc.GraphQL == nil || !pluginutil.TruthyInput(pc.Inputs, "plugin_calendar") {
 		return nil, nil
 	}
-	user, ok := resolveUser(ctx, pc)
-	if !ok || user.CreatedAt.IsZero() {
-		return nil, nil
-	}
-	login := user.Login
-	if login == "" {
+	login := resolveLogin(pc)
+	if login == "" || pc.Data.User == nil || pc.Data.User.CreatedAt.IsZero() {
 		return nil, nil
 	}
 	now := currentNow().UTC()
-	createdYear := user.CreatedAt.UTC().Year()
-	startYear := createdYear
+	startYear := pc.Data.User.CreatedAt.UTC().Year()
 	if limit > 0 {
 		startYear = now.Year() - limit + 1
-		if startYear < createdYear {
+		if createdYear := pc.Data.User.CreatedAt.UTC().Year(); startYear < createdYear {
 			startYear = createdYear
 		}
 	}
@@ -59,8 +54,8 @@ func fetchYearlyWeeks(ctx context.Context, pc *plugins.PluginContext, limit int)
 	var weeks []plugins.ContributionWeek
 	for year := startYear; year <= now.Year(); year++ {
 		from := time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC)
-		if year == createdYear && user.CreatedAt.After(from) {
-			from = user.CreatedAt.UTC()
+		if year == pc.Data.User.CreatedAt.UTC().Year() && pc.Data.User.CreatedAt.After(from) {
+			from = pc.Data.User.CreatedAt.UTC()
 		}
 		to := time.Date(year, time.December, 31, 23, 59, 59, int(time.Second-time.Nanosecond), time.UTC)
 		if year == now.Year() {
@@ -96,22 +91,12 @@ func fetchYearlyWeeks(ctx context.Context, pc *plugins.PluginContext, limit int)
 	return weeks, nil
 }
 
-// resolveUser fetches the User payload via the shared dataprovider,
-// falling back to the legacy pc.Data.User for unit tests that build
-// PluginContext by hand without wiring a Provider. Returns
-// (nil, false) when both sources are empty — calendar treats that as
-// "no payload to render" and skips its fetch.
-func resolveUser(ctx context.Context, pc *plugins.PluginContext) (*plugins.User, bool) {
-	if pc == nil {
-		return nil, false
+func resolveLogin(pc *plugins.PluginContext) string {
+	if pc.Data != nil && pc.Data.User != nil && pc.Data.User.Login != "" {
+		return pc.Data.User.Login
 	}
-	if pc.Provider != nil {
-		if u, err := pc.Provider.User(ctx); err == nil && u != nil {
-			return u, true
-		}
+	if v, ok := pc.Inputs["user"].(string); ok {
+		return v
 	}
-	if pc.Data != nil && pc.Data.User != nil {
-		return pc.Data.User, true
-	}
-	return nil, false
+	return ""
 }
