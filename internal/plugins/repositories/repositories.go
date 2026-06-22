@@ -53,6 +53,10 @@ type repositoriesPlugin struct{}
 func (p *repositoriesPlugin) Name() string                     { return Name }
 func (p *repositoriesPlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *repositoriesPlugin) Requires() []plugins.DataKey {
+	return []plugins.DataKey{plugins.KeyRepositories, plugins.KeyUser}
+}
+
 // Result is the JSON payload published under data.Plugins["repositories"].
 type Result struct {
 	Skipped       bool                 `json:"skipped,omitempty"`

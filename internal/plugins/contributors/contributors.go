@@ -34,6 +34,12 @@ type contributorsPlugin struct{}
 func (p *contributorsPlugin) Name() string                     { return Name }
 func (p *contributorsPlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *contributorsPlugin) Requires() []plugins.DataKey {
+	// contributors is repo-mode only and reads pc.Data.Computed.RepositoryList;
+	// it does not call Provider directly.
+	return []plugins.DataKey{}
+}
+
 // Result is the JSON payload published under data.Plugins["contributors"].
 type Result struct {
 	Skipped       bool          `json:"skipped,omitempty"`

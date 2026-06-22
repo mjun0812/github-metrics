@@ -36,6 +36,12 @@ type activityPlugin struct{}
 func (p *activityPlugin) Name() string                     { return Name }
 func (p *activityPlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *activityPlugin) Requires() []plugins.DataKey {
+	// activity reads from pc.Data fields populated by base; it does not
+	// call Provider directly.
+	return []plugins.DataKey{}
+}
+
 // Result is the JSON payload the plugin publishes under
 // data.Plugins["activity"]. Field set mirrors upstream
 // data.plugins.activity.

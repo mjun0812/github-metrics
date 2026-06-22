@@ -41,6 +41,19 @@ func RunPlugins(ctx context.Context, pc *plugins.PluginContext, parallel int) er
 
 	names := pluginNamesExcludingCore()
 
+	// Design decision: RunPlugins does NOT prefetch based on Plugin.Requires().
+	//
+	// Rationale: the dataprovider.Provider uses golang.org/x/sync/singleflight
+	// to collapse concurrent in-flight calls and caches both success and error
+	// outcomes permanently, so the first plugin to call Provider.Repositories()
+	// pays the network cost; all subsequent callers return the cached result
+	// without hitting the network again. A prefetch goroutine would buy at most
+	// a few milliseconds of overlap against the plugin setup overhead, at the
+	// cost of extra goroutines, a more complex error-routing path, and context
+	// cancellation races. The declared Requires() is purely documentary and
+	// exists for drift-detection tests only. Do NOT add prefetch here in the
+	// future without re-evaluating this trade-off.
+
 	g, gctx := errgroup.WithContext(ctx)
 	g.SetLimit(parallel)
 

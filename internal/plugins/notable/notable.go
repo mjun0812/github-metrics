@@ -42,6 +42,12 @@ type notablePlugin struct{}
 func (p *notablePlugin) Name() string                     { return Name }
 func (p *notablePlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *notablePlugin) Requires() []plugins.DataKey {
+	// notable reads from pc.Data fields populated by base; it does not
+	// call Provider directly.
+	return []plugins.DataKey{}
+}
+
 // Result is the JSON payload published under data.Plugins["notable"].
 type Result struct {
 	Skipped       bool             `json:"skipped,omitempty"`

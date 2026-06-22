@@ -37,6 +37,12 @@ type peoplePlugin struct{}
 func (p *peoplePlugin) Name() string                     { return Name }
 func (p *peoplePlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *peoplePlugin) Requires() []plugins.DataKey {
+	// people reads from pc.Data fields populated by base; it does not
+	// call Provider directly.
+	return []plugins.DataKey{}
+}
+
 // Result is the JSON payload published under data.Plugins["people"].
 //
 // Counts carries the true total per type as reported by the API

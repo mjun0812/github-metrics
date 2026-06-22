@@ -20,6 +20,7 @@ type errorStubPlugin struct {
 
 func (p *errorStubPlugin) Name() string                     { return p.name }
 func (p *errorStubPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *errorStubPlugin) Requires() []plugins.DataKey      { return []plugins.DataKey{} }
 func (p *errorStubPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	return nil, p.err
 }

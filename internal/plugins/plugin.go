@@ -17,6 +17,15 @@ import (
 type Plugin interface {
 	Name() string
 	Metadata() *config.PluginMetadata
+	// Requires returns the set of Provider methods this plugin calls
+	// during Run. The declaration is purely informational at runtime —
+	// the runner does not prefetch based on Requires() (the lazy
+	// singleflight Provider already collapses concurrent calls, making
+	// upfront prefetch of marginal value at non-trivial cost). Its
+	// value is documentation and drift detection: per-plugin tests
+	// construct a counting Provider mock, call Run, and assert that the
+	// invoked method set equals the declared set.
+	Requires() []DataKey
 	Run(ctx context.Context, pc *PluginContext) (any, error)
 }
 

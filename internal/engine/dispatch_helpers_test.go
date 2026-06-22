@@ -749,6 +749,7 @@ type stubPlugin struct{ name string }
 
 func (s *stubPlugin) Name() string                     { return s.name }
 func (s *stubPlugin) Metadata() *config.PluginMetadata { return &config.PluginMetadata{} }
+func (s *stubPlugin) Requires() []plugins.DataKey      { return []plugins.DataKey{} }
 
 func (s *stubPlugin) Run(_ context.Context, _ *plugins.PluginContext) (any, error) { return nil, nil }
 

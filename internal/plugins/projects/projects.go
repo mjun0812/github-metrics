@@ -33,6 +33,12 @@ type projectsPlugin struct{}
 func (p *projectsPlugin) Name() string                     { return Name }
 func (p *projectsPlugin) Metadata() *config.PluginMetadata { return nil }
 
+func (p *projectsPlugin) Requires() []plugins.DataKey {
+	// projects reads from pc.Data fields populated by base; it does not
+	// call Provider directly.
+	return []plugins.DataKey{}
+}
+
 // Result is the JSON payload published under data.Plugins["projects"].
 type Result struct {
 	Skipped       bool      `json:"skipped,omitempty"`
