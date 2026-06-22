@@ -33,13 +33,6 @@ type sponsorsPlugin struct{}
 func (p *sponsorsPlugin) Name() string                     { return Name }
 func (p *sponsorsPlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Requires reports the Provider data sources Run reads. sponsors
-// resolves the user payload via pc.Provider.User (with a pc.Data.User
-// fallback) to surface sponsor information.
-func (p *sponsorsPlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{plugins.KeyUser}
-}
-
 // Result is the JSON payload published under data.Plugins["sponsors"].
 type Result struct {
 	Skipped       bool      `json:"skipped,omitempty"`

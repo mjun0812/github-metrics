@@ -41,11 +41,6 @@ type basePlugin struct{}
 func (p *basePlugin) Name() string                     { return Name }
 func (p *basePlugin) Metadata() *config.PluginMetadata { return nil }
 
-// Requires reports the Provider data sources Run reads. base does the
-// opposite of "read" — it populates pc.Data.{User,Organization,...}
-// via direct GraphQL/REST and does not call pc.Provider at all.
-func (p *basePlugin) Requires() []plugins.DataKey { return nil }
-
 // Run dispatches by account kind. Each branch populates data.User /
 // data.Organization and data.Computed.{Repositories, RepositoryList,
 // ContributionCalendar, TotalCommits / Issues / PullRequests} from the

@@ -14,19 +14,9 @@ import (
 )
 
 // Plugin is the contract every github-metrics data source implements.
-//
-// Requires returns the set of Provider data sources the plugin reads
-// in Run. The runner does NOT prefetch based on this set (#604
-// decision #5): Provider already collapses concurrent calls via
-// singleflight and caches both successes and errors, so a prefetch
-// goroutine has marginal value at meaningful cost. Requires is purely
-// declarative — its job is documentation ("grep for KeyRepositories")
-// and drift protection (a counting-mock test in each plugin asserts
-// declared == actual Provider methods invoked).
 type Plugin interface {
 	Name() string
 	Metadata() *config.PluginMetadata
-	Requires() []DataKey
 	Run(ctx context.Context, pc *PluginContext) (any, error)
 }
 
