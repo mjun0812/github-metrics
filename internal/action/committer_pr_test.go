@@ -152,6 +152,57 @@ func TestCommitter_PullRequest_NoMergeMethod(t *testing.T) {
 	}
 }
 
+func TestCommitter_PullRequest_DefaultBaseBranch(t *testing.T) {
+	t.Parallel()
+	mock := newPRRESTMock()
+	c := &Committer{
+		REST: newRESTPR(t, mock), Policy: RetryPolicy{Retries: 0, Delay: 0},
+		RepoOwner: "o", RepoName: "r",
+		RunID:    "12345",
+		Filename: "github-metrics.svg",
+		Message:  "metrics",
+		Author:   CommitterAuthor{Name: "metrics", Email: "m@x"},
+		Action:   "pull-request",
+		Body:     []byte(`<svg></svg>`),
+	}
+	if err := c.Run(context.Background()); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if c.PRNumber != 42 {
+		t.Errorf("PRNumber = %d, want 42", c.PRNumber)
+	}
+}
+
+func TestCommitter_PullRequest_DataChangedSkips(t *testing.T) {
+	t.Parallel()
+	const body = `<svg><text>same</text></svg>`
+	mock := newPRRESTMock()
+	mock.contentsFor["main/github-metrics.svg"] = `{"content":"` + b64(body) + `","encoding":"base64"}`
+	c := &Committer{
+		REST: newRESTPR(t, mock), Policy: RetryPolicy{Retries: 0, Delay: 0},
+		RepoOwner: "o", RepoName: "r",
+		Branch:    "main",
+		RunID:     "12345",
+		Filename:  "github-metrics.svg",
+		Message:   "metrics",
+		Author:    CommitterAuthor{Name: "metrics", Email: "m@x"},
+		Action:    "pull-request",
+		Condition: "data-changed",
+		Body:      []byte(body),
+	}
+	if err := c.Run(context.Background()); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !c.Skipped {
+		t.Fatalf("expected skipped pull request on identical content")
+	}
+	for _, call := range mock.calls {
+		if strings.HasPrefix(call, "POST /repos/o/r/pulls") || strings.HasPrefix(call, "POST /repos/o/r/git/refs") {
+			t.Fatalf("PR side effects should not run on skip; calls=%v", mock.calls)
+		}
+	}
+}
+
 func TestCommitter_PullRequestMerge_AutoMerges(t *testing.T) {
 	t.Parallel()
 	mock := newPRRESTMock()
@@ -175,6 +226,25 @@ func TestCommitter_PullRequestMerge_AutoMerges(t *testing.T) {
 	}
 	if !merged {
 		t.Errorf("expected PUT /pulls/N/merge; calls=%v", mock.calls)
+	}
+}
+
+func TestCommitter_PullRequestMerge_MergeError(t *testing.T) {
+	t.Parallel()
+	mock := newPRRESTMock()
+	mock.mergeStatus = http.StatusInternalServerError
+	c := &Committer{
+		REST: newRESTPR(t, mock), Policy: RetryPolicy{Retries: 0, Delay: 0},
+		RepoOwner: "o", RepoName: "r",
+		Branch: "main", RunID: "12345",
+		Filename: "x.svg", Message: "metrics",
+		Author: CommitterAuthor{Name: "m", Email: "m@x"},
+		Action: "pull-request-merge",
+		Body:   []byte(`<svg></svg>`),
+	}
+	err := c.Run(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "merge PR") {
+		t.Fatalf("expected merge PR error, got %v", err)
 	}
 }
 
