@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/engine"
+	"github.com/mjun0812/github-metrics/internal/plugins/achievements"
 	"github.com/mjun0812/github-metrics/internal/plugins/base"
 	"github.com/mjun0812/github-metrics/internal/plugins/calendar"
 	"github.com/mjun0812/github-metrics/internal/plugins/stargazers"
@@ -271,12 +272,13 @@ func TestComputeSVG_PerPluginGolden(t *testing.T) {
 			// Anchor every package-level clock so byte-stable goldens
 			// do not drift across years. Each plugin owns its own
 			// nowFunc (intentional — they have different semantics);
-			// see internal/plugins/{base,calendar,stargazers,stars}/*
+			// see internal/plugins/{achievements,base,calendar,stargazers,stars}/*
 			// and templates/classic/partials/partials.go.
 			fixedNow := func() time.Time {
 				return time.Date(2026, 1, 14, 0, 0, 0, 0, time.UTC)
 			}
 			t.Cleanup(partials.SetNowForTest(fixedNow))
+			t.Cleanup(achievements.SetNowForTest(fixedNow))
 			t.Cleanup(base.SetNowForTest(fixedNow))
 			t.Cleanup(calendar.SetNowForTest(fixedNow))
 			t.Cleanup(stargazers.SetNowForTest(fixedNow))
