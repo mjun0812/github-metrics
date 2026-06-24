@@ -14,6 +14,7 @@ import (
 	_ "github.com/mjun0812/github-metrics/internal/plugins/contributors"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/core"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/habits"
+	_ "github.com/mjun0812/github-metrics/internal/plugins/header"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/isocalendar"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/languages"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/notable"
