@@ -213,26 +213,17 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 //
 // Mapping mirrors upstream's classic template:
 //
-//	base.header            → "header"
-//	introduction           → "introduction"
-//	base.activity+community → "activity" OR "community" (either flips it on)
-//	base.repositories      → "repositories"
+//	introduction → "introduction"
+//
+// base.header, base.activity+community, and base.repositories have
+// been removed: header is now a standalone plugin (plugin.header),
+// and the activity+community / repositories partials were deleted in
+// the #602 refactor.
 //
 // `metadata` is gated separately by chrome.MetadataFooter.
 func partialEnabledByBase(name string, sections map[string]struct{}) bool {
-	switch name {
-	case "base.header":
-		_, ok := sections["header"]
-		return ok
-	case "introduction":
+	if name == "introduction" {
 		_, ok := sections["introduction"]
-		return ok
-	case "base.activity+community":
-		_, a := sections["activity"]
-		_, c := sections["community"]
-		return a || c
-	case "base.repositories":
-		_, ok := sections["repositories"]
 		return ok
 	}
 	// Non-base partials (anything else listed in _.json) render
