@@ -1,0 +1,43 @@
+name: 🖼️ Header
+category: core
+description: |
+  Renders the profile header card: avatar, display name, join date,
+  follower count, and a 2-week contribution calendar mini-bar.
+supports:
+  - user
+  - organization
+  - repository
+scopes:
+  - public_access
+inputs:
+
+  plugin_header:
+    description: |
+      Enable header plugin
+    type: boolean
+    default: no
+
+  plugin_header_hireable:
+    description: |
+      Show `Available for hire!` badge in header
+
+      Displays a briefcase icon row when the account's `isHireable`
+      flag is set on GitHub and this option is enabled.
+    type: boolean
+    default: no
+
+  plugin_header_indepth:
+    description: |
+      Indepth mode
+
+      Enabling will consume additional API queries to fetch more data.
+      Currently improves accuracy of statistics:
+      - total commits
+      - total issues
+      - total pull requests
+      - total pull requests reviews
+      - total repositories contributed to
+    type: boolean
+    default: no
+    extras:
+      - metrics.api.github.overuse
