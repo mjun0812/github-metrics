@@ -31,6 +31,9 @@ package partials
 // is not yet registered are silently skipped during incremental M4
 // landing so the build stays green between US1/US2/US3 PRs.
 var PluginPartialOrder = []string{
+	// Identity block — always at the top so the profile header
+	// stays above per-plugin cards.
+	"header",
 	// P1 MVP — US1
 	"languages",
 	"activity",

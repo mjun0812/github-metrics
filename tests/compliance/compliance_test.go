@@ -247,6 +247,10 @@ var adoptedM4Plugins = []string{
 	// P3 chromedp / heavy (2 with own directories; the recent/indepth
 	// sub-modes live in internal/plugins/languages/)
 	"topics", "starlists",
+	// #602 header extraction (identity card lifted out of base into
+	// its own opt-in plugin so per-plugin SVG embed flows can include
+	// or exclude it independently).
+	"header",
 }
 
 // nonPluginInternalDirs are internal/plugins/ children that are

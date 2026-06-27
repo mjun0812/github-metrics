@@ -709,7 +709,12 @@ func TestBaseHeader_CalendarRow_FewerThan14Days(t *testing.T) {
 
 func TestLookup_CoversManifest(t *testing.T) {
 	t.Parallel()
-	for _, name := range []string{"base.header", "introduction", "base.activity+community", "base.repositories"} {
+	// #602 deleted the base.header / base.activity+community / base.repositories
+	// partials registered by this package. The identity card is now provided by
+	// the opt-in plugin.header partial registered externally by
+	// internal/plugins/header (not imported here to avoid the test package
+	// taking a dependency on every plugin).
+	for _, name := range []string{"introduction"} {
 		if _, ok := partials.Lookup(name); !ok {
 			t.Errorf("Lookup(%q) missing", name)
 		}

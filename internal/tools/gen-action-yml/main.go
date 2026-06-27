@@ -43,6 +43,7 @@ var adoptedSlugs = []string{
 	"calendar",
 	"contributors",
 	"habits",
+	"header",
 	"isocalendar",
 	"languages",
 	"notable",
