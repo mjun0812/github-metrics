@@ -40,6 +40,12 @@ type PartialContext struct {
 	Logger   *slog.Logger
 	Data     *plugins.Data
 	Metadata *config.MetadataLoader
+	// Provider is the lazy + memoized dataprovider (#603) the engine
+	// constructs per request. Partials read the resolved user /
+	// organization / repository via Provider rather than the legacy
+	// pc.Data fields. Nil-safe: unit tests that build PartialContext
+	// by hand without wiring a Provider fall back to pc.Data fields.
+	Provider plugins.Provider
 }
 
 // AllowedFormats is the M1 set of output formats. terminal/markdown
