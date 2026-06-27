@@ -213,7 +213,8 @@ func (p *Provider) synthesizeRepoResult(ctx context.Context) (*repoResult, error
 // repoPagingState is dataprovider's equivalent of the legacy base
 // pagingState. It carries the per-node accumulator and the totals
 // aggregated alongside it (stargazers / forks / watchers / releases /
-// packages / disk usage / deployments / license buckets).
+// packages / disk usage / deployments / issues / pull requests /
+// license buckets).
 type repoPagingState struct {
 	batch  int
 	cursor *string
@@ -227,6 +228,8 @@ type repoPagingState struct {
 	packages      int
 	diskUsage     int
 	deployments   int
+	issues        int
+	pullRequests  int
 	licenseCounts map[string]int
 	// licensedRepos counts repositories that reported a non-nil
 	// licenseInfo.name. It is the denominator for the LicensePreference
@@ -247,6 +250,8 @@ func (s *repoPagingState) result() *repoResult {
 			Packages:          s.packages,
 			DiskUsage:         s.diskUsage,
 			Deployments:       s.deployments,
+			Issues:            s.issues,
+			PullRequests:      s.pullRequests,
 			LicensePreference: topLicenseShares(s.licenseCounts, s.licensedRepos, licensePreferenceTopN),
 		},
 	}
@@ -274,6 +279,12 @@ func (p *Provider) fetchOneRepoPage(ctx context.Context, isUser bool, state *rep
 			state.forks += node.ForkCount
 			if node.Watchers != nil {
 				state.watchers += node.Watchers.TotalCount
+			}
+			if node.Issues != nil {
+				state.issues += node.Issues.TotalCount
+			}
+			if node.PullRequests != nil {
+				state.pullRequests += node.PullRequests.TotalCount
 			}
 			if node.Releases != nil {
 				state.releases += node.Releases.TotalCount
@@ -318,6 +329,12 @@ func (p *Provider) fetchOneRepoPage(ctx context.Context, isUser bool, state *rep
 		state.forks += node.ForkCount
 		if node.Watchers != nil {
 			state.watchers += node.Watchers.TotalCount
+		}
+		if node.Issues != nil {
+			state.issues += node.Issues.TotalCount
+		}
+		if node.PullRequests != nil {
+			state.pullRequests += node.PullRequests.TotalCount
 		}
 		if node.Releases != nil {
 			state.releases += node.Releases.TotalCount
