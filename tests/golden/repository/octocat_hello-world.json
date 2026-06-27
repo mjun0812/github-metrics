@@ -109,6 +109,37 @@
       "skipped": true,
       "trim": false
     },
+    "header": {
+      "commit_calendar": null,
+      "profile": {
+        "kind": "user",
+        "organization": null,
+        "user": {
+          "avatarURL": "https://avatars.githubusercontent.com/u/12345?v=4",
+          "commits": 7293,
+          "contributedTo": 0,
+          "createdAt": "2008-01-14T04:33:35Z",
+          "discussionAnswers": 0,
+          "discussionsComments": 0,
+          "discussionsStarted": 0,
+          "followers": 1555,
+          "following": 617,
+          "gists": 0,
+          "issueComments": 333,
+          "issuesOpened": 443,
+          "login": "octocat",
+          "name": "The Octocat",
+          "organizations": 2,
+          "pullRequestsOpened": 290,
+          "pullRequestsReviewed": 68,
+          "recentContributions": null,
+          "sponsoring": 0,
+          "sponsorshipsAsMaintainer": 4,
+          "starred": 310,
+          "watching": 16
+        }
+      }
+    },
     "isocalendar": {
       "average": 0,
       "duration": "",
