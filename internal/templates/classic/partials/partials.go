@@ -494,10 +494,15 @@ func licenseShortName(name string) string {
 var registry = map[string]templates.PartialFunc{}
 
 func init() {
-	Register("base.header", BaseHeader)
+	// #602: the three base.* identity-chrome partials no longer ship
+	// from this package. base.header is replaced by the opt-in
+	// plugin.header partial registered by internal/plugins/header.
+	// base.activity+community and base.repositories are dropped per
+	// decision #1 (standalone activity / repositories plugins already
+	// provide their own panels). The BaseHeader / BaseActivityCommunity /
+	// BaseRepositories Go functions stay in this file as dead-but-typed
+	// callsites until #605 deletes them with the rest of base.
 	Register("introduction", Introduction)
-	Register("base.activity+community", BaseActivityCommunity)
-	Register("base.repositories", BaseRepositories)
 }
 
 // Register adds a PartialFunc under the given name. Subsequent calls

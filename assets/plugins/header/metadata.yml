@@ -1,0 +1,17 @@
+name: 🖼️ Header
+category: core
+description: |
+  Renders the profile header card: avatar, display name, join date,
+  follower count, and a 2-week contribution calendar mini-bar.
+supports:
+  - user
+  - organization
+scopes:
+  - public_access
+inputs:
+
+  plugin_header:
+    description: |
+      Enable header plugin
+    type: boolean
+    default: no
