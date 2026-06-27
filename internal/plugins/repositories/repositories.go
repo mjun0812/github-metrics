@@ -482,22 +482,14 @@ func pinnableToRepository(node githubapi.ViewerPinnedItemsViewerUserPinnedItemsP
 // pc.Data.Computed.RepositoryList for unit tests that build
 // PluginContext by hand without wiring a Provider.
 //
-// Repository mode (Account == AccountRepository) is a special case:
-// base.runRepository synthesizes a 1-element list in
-// pc.Data.Computed.RepositoryList that wraps the target repo's
-// Languages edges, while pc.Provider.Repositories(ctx) returns the
-// user's full repository list (account-agnostic, populated for the
-// header / activity / sponsors plugins that need the user's footprint).
-// Using the Provider's user-wide list in repo mode would cause the
-// languages plugin to render the user's aggregated language
-// distribution instead of the target repo's own. Prefer the synthetic
-// list in that case.
+// In repository-template mode (Account == AccountRepository) the
+// Provider's Repositories accessor already returns the synthesized
+// single-element list wrapping the target repo (see
+// dataprovider.synthesizeRepoResult), so callers can dispatch through
+// Provider in both modes without a special case.
 func resolveRepositoryList(ctx context.Context, pc *plugins.PluginContext) []plugins.Repository {
 	if pc == nil {
 		return nil
-	}
-	if pc.Data != nil && pc.Data.Account == plugins.AccountRepository {
-		return pc.Data.Computed.RepositoryList
 	}
 	if pc.Provider != nil {
 		if repos, err := pc.Provider.Repositories(ctx); err == nil && repos != nil {
