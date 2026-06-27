@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -12,7 +13,18 @@ import (
 )
 
 // Marshal serializes the populated Data structure into the upstream-
-// compatible JSON shape.
+// compatible JSON shape. Equivalent to MarshalWithProvider with a nil
+// Provider; preserved for callers (tests, downstream tooling) that
+// construct a fully-populated Data without wiring a dataprovider.
+func Marshal(data *plugins.Data) ([]byte, error) {
+	return MarshalWithProvider(context.Background(), data, nil)
+}
+
+// MarshalWithProvider serializes Data into the upstream-compatible JSON
+// shape, sourcing the user / organization / repository totals from the
+// dataprovider (#603/#605) when one is wired. Falls back to Data fields
+// when Provider is nil or returns an error so unit tests that build
+// Data by hand still produce the expected envelope.
 //
 // The wire format mirrors upstream lowlighter/metrics output keys
 // (account, user, config, computed, plugins, errors) while normalizing
@@ -20,16 +32,19 @@ import (
 // maps with non-string keys → [{key,value}] arrays, sets → sorted
 // slices). Cycles in Data.Plugins[*] are replaced with the literal
 // string "[Circular]" so the call never panics on pathological inputs.
-func Marshal(data *plugins.Data) ([]byte, error) {
-	out := buildEnvelope(data)
+func MarshalWithProvider(ctx context.Context, data *plugins.Data, provider plugins.Provider) ([]byte, error) {
+	out := buildEnvelope(ctx, data, provider)
 	return json.Marshal(out)
 }
 
 // buildEnvelope assembles the top-level JSON shape from Data. Each
 // branch normalizes its value via cycleDetector.normalize so the
 // resulting map can be marshalled by encoding/json without further
-// preprocessing.
-func buildEnvelope(data *plugins.Data) map[string]any {
+// preprocessing. When provider is non-nil it overrides the
+// user/repositories totals for the user and computed branches so the
+// JSON output reflects the canonical Provider-resolved values rather
+// than whatever the (Provider-migrated) plugin pipeline left on Data.
+func buildEnvelope(ctx context.Context, data *plugins.Data, provider plugins.Provider) map[string]any {
 	envelope := map[string]any{
 		"account": "",
 		"user":    nil,
@@ -56,7 +71,26 @@ func buildEnvelope(data *plugins.Data) map[string]any {
 
 	cd := newCycleDetector()
 	envelope["account"] = string(data.Account)
-	envelope["user"] = userToMap(data.User)
+
+	user := data.User
+	repoSummary := data.Computed.Repositories
+	if provider != nil {
+		if u, err := provider.User(ctx); err == nil && u != nil {
+			user = u
+		}
+		if s, err := provider.RepositorySummary(ctx); err == nil && s != nil {
+			repoSummary = *s
+		}
+	}
+	// Mirror core.Plugin's zero-init: a nil Languages map marshals as
+	// `null` in JSON, which breaks downstream consumers that expect an
+	// object. The Provider's RepositorySummary does not populate this
+	// field, so default it to an empty map at the JSON boundary.
+	if repoSummary.Languages == nil {
+		repoSummary.Languages = map[string]int{}
+	}
+
+	envelope["user"] = userToMap(user)
 	if r := data.RepoRef(); r != nil {
 		// M7: emit `data.repo` only when the repository template
 		// populated it. Classic-template runs omit the field entirely
@@ -64,7 +98,16 @@ func buildEnvelope(data *plugins.Data) map[string]any {
 		envelope["repo"] = repoToMap(r)
 	}
 	envelope["config"] = configToMap(data.Config)
-	envelope["computed"] = computedToMap(data.Computed)
+	computed := plugins.Computed{
+		Commits:              data.Computed.Commits,
+		Repositories:         repoSummary,
+		RepositoryList:       data.Computed.RepositoryList,
+		TotalCommits:         data.Computed.TotalCommits,
+		TotalIssues:          data.Computed.TotalIssues,
+		TotalPullRequests:    data.Computed.TotalPullRequests,
+		ContributionCalendar: data.Computed.ContributionCalendar,
+	}
+	envelope["computed"] = computedToMap(computed)
 
 	plugins := map[string]any{}
 	for name, raw := range data.Plugins {
