@@ -1,7 +1,7 @@
-// Package engine wires together the base plugin, the core plugin
-// runner, and the active template into a single Compute call. The
-// engine owns no business logic of its own; it sequences pieces from
-// internal/plugins, internal/templates, and internal/config.
+// Package engine wires together the core plugin runner and the active
+// template into a single Compute call. The engine owns no business
+// logic of its own; it sequences pieces from internal/plugins,
+// internal/templates, internal/dataprovider, and internal/config.
 package engine
 
 import (
@@ -16,7 +16,6 @@ import (
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
-	"github.com/mjun0812/github-metrics/internal/plugins/base"
 	"github.com/mjun0812/github-metrics/internal/plugins/core"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/render"
@@ -91,6 +90,12 @@ type Result struct {
 	// MIME is the IANA type that matches Output. Never empty when
 	// Output is set; never set when Output is empty.
 	MIME string
+	// Provider is the dataprovider the engine constructed for the
+	// request, returned so callers (integration tests, downstream
+	// services) can resolve the canonical user / organization /
+	// repository payloads after Compute finishes. The lifetime matches
+	// the request scope; callers MUST NOT use it past ctx cancellation.
+	Provider plugins.Provider
 }
 
 // Deps groups the long-lived collaborators the engine reuses across
@@ -160,9 +165,19 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 	// dataprovider (#603) lazily memoizes the user/organization profile
 	// + repository paging + indepth commit calendar fetches each plugin
 	// shares. Construct once per Compute so concurrent plugin
-	// goroutines collapse onto a single GraphQL call per resource.
+	// goroutines collapse onto a single GraphQL call per resource. The
+	// repo argument is set only for the M7 repository template
+	// (req.Account == AccountRepository); the Provider uses it to
+	// switch the Repositories/RepositorySummary accessors over to the
+	// single-repo synthesized result.
+	repoInput := repoFromInputs(inputs)
+	providerRepo := ""
+	if data.Account == plugins.AccountRepository {
+		providerRepo = repoInput
+	}
 	provider := dataprovider.New(
 		pluginutil.LoginFromInputs(inputs),
+		providerRepo,
 		deps.GraphQL,
 		deps.REST,
 		deps.Logger,
@@ -182,41 +197,59 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 		Render:     deps.Render,
 	}
 
-	// Stage 1: base plugin. This populates data.User and the
-	// repository totals every downstream plugin keys off of.
-	if _, err := base.Plugin.Run(ctx, pc); err != nil {
-		return nil, fmt.Errorf("engine: base: %w", err)
+	// Repository-template subject hydration (#605): when the request
+	// targets a single repository the engine resolves the Repo payload
+	// up-front and stores it on Data so the RepoRef()-based mode gates
+	// (plugins.RequireUserMode / RequireRepoMode) and the repository
+	// template partials reading pc.Data.Repo see the same value the
+	// Provider memoized. This is NOT eager hydration of aggregated /
+	// computed downstream data — Data.Repo is the request subject (the
+	// resource being rendered), the same way Data.Account is. All other
+	// shared profile/repository fields stay lazy and Provider-only.
+	if data.Account == plugins.AccountRepository {
+		if providerRepo == "" {
+			return nil, xerrors.NewInputError("repo",
+				errors.New("engine: repository template requires non-empty `repo` input"))
+		}
+		repo, err := provider.Repo(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("engine: repo: %w", err)
+		}
+		data.SetRepo(repo)
 	}
 
-	// Stage 2: core plugin pulls the global config into Data.Config /
+	// Stage 1: core plugin pulls the global config into Data.Config /
 	// Data.Computed and is responsible for the per-request setup that
 	// the parallel runner expects.
 	if _, err := core.Plugin.Run(ctx, pc); err != nil {
 		return nil, fmt.Errorf("engine: core: %w", err)
 	}
 
-	// Stage 3: the rest of the registered plugins, in parallel. The
+	// Stage 2: the rest of the registered plugins, in parallel. The
 	// runner records per-plugin errors under data.Plugins; we surface
 	// them via Result.Errors.
 	if err := core.RunPlugins(ctx, pc, req.Parallel); err != nil {
 		return nil, fmt.Errorf("engine: run-plugins: %w", err)
 	}
 
-	res := &Result{Data: data}
+	res := &Result{Data: data, Provider: provider}
 	res.Errors = collectPluginErrors(data)
 	if req.Die && len(res.Errors) > 0 {
 		return nil, res.Errors[0]
 	}
 
-	// Stage 4: dispatch the requested output format. M1 was a noop
+	// Stage 3: dispatch the requested output format. M1 was a noop
 	// here; M2 implements [dispatchOutput] which routes "json" to the
-	// engine.Marshal path and "svg"/"png"/"jpeg" to Template.Run.
+	// engine.Marshal path and "svg"/"png"/"jpeg" to Template.Run. The
+	// Provider is propagated so partials can resolve the user /
+	// organization / repository via the shared singleflight cache.
 	pcPartial := &templates.PartialContext{
 		Settings: deps.Settings,
 		Inputs:   pc.Inputs,
 		Logger:   deps.Logger,
 		Data:     data,
 		Metadata: deps.Metadata,
+		Provider: provider,
 	}
 	output, mime, err := dispatchOutput(ctx, req, deps, tmpl, data, pcPartial, res)
 	if err != nil {
@@ -240,6 +273,21 @@ func mergeLogin(inputs map[string]any, login string) map[string]any {
 		out["user"] = login
 	}
 	return out
+}
+
+// repoFromInputs returns the `repo` input value, or "" when unset.
+// Mirrors the helper the legacy base plugin used; lives here now that
+// the engine drives the Provider's repo-mode switch.
+func repoFromInputs(inputs map[string]any) string {
+	if inputs == nil {
+		return ""
+	}
+	v, ok := inputs["repo"]
+	if !ok {
+		return ""
+	}
+	s, _ := v.(string)
+	return s
 }
 
 // collectPluginErrors walks Data.Plugins looking for stored errors and

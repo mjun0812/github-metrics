@@ -31,13 +31,12 @@ import (
 
 	"github.com/mjun0812/github-metrics/internal/engine"
 	"github.com/mjun0812/github-metrics/internal/plugins/achievements"
-	"github.com/mjun0812/github-metrics/internal/plugins/base"
 	"github.com/mjun0812/github-metrics/internal/plugins/calendar"
+	"github.com/mjun0812/github-metrics/internal/plugins/header"
 	"github.com/mjun0812/github-metrics/internal/plugins/stargazers"
 	"github.com/mjun0812/github-metrics/internal/plugins/starlists"
 	"github.com/mjun0812/github-metrics/internal/plugins/stars"
 	"github.com/mjun0812/github-metrics/internal/plugins/topics"
-	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 	"github.com/mjun0812/github-metrics/internal/testutil/golden"
 	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 
@@ -272,15 +271,13 @@ func TestComputeSVG_PerPluginGolden(t *testing.T) {
 			// Anchor every package-level clock so byte-stable goldens
 			// do not drift across years. Each plugin owns its own
 			// nowFunc (intentional — they have different semantics);
-			// see internal/plugins/{achievements,base,calendar,stargazers,stars}/*
-			// and templates/classic/partials/partials.go.
+			// see internal/plugins/{achievements,calendar,header,stargazers,stars}.
 			fixedNow := func() time.Time {
 				return time.Date(2026, 1, 14, 0, 0, 0, 0, time.UTC)
 			}
-			t.Cleanup(partials.SetNowForTest(fixedNow))
 			t.Cleanup(achievements.SetNowForTest(fixedNow))
-			t.Cleanup(base.SetNowForTest(fixedNow))
 			t.Cleanup(calendar.SetNowForTest(fixedNow))
+			t.Cleanup(header.SetNowForTest(fixedNow))
 			t.Cleanup(stargazers.SetNowForTest(fixedNow))
 			t.Cleanup(stars.SetNowForTest(fixedNow))
 
