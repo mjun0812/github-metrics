@@ -1,9 +1,44 @@
 package dataprovider
 
 import (
+	"sort"
+
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
+
+// topLicenseShares converts the raw license-name → count map produced by
+// the repository paging loop into a top-N slice sorted by Count
+// descending, breaking ties alphabetically so the ordering is
+// deterministic. Percent is computed against licensedRepos (the number
+// of repos that reported a non-nil licenseInfo); when licensedRepos is 0
+// the function returns nil. Mirrors the legacy base.topLicenseShares.
+func topLicenseShares(counts map[string]int, licensedRepos, limit int) []plugins.LicenseShare {
+	if len(counts) == 0 || licensedRepos <= 0 {
+		return nil
+	}
+	if limit <= 0 {
+		limit = licensePreferenceTopN
+	}
+	shares := make([]plugins.LicenseShare, 0, len(counts))
+	for name, count := range counts {
+		shares = append(shares, plugins.LicenseShare{
+			Name:    name,
+			Count:   count,
+			Percent: float64(count) * 100 / float64(licensedRepos),
+		})
+	}
+	sort.Slice(shares, func(i, j int) bool {
+		if shares[i].Count != shares[j].Count {
+			return shares[i].Count > shares[j].Count
+		}
+		return shares[i].Name < shares[j].Name
+	})
+	if len(shares) > limit {
+		shares = shares[:limit]
+	}
+	return shares
+}
 
 // Generated genqlient types are deeply-nested per-query distinct
 // structs; aliasing keeps the call sites readable.
