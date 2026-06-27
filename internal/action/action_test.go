@@ -315,7 +315,7 @@ func TestRun_SkipEvent(t *testing.T) {
 // minimal env + INPUT_<UPPER> set.
 func TestNewInvocation_Defaults(t *testing.T) {
 	t.Parallel()
-	inputs := map[string]any{"user": "octocat"}
+	inputs := map[string]any{"user": "octocat", "combined": "yes"}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
 	inv, err := newInvocation(ModeAction, inputs, env, "/tmp/out")
 	if err != nil {
@@ -361,9 +361,9 @@ func TestNewInvocation_OptimizeDefault(t *testing.T) {
 		given map[string]any
 		want  any
 	}{
-		{"absent injects default", map[string]any{"user": "octocat"}, []string{"css", "xml"}},
-		{"explicit value preserved", map[string]any{"user": "octocat", "optimize": "css"}, "css"},
-		{"explicit empty opt-out preserved", map[string]any{"user": "octocat", "optimize": ""}, ""},
+		{"absent injects default", map[string]any{"user": "octocat", "combined": "yes"}, []string{"css", "xml"}},
+		{"explicit value preserved", map[string]any{"user": "octocat", "optimize": "css", "combined": "yes"}, "css"},
+		{"explicit empty opt-out preserved", map[string]any{"user": "octocat", "optimize": "", "combined": "yes"}, ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -92,17 +92,25 @@ inputs:
     description: |
       Render a single combined SVG instead of per-plugin files
 
-      When `yes`, renders all enabled plugins into a single SVG file specified by `filename`.
+      When `yes`, renders all enabled plugins into a single SVG file specified by `filename`,
+      and the result is handed to the committer (`output_action`) for repo write-back.
+
+      Per-plugin mode (the default in v1.x) does NOT support `output_action` other than
+      `none` — pass `combined: yes` if you rely on the action to commit / open PRs / push
+      to a gist. Setting `filename` to a non-default value or `-` also forces combined mode.
     type: boolean
     default: 'no'
 
   plugins:
     description: |
-      Comma-separated plugin allowlist
+      Comma-separated plugin allowlist for per-plugin mode (e.g. `languages,stars,activity`).
 
-      In per-plugin mode: only listed plugins render to disk.
-      In combined mode: only listed plugin panels appear in the SVG.
-      Default (empty) renders all enabled plugins.
+      Each entry is a plugin slug (lowercase ASCII, digits, '_', '-'; must start with a letter).
+      Only listed plugins are rendered to `<output_dir>/<slug>.svg`. Default (empty) renders
+      every enabled `plugin_<slug>` gate.
+
+      Ignored when `combined: yes` — combined mode is controlled exclusively by the
+      `plugin_<slug>` gates.
     type: string
 
   markdown:
