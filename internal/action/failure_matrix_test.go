@@ -135,6 +135,9 @@ func TestAction_OutputAction_FailureWarning_Matrix(t *testing.T) {
 					"INPUT_TOKEN=ghp_mock_pat_valid",
 					"INPUT_DRYRUN=no",
 					"INPUT_OUTPUT_ACTION=" + tc.action,
+					// Combined mode: the committer only runs in
+					// single-file mode; per-plugin mode skips commits.
+					"INPUT_COMBINED=yes",
 				},
 				Stdout:    io.Discard,
 				OutputDir: t.TempDir(),

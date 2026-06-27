@@ -54,7 +54,9 @@ type Invocation struct {
 	OutputAction     string
 	OutputCondition  string
 	OutputFilename   string
-	OutputDir        string // "/renders" by default in Action mode; pwd in CLI
+	OutputDir        string   // "/renders" by default in Action mode; pwd in CLI
+	PerPlugin        bool     // true when in per-plugin SVG output mode
+	PluginAllowlist  []string // comma-separated allowlist from `plugins` input
 	UseMockedData    bool
 	NoticeReleases   bool
 	RepoOwner        string
@@ -204,7 +206,14 @@ func runWith(ctx context.Context, opts runOptions) error {
 		}
 	}
 
-	// 9. Compute (with retry).
+	// 9. Compute + write output.
+	if inv.PerPlugin {
+		if perr := runPerPluginDispatch(ctx, inv, deps); perr != nil {
+			return fmt.Errorf("action: per-plugin dispatch: %w", perr)
+		}
+		return nil
+	}
+
 	var res *engine.Result
 	cerr := inv.RetryPolicy.Do(ctx, func() error {
 		var e error
@@ -369,6 +378,13 @@ func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
 		OSArch:      runtime.GOOS + "/" + runtime.GOARCH,
 	})
 
+	if inv.PerPlugin {
+		if perr := runPerPluginDispatch(ctx, inv, deps); perr != nil {
+			return fmt.Errorf("action: per-plugin dispatch: %w", perr)
+		}
+		return nil
+	}
+
 	var res *engine.Result
 	cerr := inv.RetryPolicy.Do(ctx, func() error {
 		var e error
@@ -405,6 +421,45 @@ func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
 		}
 		if cerr := committer.Run(ctx); cerr != nil {
 			slog.Warn("committer failed (action continues)", "err", cerr)
+		}
+	}
+	return nil
+}
+
+// runPerPluginDispatch runs ComputePerPlugin and writes one SVG file per
+// plugin into inv.OutputDir. Plugin-local failures (PerPluginResult.Error != nil)
+// log a warning and skip that plugin's file but do not abort the others.
+func runPerPluginDispatch(ctx context.Context, inv *Invocation, deps engine.Deps) error {
+	results, err := engine.ComputePerPlugin(ctx, engine.Request{
+		Login:    inv.Login,
+		Repo:     stringInput(inv.Inputs, "repo", ""),
+		Account:  accountForTemplate(inv.Template),
+		Template: inv.Template,
+		Format:   inv.Format,
+		Inputs:   inv.Inputs,
+	}, deps, inv.PluginAllowlist)
+	if err != nil {
+		return err
+	}
+
+	if mkErr := os.MkdirAll(inv.OutputDir, 0o755); mkErr != nil { //nolint:gosec
+		return fmt.Errorf("mkdir -p %s: %w", inv.OutputDir, mkErr)
+	}
+
+	for _, pr := range results {
+		if pr.Error != nil {
+			slog.Warn("per-plugin render failed; skipping file",
+				"plugin", pr.Plugin, "err", pr.Error)
+			continue
+		}
+		if len(pr.Output) == 0 {
+			slog.Warn("per-plugin render produced empty output; skipping file",
+				"plugin", pr.Plugin)
+			continue
+		}
+		path := filepath.Join(inv.OutputDir, pr.Plugin+".svg")
+		if werr := os.WriteFile(path, pr.Output, 0o600); werr != nil {
+			slog.Warn("per-plugin write failed", "plugin", pr.Plugin, "path", path, "err", werr)
 		}
 	}
 	return nil
@@ -525,6 +580,40 @@ func newInvocation(mode RunMode, inputs map[string]any, env map[string]string, o
 		return nil, fmt.Errorf("action: filename: %w", ferr)
 	}
 	inv.OutputFilename = resolved
+
+	// Per-plugin mode detection.
+	// Combined mode is triggered by:
+	//   1. explicit `combined: yes` input, OR
+	//   2. an explicit non-default filename (i.e. the user passed --filename foo.svg), OR
+	//   3. stdout mode (filename == "-").
+	// Everything else defaults to per-plugin mode.
+	filenameIsDefault := rawFilename == "github-metrics.*" || rawFilename == ""
+	combined := boolInput(inputs, "combined", false) ||
+		(!filenameIsDefault && inv.OutputFilename != "") ||
+		inv.OutputFilename == "-"
+	inv.PerPlugin = !combined
+
+	// Resolve per-plugin output directory.
+	if inv.PerPlugin {
+		perPluginDir := stringInput(inputs, "output_dir", "")
+		if perPluginDir != "" {
+			inv.OutputDir = perPluginDir
+		} else if inv.OutputDir == "" || inv.OutputDir == "." {
+			// Default per-plugin output directory.
+			inv.OutputDir = "./metrics-renders"
+		}
+	}
+
+	// Plugin allowlist.
+	pluginsRaw := stringInput(inputs, "plugins", "")
+	if pluginsRaw != "" {
+		for _, s := range strings.Split(pluginsRaw, ",") {
+			s = strings.TrimSpace(s)
+			if s != "" {
+				inv.PluginAllowlist = append(inv.PluginAllowlist, s)
+			}
+		}
+	}
 
 	// Resolve repo from GITHUB_REPOSITORY + run id from GITHUB_RUN_ID.
 	if mode == ModeAction {
