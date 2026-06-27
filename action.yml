@@ -370,6 +370,11 @@ inputs:
     default: 'no'
     required: false
 
+  plugin_header:
+    description: 'Enable header plugin'
+    default: 'no'
+    required: false
+
   plugin_isocalendar:
     description: 'Enable isocalendar plugin'
     default: 'no'
