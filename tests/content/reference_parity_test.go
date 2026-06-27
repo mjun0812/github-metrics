@@ -20,7 +20,6 @@ import (
 var exampleToReference = map[string]string{
 	"metrics-classic.svg":                        "metrics.classic.svg",
 	"metrics-repository.svg":                     "metrics.repository.svg",
-	"plugin-base.svg":                            "metrics.base.svg",
 	"plugin-calendar.svg":                        "metrics.plugin.calendar.svg",
 	"plugin-isocalendar.svg":                     "metrics.plugin.isocalendar.svg",
 	"plugin-isocalendar-fullyear.svg":            "metrics.plugin.isocalendar.fullyear.svg",

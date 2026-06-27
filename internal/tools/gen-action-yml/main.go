@@ -32,12 +32,11 @@ import (
 // share the `languages` directory; we don't iterate the dotted forms
 // because their `inputs:` are already enumerated in `languages`.
 //
-// `base` and `core` are included for their non-plugin inputs. They do
-// not expose `plugin_base` / `plugin_core` gates, but their metadata
-// still defines user-facing controls such as `base` and `repositories`.
+// `core` is included for its non-plugin inputs. It does not expose a
+// `plugin_core` gate, but its metadata defines user-facing controls
+// such as `template` / `config_display` / `committer_*`.
 var adoptedSlugs = []string{
 	"core",
-	"base",
 	"achievements",
 	"activity",
 	"calendar",
