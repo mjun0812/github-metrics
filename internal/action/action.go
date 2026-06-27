@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strings"
@@ -457,6 +458,16 @@ func runPerPluginDispatch(ctx context.Context, inv *Invocation, deps engine.Deps
 				"plugin", pr.Plugin)
 			continue
 		}
+		// Defense in depth: even though `newInvocation` validates allowlist
+		// slugs, refuse to write a per-plugin file whose slug could escape
+		// OutputDir. Plugin slugs coming from the in-process registry are
+		// already safe; this guards against any future caller that bypasses
+		// the allowlist validation step.
+		if !isValidPluginSlug(pr.Plugin) {
+			slog.Warn("per-plugin slug rejected as unsafe; skipping file",
+				"plugin", pr.Plugin)
+			continue
+		}
 		path := filepath.Join(inv.OutputDir, pr.Plugin+".svg")
 		if werr := os.WriteFile(path, pr.Output, 0o600); werr != nil {
 			slog.Warn("per-plugin write failed", "plugin", pr.Plugin, "path", path, "err", werr)
@@ -609,9 +620,13 @@ func newInvocation(mode RunMode, inputs map[string]any, env map[string]string, o
 	if pluginsRaw != "" {
 		for _, s := range strings.Split(pluginsRaw, ",") {
 			s = strings.TrimSpace(s)
-			if s != "" {
-				inv.PluginAllowlist = append(inv.PluginAllowlist, s)
+			if s == "" {
+				continue
 			}
+			if !isValidPluginSlug(s) {
+				return nil, fmt.Errorf("action: invalid plugin slug %q in `plugins` input (allowed: lowercase ASCII letters, digits, '_', '-'; must start with a letter)", s)
+			}
+			inv.PluginAllowlist = append(inv.PluginAllowlist, s)
 		}
 	}
 
@@ -634,6 +649,15 @@ func newInvocation(mode RunMode, inputs map[string]any, env map[string]string, o
 
 	if inv.Login == "" {
 		return nil, errors.New("action: input 'user' (or GITHUB_ACTOR fallback) is required")
+	}
+
+	// Per-plugin mode is incompatible with the committer (the committer is
+	// single-file by construction). Fail fast so users do not silently lose
+	// committed output after the default-mode flip. Users who want per-plugin
+	// output must set `output_action: none` explicitly, or opt back into
+	// combined mode via `combined: yes` / a non-default `filename`.
+	if inv.PerPlugin && !inv.Dryrun && inv.OutputAction != "none" {
+		return nil, fmt.Errorf("action: per-plugin mode is incompatible with output_action=%q; set `output_action: none` to write SVGs locally without committing, or set `combined: yes` to restore the single-file behaviour expected by the committer", inv.OutputAction)
 	}
 
 	return inv, nil
@@ -767,6 +791,16 @@ func durationMsInput(in map[string]any, key string, def time.Duration) time.Dura
 	}
 	ms := intInput(map[string]any{key: v}, key, int(def/time.Millisecond))
 	return time.Duration(ms) * time.Millisecond
+}
+
+// pluginSlugPattern restricts user-supplied plugin slugs to a safe subset
+// so that `filepath.Join(OutputDir, slug+".svg")` cannot escape OutputDir
+// or write to a privileged path. Plugin registrations themselves follow
+// this shape (lowercase ASCII, digits, '_', '-', leading letter).
+var pluginSlugPattern = regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
+
+func isValidPluginSlug(s string) bool {
+	return pluginSlugPattern.MatchString(s)
 }
 
 func isTruthy(v any) bool {

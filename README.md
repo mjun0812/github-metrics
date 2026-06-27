@@ -41,14 +41,14 @@ The default output mode writes one SVG per enabled plugin into `output_dir` (def
 Compose your profile README by embedding the per-plugin SVGs:
 
 ```markdown
-<img src="metrics/header.svg" width="100%">
+<img src="metrics-renders/header.svg" width="100%">
 
-<img src="metrics/languages.svg" align="left" width="48%">
-<img src="metrics/stars.svg" align="right" width="48%">
+<img src="metrics-renders/languages.svg" align="left" width="48%">
+<img src="metrics-renders/stars.svg" align="right" width="48%">
 
 <br clear="both">
 
-<img src="metrics/activity.svg" width="100%">
+<img src="metrics-renders/activity.svg" width="100%">
 ```
 
 See [docs/examples/profile-readme.md](docs/examples/profile-readme.md) for a complete workflow example.

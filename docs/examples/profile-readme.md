@@ -20,15 +20,23 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - uses: mjun0812/github-metrics@main
+      - uses: mjun0812/github-metrics@v1
         with:
           user: ${{ github.actor }}
           token: ${{ secrets.GITHUB_TOKEN }}
           output_dir: ./metrics/
+          # Per-plugin mode does not use the built-in committer; commit the
+          # generated SVGs explicitly in the next step.
+          output_action: none
           plugin_header: true
           plugin_languages: true
           plugin_stars: true
           plugin_activity: true
+      - name: Commit generated SVGs
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore: update profile metrics'
+          file_pattern: 'metrics/*.svg'
 ```
 
 ## Embedding in README.md
@@ -54,7 +62,7 @@ Each SVG is rendered independently from the same API fetch — disabling a plugi
 If you prefer a single SVG file (legacy behavior):
 
 ```yaml
-- uses: mjun0812/github-metrics@main
+- uses: mjun0812/github-metrics@v1
   with:
     user: ${{ github.actor }}
     token: ${{ secrets.GITHUB_TOKEN }}

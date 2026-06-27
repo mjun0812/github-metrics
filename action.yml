@@ -802,7 +802,7 @@ inputs:
     required: false
 
   plugins:
-    description: 'Comma-separated plugin allowlist'
+    description: 'Comma-separated plugin allowlist for per-plugin mode (e.g. `languages,stars,activity`).'
     required: false
 
   plugins_errors_fatal:

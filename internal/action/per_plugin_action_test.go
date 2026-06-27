@@ -157,9 +157,37 @@ func TestRunCLIWith_FilenameImpliesCombined(t *testing.T) {
 		t.Fatalf("runCLIWith filename regression: %v", err)
 	}
 
-	// Single file at outDir/foo.svg.
+	// Single REGULAR FILE at outDir/foo.svg — not a directory.
+	// The #616 regression mode wrote per-plugin children into outDir/foo.svg/,
+	// so os.Stat alone is insufficient (it succeeds on directories too).
 	path := filepath.Join(outDir, "foo.svg")
-	if _, err := os.Stat(path); err != nil {
-		t.Errorf("expected combined file at %s; err=%v", path, err)
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("expected combined file at %s; err=%v", path, err)
+	}
+	if !info.Mode().IsRegular() {
+		t.Fatalf("expected %s to be a regular file (regression #616: per-plugin fan-out treated foo.svg as a directory); mode=%s",
+			path, info.Mode())
+	}
+	if info.Size() == 0 {
+		t.Errorf("expected non-empty combined SVG at %s; size=0", path)
+	}
+
+	// outDir must contain exactly foo.svg — no per-plugin siblings, no
+	// "foo.svg" directory entry.
+	entries, rerr := os.ReadDir(outDir)
+	if rerr != nil {
+		t.Fatalf("read outDir: %v", rerr)
+	}
+	if len(entries) != 1 || entries[0].Name() != "foo.svg" || entries[0].IsDir() {
+		names := make([]string, 0, len(entries))
+		for _, e := range entries {
+			suffix := ""
+			if e.IsDir() {
+				suffix = "/"
+			}
+			names = append(names, e.Name()+suffix)
+		}
+		t.Errorf("outDir must contain only the file foo.svg; got %v", names)
 	}
 }
