@@ -415,20 +415,6 @@ render_one "metrics-classic" \
 	--plugin "base=header, repositories"
 
 echo
-echo "== foundational base render =="
-# `base` is the upstream-special plugin that draws the user/org header
-# card every other plugin sits on top of. We render it on its own so
-# docs/plugins/base.md has a visual reference. Default `base` value
-# is "header, activity, community, repositories, metadata"; passing
-# no plugin_<name>=yes toggle means only the base sections render.
-#
-# `core` is intentionally absent here — it has no standalone visual
-# output (configuration + parallel runner only). See
-# docs/plugins/core.md.
-render_one "plugin-base" \
-	--template classic
-
-echo
 echo "== per-plugin repository-mode renders (only plugins with visible delta) =="
 # The repository template's partial order is hard-coded in
 # `assets/templates/repository/partials/_.json`. base.runRepository
