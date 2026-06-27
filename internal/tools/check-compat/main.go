@@ -28,13 +28,14 @@ import (
 
 // adoptedPlugins lists the upstream plugin slugs we have promised to
 // remain key-compatible with (docs/design/15-selection-answer.md §6.4
-// + base + core).
+// + core). #605 deleted the upstream `base` slug; the in-tree header /
+// activity / repositories plugins now own its surface separately.
 var adoptedPlugins = []string{
-	"base", "core",
+	"core",
 	"languages", "activity", "achievements", "repositories",
 	"isocalendar", "calendar", "habits", "stars", "topics", "starlists",
 	"people", "notable", "contributors", "reactions", "projects",
-	"sponsors", "sponsorships", "stargazers", "traffic",
+	"sponsors", "sponsorships", "stargazers", "traffic", "header",
 }
 
 // adoptedTemplates lists the upstream template slugs we mirror.

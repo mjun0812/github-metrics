@@ -118,3 +118,23 @@ func resolveLogin(ctx context.Context, pc *plugins.PluginContext) string {
 	}
 	return ""
 }
+
+// resolveContributionCalendar returns the shared contribution-calendar
+// payload via Provider.CommitCalendar, falling back to
+// pc.Data.Computed.ContributionCalendar for unit tests that build
+// PluginContext by hand without wiring a Provider. Returns nil when
+// neither source carries data so the plugin can branch on absence.
+func resolveContributionCalendar(ctx context.Context, pc *plugins.PluginContext) *plugins.ContributionCalendar {
+	if pc == nil {
+		return nil
+	}
+	if pc.Provider != nil {
+		if c, err := pc.Provider.CommitCalendar(ctx); err == nil && c != nil {
+			return c
+		}
+	}
+	if pc.Data != nil {
+		return pc.Data.Computed.ContributionCalendar
+	}
+	return nil
+}

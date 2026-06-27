@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/engine"
-	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
+	"github.com/mjun0812/github-metrics/internal/plugins/header"
 	"github.com/mjun0812/github-metrics/internal/testutil/golden"
 
 	// Side-effect import: registers the classic template with the
@@ -23,10 +23,11 @@ import (
 // diff messages on mismatch).
 func TestComputeSVG_ClassicOctocatGolden(t *testing.T) {
 	engine.SetVersionForTest(t, "test-version")
-	// Anchor BaseHeader's "Joined GitHub <age>" label so the golden
-	// SVG stays stable across days. octocat.createdAt is 2008-01-14;
-	// freezing now() to 2026-01-14 gives a clean "18 years ago".
-	restore := partials.SetNowForTest(func() time.Time {
+	// Anchor the header plugin's "Joined GitHub <age>" label so the
+	// golden SVG stays stable across days. octocat.createdAt is
+	// 2008-01-14; freezing now() to 2026-01-14 gives a clean "18 years
+	// ago". (#605: BaseHeader moved into the header plugin.)
+	restore := header.SetNowForTest(func() time.Time {
 		return time.Date(2026, 1, 14, 0, 0, 0, 0, time.UTC)
 	})
 	t.Cleanup(restore)

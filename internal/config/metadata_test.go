@@ -16,7 +16,7 @@ import (
 // stay in sync with scripts/sync-assets.sh and
 // docs/design/15-selection-answer.md §6.4.
 var adoptedPlugins = []string{
-	"base", "core",
+	"core",
 	"header",
 	"languages", "activity", "achievements", "repositories",
 	"isocalendar", "calendar", "habits", "stars", "topics", "starlists",

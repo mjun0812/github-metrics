@@ -12,10 +12,19 @@ import (
 )
 
 // TestAchievements_Requires_Static asserts that achievements.Plugin.Requires()
-// declares exactly [KeyUser]. If a developer silently adds a Provider call
-// without updating Requires(), the dynamic test below catches the drift.
+// declares exactly the Provider methods the plugin calls during Run. If a
+// developer silently adds or removes a Provider call without updating
+// Requires(), the dynamic test below catches the drift.
+//
+// #605: after base deletion the achievements plugin reads
+// Provider.{User,Repositories,RepositorySummary} via the effectiveData
+// helper instead of pc.Data.Computed.* directly.
 func TestAchievements_Requires_Static(t *testing.T) {
-	requirestesting.AssertExpected(t, achievements.Plugin, []plugins.DataKey{plugins.KeyUser})
+	requirestesting.AssertExpected(t, achievements.Plugin, []plugins.DataKey{
+		plugins.KeyUser,
+		plugins.KeyRepositories,
+		plugins.KeyRepositorySummary,
+	})
 }
 
 // TestAchievements_Requires_Dynamic is the canonical end-to-end drift
@@ -24,25 +33,20 @@ func TestAchievements_Requires_Static(t *testing.T) {
 // that the set of Provider methods actually invoked equals the set
 // declared by Requires().
 //
-// achievements.providerHasUser is called unconditionally when the computed
-// Data fields are all zero — which they are in a minimal test context — so
-// Provider.User() is always exercised, making this plugin the most reliable
-// candidate for the dynamic check without requiring a GraphQL or REST mock.
+// effectiveData() calls Provider.User / Repositories / RepositorySummary
+// unconditionally — they are the canonical source the rankTable funcs
+// read after #605 removed the base plugin populating pc.Data.Computed.*.
 //
-// If this test fails with "declared but NOT called=[user]", the plugin has
-// stopped calling Provider.User() and Requires() should be updated.
-// If it fails with "called but NOT declared=[...]", a new Provider call was
-// added to the plugin without updating Requires() — add the missing key.
+// If this test fails with "declared but NOT called=[...]", the plugin
+// has stopped calling Provider for that key and Requires() should drop
+// it. If it fails with "called but NOT declared=[...]", a new Provider
+// call was added without updating Requires() — add the missing key.
 func TestAchievements_Requires_Dynamic(t *testing.T) {
 	mock := dataprovidertest.NewCountingMock()
 
-	// Build a minimal PluginContext: all Data fields are zero so
-	// providerHasUser() is invoked to determine whether to skip.
 	pc := mocks.NewPluginContext(t)
 	pc.Provider = mock
 
-	// Run the plugin. providerHasUser() calls Provider.User() because
-	// pc.Provider != nil and Data.Computed is empty.
 	_, _ = achievements.Plugin.Run(context.Background(), pc)
 
 	requirestesting.AssertCalledMatchesRequires(t, achievements.Plugin, mock)

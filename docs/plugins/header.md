@@ -1,7 +1,8 @@
 <!-- AUTOGEN_START: title-and-description -->
 # Plugin: header
 
-`header` is the identity card plugin extracted from `base` by #602. It renders the user (or organization) avatar, login, follower / following counters and trailing 2-week contribution calendar that previously shipped as the always-on `base.header` chrome. Enabling `plugin_header: yes` opts the card in to a per-plugin SVG render or to the classic combined render.
+Renders the profile header card: avatar, display name, join date,
+follower count, and a 2-week contribution calendar mini-bar.
 <!-- AUTOGEN_END: title-and-description -->
 
 ## Sample
@@ -36,7 +37,7 @@
 ```sh
 metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
-  --plugin 'plugin_header=yes'
+  --plugin plugin_header=yes
 ```
 <!-- AUTOGEN_END: usage-snippet -->
 
@@ -47,6 +48,6 @@ A valid GitHub username or organization login and a token with the `public_acces
 ## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/header/metadata.yml`](../../assets/plugins/header/metadata.yml) — plugin metadata
+- [`assets/plugins/header/metadata.yml`](../../assets/plugins/header/metadata.yml) — upstream metadata
 - Supported account types: user, organization
 - Required scopes: public_access

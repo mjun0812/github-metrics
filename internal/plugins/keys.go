@@ -35,6 +35,13 @@ const (
 	// KeyRepositories maps to Provider.Repositories(ctx).
 	KeyRepositories DataKey = "repositories"
 
+	// KeyRepositorySummary maps to Provider.RepositorySummary(ctx).
+	KeyRepositorySummary DataKey = "repository_summary"
+
 	// KeyCommitCalendar maps to Provider.CommitCalendar(ctx).
 	KeyCommitCalendar DataKey = "commit_calendar"
+
+	// KeyRepo maps to Provider.Repo(ctx) — the single-repository fetch
+	// for the M7 repository template.
+	KeyRepo DataKey = "repo"
 )

@@ -73,7 +73,11 @@ type Provider interface {
 	User(ctx context.Context) (*User, error)
 	Organization(ctx context.Context) (*Organization, error)
 	Repositories(ctx context.Context) ([]Repository, error)
+	RepositorySummary(ctx context.Context) (*ComputedRepositories, error)
 	CommitCalendar(ctx context.Context) (*ContributionCalendar, error)
+	// Repo returns the single repository payload for the M7 repository
+	// template, or (nil, nil) when the Provider is not in repository mode.
+	Repo(ctx context.Context) (*Repo, error)
 }
 
 // ProfileKind discriminates the union value carried by Profile.

@@ -12,9 +12,8 @@ import (
 	"github.com/mjun0812/github-metrics/internal/engine"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 
-	// Side-effect imports register the classic template + core plugins so
+	// Side-effect imports register the classic template + core plugin so
 	// engine.Compute can resolve them (same as bench_full_test.go).
-	_ "github.com/mjun0812/github-metrics/internal/plugins/base"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/core"
 	_ "github.com/mjun0812/github-metrics/internal/templates/classic"
 )
