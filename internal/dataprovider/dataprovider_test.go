@@ -376,3 +376,104 @@ func TestProvider_Profile_DoesNotCacheContextDeadlineExceeded(t *testing.T) {
 		t.Fatalf("User op never reached transport on caller B; cache replayed the deadline-exceeded error")
 	}
 }
+
+// userRepositoriesResponseBody is a minimal two-repo paging fixture for
+// the UserRepositories operation: one repo with issues=5 / PRs=3, one
+// with issues=2 / PRs=7. Both branches of fetchOneRepoPage must accumulate
+// these per-node totals into ComputedRepositories.Issues / .PullRequests
+// (otherwise the JSON wire keys computed.repositories.issues /
+// .pullRequests stay 0 — the wire-format regression the deleted base
+// plugin used to prevent via its UserIndepth-based hydration).
+const userRepositoriesResponseBody = `{
+  "data": {
+    "user": {
+      "repositories": {
+        "totalCount": 2,
+        "pageInfo": {"hasNextPage": false, "endCursor": null},
+        "nodes": [
+          {
+            "databaseId": 1,
+            "id": "R1",
+            "name": "alpha",
+            "nameWithOwner": "octocat/alpha",
+            "description": null,
+            "url": "https://example.invalid/alpha",
+            "isPrivate": false,
+            "isFork": false,
+            "createdAt": "2020-01-01T00:00:00Z",
+            "pushedAt": "2020-01-02T00:00:00Z",
+            "updatedAt": "2020-01-02T00:00:00Z",
+            "stargazerCount": 10,
+            "forkCount": 1,
+            "issues": {"totalCount": 5},
+            "pullRequests": {"totalCount": 3},
+            "watchers": {"totalCount": 4},
+            "primaryLanguage": null,
+            "languages": null,
+            "diskUsage": 100,
+            "releases": {"totalCount": 1},
+            "packages": {"totalCount": 0},
+            "deployments": {"totalCount": 2},
+            "licenseInfo": null
+          },
+          {
+            "databaseId": 2,
+            "id": "R2",
+            "name": "beta",
+            "nameWithOwner": "octocat/beta",
+            "description": null,
+            "url": "https://example.invalid/beta",
+            "isPrivate": false,
+            "isFork": false,
+            "createdAt": "2021-01-01T00:00:00Z",
+            "pushedAt": "2021-01-02T00:00:00Z",
+            "updatedAt": "2021-01-02T00:00:00Z",
+            "stargazerCount": 20,
+            "forkCount": 0,
+            "issues": {"totalCount": 2},
+            "pullRequests": {"totalCount": 7},
+            "watchers": {"totalCount": 6},
+            "primaryLanguage": null,
+            "languages": null,
+            "diskUsage": 200,
+            "releases": {"totalCount": 0},
+            "packages": {"totalCount": 0},
+            "deployments": {"totalCount": 0},
+            "licenseInfo": null
+          }
+        ]
+      }
+    }
+  }
+}`
+
+// TestProvider_RepositorySummary_IncludesIssuesAndPullRequests guards the
+// JSON wire format keys computed.repositories.issues /
+// computed.repositories.pullRequests, which the deleted base plugin used
+// to populate (via its UserIndepth hydration into
+// pc.Data.Computed.Repositories.{Issues,PullRequests}). After base's
+// removal RepositorySummary is the sole producer of those keys, so the
+// paging accumulator must sum the per-node issues.totalCount /
+// pullRequests.totalCount that the UserRepositories /
+// OrganizationRepositories GraphQL queries already return.
+func TestProvider_RepositorySummary_IncludesIssuesAndPullRequests(t *testing.T) {
+	t.Parallel()
+	tr := newCountingTransport()
+	tr.setResponse("User", userResponseBody)
+	tr.setResponse("UserRepositories", userRepositoriesResponseBody)
+	p := newProviderWith(t, tr)
+
+	summary, err := p.RepositorySummary(context.Background())
+	if err != nil {
+		t.Fatalf("RepositorySummary: %v", err)
+	}
+	if summary == nil {
+		t.Fatal("RepositorySummary returned nil summary")
+	}
+	if got, want := summary.Issues, 7; got != want {
+		t.Errorf("Issues: got %d, want %d (sum of per-node issues.totalCount)", got, want)
+	}
+	if got, want := summary.PullRequests, 10; got != want {
+		t.Errorf("PullRequests: got %d, want %d (sum of per-node pullRequests.totalCount)", got, want)
+	}
+}
