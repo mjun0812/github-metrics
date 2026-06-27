@@ -21,17 +21,20 @@ import (
 // *Invocation produced by ToInvocation is interchangeable with the
 // Action-mode pipeline.
 type CLIFlags struct {
-	Config   string            // --config <path>.yaml
-	User     string            // --user <login>
-	Template string            // --template <name>
-	Token    string            // --token <PAT>
-	TokenEnv string            // --token-env <ENV_NAME>
-	Repo     string            // --repo <name> (M7 — repository template input)
-	Plugins  map[string]string // --plugin key=value (repeatable)
-	Output   string            // --output svg|png|jpeg|json
-	Filename string            // --filename <path-or-->
-	Dryrun   bool              // --dryrun
-	Preset   string            // --preset <path>.yaml
+	Config          string            // --config <path>.yaml
+	User            string            // --user <login>
+	Template        string            // --template <name>
+	Token           string            // --token <PAT>
+	TokenEnv        string            // --token-env <ENV_NAME>
+	Repo            string            // --repo <name> (M7 — repository template input)
+	Plugins         map[string]string // --plugin key=value (repeatable)
+	Output          string            // --output svg|png|jpeg|json
+	Filename        string            // --filename <path-or-->; setting this implies --combined.
+	Dryrun          bool              // --dryrun
+	Preset          string            // --preset <path>.yaml
+	OutputDir       string            // --output-dir <dir> (per-plugin mode)
+	Combined        bool              // --combined (opt into single-SVG mode)
+	PluginAllowlist string            // --plugins a,b,c (comma-separated allowlist)
 }
 
 // ParseFlags parses the supplied args (typically os.Args[1:] after
@@ -52,6 +55,9 @@ func ParseFlags(args []string) (*CLIFlags, error) {
 	fs.StringVar(&cf.Filename, "filename", "", "output path; '-' for stdout")
 	fs.BoolVar(&cf.Dryrun, "dryrun", false, "skip commit/PR output_action side effects")
 	fs.StringVar(&cf.Preset, "preset", "", "preset YAML path (config_presets)")
+	fs.StringVar(&cf.OutputDir, "output-dir", "", "directory for per-plugin SVG output (default mode)")
+	fs.BoolVar(&cf.Combined, "combined", false, "render a single combined SVG instead of per-plugin files")
+	fs.StringVar(&cf.PluginAllowlist, "plugins", "", "comma-separated plugin slug allowlist")
 
 	fs.Var(&pluginFlag{m: cf.Plugins}, "plugin", "key=value plugin input (repeatable)")
 
@@ -213,6 +219,15 @@ func (c *CLIFlags) ToInvocation(env map[string]string) (map[string]any, error) {
 	}
 	for k, v := range c.Plugins {
 		inputs[k] = v
+	}
+	if c.OutputDir != "" {
+		inputs["output_dir"] = c.OutputDir
+	}
+	if c.Combined {
+		inputs["combined"] = true
+	}
+	if c.PluginAllowlist != "" {
+		inputs["plugins"] = c.PluginAllowlist
 	}
 
 	return inputs, nil

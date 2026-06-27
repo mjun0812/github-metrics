@@ -185,6 +185,10 @@ func TestRun_Dryrun_NoCommitterCall(t *testing.T) {
 			"INPUT_DRYRUN=yes",
 			"INPUT_OUTPUT_ACTION=commit",
 			"INPUT_USE_MOCKED_DATA=false",
+			// Per-plugin mode is now the default; this test predates it
+			// and expects single-file output at github-metrics.svg, so
+			// opt into combined mode explicitly.
+			"INPUT_COMBINED=yes",
 		},
 		Stdout:    &stdout,
 		OutputDir: outDir,
