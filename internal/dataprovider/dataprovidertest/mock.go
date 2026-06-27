@@ -25,11 +25,13 @@ type CountingMock struct {
 	called map[plugins.DataKey]int
 
 	// Optional overrides. nil means return a zero-value non-error result.
-	ProfileFn        func(ctx context.Context) (*plugins.Profile, error)
-	UserFn           func(ctx context.Context) (*plugins.User, error)
-	OrganizationFn   func(ctx context.Context) (*plugins.Organization, error)
-	RepositoriesFn   func(ctx context.Context) ([]plugins.Repository, error)
-	CommitCalendarFn func(ctx context.Context) (*plugins.ContributionCalendar, error)
+	ProfileFn           func(ctx context.Context) (*plugins.Profile, error)
+	UserFn              func(ctx context.Context) (*plugins.User, error)
+	OrganizationFn      func(ctx context.Context) (*plugins.Organization, error)
+	RepositoriesFn      func(ctx context.Context) ([]plugins.Repository, error)
+	RepositorySummaryFn func(ctx context.Context) (*plugins.ComputedRepositories, error)
+	CommitCalendarFn    func(ctx context.Context) (*plugins.ContributionCalendar, error)
+	RepoFn              func(ctx context.Context) (*plugins.Repo, error)
 }
 
 // NewCountingMock returns a CountingMock with all counters initialised to
@@ -111,6 +113,15 @@ func (m *CountingMock) Repositories(ctx context.Context) ([]plugins.Repository, 
 	return []plugins.Repository{}, nil
 }
 
+// RepositorySummary implements plugins.Provider.
+func (m *CountingMock) RepositorySummary(ctx context.Context) (*plugins.ComputedRepositories, error) {
+	m.record(plugins.KeyRepositorySummary)
+	if m.RepositorySummaryFn != nil {
+		return m.RepositorySummaryFn(ctx)
+	}
+	return &plugins.ComputedRepositories{}, nil
+}
+
 // CommitCalendar implements plugins.Provider.
 func (m *CountingMock) CommitCalendar(ctx context.Context) (*plugins.ContributionCalendar, error) {
 	m.record(plugins.KeyCommitCalendar)
@@ -118,4 +129,13 @@ func (m *CountingMock) CommitCalendar(ctx context.Context) (*plugins.Contributio
 		return m.CommitCalendarFn(ctx)
 	}
 	return &plugins.ContributionCalendar{}, nil
+}
+
+// Repo implements plugins.Provider.
+func (m *CountingMock) Repo(ctx context.Context) (*plugins.Repo, error) {
+	m.record(plugins.KeyRepo)
+	if m.RepoFn != nil {
+		return m.RepoFn(ctx)
+	}
+	return nil, nil
 }

@@ -109,7 +109,7 @@ func newProviderWith(t *testing.T, transport http.RoundTripper) *dataprovider.Pr
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)
 	}
-	return dataprovider.New("octocat", gql, nil, nil)
+	return dataprovider.New("octocat", "", gql, nil, nil)
 }
 
 const userResponseBody = `{
