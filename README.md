@@ -35,6 +35,26 @@ guide and unported-feature list.
 - **Hardened runtime** — non-root user (uid 10001), chromium + Noto fonts
   bundled, no Node toolchain.
 
+## Profile README
+
+The default output mode writes one SVG per enabled plugin into `output_dir` (default `./metrics-renders/`).
+Compose your profile README by embedding the per-plugin SVGs:
+
+```markdown
+<img src="metrics/header.svg" width="100%">
+
+<img src="metrics/languages.svg" align="left" width="48%">
+<img src="metrics/stars.svg" align="right" width="48%">
+
+<br clear="both">
+
+<img src="metrics/activity.svg" width="100%">
+```
+
+See [docs/examples/profile-readme.md](docs/examples/profile-readme.md) for a complete workflow example.
+
+For a single combined SVG (legacy behavior), pass `combined: 'yes'` in your workflow.
+
 ## Quick start
 
 ### GitHub Action
