@@ -30,6 +30,14 @@ import (
 	// chromedp-tagged integration file).
 	_ "github.com/mjun0812/github-metrics/internal/plugins/starlists"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/topics"
+
+	// #602: register the opt-in header plugin so the chromedp
+	// TestComputePNG_E2E (and any other integration test that runs
+	// engine.Compute without pulling cmd/metrics-cli's plugin manifest)
+	// can render the identity card when plugin_header=yes is set.
+	// Without this side-effect import, the partial dispatcher silently
+	// skips "plugin.header" because no Lookup is registered.
+	_ "github.com/mjun0812/github-metrics/internal/plugins/header"
 )
 
 // graphQLFixture is a tiny RoundTripper that inspects the GraphQL
