@@ -51,7 +51,11 @@ func dispatchOutput(
 
 	switch format {
 	case "json":
-		body, err := Marshal(data)
+		var provider plugins.Provider
+		if pcPartial != nil {
+			provider = pcPartial.Provider
+		}
+		body, err := MarshalWithProvider(ctx, data, provider)
 		if err != nil {
 			return nil, "", fmt.Errorf("engine: marshal json: %w", err)
 		}

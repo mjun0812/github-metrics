@@ -96,6 +96,8 @@ func TestRunWith_CommitterSuccess(t *testing.T) {
 }
 
 // TestRunWith_ComputeError wraps engine failures from invalid deps.
+// We trigger the error by requesting an unregistered template, which
+// engine.Compute rejects up-front with a template-lookup error.
 func TestRunWith_ComputeError(t *testing.T) {
 	t.Parallel()
 	err := runWith(context.Background(), runOptions{
@@ -107,6 +109,7 @@ func TestRunWith_ComputeError(t *testing.T) {
 			"INPUT_TOKEN=ghp_mock_pat_valid",
 			"INPUT_USE_MOCKED_DATA=yes",
 			"INPUT_DRYRUN=yes",
+			"INPUT_TEMPLATE=nonexistent-template-405",
 		},
 		Stdout:    io.Discard,
 		OutputDir: t.TempDir(),

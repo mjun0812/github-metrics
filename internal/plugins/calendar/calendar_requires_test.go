@@ -9,15 +9,21 @@ import (
 )
 
 // TestCalendar_Requires asserts that calendar.Plugin.Requires() declares
-// exactly [KeyUser].
+// exactly the Provider methods the plugin calls during Run.
 //
-// The static check is sufficient here because the Provider.User call in
-// calendar (via resolveUser in fetch.go) is gated on pc.GraphQL != nil and
-// plugin_calendar=true. Constructing a full GraphQL mock for a requires-only
-// test would duplicate the existing calendar_test.go network fixtures without
-// adding signal. The end-to-end drift detector is demonstrated by
-// TestAchievements_Requires_Dynamic in the achievements package, which wires
-// a CountingMock without a GraphQL dependency.
+// #605: calendar.Run reads Provider.CommitCalendar as the fallback when
+// fetchYearlyWeeks returns no data (after base deletion this is the
+// canonical source instead of pc.Data.Computed.ContributionCalendar).
+// Provider.User is still consulted by resolveUser in fetch.go when the
+// per-year query path is enabled.
+//
+// The static check is sufficient here because dynamic invocation also
+// depends on pc.GraphQL / plugin_calendar inputs; the end-to-end drift
+// detector is exercised by TestAchievements_Requires_Dynamic in the
+// achievements package.
 func TestCalendar_Requires(t *testing.T) {
-	requirestesting.AssertExpected(t, calendar.Plugin, []plugins.DataKey{plugins.KeyUser})
+	requirestesting.AssertExpected(t, calendar.Plugin, []plugins.DataKey{
+		plugins.KeyUser,
+		plugins.KeyCommitCalendar,
+	})
 }

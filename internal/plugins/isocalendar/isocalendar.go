@@ -29,7 +29,7 @@ func (p *isocalendarPlugin) Name() string                     { return Name }
 func (p *isocalendarPlugin) Metadata() *config.PluginMetadata { return nil }
 
 func (p *isocalendarPlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{plugins.KeyUser}
+	return []plugins.DataKey{plugins.KeyUser, plugins.KeyCommitCalendar}
 }
 
 // Result is the JSON payload published under data.Plugins["isocalendar"].
@@ -103,8 +103,8 @@ func (p *isocalendarPlugin) Run(ctx context.Context, pc *plugins.PluginContext) 
 	}
 	if len(weeks) == 0 {
 		// Degraded path (no GraphQL client / fetch failure): slice the
-		// most-recent weeks off the shared indepth calendar like before.
-		cal := pc.Data.Computed.ContributionCalendar
+		// most-recent weeks off the shared calendar like before.
+		cal := resolveContributionCalendar(ctx, pc)
 		if cal == nil || len(cal.Weeks) == 0 {
 			return &Result{
 				Skipped:       true,

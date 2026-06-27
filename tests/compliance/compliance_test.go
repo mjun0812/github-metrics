@@ -114,7 +114,6 @@ var allowedFiles = map[string]struct{}{
 	// this allow-list entry preserves the upstream-equivalent badge
 	// shape without standing up those plugins.
 	"internal/plugins/achievements/achievements.go": {},
-	"internal/plugins/base/base.go":                 {},
 	"internal/plugins/data.go":                      {},
 }
 
@@ -257,7 +256,6 @@ var adoptedM4Plugins = []string{
 // infrastructure, not plugin slugs. They MUST be excluded from the
 // adopted-set comparison.
 var nonPluginInternalDirs = map[string]struct{}{
-	"base":            {}, // base plugin (account-kind dispatcher; not a user-facing slug)
 	"core":            {}, // core plugin (settings + parallel runner)
 	"pluginutil":      {}, // shared input-parsing / formatting helpers; not a user-facing plugin slug
 	"requirestesting": {}, // #604 Requires() drift-detection test helpers; not a plugin slug
@@ -319,7 +317,7 @@ func TestCompliance_M4_AdoptedPlugins(t *testing.T) {
 		t.Errorf("constitution 原則 III (採用 21): unadopted plugin dirs landed in internal/plugins/: %v", extra)
 	}
 	if len(missing) == 0 && len(extra) == 0 {
-		t.Logf("M4 採用 21 plugin compliance OK (dirs: %d adopted + base + core)", len(have))
+		t.Logf("M4 採用 21 plugin compliance OK (dirs: %d adopted + core)", len(have))
 	}
 }
 

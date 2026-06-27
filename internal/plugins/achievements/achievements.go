@@ -78,7 +78,11 @@ func (p *achievementsPlugin) Name() string                     { return Name }
 func (p *achievementsPlugin) Metadata() *config.PluginMetadata { return nil }
 
 func (p *achievementsPlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{plugins.KeyUser}
+	return []plugins.DataKey{
+		plugins.KeyUser,
+		plugins.KeyRepositories,
+		plugins.KeyRepositorySummary,
+	}
 }
 
 // Result is the JSON payload published under data.Plugins["achievements"].
@@ -426,8 +430,14 @@ func (p *achievementsPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 			Ranks:         map[string]string{},
 		}, nil
 	}
-	c := pc.Data.Computed
-	if c.Repositories.Count == 0 && c.TotalCommits == 0 && len(c.RepositoryList) == 0 && !providerHasUser(ctx, pc) {
+	// effectiveData snapshots the User + repository totals + repository
+	// list via the shared dataprovider (#605: replaces the pre-deletion
+	// dependency on base having populated pc.Data.Computed.* and
+	// pc.Data.User). Value functions then read this synthetic
+	// *plugins.Data so the rankTable signatures stay untouched.
+	eff := effectiveData(ctx, pc)
+	if eff.User == nil && eff.Computed.Repositories.Count == 0 &&
+		eff.Computed.TotalCommits == 0 && len(eff.Computed.RepositoryList) == 0 {
 		return &Result{
 			Skipped:       true,
 			SkippedReason: "base data unavailable",
@@ -443,7 +453,7 @@ func (p *achievementsPlugin) Run(ctx context.Context, pc *plugins.PluginContext)
 		if !shouldInclude(spec.id, in) {
 			continue
 		}
-		val := spec.value(pc.Data)
+		val := spec.value(eff)
 		rank := rankOf(val, spec.thresholds)
 		ranks[spec.id] = rank
 		if !meetsThreshold(rank, in.threshold) {
@@ -577,19 +587,38 @@ func normalizeDisplay(display string) string {
 	}
 }
 
-// providerHasUser reports whether the shared dataprovider (#603)
-// resolved the page subject as a user account. Falls back to
-// pc.Data.User for unit tests that build PluginContext by hand without
-// wiring a Provider. Used by the "no data at all" short-circuit so an
-// empty payload still produces an empty Result instead of nil.
-func providerHasUser(ctx context.Context, pc *plugins.PluginContext) bool {
+// effectiveData builds the synthetic *plugins.Data the achievements
+// value functions consult. It pulls the User payload, repository totals
+// summary, and per-node repository list from the shared dataprovider
+// (#603/#605), falling back to the legacy pc.Data fields for unit tests
+// that build PluginContext by hand without wiring a Provider.
+//
+// The rankTable's func(*plugins.Data) signatures are preserved so the
+// per-achievement specs stay readable; the helper only changes WHERE
+// the fields come from.
+func effectiveData(ctx context.Context, pc *plugins.PluginContext) *plugins.Data {
+	eff := plugins.NewData()
 	if pc == nil {
-		return false
+		return eff
 	}
-	if pc.Provider != nil {
-		if u, err := pc.Provider.User(ctx); err == nil && u != nil {
-			return true
-		}
+	if pc.Data != nil {
+		eff.Account = pc.Data.Account
+		// Seed with the legacy fields so test contexts that pre-populate
+		// pc.Data still work; Provider-sourced values overwrite below.
+		eff.User = pc.Data.User
+		eff.Computed = pc.Data.Computed
 	}
-	return pc.Data != nil && pc.Data.User != nil
+	if pc.Provider == nil {
+		return eff
+	}
+	if u, err := pc.Provider.User(ctx); err == nil && u != nil {
+		eff.User = u
+	}
+	if summary, err := pc.Provider.RepositorySummary(ctx); err == nil && summary != nil {
+		eff.Computed.Repositories = *summary
+	}
+	if repos, err := pc.Provider.Repositories(ctx); err == nil && repos != nil {
+		eff.Computed.RepositoryList = repos
+	}
+	return eff
 }

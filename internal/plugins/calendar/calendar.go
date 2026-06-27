@@ -30,7 +30,7 @@ func (p *calendarPlugin) Name() string                     { return Name }
 func (p *calendarPlugin) Metadata() *config.PluginMetadata { return nil }
 
 func (p *calendarPlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{plugins.KeyUser}
+	return []plugins.DataKey{plugins.KeyUser, plugins.KeyCommitCalendar}
 }
 
 // Result is the JSON payload published under data.Plugins["calendar"].
@@ -91,15 +91,16 @@ func (p *calendarPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 	// explicitly, so apply the metadata default here instead of falling back to
 	// the Go zero value (0 = "all years"), matching upstream's index.mjs.
 	limit := pluginutil.ReadIntDefault(pc.Inputs, "plugin_calendar_limit", 1)
-	cal := pc.Data.Computed.ContributionCalendar
 	weeks := []plugins.ContributionWeek{}
 	if fetched, err := fetchYearlyWeeks(ctx, pc, limit); err != nil {
 		pc.Data.AppendError(fmt.Errorf("calendar: yearly fetch: %w", err))
 	} else if len(fetched) > 0 {
 		weeks = fetched
 	}
-	if len(weeks) == 0 && cal != nil {
-		weeks = cal.Weeks
+	if len(weeks) == 0 {
+		if cal := resolveContributionCalendar(ctx, pc); cal != nil {
+			weeks = cal.Weeks
+		}
 	}
 	if len(weeks) == 0 {
 		return &Result{

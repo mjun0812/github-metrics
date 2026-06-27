@@ -16,6 +16,18 @@ import (
 // override is configured.
 const defaultRepoBatch = 100
 
+// licensePreferenceTopN caps the License-preference slice surfaced in
+// the repository summary. Mirrors the cap the legacy base plugin used.
+const licensePreferenceTopN = 5
+
+// repoResult bundles the per-node repository accumulator together with
+// the aggregated totals so Repositories and RepositorySummary can share
+// a single memoized paging walk.
+type repoResult struct {
+	repos   []plugins.Repository
+	summary *plugins.ComputedRepositories
+}
+
 // fetchProfile discovers whether p.login refers to a user or an
 // organization account. The current implementation issues the user
 // query first; on a `not found` style failure it falls back to the
@@ -109,13 +121,12 @@ func organizationFromGraphQL(o *githubapi.OrganizationOrganization) *plugins.Org
 	}
 }
 
-// fetchRepositories drives the batch-halving repository paging loop.
+// fetchRepoResult drives the batch-halving repository paging loop and
+// folds the per-node accumulator + aggregated totals into a repoResult.
 // Mirrors the base plugin's prior populateRepositories: returns the
 // accumulator on full completion, or the partial result with a nil
-// error on degraded paths (batch=1 still failing). Callers that need
-// the side-effect of an error appended to Data.Errors must consult the
-// returned error directly — dataprovider does not touch Data.
-func (p *Provider) fetchRepositories(ctx context.Context) ([]plugins.Repository, error) {
+// error on degraded paths (batch=1 still failing).
+func (p *Provider) fetchRepoResult(ctx context.Context) (*repoResult, error) {
 	prof, err := p.Profile(ctx)
 	if err != nil {
 		return nil, err
@@ -130,14 +141,14 @@ func (p *Provider) fetchRepositories(ctx context.Context) ([]plugins.Repository,
 		if ferr == nil {
 			attempts = 0
 			if !hasNext || endCursor == nil || *endCursor == "" {
-				return state.acc, nil
+				return state.result(), nil
 			}
 			cursor := *endCursor
 			state.cursor = &cursor
 			continue
 		}
 		if !isTransient(ferr) {
-			return state.acc, fmt.Errorf("dataprovider: repositories(%q): %w", p.login, ferr)
+			return state.result(), fmt.Errorf("dataprovider: repositories(%q): %w", p.login, ferr)
 		}
 		attempts++
 		if state.batch > 1 {
@@ -148,19 +159,102 @@ func (p *Provider) fetchRepositories(ctx context.Context) ([]plugins.Repository,
 			continue
 		}
 		if attempts >= maxConsecutiveAttempts {
-			return state.acc, fmt.Errorf("dataprovider: repositories(%q): batch=1 failed after %d retries: %w", p.login, attempts, ferr)
+			return state.result(), fmt.Errorf("dataprovider: repositories(%q): batch=1 failed after %d retries: %w", p.login, attempts, ferr)
 		}
 	}
 }
 
-// repoPagingState is dataprovider's compact equivalent of the base
-// pagingState. We only need the per-node accumulator here — totals
-// (stargazers / forks / etc.) are still aggregated by the legacy base
-// shim until it is removed in #605.
+// synthesizeRepoResult builds a one-element repoResult from the single
+// Repo fetch for repository-template mode, mirroring the legacy
+// base.runRepository synthesis (upstream template.mjs:14-17). User-
+// centric plugins (languages / activity / stargazers / ...) then operate
+// in repo scope without special-casing.
+func (p *Provider) synthesizeRepoResult(ctx context.Context) (*repoResult, error) {
+	r, err := p.fetchRepo(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		return &repoResult{repos: nil, summary: &plugins.ComputedRepositories{}}, nil
+	}
+	syntheticRepo := plugins.Repository{
+		NameWithOwner: r.Owner + "/" + r.Name,
+		Description:   r.Description,
+		Stars:         r.Stargazers,
+		Forks:         r.Forks,
+		Watchers:      r.Watchers,
+		Languages:     append([]plugins.LanguageStat(nil), r.Languages...),
+	}
+	if r.PrimaryLanguage != "" {
+		lang := plugins.LanguageStat{
+			Name:  r.PrimaryLanguage,
+			Color: r.PrimaryLanguageColor,
+		}
+		syntheticRepo.Language = &lang
+		if len(syntheticRepo.Languages) == 0 {
+			syntheticRepo.Languages = []plugins.LanguageStat{{
+				Name:  r.PrimaryLanguage,
+				Color: r.PrimaryLanguageColor,
+				Size:  1,
+			}}
+		}
+	}
+	return &repoResult{
+		repos: []plugins.Repository{syntheticRepo},
+		summary: &plugins.ComputedRepositories{
+			Count:      1,
+			Stargazers: r.Stargazers,
+			Forks:      r.Forks,
+			Watchers:   r.Watchers,
+		},
+	}, nil
+}
+
+// repoPagingState is dataprovider's equivalent of the legacy base
+// pagingState. It carries the per-node accumulator and the totals
+// aggregated alongside it (stargazers / forks / watchers / releases /
+// packages / disk usage / deployments / issues / pull requests /
+// license buckets).
 type repoPagingState struct {
 	batch  int
 	cursor *string
 	acc    []plugins.Repository
+
+	count         int
+	stargazers    int
+	forks         int
+	watchers      int
+	releases      int
+	packages      int
+	diskUsage     int
+	deployments   int
+	issues        int
+	pullRequests  int
+	licenseCounts map[string]int
+	// licensedRepos counts repositories that reported a non-nil
+	// licenseInfo.name. It is the denominator for the LicensePreference
+	// percentage so the figures sum to 100% across the licensed subset.
+	licensedRepos int
+}
+
+// result snapshots the accumulator + totals into a repoResult.
+func (s *repoPagingState) result() *repoResult {
+	return &repoResult{
+		repos: s.acc,
+		summary: &plugins.ComputedRepositories{
+			Count:             s.count,
+			Stargazers:        s.stargazers,
+			Forks:             s.forks,
+			Watchers:          s.watchers,
+			Releases:          s.releases,
+			Packages:          s.packages,
+			DiskUsage:         s.diskUsage,
+			Deployments:       s.deployments,
+			Issues:            s.issues,
+			PullRequests:      s.pullRequests,
+			LicensePreference: topLicenseShares(s.licenseCounts, s.licensedRepos, licensePreferenceTopN),
+		},
+	}
 }
 
 func (p *Provider) fetchOneRepoPage(ctx context.Context, isUser bool, state *repoPagingState) (bool, *string, error) {
@@ -173,11 +267,44 @@ func (p *Provider) fetchOneRepoPage(ctx context.Context, isUser bool, state *rep
 			return false, nil, nil
 		}
 		conn := resp.User.Repositories
+		if state.count == 0 {
+			state.count = conn.TotalCount
+		}
 		for _, node := range conn.Nodes {
 			if node == nil {
 				continue
 			}
 			state.acc = append(state.acc, repositoryFromUserNode(node))
+			state.stargazers += node.StargazerCount
+			state.forks += node.ForkCount
+			if node.Watchers != nil {
+				state.watchers += node.Watchers.TotalCount
+			}
+			if node.Issues != nil {
+				state.issues += node.Issues.TotalCount
+			}
+			if node.PullRequests != nil {
+				state.pullRequests += node.PullRequests.TotalCount
+			}
+			if node.Releases != nil {
+				state.releases += node.Releases.TotalCount
+			}
+			if node.Packages != nil {
+				state.packages += node.Packages.TotalCount
+			}
+			if node.DiskUsage != nil {
+				state.diskUsage += *node.DiskUsage
+			}
+			if node.Deployments != nil {
+				state.deployments += node.Deployments.TotalCount
+			}
+			if node.LicenseInfo != nil && node.LicenseInfo.Name != "" {
+				if state.licenseCounts == nil {
+					state.licenseCounts = map[string]int{}
+				}
+				state.licenseCounts[node.LicenseInfo.Name]++
+				state.licensedRepos++
+			}
 		}
 		pi := conn.PageInfo
 		return pi.HasNextPage, pi.EndCursor, nil
@@ -190,11 +317,44 @@ func (p *Provider) fetchOneRepoPage(ctx context.Context, isUser bool, state *rep
 		return false, nil, nil
 	}
 	conn := resp.Organization.Repositories
+	if state.count == 0 {
+		state.count = conn.TotalCount
+	}
 	for _, node := range conn.Nodes {
 		if node == nil {
 			continue
 		}
 		state.acc = append(state.acc, repositoryFromOrgNode(node))
+		state.stargazers += node.StargazerCount
+		state.forks += node.ForkCount
+		if node.Watchers != nil {
+			state.watchers += node.Watchers.TotalCount
+		}
+		if node.Issues != nil {
+			state.issues += node.Issues.TotalCount
+		}
+		if node.PullRequests != nil {
+			state.pullRequests += node.PullRequests.TotalCount
+		}
+		if node.Releases != nil {
+			state.releases += node.Releases.TotalCount
+		}
+		if node.Packages != nil {
+			state.packages += node.Packages.TotalCount
+		}
+		if node.DiskUsage != nil {
+			state.diskUsage += *node.DiskUsage
+		}
+		if node.Deployments != nil {
+			state.deployments += node.Deployments.TotalCount
+		}
+		if node.LicenseInfo != nil && node.LicenseInfo.Name != "" {
+			if state.licenseCounts == nil {
+				state.licenseCounts = map[string]int{}
+			}
+			state.licenseCounts[node.LicenseInfo.Name]++
+			state.licensedRepos++
+		}
 	}
 	pi := conn.PageInfo
 	return pi.HasNextPage, pi.EndCursor, nil

@@ -103,8 +103,14 @@ repository はリポジトリ向けの需要があると考え採用します。
 
 ### 4.1 コアプラグイン (固定採用)
 
-- [x] `base`
 - [x] `core`
+
+> [!NOTE]
+> 旧 `base` plugin は #605 で削除。共有データ取得は `internal/dataprovider`
+> の lazy / memoized Provider に集約し、識別情報カードは opt-in な
+> `header` plugin (#602) が担当する。
+
+
 
 ### 4.2 GitHub データ系
 

@@ -260,8 +260,12 @@ func newEngineDepsWithREST(t *testing.T, login string, gqlBody map[string]string
 }
 
 // TestEngine_ComputeUser is US5 AS1 + AS2 combined: with mocked
-// GraphQL returning octocat and 250 repositories, Compute populates
-// Data.User.Login and Data.Computed.Repositories.Count.
+// GraphQL returning octocat and 250 repositories, Compute wires a
+// Provider that resolves Provider.User and Provider.RepositorySummary.
+//
+// #605: after base deletion the engine no longer eagerly populates
+// pc.Data.User / pc.Data.Computed.* — the canonical values live behind
+// the per-request dataprovider, exposed via Result.Provider.
 func TestEngine_ComputeUser(t *testing.T) {
 	t.Parallel()
 
@@ -278,20 +282,28 @@ func TestEngine_ComputeUser(t *testing.T) {
 		t.Fatalf("Compute: %v", err)
 	}
 
-	if res.Data.User == nil {
-		t.Fatalf("Data.User is nil")
+	if res.Provider == nil {
+		t.Fatal("Result.Provider is nil")
 	}
-	if res.Data.User.Login != "octocat" {
-		t.Errorf("login = %q", res.Data.User.Login)
+	user, err := res.Provider.User(context.Background())
+	if err != nil || user == nil {
+		t.Fatalf("Provider.User: %v (user=%v)", err, user)
 	}
-	if got := res.Data.Computed.Repositories.Count; got != 250 {
-		t.Errorf("Repositories.Count = %d, want 250", got)
+	if user.Login != "octocat" {
+		t.Errorf("login = %q, want octocat", user.Login)
 	}
-	if got := res.Data.Computed.Repositories.Stargazers; got != 150 {
-		t.Errorf("Stargazers = %d, want 150", got)
+	summary, err := res.Provider.RepositorySummary(context.Background())
+	if err != nil || summary == nil {
+		t.Fatalf("Provider.RepositorySummary: %v (summary=%v)", err, summary)
 	}
-	if got := res.Data.Computed.Repositories.Forks; got != 13 {
-		t.Errorf("Forks = %d, want 13", got)
+	if summary.Count != 250 {
+		t.Errorf("Repositories.Count = %d, want 250", summary.Count)
+	}
+	if summary.Stargazers != 150 {
+		t.Errorf("Stargazers = %d, want 150", summary.Stargazers)
+	}
+	if summary.Forks != 13 {
+		t.Errorf("Forks = %d, want 13", summary.Forks)
 	}
 	if len(res.Errors) != 0 {
 		t.Errorf("Result.Errors = %v", res.Errors)
@@ -323,11 +335,22 @@ func TestEngine_ComputeOrganization(t *testing.T) {
 	if res.Data.Account != plugins.AccountOrganization {
 		t.Errorf("Account = %q", res.Data.Account)
 	}
-	if res.Data.User == nil || res.Data.User.Login != "github" {
-		t.Errorf("Data.User = %+v", res.Data.User)
+	if res.Provider == nil {
+		t.Fatal("Result.Provider is nil")
 	}
-	if got := res.Data.Computed.Repositories.Count; got != 12 {
-		t.Errorf("Repositories.Count = %d, want 12", got)
+	org, err := res.Provider.Organization(context.Background())
+	if err != nil || org == nil {
+		t.Fatalf("Provider.Organization: %v (org=%v)", err, org)
+	}
+	if org.Login != "github" {
+		t.Errorf("Organization.Login = %q, want github", org.Login)
+	}
+	summary, err := res.Provider.RepositorySummary(context.Background())
+	if err != nil || summary == nil {
+		t.Fatalf("Provider.RepositorySummary: %v", err)
+	}
+	if summary.Count != 12 {
+		t.Errorf("Repositories.Count = %d, want 12", summary.Count)
 	}
 }
 

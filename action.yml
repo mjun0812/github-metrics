@@ -14,33 +14,8 @@ branding:
   color: 'blue'
 
 inputs:
-  base:
-    description: 'Base content'
-    default: 'header, activity, community, repositories, metadata'
-    required: false
-
-  base_hireable:
-    description: 'Show `Available for hire!` in header section'
-    default: 'no'
-    required: false
-
-  base_indepth:
-    description: 'Indepth mode'
-    default: 'no'
-    required: false
-
-  base_skip:
-    description: 'Skip base content'
-    default: 'no'
-    required: false
-
   clean_workflows:
     description: 'Clean previous workflows jobs'
-    required: false
-
-  commits_authoring:
-    description: 'Identifiers that has been used for authoring commits'
-    default: '.user.login'
     required: false
 
   committer_branch:
@@ -845,30 +820,6 @@ inputs:
     description: 'GitHub repository'
     required: false
 
-  repositories:
-    description: 'Fetched repositories'
-    default: '100'
-    required: false
-
-  repositories_affiliations:
-    description: 'Repositories affiliations'
-    default: 'owner'
-    required: false
-
-  repositories_batch:
-    description: 'Fetched repositories per query'
-    default: '100'
-    required: false
-
-  repositories_forks:
-    description: 'Include forks'
-    default: 'no'
-    required: false
-
-  repositories_skipped:
-    description: 'Default skipped repositories'
-    required: false
-
   retries:
     description: 'Retries in case of failures (for rendering)'
     default: '3'
@@ -914,11 +865,6 @@ inputs:
 
   user:
     description: 'GitHub username'
-    required: false
-
-  users_ignored:
-    description: 'Default ignored users'
-    default: 'github-actions[bot], dependabot[bot], dependabot-preview[bot], actions-user, action@github.com'
     required: false
 
   verify:

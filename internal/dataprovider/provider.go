@@ -30,13 +30,20 @@ const (
 	keyProfile      = "profile"
 	keyRepositories = "repositories"
 	keyCommits      = "commits"
+	keyRepo         = "repo"
 )
 
 // Provider concretely implements the plugins.Provider interface. It is
 // constructed once per engine.Compute call via New and shared across
 // every plugin goroutine.
 type Provider struct {
-	login  string
+	login string
+	// repo is the single repository name for the M7 repository template
+	// (Account == AccountRepository). Empty for the classic user /
+	// organization templates. When set, Repositories / RepositorySummary
+	// synthesize their result from the single Repo() fetch instead of
+	// paging the account-wide connection.
+	repo   string
 	gql    *githubapi.GraphQL
 	rest   *githubapi.REST
 	logger *slog.Logger
@@ -54,13 +61,16 @@ type result struct {
 }
 
 // New returns a Provider that fetches the profile of login via gql/rest.
-// logger may be nil; callers typically pass the engine's logger.
-func New(login string, gql *githubapi.GraphQL, rest *githubapi.REST, logger *slog.Logger) *Provider {
+// repo is the single repository name for the M7 repository template;
+// pass "" for the classic user / organization templates. logger may be
+// nil; callers typically pass the engine's logger.
+func New(login, repo string, gql *githubapi.GraphQL, rest *githubapi.REST, logger *slog.Logger) *Provider {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	return &Provider{
 		login:  login,
+		repo:   repo,
 		gql:    gql,
 		rest:   rest,
 		logger: logger,
@@ -120,13 +130,63 @@ func (p *Provider) Organization(ctx context.Context) (*plugins.Organization, err
 // independently so a Profile failure does not poison the repository
 // cache (and vice versa).
 func (p *Provider) Repositories(ctx context.Context) ([]plugins.Repository, error) {
+	res, err := p.repoResult(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return res.repos, nil
+}
+
+// RepositorySummary returns the aggregated repository totals (count,
+// stargazers, forks, watchers, releases, packages, disk usage,
+// deployments, and the top-N license preference) computed across the
+// account-wide repository connection. In repository-template mode it
+// returns the single-repo totals synthesized from Repo. Shares the
+// memoized paging result with Repositories so the connection is walked
+// at most once.
+func (p *Provider) RepositorySummary(ctx context.Context) (*plugins.ComputedRepositories, error) {
+	res, err := p.repoResult(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return res.summary, nil
+}
+
+// repoResult memoizes the combined repository list + summary under a
+// single cache key so Repositories and RepositorySummary collapse onto
+// one paging walk. In repository-template mode it synthesizes both from
+// the single Repo fetch.
+func (p *Provider) repoResult(ctx context.Context) (*repoResult, error) {
 	v, err := p.memoize(ctx, keyRepositories, func(ctx context.Context) (any, error) {
-		return p.fetchRepositories(ctx)
+		if p.repo != "" {
+			return p.synthesizeRepoResult(ctx)
+		}
+		return p.fetchRepoResult(ctx)
 	})
 	if err != nil {
 		return nil, err
 	}
-	return v.([]plugins.Repository), nil
+	return v.(*repoResult), nil
+}
+
+// Repo returns the single repository payload for the M7 repository
+// template. Returns (nil, nil) when the Provider is not in repository
+// mode (p.repo == "") so callers can distinguish "not repo mode" from a
+// fetch error.
+func (p *Provider) Repo(ctx context.Context) (*plugins.Repo, error) {
+	if p.repo == "" {
+		return nil, nil
+	}
+	v, err := p.memoize(ctx, keyRepo, func(ctx context.Context) (any, error) {
+		return p.fetchRepo(ctx)
+	})
+	if err != nil {
+		return nil, err
+	}
+	if v == nil {
+		return nil, nil
+	}
+	return v.(*plugins.Repo), nil
 }
 
 // CommitCalendar returns the aggregated contribution-calendar payload

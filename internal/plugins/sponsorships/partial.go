@@ -47,7 +47,7 @@ const heartOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16
 //	    </section>
 //	  </div>
 //	</section>
-func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Partial(ctx context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil {
 		return "", nil
 	}
@@ -64,7 +64,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		sections = []string{sectionAmount, sectionSponsorships}
 	}
 
-	user := userLogin(pc)
+	user := userLogin(ctx, pc)
 
 	var b strings.Builder
 	b.WriteString(`<section data-section="sponsorships">`)
@@ -195,14 +195,21 @@ func avatarURL(login string) string {
 	return "https://github.com/" + login + ".png?size=64"
 }
 
-// userLogin extracts the rendered user's login from PluginContext.Data
-// — falls back to "this user" when unavailable (mirrors people/sponsors
-// helper for the same reason).
-func userLogin(pc *templates.PartialContext) string {
-	if pc == nil || pc.Data == nil || pc.Data.User == nil {
+// userLogin returns the rendered user's login, preferring the shared
+// dataprovider (#603) over the legacy pc.Data.User fallback (kept for
+// unit tests that build PartialContext by hand without wiring a
+// Provider). Falls back to "this user" when neither source carries a
+// non-empty Login.
+func userLogin(ctx context.Context, pc *templates.PartialContext) string {
+	if pc == nil {
 		return "this user"
 	}
-	if pc.Data.User.Login != "" {
+	if pc.Provider != nil {
+		if u, err := pc.Provider.User(ctx); err == nil && u != nil && u.Login != "" {
+			return u.Login
+		}
+	}
+	if pc.Data != nil && pc.Data.User != nil && pc.Data.User.Login != "" {
 		return pc.Data.User.Login
 	}
 	return "this user"

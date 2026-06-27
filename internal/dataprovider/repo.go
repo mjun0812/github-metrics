@@ -1,10 +1,9 @@
-package base
+package dataprovider
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -14,9 +13,10 @@ import (
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
-// FetchRepo populates a *plugins.Repo for the M7 repository template
-// flow. It runs once per request when the engine has selected the
-// repository template and the user supplied a non-empty `repo` input.
+// fetchRepo populates a *plugins.Repo for the M7 repository template
+// flow. It runs once per request (memoized under keyRepo) when the
+// engine has selected the repository template and the user supplied a
+// non-empty `repo` input.
 //
 // Sequence:
 //
@@ -31,17 +31,18 @@ import (
 //
 // 404 is surfaced as a typed *xerrors.InputError on "repo" so the M6
 // retry policy treats it as non-retryable (fail-fast).
-func FetchRepo(ctx context.Context, login, repo string, rest *githubapi.REST, gql *githubapi.GraphQL) (*plugins.Repo, error) {
-	if gql == nil {
-		return nil, fmt.Errorf("base: FetchRepo: nil GraphQL client")
+func (p *Provider) fetchRepo(ctx context.Context) (*plugins.Repo, error) {
+	if p.gql == nil {
+		return nil, fmt.Errorf("dataprovider: fetchRepo: nil GraphQL client")
 	}
+	login, repo := p.login, p.repo
 	if login == "" || repo == "" {
-		return nil, fmt.Errorf("base: FetchRepo: login and repo required (got %q/%q)", login, repo)
+		return nil, fmt.Errorf("dataprovider: fetchRepo: login and repo required (got %q/%q)", login, repo)
 	}
 
-	resp, err := gql.Repository(ctx, login, repo)
+	resp, err := p.gql.Repository(ctx, login, repo)
 	if err != nil {
-		return nil, fmt.Errorf("base: Repository(%s/%s): %w", login, repo, err)
+		return nil, fmt.Errorf("dataprovider: Repository(%s/%s): %w", login, repo, err)
 	}
 	if resp == nil || resp.Repository == nil {
 		return nil, xerrors.NewInputError("repo",
@@ -105,23 +106,40 @@ func FetchRepo(ctx context.Context, login, repo string, rest *githubapi.REST, gq
 		out.Activity.OpenPullRequests = r.PullRequests.TotalCount
 	}
 
+	// #464: the repository header mini calendar mirrors upstream's
+	// `computed.calendar` (the user's trailing contribution days). Copy
+	// it from the user payload so the header partial stays a pure read of
+	// Data.Repo.
+	if u, uerr := p.User(ctx); uerr == nil && u != nil {
+		out.Calendar = u.RecentContributions
+	}
+
 	// REST fallbacks — best-effort.
-	if rest != nil {
-		if n, lerr := fetchContributorsCount(ctx, rest, out.Owner, r.Name); lerr == nil {
+	if p.rest != nil {
+		if n, lerr := fetchContributorsCount(ctx, p.rest, out.Owner, r.Name); lerr == nil {
 			out.Contributors = n
 		} else {
-			slog.Warn("FetchRepo: contributors REST best-effort failure",
+			p.logger.Warn("fetchRepo: contributors REST best-effort failure",
 				"owner", out.Owner, "repo", r.Name, "err", lerr)
 		}
-		if n, lerr := fetchRecentCommitCount(ctx, rest, out.Owner, r.Name); lerr == nil {
+		if n, lerr := fetchRecentCommitCount(ctx, p.rest, out.Owner, r.Name); lerr == nil {
 			out.Activity.RecentCommits = n
 		} else {
-			slog.Warn("FetchRepo: commits REST best-effort failure",
+			p.logger.Warn("fetchRepo: commits REST best-effort failure",
 				"owner", out.Owner, "repo", r.Name, "err", lerr)
 		}
 	}
 
 	return out, nil
+}
+
+// derefInt returns *p or 0 when p is nil. Used for GraphQL nullable Int
+// fields (e.g. repository.diskUsage).
+func derefInt(p *int) int {
+	if p == nil {
+		return 0
+	}
+	return *p
 }
 
 func refName(ref *githubapi.RepositoryRepositoryDefaultBranchRef) string {
