@@ -1,7 +1,7 @@
 <!-- AUTOGEN_START: title-and-description -->
 # Plugin: header
 
-`header` is the identity card plugin extracted from `base` by #602. It renders the user (or organization) avatar, login, follower / sponsor counters and trailing 2-week contribution calendar that previously shipped as the always-on `base.header` chrome. Enabling `plugin_header: yes` opts the card in to a per-plugin SVG render or to the classic combined render.
+`header` is the identity card plugin extracted from `base` by #602. It renders the user (or organization) avatar, login, follower / following counters and trailing 2-week contribution calendar that previously shipped as the always-on `base.header` chrome. Enabling `plugin_header: yes` opts the card in to a per-plugin SVG render or to the classic combined render.
 <!-- AUTOGEN_END: title-and-description -->
 
 ## Sample
@@ -16,8 +16,6 @@
 | Input | Description | Default | Required | Type |
 | ----- | ----------- | ------- | -------- | ---- |
 | `plugin_header` | Enable header plugin | `no` | no | boolean |
-| `plugin_header_indepth` | Indepth contribution calendar mode | `no` | no | boolean |
-| `plugin_header_hireable` | Show `Available for hire!` in header section | `no` | no | boolean |
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
@@ -44,7 +42,7 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 
 ## Requirements
 
-A valid GitHub username or organization login and a token with `read:user` + `public_repo`. The header plugin reads `Provider.Profile(ctx)` and `Provider.CommitCalendar(ctx)`, both populated lazily by `internal/dataprovider` via the shared GraphQL `user(login:)` / `contributionsCollection` queries.
+A valid GitHub username or organization login and a token with the `public_access` scope (matches `metadata.yml`). The header plugin reads `Provider.Profile(ctx)` and `Provider.CommitCalendar(ctx)`, both populated lazily by `internal/dataprovider` via the shared GraphQL `user(login:)` / `contributionsCollection` queries.
 
 ## References
 

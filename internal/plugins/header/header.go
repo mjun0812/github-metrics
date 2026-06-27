@@ -1,11 +1,13 @@
 // Package header owns the "header" plugin: avatar / login /
-// follower-sponsor / 2-week commit calendar. It extracts the header
-// card that was previously hard-wired as the base.header partial into
-// a composable plugin so users can enable/disable it independently.
+// follower / following / 2-week commit calendar. It extracts the
+// header card that was previously hard-wired as the base.header
+// partial into a composable plugin so users can enable/disable it
+// independently.
 //
 // Failure model: errors from Provider are plugin-local. A failed Profile
-// or CommitCalendar call records the error on Data.Plugins[Name].Error
-// and returns (nil, nil) so the engine continues rendering other plugins.
+// or CommitCalendar call records the error on Result.Error and the
+// populated Result is returned (with nil error) so the engine continues
+// rendering other plugins while the failure stays inspectable.
 package header
 
 import (
@@ -51,8 +53,14 @@ type Result struct {
 func (r *Result) IsSkipped() bool { return r == nil }
 
 // Run fetches profile and commit-calendar data. On provider error the
-// failure is recorded on the Result and (nil, nil) is returned so the
-// engine continues with other plugins.
+// failure is recorded on the Result and the populated Result is
+// returned (with nil error) so core.RunPlugins stores it under
+// data.Plugins["header"] and the render pipeline keeps going.
+//
+// The runner (internal/plugins/core.RunPlugins) unconditionally writes
+// pc.Data.SetPlugin(Name, result) using whatever this function returns,
+// so we must NOT call SetPlugin from inside Run — a nil return would
+// overwrite the error-state Result and silently drop the failure.
 func (*headerPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Provider == nil {
 		return &Result{}, nil
@@ -63,16 +71,14 @@ func (*headerPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, e
 	profile, err := pc.Provider.Profile(ctx)
 	if err != nil {
 		res.Error = err
-		pc.Data.SetPlugin(Name, res)
-		return nil, nil //nolint:nilerr // plugin-local failure; do not propagate
+		return res, nil //nolint:nilerr // plugin-local failure: surface via res.Error so RunPlugins records it and the partial can degrade gracefully without aborting the render.
 	}
 	res.Profile = profile
 
 	cal, err := pc.Provider.CommitCalendar(ctx)
 	if err != nil {
 		res.Error = err
-		pc.Data.SetPlugin(Name, res)
-		return nil, nil //nolint:nilerr // plugin-local failure; do not propagate
+		return res, nil //nolint:nilerr // same plugin-local failure contract; do not propagate so other plugins still render.
 	}
 	res.CommitCalendar = cal
 

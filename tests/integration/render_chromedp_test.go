@@ -71,6 +71,13 @@ func TestComputePNG_E2E(t *testing.T) {
 		Login:    "octocat",
 		Template: "classic",
 		Format:   "png",
+		// #602: header is now an opt-in plugin (previously rendered as
+		// always-on base chrome). Without `plugin_header: yes` the
+		// PNG collapses to a near-empty 42px placeholder; this height
+		// golden expects the identity card to be present.
+		Inputs: map[string]any{
+			"plugin_header": "yes",
+		},
 	}, deps)
 	if err != nil {
 		t.Fatalf("Compute(png): %v", err)
