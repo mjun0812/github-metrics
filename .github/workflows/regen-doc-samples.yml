@@ -36,9 +36,11 @@ name: Regen doc samples
 #
 # Requirements:
 #   - METRICS_TOKEN secret: classic PAT with read:user + repo scopes.
-#     Passed to the render step as METRICS_TOKEN so the binary can
-#     call the GitHub API. The workflow's built-in GITHUB_TOKEN is used only
-#     for GHCR pull / push / delete, git push, and the PR-creation API call.
+#     Exposed to the render step as the GITHUB_TOKEN env var so the
+#     metrics-cli binary (CLI mode) picks it up via its canonical
+#     GITHUB_TOKEN fallback (#647). The workflow's built-in
+#     GITHUB_TOKEN is used only for GHCR pull / push / delete, git
+#     push, and the PR-creation API call.
 #   - For `tag` mode: GHCR image ghcr.io/mjun0812/github-metrics:<tag> must
 #     exist. The image is published by release.yml on every semver tag push.
 #   - For `branch` mode: GITHUB_TOKEN with `packages: write` permission
@@ -213,11 +215,12 @@ jobs:
         # the image ships.
         shell: bash
         env:
-          # Passed under a non-reserved name: inside a job container
-          # the runner controls the GITHUB_* env namespace and a
-          # step-level GITHUB_TOKEN did not survive to the process
-          # (the binary saw an invalid value).
-          METRICS_TOKEN: ${{ secrets.METRICS_TOKEN }}
+          # The `metrics-cli` binary reads its GitHub PAT from GITHUB_TOKEN
+          # (CLI mode) since v3.0 (#647). The job container exports the
+          # runner's automatic GITHUB_TOKEN by default — we override it
+          # here with the METRICS_TOKEN secret because the runner token
+          # lacks the scopes the renders need (read:user, repo, etc).
+          GITHUB_TOKEN: ${{ secrets.METRICS_TOKEN }}
           SAMPLE_NAME: ${{ matrix.name }}
           SAMPLE_MODE: ${{ matrix.mode }}
           SAMPLE_EXTRA: ${{ matrix.extra }}
@@ -229,10 +232,12 @@ jobs:
           # The runner exports GITHUB_ACTIONS=true inside job
           # containers, which flips the binary into Action mode
           # (cmd/metrics-cli/main.go): CLI flags are ignored and the
-          # token is read from INPUT_TOKEN instead of --token-env.
+          # token is read from INPUT_TOKEN.
           # Unset it so the render keeps using the CLI path, exactly
           # like the previous `docker run` (which passed no GITHUB_*
-          # env) did.
+          # env) did. The CLI path reads GITHUB_TOKEN from this step's
+          # env: map above (the binary has no --token / --token-env
+          # flag as of v3.0, #647).
           unset GITHUB_ACTIONS
           # The ARC runner environment may inject proxy settings that
           # break the container's egress; clear both cases explicitly
@@ -272,7 +277,6 @@ jobs:
             rm -f "$svg_out"
             RUN_ARGS=(
               "${BASE_ARGS[@]}"
-              --token-env METRICS_TOKEN
               --output svg
               --filename -
               --dryrun
