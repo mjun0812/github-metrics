@@ -11,10 +11,22 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// legacyChromeInputKeys is the closed set of v2 chrome-driving inputs
-// that were removed in v3.0. ParseInputs flags each one with a single
-// deprecation warning per process so users migrating long-running CI
-// configs still see a hint instead of a silent no-op render.
+// legacyChromeReplacement maps each v3.0-removed chrome input to the
+// canonical replacement the user should write instead. Two of the
+// keys have direct 1:1 chrome_* replacements; `base` (CSV) expanded
+// to N sections so its hint stays generic and points at the docs.
+//
+// The map's keys form the closed set ParseInputs scans for — adding
+// a new entry here automatically extends the deprecation warning.
+var legacyChromeReplacement = map[string]string{
+	"base":                     "chrome_<section>=yes (per-section booleans; see docs/plugins/base.md)",
+	"plugin_base_activity":     "chrome_activity=yes",
+	"plugin_base_repositories": "chrome_repositories=yes",
+}
+
+// legacyChromeInputKeys is the iteration order for legacyChromeReplacement.
+// Map iteration is unordered in Go, so we keep a fixed slice so log
+// output is deterministic across runs.
 var legacyChromeInputKeys = []string{
 	"base",
 	"plugin_base_activity",
@@ -32,6 +44,10 @@ var legacyChromeWarnOnce sync.Map // map[string]*sync.Once
 // inputs map. Callers downstream see the raw legacy keys as unknown
 // inputs (silently ignored by the chrome reader).
 //
+// Each warning names the canonical chrome_* replacement so a stale-
+// config user can fix CI from the log alone (PR #650 cap-1 review
+// MUST-FIX #1).
+//
 // Called by runWith / runCLIWith after the full inputs map is
 // assembled (env + preset + CLI flags) so a key surfaced by any layer
 // is reported.
@@ -46,10 +62,17 @@ func WarnLegacyChromeInputs(inputs map[string]any) {
 		gate, _ := legacyChromeWarnOnce.LoadOrStore(key, &sync.Once{})
 		gate.(*sync.Once).Do(func() {
 			slog.Warn(
-				fmt.Sprintf("`%s` input was removed in v3.0; use `chrome_<section>=yes` (see docs/plugins/base.md)", key),
+				fmt.Sprintf("`%s` input was removed in v3.0; use `%s`", key, legacyChromeReplacement[key]),
 			)
 		})
 	}
+}
+
+// resetLegacyChromeWarnOnceForTest clears the sync.Once gates so a
+// test can call WarnLegacyChromeInputs multiple times and observe
+// fresh emissions per case. Test-only seam.
+func resetLegacyChromeWarnOnceForTest() {
+	legacyChromeWarnOnce = sync.Map{}
 }
 
 // ParseInputs builds the unified inputs map used by both Action mode

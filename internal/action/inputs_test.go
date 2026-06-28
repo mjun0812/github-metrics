@@ -1,8 +1,12 @@
 package action
 
 import (
+	"context"
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -211,4 +215,73 @@ func TestWarnLegacyChromeInputs_NilMap(t *testing.T) {
 	t.Parallel()
 	// Must not panic.
 	WarnLegacyChromeInputs(nil)
+}
+
+// TestWarnLegacyChromeInputs_OncePerKey pins the sync.Once gate that
+// prevents log spam under long-running invocations (PR #650 cap-1
+// review SHOULD-FIX #4). A future refactor that drops the gate would
+// silently regress to per-call emission; this test fails loudly if so.
+// Uses the resetLegacyChromeWarnOnceForTest seam so the assertion is
+// independent of test ordering / parallelism (NOT t.Parallel).
+func TestWarnLegacyChromeInputs_OncePerKey(t *testing.T) {
+	resetLegacyChromeWarnOnceForTest()
+	t.Cleanup(resetLegacyChromeWarnOnceForTest)
+
+	var captured []slog.Record
+	handler := slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})
+	capture := &recordCapturer{Handler: handler, records: &captured}
+	prevDefault := slog.Default()
+	slog.SetDefault(slog.New(capture))
+	t.Cleanup(func() { slog.SetDefault(prevDefault) })
+
+	in := map[string]any{
+		"base":                 "header",
+		"plugin_base_activity": "yes",
+	}
+	// Three repeated invocations — sync.Once per key must collapse to
+	// exactly one warn emission per key (2 total), not 6.
+	WarnLegacyChromeInputs(in)
+	WarnLegacyChromeInputs(in)
+	WarnLegacyChromeInputs(in)
+
+	warnCount := 0
+	seen := map[string]int{}
+	for _, r := range captured {
+		if r.Level != slog.LevelWarn {
+			continue
+		}
+		warnCount++
+		for _, key := range legacyChromeInputKeys {
+			if strings.Contains(r.Message, "`"+key+"`") {
+				seen[key]++
+			}
+		}
+	}
+	if warnCount != 2 {
+		t.Errorf("expected 2 warn emissions (one per key), got %d", warnCount)
+	}
+	if seen["base"] != 1 {
+		t.Errorf("`base` warning fired %d time(s), want 1", seen["base"])
+	}
+	if seen["plugin_base_activity"] != 1 {
+		t.Errorf("`plugin_base_activity` warning fired %d time(s), want 1", seen["plugin_base_activity"])
+	}
+	if seen["plugin_base_repositories"] != 0 {
+		t.Errorf("`plugin_base_repositories` was absent from inputs; warning should NOT have fired (got %d)", seen["plugin_base_repositories"])
+	}
+}
+
+// recordCapturer is a slog.Handler that records every emitted record
+// into the supplied slice. The wrapped Handler is responsible for the
+// actual formatting (we discard it via io.Discard).
+type recordCapturer struct {
+	slog.Handler
+	records *[]slog.Record
+}
+
+func (c *recordCapturer) Handle(ctx context.Context, r slog.Record) error {
+	*c.records = append(*c.records, r)
+	return c.Handler.Handle(ctx, r)
 }
