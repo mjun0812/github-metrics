@@ -33,12 +33,16 @@ func TestResolveBaseSections(t *testing.T) {
 		in   map[string]any
 		want []string
 	}{
-		// Legacy fallbacks (defensive — action layer normally pre-translates).
-		{"absent", nil, []string{"header", "activity", "community", "repositories", "metadata"}},
-		{"empty-string", map[string]any{"base": ""}, []string{}},
-		{"csv", map[string]any{"base": "header, metadata"}, []string{"header", "metadata"}},
-		{"slice", map[string]any{"base": []string{"header", "Metadata"}}, []string{"header", "metadata"}},
-		{"slice-any", map[string]any{"base": []any{"header", "Metadata"}}, []string{"header", "metadata"}},
+		// v3.0 canonical surface — opt-in only, no default-all
+		// fallback (#649 removed the legacy `base`=CSV translator and
+		// the absent-input default-all behaviour).
+		{"nil", nil, []string{}},
+		{"empty", map[string]any{}, []string{}},
+
+		// Legacy `base` input is silently ignored — v3.0 removed the
+		// CSV translator. The action layer surfaces a slog.Warn for
+		// the key separately via WarnLegacyChromeInputs.
+		{"legacy-base-csv-ignored", map[string]any{"base": "header,metadata"}, []string{}},
 
 		// Canonical chrome_* path (#640).
 		{
@@ -52,15 +56,15 @@ func TestResolveBaseSections(t *testing.T) {
 			want: []string{"header", "repositories"},
 		},
 		{
-			// All present but all false — explicit "no chrome" intent;
-			// the legacy default-all fallback MUST NOT fire.
+			// Every chrome_* key present but set to false → empty set.
 			name: "chrome-present-all-false",
 			in:   map[string]any{"chrome_header": false, "chrome_metadata": "no"},
 			want: []string{},
 		},
 		{
-			// chrome_* wins when both inputs are present together.
-			name: "chrome-wins-over-base",
+			// Legacy `base` alongside chrome_* — base is ignored;
+			// only chrome_* contributes.
+			name: "chrome-wins-over-legacy-base",
 			in: map[string]any{
 				"chrome_header": "yes",
 				"base":          "metadata,activity",
@@ -108,21 +112,6 @@ func TestChromeSectionInputKey(t *testing.T) {
 	t.Parallel()
 	if got := chrome.ChromeSectionInputKey("header"); got != "chrome_header" {
 		t.Errorf("ChromeSectionInputKey(header) = %q, want chrome_header", got)
-	}
-}
-
-func TestReadBaseInput(t *testing.T) {
-	if _, ok := chrome.ReadBaseInput(nil); ok {
-		t.Errorf("nil map should not be present")
-	}
-	if _, ok := chrome.ReadBaseInput(map[string]any{}); ok {
-		t.Errorf("missing key should not be present")
-	}
-	if v, ok := chrome.ReadBaseInput(map[string]any{"base": ""}); !ok || v != "" {
-		t.Errorf("empty string: got (%q, %v)", v, ok)
-	}
-	if v, ok := chrome.ReadBaseInput(map[string]any{"base": []string{"a", "b"}}); !ok || v != "a,b" {
-		t.Errorf("slice: got (%q, %v)", v, ok)
 	}
 }
 

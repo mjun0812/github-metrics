@@ -32,6 +32,18 @@ func TestComputeJSON_OctocatGolden(t *testing.T) {
 	res, err := engine.Compute(context.Background(), engine.Request{
 		Login:  "octocat",
 		Format: "json",
+		// The golden was captured with the v2 default-all section
+		// gate. v3.0 (#649) requires explicit chrome_* opt-in for
+		// the section set; populate base.Run by enabling at least
+		// one of activity / community / repositories so the JSON
+		// envelope's base.profile remains populated.
+		Inputs: map[string]any{
+			"chrome_header":       "yes",
+			"chrome_activity":     "yes",
+			"chrome_community":    "yes",
+			"chrome_repositories": "yes",
+			"chrome_metadata":     "yes",
+		},
 	}, deps)
 	if err != nil {
 		t.Fatalf("Compute: %v", err)

@@ -5,154 +5,51 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"sort"
 	"strings"
+	"sync"
 
 	"gopkg.in/yaml.v3"
 )
 
-// canonicalChromeSections is the canonical ordered list of `chrome_*`
-// section names used by both the deprecation alias translator below
-// and gen-action-yml's discovered metadata. Kept in lockstep with
-// assets/plugins/chrome/metadata.yml.
-var canonicalChromeSections = []string{
-	"header", "activity", "community", "repositories", "metadata", "introduction",
+// legacyChromeInputKeys is the closed set of v2 chrome-driving inputs
+// that were removed in v3.0. ParseInputs flags each one with a single
+// deprecation warning per process so users migrating long-running CI
+// configs still see a hint instead of a silent no-op render.
+var legacyChromeInputKeys = []string{
+	"base",
+	"plugin_base_activity",
+	"plugin_base_repositories",
 }
 
-// TranslateLegacyChromeInputs rewrites the deprecated v2 chrome inputs
-// (`base=CSV`, `plugin_base_activity`, `plugin_base_repositories`) into
-// the canonical `chrome_<section>` booleans (#640), emitting a single
-// deprecation slog.Warn per legacy key that names both the input it
-// found and the chrome_* key it set.
+// legacyChromeWarnOnce gates the deprecation warning for each removed
+// key to a single emission per process — long-running invocations must
+// not spam the log on every ParseInputs call.
+var legacyChromeWarnOnce sync.Map // map[string]*sync.Once
+
+// WarnLegacyChromeInputs scans inputs for keys removed in v3.0 and
+// emits one slog.Warn per unique key per process. The function is
+// purely diagnostic: it never translates, falls back, or mutates the
+// inputs map. Callers downstream see the raw legacy keys as unknown
+// inputs (silently ignored by the chrome reader).
 //
-// The function NEVER overwrites a chrome_* key the caller already set;
-// the new input always wins so callers in the middle of a migration
-// can pin a specific section without the legacy alias overriding it.
-//
-// Returns the (possibly mutated) inputs map for chainability; callers
-// typically discard the return value and rely on the in-place edit.
-func TranslateLegacyChromeInputs(inputs map[string]any) map[string]any {
+// Called by runWith / runCLIWith after the full inputs map is
+// assembled (env + preset + CLI flags) so a key surfaced by any layer
+// is reported.
+func WarnLegacyChromeInputs(inputs map[string]any) {
 	if inputs == nil {
-		return inputs
-	}
-
-	// 1. base= CSV → chrome_<section>=yes for each listed section.
-	//
-	// Skip the empty-string case (`--plugin base=`) entirely: it was the
-	// v2 "no chrome" idiom, and chrome_* default-no maps to the same
-	// outcome. Warning the user about a v3-removed input they are not
-	// even *using* would be noise (cap-1 review SHOULD-FIX #2).
-	if raw, ok := readBaseCSV(inputs); ok && raw != "" {
-		sections := splitBaseCSV(raw)
-		// Translate in canonical order so the warning's "translated"
-		// list is deterministic.
-		translated := make([]string, 0, len(sections))
-		for _, s := range canonicalChromeSections {
-			if _, want := sections[s]; !want {
-				continue
-			}
-			key := "chrome_" + s
-			if _, exists := inputs[key]; exists {
-				continue // caller already pinned this section explicitly.
-			}
-			inputs[key] = true
-			translated = append(translated, key+"=yes")
-		}
-		// Surface unknown sections so typos are visible.
-		var unknown []string
-		known := map[string]struct{}{}
-		for _, s := range canonicalChromeSections {
-			known[s] = struct{}{}
-		}
-		for s := range sections {
-			if _, ok := known[s]; !ok {
-				unknown = append(unknown, s)
-			}
-		}
-		sort.Strings(unknown)
-		slog.Warn(
-			"`base` input is deprecated; use `chrome_<section>=yes` (removed in v3.0)",
-			"base", raw,
-			"translated", strings.Join(translated, ", "),
-			"unknown_sections", strings.Join(unknown, ", "),
-		)
-	}
-
-	// 2. plugin_base_activity → chrome_activity.
-	if isTruthy(inputs["plugin_base_activity"]) {
-		translateLegacyChromeBool(inputs, "plugin_base_activity", "chrome_activity")
-	}
-
-	// 3. plugin_base_repositories → chrome_repositories.
-	if isTruthy(inputs["plugin_base_repositories"]) {
-		translateLegacyChromeBool(inputs, "plugin_base_repositories", "chrome_repositories")
-	}
-
-	return inputs
-}
-
-// translateLegacyChromeBool sets the canonical `chrome_*` key from a
-// truthy legacy `plugin_base_*` input and emits a deprecation warning
-// whose phrasing reflects whether the legacy alias actually moved the
-// chrome_* key. When the caller already pinned chrome_* explicitly,
-// the warning notes that the legacy alias was ignored — avoiding the
-// misleading "translated" phrasing called out in PR #641 cap-1
-// review SHOULD-FIX #3.
-func translateLegacyChromeBool(inputs map[string]any, legacyKey, chromeKey string) {
-	msg := fmt.Sprintf(
-		"`%s` is deprecated; use `%s=yes` (removed in v3.0)",
-		legacyKey, chromeKey,
-	)
-	if _, exists := inputs[chromeKey]; exists {
-		slog.Warn(
-			msg,
-			"note", chromeKey+" already set explicitly; legacy alias ignored",
-		)
 		return
 	}
-	inputs[chromeKey] = true
-	slog.Warn(msg, "translated", chromeKey+"=yes")
-}
-
-// readBaseCSV pulls the legacy `base` input out of the map, accepting
-// the string / []string / []any shapes ParseInputs may produce.
-// Returns (value, true) when the key is present (even empty) so the
-// translator can decide based on presence.
-func readBaseCSV(in map[string]any) (string, bool) {
-	v, ok := in["base"]
-	if !ok {
-		return "", false
-	}
-	switch x := v.(type) {
-	case string:
-		return x, true
-	case []string:
-		return strings.Join(x, ","), true
-	case []any:
-		parts := make([]string, 0, len(x))
-		for _, p := range x {
-			if s, ok := p.(string); ok {
-				parts = append(parts, s)
-			}
-		}
-		return strings.Join(parts, ","), true
-	}
-	return "", false
-}
-
-// splitBaseCSV is a local copy of chrome.splitBaseCSV; the action
-// package does not import internal/templates/chrome to avoid pulling
-// the templates layer into the entrypoint.
-func splitBaseCSV(raw string) map[string]struct{} {
-	out := map[string]struct{}{}
-	for _, part := range strings.Split(raw, ",") {
-		s := strings.ToLower(strings.TrimSpace(part))
-		if s == "" {
+	for _, key := range legacyChromeInputKeys {
+		if _, ok := inputs[key]; !ok {
 			continue
 		}
-		out[s] = struct{}{}
+		gate, _ := legacyChromeWarnOnce.LoadOrStore(key, &sync.Once{})
+		gate.(*sync.Once).Do(func() {
+			slog.Warn(
+				fmt.Sprintf("`%s` input was removed in v3.0; use `chrome_<section>=yes` (see docs/plugins/base.md)", key),
+			)
+		})
 	}
-	return out
 }
 
 // ParseInputs builds the unified inputs map used by both Action mode

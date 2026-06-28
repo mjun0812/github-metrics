@@ -58,7 +58,15 @@ func TestRepositoryTemplate_HelloWorld_SVG(t *testing.T) {
 		Account:  plugins.AccountRepository,
 		Template: "repository",
 		Format:   "svg",
-		Inputs:   map[string]any{"user": "octocat", "repo": "hello-world"},
+		Inputs: map[string]any{
+			"user":                "octocat",
+			"repo":                "hello-world",
+			"chrome_header":       "yes",
+			"chrome_activity":     "yes",
+			"chrome_community":    "yes",
+			"chrome_repositories": "yes",
+			"chrome_metadata":     "yes",
+		},
 	}, deps)
 	if err != nil {
 		t.Fatalf("Compute: %v", err)
@@ -106,7 +114,15 @@ func TestRepositoryTemplate_HelloWorld_JSON_DataRepo(t *testing.T) {
 		Account:  plugins.AccountRepository,
 		Template: "repository",
 		Format:   "json",
-		Inputs:   map[string]any{"user": "octocat", "repo": "hello-world"},
+		Inputs: map[string]any{
+			"user":                "octocat",
+			"repo":                "hello-world",
+			"chrome_header":       "yes",
+			"chrome_activity":     "yes",
+			"chrome_community":    "yes",
+			"chrome_repositories": "yes",
+			"chrome_metadata":     "yes",
+		},
 	}, deps)
 	if err != nil {
 		t.Fatalf("Compute: %v", err)
@@ -185,7 +201,15 @@ func TestRepositoryTemplate_HelloWorld_SVG_Golden(t *testing.T) {
 		Account:  plugins.AccountRepository,
 		Template: "repository",
 		Format:   "svg",
-		Inputs:   map[string]any{"user": "octocat", "repo": "hello-world"},
+		Inputs: map[string]any{
+			"user":                "octocat",
+			"repo":                "hello-world",
+			"chrome_header":       "yes",
+			"chrome_activity":     "yes",
+			"chrome_community":    "yes",
+			"chrome_repositories": "yes",
+			"chrome_metadata":     "yes",
+		},
 	}, deps)
 	if err != nil {
 		t.Fatalf("Compute: %v", err)
@@ -209,7 +233,15 @@ func TestRepositoryTemplate_HelloWorld_JSON_Golden(t *testing.T) {
 		Account:  plugins.AccountRepository,
 		Template: "repository",
 		Format:   "json",
-		Inputs:   map[string]any{"user": "octocat", "repo": "hello-world"},
+		Inputs: map[string]any{
+			"user":                "octocat",
+			"repo":                "hello-world",
+			"chrome_header":       "yes",
+			"chrome_activity":     "yes",
+			"chrome_community":    "yes",
+			"chrome_repositories": "yes",
+			"chrome_metadata":     "yes",
+		},
 	}, deps)
 	if err != nil {
 		t.Fatalf("Compute: %v", err)
