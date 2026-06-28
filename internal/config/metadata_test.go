@@ -16,6 +16,7 @@ import (
 // stay in sync with scripts/sync-assets.sh and
 // docs/design/15-selection-answer.md §6.4.
 var adoptedPlugins = []string{
+	"base",
 	"core",
 	"header",
 	"languages", "activity", "achievements", "repositories",
