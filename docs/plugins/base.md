@@ -9,14 +9,16 @@ read aggregated data from the shared `dataprovider.Provider`
 
 ## Sample
 
-This plugin emits no standalone SVG; its inputs are documented below.
+![base sample](../examples/plugin-base.svg)
+
+> Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
 ## Configuration (inputs)
 
 | Input | Description | Default | Required | Type |
 | ----- | ----------- | ------- | -------- | ---- |
-| `plugin_base` | Enable base plugin (master switch for the activity / community and repositories summary panels) | `no` | no | boolean |
+| `plugin_base` | Enable base plugin (master switch for the activity / community and repositories summary panels). | `no` | no | boolean |
 | `plugin_base_activity` | Render the activity + community panel (commits, PR reviews, organizations, sponsoring, starred, watching, ...). Requires `plugin_base: yes`. | `no` | no | boolean |
 | `plugin_base_repositories` | Render the repositories summary panel (license preference, releases, packages, disk usage, sponsors, stargazers, forks, watchers). Requires `plugin_base: yes`. | `no` | no | boolean |
 <!-- AUTOGEN_END: config-table -->

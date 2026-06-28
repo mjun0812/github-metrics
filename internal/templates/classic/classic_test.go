@@ -12,11 +12,11 @@ import (
 	"github.com/mjun0812/github-metrics/internal/templates/classic"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 
-	// #625: the base plugin owns the base.activity+community /
-	// base.repositories static partials listed in _.json. Without this
-	// side-effect import classic.Template.Run errors with
-	// "partial X listed in _.json but not implemented" because the
-	// classic package no longer registers them itself.
+	// #625: the base plugin owns the real base.activity+community /
+	// base.repositories partial renderers. The partials package seeds
+	// both slots with an empty no-op fallback so Lookup never misses;
+	// this side-effect import promotes them from no-ops to populated
+	// renders for tests that drive classic.Template.Run end-to-end.
 	_ "github.com/mjun0812/github-metrics/internal/plugins/base"
 )
 

@@ -52,11 +52,15 @@ func TestRun_NilContextReturnsEmptyResult(t *testing.T) {
 	if r.Profile != nil || r.RepositorySummary != nil || r.Error != nil {
 		t.Errorf("Run(nil pc): want zero-value Result, got %+v", r)
 	}
-	if !r.IsSkipped() == false {
-		// Empty (zero-value) Result is NOT skipped; IsSkipped only
-		// reports true for a literal nil receiver. Anchor that here so
-		// a future change to IsSkipped's contract is loud.
-		t.Helper()
+	// Empty (zero-value) Result is NOT skipped; IsSkipped only reports
+	// true for a literal nil receiver. Anchor the contract here so a
+	// future change is loud.
+	if r.IsSkipped() {
+		t.Errorf("IsSkipped on empty Result: got true, want false (only nil receiver should report skipped)")
+	}
+	var nilResult *base.Result
+	if !nilResult.IsSkipped() {
+		t.Errorf("IsSkipped on nil receiver: got false, want true")
 	}
 }
 
