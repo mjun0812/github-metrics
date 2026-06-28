@@ -223,6 +223,7 @@ type repoPagingState struct {
 	count         int
 	stargazers    int
 	forks         int
+	forked        int
 	watchers      int
 	releases      int
 	packages      int
@@ -245,6 +246,7 @@ func (s *repoPagingState) result() *repoResult {
 			Count:             s.count,
 			Stargazers:        s.stargazers,
 			Forks:             s.forks,
+			Forked:            s.forked,
 			Watchers:          s.watchers,
 			Releases:          s.releases,
 			Packages:          s.packages,
@@ -277,6 +279,9 @@ func (p *Provider) fetchOneRepoPage(ctx context.Context, isUser bool, state *rep
 			state.acc = append(state.acc, repositoryFromUserNode(node))
 			state.stargazers += node.StargazerCount
 			state.forks += node.ForkCount
+			if node.IsFork {
+				state.forked++
+			}
 			if node.Watchers != nil {
 				state.watchers += node.Watchers.TotalCount
 			}
@@ -327,6 +332,9 @@ func (p *Provider) fetchOneRepoPage(ctx context.Context, isUser bool, state *rep
 		state.acc = append(state.acc, repositoryFromOrgNode(node))
 		state.stargazers += node.StargazerCount
 		state.forks += node.ForkCount
+		if node.IsFork {
+			state.forked++
+		}
 		if node.Watchers != nil {
 			state.watchers += node.Watchers.TotalCount
 		}

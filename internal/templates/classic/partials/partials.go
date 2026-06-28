@@ -34,6 +34,20 @@ func Introduction(_ context.Context, pc *templates.PartialContext) (string, erro
 	return "", nil
 }
 
+// emptyPartial is the no-op fallback installed for the base.* static
+// partial names by partials.init() below. It exists so the classic
+// template's `partial X listed in _.json but not implemented` guard
+// stays satisfied even in test binaries that compile classic without
+// pulling in the internal/plugins/base package as a side-effect import.
+//
+// The owning plugin package (internal/plugins/base) overrides these
+// entries from its own init() via Register (which overwrites by
+// design), so at runtime the production binary always renders the
+// real partial body when plugin_base* inputs are truthy.
+func emptyPartial(_ context.Context, _ *templates.PartialContext) (string, error) {
+	return "", nil
+}
+
 // registry maps partial names (e.g. "plugin.languages") to their
 // PartialFunc implementations. Populated by init() in this package for
 // the M2-era `introduction` stub, and by per-plugin packages
@@ -48,6 +62,13 @@ var registry = map[string]templates.PartialFunc{}
 
 func init() {
 	Register("introduction", Introduction)
+	// #625: seed the base.* slots with no-op partials so the static
+	// dispatcher does not error out when a test binary compiles the
+	// classic template without the internal/plugins/base side-effect
+	// import. The base plugin's init() overrides these entries with the
+	// real implementations whenever the binary links it in.
+	Register("base.activity+community", emptyPartial)
+	Register("base.repositories", emptyPartial)
 }
 
 // Register adds a PartialFunc under the given name. Subsequent calls

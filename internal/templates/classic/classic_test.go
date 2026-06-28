@@ -11,6 +11,13 @@ import (
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/classic"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
+
+	// #625: the base plugin owns the real base.activity+community /
+	// base.repositories partial renderers. The partials package seeds
+	// both slots with an empty no-op fallback so Lookup never misses;
+	// this side-effect import promotes them from no-ops to populated
+	// renders for tests that drive classic.Template.Run end-to-end.
+	_ "github.com/mjun0812/github-metrics/internal/plugins/base"
 )
 
 func TestClassic_Check_UserSVG(t *testing.T) {

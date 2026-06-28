@@ -24,11 +24,13 @@ func TestIntroduction_AbsentPlugin(t *testing.T) {
 
 func TestLookup_CoversManifest(t *testing.T) {
 	t.Parallel()
-	// #605 deleted the base.* identity-chrome partials. The header card
-	// is now provided by the opt-in plugin.header partial registered
-	// externally by internal/plugins/header (not imported here to avoid
-	// the test package taking a dependency on every plugin).
-	for _, name := range []string{"introduction"} {
+	// #625 restored base.activity+community and base.repositories with a
+	// no-op emptyPartial fallback seeded inside the partials package's
+	// own init(); the owning internal/plugins/base package overrides via
+	// partials.Register when it is link-loaded. Lookup must resolve all
+	// three manifest entries unconditionally even without the base
+	// import below (the static dispatcher errors on missing partials).
+	for _, name := range []string{"introduction", "base.activity+community", "base.repositories"} {
 		if _, ok := partials.Lookup(name); !ok {
 			t.Errorf("Lookup(%q) missing", name)
 		}

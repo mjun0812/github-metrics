@@ -213,17 +213,32 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 //
 // Mapping mirrors upstream's classic template:
 //
-//	introduction → "introduction"
+//	introduction              → "introduction"
+//	base.activity+community   → "activity" OR "community"
+//	base.repositories         → "repositories"
 //
-// base.header, base.activity+community, and base.repositories have
-// been removed: header is now a standalone plugin (plugin.header),
-// and the activity+community / repositories partials were deleted in
-// the #602 refactor.
+// Note: base.header is no longer a static partial; the identity card
+// moved to the standalone `header` plugin (#602) and is dispatched via
+// the M4 plugin partial loop.
 //
 // `metadata` is gated separately by chrome.MetadataFooter.
+//
+// The base.activity+community / base.repositories partials are
+// additionally gated by the `plugin_base*` inputs inside their own
+// partial bodies (see internal/plugins/base/render.go). The legacy
+// section gate here keeps upstream-style `base=header,repositories`
+// CSV invocations working unchanged.
 func partialEnabledByBase(name string, sections map[string]struct{}) bool {
-	if name == "introduction" {
+	switch name {
+	case "introduction":
 		_, ok := sections["introduction"]
+		return ok
+	case "base.activity+community":
+		_, a := sections["activity"]
+		_, c := sections["community"]
+		return a || c
+	case "base.repositories":
+		_, ok := sections["repositories"]
 		return ok
 	}
 	// Non-base partials (anything else listed in _.json) render
