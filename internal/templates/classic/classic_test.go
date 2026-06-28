@@ -12,6 +12,8 @@ import (
 	"github.com/mjun0812/github-metrics/internal/templates/classic"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 
+	"github.com/mjun0812/github-metrics/internal/plugins/header"
+
 	// #625: the base plugin owns the real base.activity+community /
 	// base.repositories partial renderers. The partials package seeds
 	// both slots with an empty no-op fallback so Lookup never misses;
@@ -203,6 +205,48 @@ func TestClassic_Run_BaseInputMetadataRendersFooter(t *testing.T) {
 	}
 	if strings.Contains(out, `data-section="header"`) {
 		t.Fatalf("base=metadata should not render header\noutput:\n%s", out)
+	}
+}
+
+// TestClassic_Run_HeaderDedupBaseAndPlugin asserts that when the user
+// enables BOTH `base=header` (static dispatcher path) and
+// `plugin_header=yes` (M4 plugin partial path), the rendered SVG
+// contains exactly one <section data-section="header"> block — the
+// static base.header partial owns the slot and the plugin dispatcher
+// skips the duplicate.
+func TestClassic_Run_HeaderDedupBaseAndPlugin(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	// Publish a populated *header.Result under the "header" key so
+	// BOTH the static base.header and the M4 plugin.header paths would
+	// emit a <section data-section="header"> block if they ran. The
+	// dedup logic must keep the count at one.
+	d.SetPlugin(header.Name, &header.Result{
+		Profile: &plugins.Profile{
+			Kind: plugins.ProfileKindUser,
+			User: &plugins.User{Login: "octocat", Name: "Octo"},
+		},
+	})
+	pc := &templates.PartialContext{
+		Inputs: map[string]any{
+			"base":          "header",
+			"plugin_header": "yes",
+		},
+		Data: d,
+	}
+	out, err := classic.Template.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	count := strings.Count(out, `<section data-section="header">`)
+	if count != 1 {
+		t.Fatalf("expected exactly one header section, got %d\noutput:\n%s", count, out)
+	}
+	// The plugin dispatcher's `<div class="plugin-header" data-plugin=
+	// "header">` wrapper must be absent — its presence would mean the
+	// dedup branch did not fire.
+	if strings.Contains(out, `data-plugin="header"`) {
+		t.Fatalf("plugin.header wrapper leaked despite base=header dedup:\n%s", out)
 	}
 }
 

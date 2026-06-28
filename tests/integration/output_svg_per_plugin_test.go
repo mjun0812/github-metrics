@@ -90,6 +90,13 @@ var perPluginCases = []perPluginCase{
 		name: "base",
 		slug: "base",
 		extraInputs: map[string]any{
+			// Scope the static dispatch to the base plugin's own
+			// panels — without an explicit `base=` the default would
+			// also pull in the restored base.header static partial
+			// and bleed identity-card chrome into this per-plugin
+			// showcase. metadata is kept so the footer the existing
+			// golden has always carried still renders.
+			"base":                     "activity,community,repositories,metadata",
 			"plugin_base_activity":     "yes",
 			"plugin_base_repositories": "yes",
 		},
@@ -312,6 +319,14 @@ func TestComputeSVG_PerPluginGolden(t *testing.T) {
 
 			inputs := map[string]any{
 				"plugin_" + tc.slug: "yes",
+				// Per-plugin isolation: `base=metadata` suppresses the
+				// static base.header / base.activity+community /
+				// base.repositories partials while keeping the
+				// metadata footer the existing goldens have always
+				// baked in. Individual cases that need static panels
+				// (e.g. the `base` subtest) override this key via
+				// extraInputs.
+				"base": "metadata",
 			}
 			for k, v := range tc.extraInputs {
 				inputs[k] = v
