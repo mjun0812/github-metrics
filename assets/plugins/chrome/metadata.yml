@@ -1,0 +1,48 @@
+name: 🪟 Chrome sections
+category: core
+description: |
+  Per-section visibility toggles for the layout chrome (header /
+  activity / community / repositories / metadata / introduction).
+  Each toggle is independent and opt-in: setting
+  `chrome_repositories: yes` adds the repositories summary panel to
+  any render without affecting the other sections.
+
+  These replace the legacy `base` CSV (e.g. `base: header,repositories`)
+  and the `plugin_base_*` sub-toggles. Both legacy inputs are still
+  accepted with a deprecation warning that maps them to the new
+  `chrome_*` keys (scheduled for removal in v3.0).
+supports:
+  - user
+  - organization
+scopes: []
+inputs:
+
+  chrome_header:
+    description: 'Render the profile header section (avatar / login / followers / commit calendar mini-row).'
+    type: boolean
+    default: no
+
+  chrome_activity:
+    description: 'Render the activity panel (commits / pull requests reviewed / pull requests opened / issues opened / issue comments).'
+    type: boolean
+    default: no
+
+  chrome_community:
+    description: 'Render the community panel (organizations / following / sponsoring / starred / watching).'
+    type: boolean
+    default: no
+
+  chrome_repositories:
+    description: 'Render the repositories summary panel (license preference / releases / packages / disk usage / sponsors / stargazers / forks / watchers / traffic).'
+    type: boolean
+    default: no
+
+  chrome_metadata:
+    description: 'Render the metadata footer (last-updated timestamp / generator version / timezone / private-contributions notice).'
+    type: boolean
+    default: no
+
+  chrome_introduction:
+    description: 'Render the introduction section (legacy upstream-only header copy).'
+    type: boolean
+    default: no

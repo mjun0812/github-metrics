@@ -19,12 +19,13 @@ func putResult(d *plugins.Data, r *base.Result) { d.SetPlugin(base.Name, r) }
 
 // gates returns the canonical "everything on" input set so tests stay
 // terse. Individual tests override single keys with maps.Copy semantics
-// inline.
+// inline. The chrome_* booleans (#640) are the canonical surface for
+// partial visibility.
 func gates(extra ...string) map[string]any {
 	m := map[string]any{
-		"plugin_base":              "yes",
-		"plugin_base_activity":     "yes",
-		"plugin_base_repositories": "yes",
+		"chrome_activity":     "yes",
+		"chrome_community":    "yes",
+		"chrome_repositories": "yes",
 	}
 	for i := 0; i+1 < len(extra); i += 2 {
 		m[extra[i]] = extra[i+1]
@@ -83,12 +84,26 @@ func TestActivityPartial_NilContextNoGate(t *testing.T) {
 
 func TestActivityPartial_GatedOff(t *testing.T) {
 	t.Parallel()
+	// The activity panel requires an explicit opt-in: under v2 it was
+	// off until `plugin_base + plugin_base_activity` were set, and we
+	// preserve that silence-by-default. Bare `nil` / `{}` inputs hit
+	// the v2 default-all section gate but do NOT auto-render the
+	// panels — keeping the classic-octocat golden byte-stable.
 	cases := []map[string]any{
 		nil,
 		{},
-		{"plugin_base": "yes"},          // sub-toggle missing
-		{"plugin_base_activity": "yes"}, // master missing
-		{"plugin_base": "no", "plugin_base_activity": "yes"},
+		// chrome_activity / chrome_community both off — even if other
+		// chrome keys are present.
+		{"chrome_header": "yes"},
+		{"chrome_repositories": "yes"},
+		// Explicit chrome_*=no must keep the partial empty.
+		{"chrome_activity": "no", "chrome_community": "no"},
+		// Legacy compat: plugin_base=yes alone enables, but only while
+		// no chrome_* input is declared. Combining the two below
+		// suppresses the panel.
+		{"plugin_base": "yes", "chrome_header": "yes"},
+		// `base` CSV present-but-empty selects no sections.
+		{"base": ""},
 	}
 	for i, in := range cases {
 		d := plugins.NewData()
@@ -97,6 +112,40 @@ func TestActivityPartial_GatedOff(t *testing.T) {
 		if err != nil || got != "" {
 			t.Errorf("case %d: ActivityPartial = %q, %v; want \"\", nil", i, got, err)
 		}
+	}
+}
+
+// TestActivityPartial_ChromeActivityAlone — opting into chrome_activity
+// without chrome_community must still render the panel (the panel
+// emits both columns; chrome_community is an alias for the same gate).
+func TestActivityPartial_ChromeActivityAlone(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	putResult(d, activitySample())
+	got, err := base.ActivityPartial(context.Background(),
+		newPC(d, map[string]any{"chrome_activity": "yes"}))
+	if err != nil {
+		t.Fatalf("ActivityPartial: %v", err)
+	}
+	if !strings.Contains(got, "Activity") || !strings.Contains(got, "Community stats") {
+		t.Errorf("expected both columns on chrome_activity=yes alone; got:\n%s", got)
+	}
+}
+
+// TestActivityPartial_LegacyPluginBaseEnables verifies the v2 compat
+// path: `plugin_base=yes` alone (no chrome_* key declared) still pulls
+// the panel in.
+func TestActivityPartial_LegacyPluginBaseEnables(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	putResult(d, activitySample())
+	got, err := base.ActivityPartial(context.Background(),
+		newPC(d, map[string]any{"plugin_base": "yes"}))
+	if err != nil {
+		t.Fatalf("ActivityPartial: %v", err)
+	}
+	if !strings.Contains(got, "Activity") {
+		t.Errorf("legacy plugin_base=yes should enable; got:\n%s", got)
 	}
 }
 
@@ -264,14 +313,53 @@ func TestRepositoriesPartial_GatedOff(t *testing.T) {
 	for i, in := range []map[string]any{
 		nil,
 		{},
-		{"plugin_base": "yes"},              // sub-toggle missing
-		{"plugin_base_repositories": "yes"}, // master missing
-		{"plugin_base": "yes", "plugin_base_repositories": "no"},
+		{"chrome_header": "yes"},
+		{"chrome_activity": "yes", "chrome_community": "yes"},
+		// Explicit chrome_repositories=no must keep the partial empty.
+		{"chrome_repositories": "no"},
+		// plugin_base=yes combined with any chrome_* key suppresses
+		// the v2 compat fallback.
+		{"plugin_base": "yes", "chrome_header": "yes"},
+		// `base` CSV present-but-empty selects no sections.
+		{"base": ""},
 	} {
 		got, err := base.RepositoriesPartial(context.Background(), newPC(d, in))
 		if err != nil || got != "" {
 			t.Errorf("case %d: RepositoriesPartial = %q, %v; want \"\", nil", i, got, err)
 		}
+	}
+}
+
+// TestRepositoriesPartial_ChromeRepositoriesAlone — opting in via the
+// new canonical input renders the panel.
+func TestRepositoriesPartial_ChromeRepositoriesAlone(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	putResult(d, activitySample())
+	got, err := base.RepositoriesPartial(context.Background(),
+		newPC(d, map[string]any{"chrome_repositories": "yes"}))
+	if err != nil {
+		t.Fatalf("RepositoriesPartial: %v", err)
+	}
+	if !strings.Contains(got, "Repositories") {
+		t.Errorf("expected repositories heading on chrome_repositories=yes; got:\n%s", got)
+	}
+}
+
+// TestRepositoriesPartial_LegacyPluginBaseEnables verifies the v2
+// compat path: `plugin_base=yes` alone (no chrome_* key declared)
+// still pulls the repositories panel in.
+func TestRepositoriesPartial_LegacyPluginBaseEnables(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	putResult(d, activitySample())
+	got, err := base.RepositoriesPartial(context.Background(),
+		newPC(d, map[string]any{"plugin_base": "yes"}))
+	if err != nil {
+		t.Fatalf("RepositoriesPartial: %v", err)
+	}
+	if !strings.Contains(got, "Repositories") {
+		t.Errorf("legacy plugin_base=yes should enable; got:\n%s", got)
 	}
 }
 

@@ -33,11 +33,45 @@ func TestResolveBaseSections(t *testing.T) {
 		in   map[string]any
 		want []string
 	}{
+		// Legacy fallbacks (defensive — action layer normally pre-translates).
 		{"absent", nil, []string{"header", "activity", "community", "repositories", "metadata"}},
 		{"empty-string", map[string]any{"base": ""}, []string{}},
 		{"csv", map[string]any{"base": "header, metadata"}, []string{"header", "metadata"}},
 		{"slice", map[string]any{"base": []string{"header", "Metadata"}}, []string{"header", "metadata"}},
 		{"slice-any", map[string]any{"base": []any{"header", "Metadata"}}, []string{"header", "metadata"}},
+
+		// Canonical chrome_* path (#640).
+		{
+			name: "chrome-header-only",
+			in:   map[string]any{"chrome_header": "yes"},
+			want: []string{"header"},
+		},
+		{
+			name: "chrome-multi",
+			in:   map[string]any{"chrome_header": true, "chrome_repositories": "yes"},
+			want: []string{"header", "repositories"},
+		},
+		{
+			// All present but all false — explicit "no chrome" intent;
+			// the legacy default-all fallback MUST NOT fire.
+			name: "chrome-present-all-false",
+			in:   map[string]any{"chrome_header": false, "chrome_metadata": "no"},
+			want: []string{},
+		},
+		{
+			// chrome_* wins when both inputs are present together.
+			name: "chrome-wins-over-base",
+			in: map[string]any{
+				"chrome_header": "yes",
+				"base":          "metadata,activity",
+			},
+			want: []string{"header"},
+		},
+		{
+			name: "introduction-via-chrome",
+			in:   map[string]any{"chrome_introduction": "yes"},
+			want: []string{"introduction"},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -51,6 +85,29 @@ func TestResolveBaseSections(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestAnyChromeInputPresent(t *testing.T) {
+	t.Parallel()
+	if chrome.AnyChromeInputPresent(nil) {
+		t.Errorf("nil map should not be present")
+	}
+	if chrome.AnyChromeInputPresent(map[string]any{"plugin_header": "yes"}) {
+		t.Errorf("non-chrome key should not register")
+	}
+	if !chrome.AnyChromeInputPresent(map[string]any{"chrome_header": false}) {
+		t.Errorf("chrome_header (any value) should register")
+	}
+	if !chrome.AnyChromeInputPresent(map[string]any{"chrome_introduction": "no"}) {
+		t.Errorf("chrome_introduction should register")
+	}
+}
+
+func TestChromeSectionInputKey(t *testing.T) {
+	t.Parallel()
+	if got := chrome.ChromeSectionInputKey("header"); got != "chrome_header" {
+		t.Errorf("ChromeSectionInputKey(header) = %q, want chrome_header", got)
 	}
 }
 

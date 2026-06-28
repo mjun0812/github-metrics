@@ -18,9 +18,7 @@ read aggregated data from the shared `dataprovider.Provider`
 
 | Input | Description | Default | Required | Type |
 | ----- | ----------- | ------- | -------- | ---- |
-| `plugin_base` | Enable base plugin (master switch for the activity / community and repositories summary panels). | `no` | no | boolean |
-| `plugin_base_activity` | Render the activity + community panel (commits, PR reviews, organizations, sponsoring, starred, watching, ...). Requires `plugin_base: yes`. | `no` | no | boolean |
-| `plugin_base_repositories` | Render the repositories summary panel (license preference, releases, packages, disk usage, sponsors, stargazers, forks, watchers). Requires `plugin_base: yes`. | `no` | no | boolean |
+| `plugin_base` | Enable base plugin (legacy v2 master switch; prefer the per-section `chrome_*` booleans). | `no` | no | boolean |
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
@@ -47,7 +45,26 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 
 ## Requirements
 
-Base reads `Provider.Profile(ctx)` and `Provider.RepositorySummary(ctx)` from the shared `internal/dataprovider`. Both are populated lazily by the standard GraphQL user/organization + repositories paging queries — no extra API scopes beyond `public_access` are required. The plugin emits no standalone card on its own; its two panels (`plugin_base_activity`, `plugin_base_repositories`) compose with any other plugin selection to restore the legacy `base` chrome look.
+Base reads `Provider.Profile(ctx)` and `Provider.RepositorySummary(ctx)` from the shared `internal/dataprovider`. Both are populated lazily by the standard GraphQL user/organization + repositories paging queries — no extra API scopes beyond `public_access` are required. The plugin emits no standalone card on its own; its two panels (gated by `chrome_activity` / `chrome_community` and `chrome_repositories` from `assets/plugins/chrome/metadata.yml`, #640) compose with any other plugin selection to restore the legacy `base` chrome look.
+
+## Chrome inputs (v2.1+)
+
+Since v2.1.0 (#640) the v2 `--plugin base=<csv>` + `plugin_base_activity` / `plugin_base_repositories` triad is superseded by six boolean Action inputs in the `chrome_*` namespace:
+
+| Legacy v2 input | v2.1+ replacement |
+| --- | --- |
+| `--plugin base=header` | `--plugin chrome_header=yes` |
+| `--plugin base=activity` | `--plugin chrome_activity=yes` |
+| `--plugin base=community` | `--plugin chrome_community=yes` |
+| `--plugin base=repositories` | `--plugin chrome_repositories=yes` |
+| `--plugin base=metadata` | `--plugin chrome_metadata=yes` |
+| `--plugin base=introduction` | `--plugin chrome_introduction=yes` |
+| `--plugin plugin_base_activity=yes` | `--plugin chrome_activity=yes` |
+| `--plugin plugin_base_repositories=yes` | `--plugin chrome_repositories=yes` |
+
+Each chrome input defaults to `no` — opt-in only, matching the v2 per-plugin SVG default UX. The legacy inputs still translate transparently with a deprecation warning; they are removed in v3.0.
+
+See `assets/plugins/chrome/metadata.yml` for the canonical descriptions surfaced in `action.yml`.
 
 ## References
 

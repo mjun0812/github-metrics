@@ -84,21 +84,16 @@ var perPluginCases = []perPluginCase{
 	},
 	{
 		// #625 base re-introduction: emits the activity + community
-		// and repositories static partials. plugin_base is the master
-		// gate (set automatically by the harness via `plugin_<slug>`);
-		// the sub-toggles below opt the two panels in.
+		// and repositories static partials. The chrome_* booleans
+		// (#640) opt the panels in directly; the per-plugin harness
+		// keeps every other chrome section off so this golden shows
+		// only the base panels + the metadata footer.
 		name: "base",
 		slug: "base",
 		extraInputs: map[string]any{
-			// Scope the static dispatch to the base plugin's own
-			// panels — without an explicit `base=` the default would
-			// also pull in the restored base.header static partial
-			// and bleed identity-card chrome into this per-plugin
-			// showcase. metadata is kept so the footer the existing
-			// golden has always carried still renders.
-			"base":                     "activity,community,repositories,metadata",
-			"plugin_base_activity":     "yes",
-			"plugin_base_repositories": "yes",
+			"chrome_activity":     true,
+			"chrome_community":    true,
+			"chrome_repositories": true,
 		},
 		fixtures:   map[string]string{},
 		goldenPath: "classic/plugin-base.svg",
@@ -319,14 +314,20 @@ func TestComputeSVG_PerPluginGolden(t *testing.T) {
 
 			inputs := map[string]any{
 				"plugin_" + tc.slug: "yes",
-				// Per-plugin isolation: `base=metadata` suppresses the
-				// static base.header / base.activity+community /
-				// base.repositories partials while keeping the
-				// metadata footer the existing goldens have always
-				// baked in. Individual cases that need static panels
-				// (e.g. the `base` subtest) override this key via
+				// Per-plugin isolation (#640): explicit chrome_*=no
+				// suppresses every other section, while
+				// chrome_metadata=yes keeps the metadata footer the
+				// existing goldens have always baked in. Setting any
+				// chrome_* key short-circuits the v2 default-all
+				// fallback. Individual cases that need static panels
+				// (e.g. the `base` subtest) override these via
 				// extraInputs.
-				"base": "metadata",
+				"chrome_header":       false,
+				"chrome_activity":     false,
+				"chrome_community":    false,
+				"chrome_repositories": false,
+				"chrome_metadata":     true,
+				"chrome_introduction": false,
 			}
 			for k, v := range tc.extraInputs {
 				inputs[k] = v
