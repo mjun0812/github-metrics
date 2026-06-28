@@ -103,9 +103,6 @@ func runEnabledForInputs(in map[string]any) bool {
 		chrome.TruthyInput(in, "plugin_base") {
 		return true
 	}
-	if chrome.LegacyDefaultAllSections(in) {
-		return true
-	}
 	return false
 }
 

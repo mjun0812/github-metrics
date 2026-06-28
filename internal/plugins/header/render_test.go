@@ -323,8 +323,8 @@ func TestPartial_OrgEmptyLoginAndName(t *testing.T) {
 
 // TestBasePartial_ChromeHeaderGate (#640) verifies that BasePartial
 // returns ("", nil) when `chrome_header` is off and another `chrome_*`
-// key is declared (which short-circuits the v2 default-all fallback).
-// A populated plugin Result + Provider must not bypass the gate.
+// key is declared. A populated plugin Result + Provider must not
+// bypass the gate.
 func TestBasePartial_ChromeHeaderGate(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()

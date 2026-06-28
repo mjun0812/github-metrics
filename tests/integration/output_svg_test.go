@@ -41,6 +41,14 @@ func TestComputeSVG_ClassicOctocatGolden(t *testing.T) {
 		Login:    "octocat",
 		Template: "classic",
 		Format:   "svg",
+		// The golden was captured with the v2 default-all gate (header
+		// + metadata visible; activity / community / repositories
+		// gated off because base.Run required plugin_base). v3.0
+		// requires explicit opt-in for each section we want rendered.
+		Inputs: map[string]any{
+			"chrome_header":   "yes",
+			"chrome_metadata": "yes",
+		},
 	}, deps)
 	if err != nil {
 		t.Fatalf("Compute: %v", err)

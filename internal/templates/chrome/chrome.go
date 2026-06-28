@@ -9,7 +9,6 @@ package chrome
 import (
 	"fmt"
 	"io/fs"
-	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -37,10 +36,10 @@ var chromeSectionKeys = []string{
 func ChromeSectionInputKey(section string) string { return "chrome_" + section }
 
 // AnyChromeInputPresent reports whether the inputs map declares any
-// `chrome_*` section key (regardless of truthiness). Presence — not
-// truthiness — gates the legacy CSV fallback so a caller that pins
-// every chrome_* to `no` gets an empty section set instead of the v2
-// "default all" behaviour.
+// `chrome_*` section key (regardless of truthiness). Used by the
+// plugin auto-enable helpers to suppress the legacy `plugin_base`
+// master-switch fallback when the caller has opted into the canonical
+// per-section namespace.
 func AnyChromeInputPresent(in map[string]any) bool {
 	if in == nil {
 		return false
@@ -52,32 +51,6 @@ func AnyChromeInputPresent(in map[string]any) bool {
 	}
 	return false
 }
-
-// LegacyDefaultAllSections reports whether the inputs map triggers the
-// v2 "all sections by default" backwards-compat path. True iff neither
-// any `chrome_*` key nor the legacy `base` CSV input is declared.
-// Plugin auto-enable helpers in internal/plugins/{base,header} consult
-// this so the v2 default behaviour is preserved end-to-end: not only
-// does ResolveBaseSections return the full section set, the relevant
-// plugin Run calls also fire, so the partials have data to render.
-func LegacyDefaultAllSections(in map[string]any) bool {
-	if AnyChromeInputPresent(in) {
-		return false
-	}
-	if _, present := ReadBaseInput(in); present {
-		return false
-	}
-	return true
-}
-
-// resolveBaseDefaultLogged is set when the v2 "absent → all sections"
-// fallback emits its deprecation warning at most once per process so
-// repeated render calls do not spam the log.
-var resolveBaseDefaultLogged sync.Once
-
-// resolveBaseLegacyLogged guards the `base=CSV` deprecation warning to
-// at most one emission per process.
-var resolveBaseLegacyLogged sync.Once
 
 // TruthyInput reports whether in[key] reads as a truthy toggle
 // ("true" / "yes" / "1" / bool true). Mirrors upstream metadata.mjs's
@@ -98,116 +71,25 @@ func TruthyInput(in map[string]any, key string) bool {
 	}
 }
 
-// AllBaseSections is the legacy `base` CSV default — the comma-
-// separated string the v2 "absent → all" fallback expands to before
-// translation into the section set. (`introduction` is upstream-
-// defined but gated separately and is not part of the v2 default.)
-const AllBaseSections = "header, activity, community, repositories, metadata"
-
 // ResolveBaseSections returns the set of enabled base section names
-// derived from the user's inputs. Priority (highest first):
+// derived from the user's inputs. Each `chrome_<section>` boolean
+// (#640) that reads truthy enables its matching section; absent or
+// falsy keys leave the section disabled. The function never falls
+// back to a default-all set — opt-in is the only path in v3.
 //
-//  1. If any `chrome_<section>` key is declared in inputs, build the
-//     set from those whose value is truthy.
-//  2. Else if the legacy `base` CSV input is set, translate it into
-//     the equivalent section set (a single deprecation warning is
-//     emitted per process, listing the translated keys).
-//  3. Else default to the v2 "all sections" set with a deprecation
-//     warning explaining the v3 default flip.
-//
-// Step 2 only translates the section set used by the static
-// dispatcher (classic.go / repository.go partialEnabledByBase). The
-// per-partial gates inside internal/plugins/{base,header}/render.go
-// (basePartialEnabled, activityEnabled, repositoriesEnabled) DO NOT
-// consult the legacy CSV — they read chrome_* booleans directly.
-// Direct engine callers that pass `Inputs: {"base": "header"}` will
-// therefore get the right static dispatch decision but the partial
-// bodies will short-circuit to "". Production callers (action.Run /
-// action.RunCLI) avoid this by pre-translating via
-// internal/action.TranslateLegacyChromeInputs before calling the
-// engine; programmatic embedders MUST do the same.
+// The legacy v2 `base=<csv>` and `plugin_base_<section>` aliases are
+// no longer accepted (v3.0, #649); they are silently ignored here.
+// Action / CLI callers surface a diagnostic slog.Warn for those keys
+// via internal/action.WarnLegacyChromeInputs before reaching this
+// layer.
 func ResolveBaseSections(in map[string]any) map[string]struct{} {
-	// 1. New canonical path: chrome_* booleans win when any are set.
-	if AnyChromeInputPresent(in) {
-		out := map[string]struct{}{}
-		for _, k := range chromeSectionKeys {
-			if TruthyInput(in, ChromeSectionInputKey(k)) {
-				out[k] = struct{}{}
-			}
-		}
-		return out
-	}
-
-	// 2. Legacy CSV path: warn once, translate to section set.
-	if raw, present := ReadBaseInput(in); present {
-		sections := splitBaseCSV(raw)
-		translated := make([]string, 0, len(sections))
-		for _, s := range chromeSectionKeys {
-			if _, ok := sections[s]; ok {
-				translated = append(translated, ChromeSectionInputKey(s)+"=yes")
-			}
-		}
-		resolveBaseLegacyLogged.Do(func() {
-			slog.Warn(
-				"`base` input is deprecated; use `chrome_<section>=yes` (removed in v3.0)",
-				"base", raw,
-				"translated", strings.Join(translated, ", "),
-			)
-		})
-		return sections
-	}
-
-	// 3. v2 backwards-compat default: warn once, return the v2
-	// "all sections" set. v3 will flip this to an empty set.
-	resolveBaseDefaultLogged.Do(func() {
-		slog.Warn(
-			"no `chrome_*` or `base` input set; defaulting to all sections (v3 will default to none — set `chrome_header=yes` etc. explicitly)",
-		)
-	})
-	return splitBaseCSV(AllBaseSections)
-}
-
-// splitBaseCSV converts a `base` CSV value to the section set, used by
-// both the deprecation alias path in ResolveBaseSections and the v2
-// default fallback.
-func splitBaseCSV(raw string) map[string]struct{} {
 	out := map[string]struct{}{}
-	for _, part := range strings.Split(raw, ",") {
-		s := strings.ToLower(strings.TrimSpace(part))
-		if s == "" {
-			continue
+	for _, k := range chromeSectionKeys {
+		if TruthyInput(in, ChromeSectionInputKey(k)) {
+			out[k] = struct{}{}
 		}
-		out[s] = struct{}{}
 	}
 	return out
-}
-
-// ReadBaseInput extracts the `base` input. Returns (value, true) when
-// the key is present even if the value is "" — callers need to tell
-// "user set base to empty" from "user did not set base".
-func ReadBaseInput(in map[string]any) (string, bool) {
-	if in == nil {
-		return "", false
-	}
-	v, ok := in["base"]
-	if !ok {
-		return "", false
-	}
-	switch x := v.(type) {
-	case string:
-		return x, true
-	case []string:
-		return strings.Join(x, ","), true
-	case []any:
-		parts := make([]string, 0, len(x))
-		for _, p := range x {
-			if s, ok := p.(string); ok {
-				parts = append(parts, s)
-			}
-		}
-		return strings.Join(parts, ","), true
-	}
-	return "", false
 }
 
 // FooterOpts toggles per-template differences in MetadataFooter.
@@ -219,9 +101,8 @@ type FooterOpts struct {
 }
 
 // MetadataFooter renders the metadata block when the `metadata`
-// section is in the resolved set (i.e. `chrome_metadata=yes`, or one
-// of the legacy aliases the action layer translated), or when the
-// legacy expanded `base.metadata` input is truthy. The block is
+// section is in the resolved set (i.e. `chrome_metadata=yes`), or
+// when the legacy expanded `base.metadata` input is truthy. The block is
 // wrapped in `<section data-section="metadata">` so DOM diffing can
 // locate it, and the inner `<footer>` is preserved so the M3
 // render.Hash footer-stripping rule still drops the timestamp before
