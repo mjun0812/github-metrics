@@ -46,6 +46,7 @@ const (
 	octDatabase     = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" d="M2.5 3.5c0-.133.058-.318.282-.55.227-.237.592-.484 1.1-.708C4.899 1.795 6.354 1.5 8 1.5c1.647 0 3.102.295 4.117.742.51.224.874.47 1.101.707.224.233.282.418.282.551 0 .133-.058.318-.282.55-.227.237-.592.484-1.1.708C11.101 5.205 9.646 5.5 8 5.5c-1.647 0-3.102-.295-4.117-.742-.51-.224-.874-.47-1.101-.707-.224-.233-.282-.418-.282-.551zM1 3.5c0-.626.292-1.165.7-1.59.406-.422.956-.767 1.579-1.041C4.525.32 6.195 0 8 0c1.805 0 3.475.32 4.722.869.622.274 1.172.62 1.578 1.04.408.426.7.965.7 1.591v9c0 .626-.292 1.165-.7 1.59-.406.422-.956.767-1.579 1.041C11.476 15.68 9.806 16 8 16c-1.805 0-3.475-.32-4.721-.869-.623-.274-1.173-.62-1.579-1.04-.408-.426-.7-.965-.7-1.591v-9zM2.5 8V5.724c.241.15.503.286.779.407C4.525 6.68 6.195 7 8 7c1.805 0 3.475-.32 4.722-.869.275-.121.537-.257.778-.407V8c0 .133-.058.318-.282.55-.227.237-.592.484-1.1.708C11.101 9.705 9.646 10 8 10c-1.647 0-3.102-.295-4.117-.742-.51-.224-.874-.47-1.101-.707C2.558 8.318 2.5 8.133 2.5 8zm0 2.225V12.5c0 .133.058.318.282.55.227.237.592.484 1.1.708 1.016.447 2.471.742 4.118.742 1.647 0 3.102-.295 4.117-.742.51-.224.874-.47 1.101-.707.224-.233.282-.418.282-.551v-2.275c-.241.15-.503.285-.778.406-1.247.549-2.917.869-4.722.869-1.805 0-3.475-.32-4.721-.869a6.236 6.236 0 01-.779-.406z"></path></svg>`
 	octHeartSponsor = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M4.25 2.5c-1.336 0-2.75 1.164-2.75 3 0 2.15 1.58 4.144 3.365 5.682A20.565 20.565 0 008 13.393a20.561 20.561 0 003.135-2.211C12.92 9.644 14.5 7.65 14.5 5.5c0-1.836-1.414-3-2.75-3-1.373 0-2.609.986-3.029 2.456a.75.75 0 01-1.442 0C6.859 3.486 5.623 2.5 4.25 2.5zM8 14.25l-.345.666-.002-.001-.006-.003-.018-.01a7.643 7.643 0 01-.31-.17 22.075 22.075 0 01-3.434-2.414C2.045 10.731 0 8.35 0 5.5 0 2.836 2.086 1 4.25 1 5.797 1 7.153 1.802 8 3.02 8.847 1.802 10.203 1 11.75 1 13.914 1 16 2.836 16 5.5c0 2.85-2.045 5.231-3.885 6.818a22.08 22.08 0 01-3.744 2.584l-.018.01-.006.003h-.002L8 14.25zm0 0l.345.666a.752.752 0 01-.69 0L8 14.25z"></path></svg>`
 	octForker       = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 100-1.5.75.75 0 000 1.5z"></path></svg>`
+	octViews        = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M0 1.75A.75.75 0 01.75 1h4.253c1.227 0 2.317.59 3 1.501A3.744 3.744 0 0111.006 1h4.245a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75h-4.507a2.25 2.25 0 00-1.591.659l-.622.621a.75.75 0 01-1.06 0l-.622-.621A2.25 2.25 0 005.258 13H.75a.75.75 0 01-.75-.75V1.75zm8.755 3a2.25 2.25 0 012.25-2.25H14.5v9h-3.757c-.71 0-1.4.201-1.992.572l.004-7.322zm-1.504 7.324l.004-5.073-.002-2.253A2.25 2.25 0 005.003 2.5H1.5v9h3.757a3.75 3.75 0 011.994.574z"></path></svg>`
 )
 
 func init() {
@@ -186,6 +187,19 @@ func RepositoriesPartial(_ context.Context, pc *templates.PartialContext) (strin
 	writeCountRow(&b, octStar, summary.Stargazers, "Stargazer", "Stargazers")
 	writeCountRow(&b, octForker, summary.Forks, "Forker", "Forkers")
 	writeCountRow(&b, octEye, summary.Watchers, "Watcher", "Watchers")
+	// Traffic views are surfaced inline at the bottom of the right
+	// column to mirror upstream's base.repositories.ejs behaviour
+	// (`<%= plugins.traffic.views.count %> view[s] in last two weeks`).
+	// Read through the public TotalViews accessor so plugin_base does
+	// not need to import internal/plugins/traffic and risk an init
+	// cycle. Skipped / absent / zero-views all short-circuit silently.
+	if rawTraffic, ok := pc.Data.GetPlugin("traffic"); ok && rawTraffic != nil {
+		if tr, ok := rawTraffic.(interface{ TotalViews() int }); ok {
+			if views := tr.TotalViews(); views > 0 {
+				writeTrafficViewsRow(&b, octViews, views)
+			}
+		}
+	}
 	b.WriteString(`</section>`)
 
 	b.WriteString(`</div>`) // close inner row
@@ -208,6 +222,22 @@ func writeCountRow(b *strings.Builder, icon string, count int, singular, plural 
 	b.WriteString(`<div class="field">`)
 	b.WriteString(icon)
 	fmt.Fprintf(b, "%s %s", partials.FormatCount(int64(count)), partials.EscapeXML(noun))
+	b.WriteString(`</div>`)
+}
+
+// writeTrafficViewsRow emits the "<icon><count> view[s] in last two
+// weeks" field rendered inside RepositoriesPartial's right column when
+// the traffic plugin published a non-zero TotalViews. The pluralisation
+// follows upstream's `s()` helper convention: "view" for count == 1,
+// "views" otherwise.
+func writeTrafficViewsRow(b *strings.Builder, icon string, count int) {
+	noun := "views"
+	if count == 1 {
+		noun = "view"
+	}
+	b.WriteString(`<div class="field">`)
+	b.WriteString(icon)
+	fmt.Fprintf(b, "%s %s in last two weeks", partials.FormatCount(int64(count)), partials.EscapeXML(noun))
 	b.WriteString(`</div>`)
 }
 
