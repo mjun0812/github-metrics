@@ -115,11 +115,17 @@ const AllBaseSections = "header, activity, community, repositories, metadata"
 //  3. Else default to the v2 "all sections" set with a deprecation
 //     warning explaining the v3 default flip.
 //
-// Step 2 is a defensive fallback for direct engine callers (tests,
-// programmatic embedders). The action / CLI layer pre-translates
-// `base=CSV` and `plugin_base_*` into `chrome_*` before calling the
-// engine (see internal/action.TranslateLegacyChromeInputs), so the
-// translation log fires in two places at most.
+// Step 2 only translates the section set used by the static
+// dispatcher (classic.go / repository.go partialEnabledByBase). The
+// per-partial gates inside internal/plugins/{base,header}/render.go
+// (basePartialEnabled, activityEnabled, repositoriesEnabled) DO NOT
+// consult the legacy CSV — they read chrome_* booleans directly.
+// Direct engine callers that pass `Inputs: {"base": "header"}` will
+// therefore get the right static dispatch decision but the partial
+// bodies will short-circuit to "". Production callers (action.Run /
+// action.RunCLI) avoid this by pre-translating via
+// internal/action.TranslateLegacyChromeInputs before calling the
+// engine; programmatic embedders MUST do the same.
 func ResolveBaseSections(in map[string]any) map[string]struct{} {
 	// 1. New canonical path: chrome_* booleans win when any are set.
 	if AnyChromeInputPresent(in) {

@@ -37,7 +37,12 @@ func TranslateLegacyChromeInputs(inputs map[string]any) map[string]any {
 	}
 
 	// 1. base= CSV → chrome_<section>=yes for each listed section.
-	if raw, ok := readBaseCSV(inputs); ok {
+	//
+	// Skip the empty-string case (`--plugin base=`) entirely: it was the
+	// v2 "no chrome" idiom, and chrome_* default-no maps to the same
+	// outcome. Warning the user about a v3-removed input they are not
+	// even *using* would be noise (cap-1 review SHOULD-FIX #2).
+	if raw, ok := readBaseCSV(inputs); ok && raw != "" {
 		sections := splitBaseCSV(raw)
 		// Translate in canonical order so the warning's "translated"
 		// list is deterministic.
@@ -75,27 +80,38 @@ func TranslateLegacyChromeInputs(inputs map[string]any) map[string]any {
 
 	// 2. plugin_base_activity → chrome_activity.
 	if isTruthy(inputs["plugin_base_activity"]) {
-		if _, exists := inputs["chrome_activity"]; !exists {
-			inputs["chrome_activity"] = true
-		}
-		slog.Warn(
-			"`plugin_base_activity` is deprecated; use `chrome_activity=yes` (removed in v3.0)",
-			"translated", "chrome_activity=yes",
-		)
+		translateLegacyChromeBool(inputs, "plugin_base_activity", "chrome_activity")
 	}
 
 	// 3. plugin_base_repositories → chrome_repositories.
 	if isTruthy(inputs["plugin_base_repositories"]) {
-		if _, exists := inputs["chrome_repositories"]; !exists {
-			inputs["chrome_repositories"] = true
-		}
-		slog.Warn(
-			"`plugin_base_repositories` is deprecated; use `chrome_repositories=yes` (removed in v3.0)",
-			"translated", "chrome_repositories=yes",
-		)
+		translateLegacyChromeBool(inputs, "plugin_base_repositories", "chrome_repositories")
 	}
 
 	return inputs
+}
+
+// translateLegacyChromeBool sets the canonical `chrome_*` key from a
+// truthy legacy `plugin_base_*` input and emits a deprecation warning
+// whose phrasing reflects whether the legacy alias actually moved the
+// chrome_* key. When the caller already pinned chrome_* explicitly,
+// the warning notes that the legacy alias was ignored — avoiding the
+// misleading "translated" phrasing called out in PR #641 cap-1
+// review SHOULD-FIX #3.
+func translateLegacyChromeBool(inputs map[string]any, legacyKey, chromeKey string) {
+	msg := fmt.Sprintf(
+		"`%s` is deprecated; use `%s=yes` (removed in v3.0)",
+		legacyKey, chromeKey,
+	)
+	if _, exists := inputs[chromeKey]; exists {
+		slog.Warn(
+			msg,
+			"note", chromeKey+" already set explicitly; legacy alias ignored",
+		)
+		return
+	}
+	inputs[chromeKey] = true
+	slog.Warn(msg, "translated", chromeKey+"=yes")
 }
 
 // readBaseCSV pulls the legacy `base` input out of the map, accepting
