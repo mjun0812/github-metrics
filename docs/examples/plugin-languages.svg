@@ -31,48 +31,48 @@
               </mask>
               <rect mask="url(#languages-bar-most)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-progress">
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="72.49" height="8" fill="#a91e50" data-language="EJS"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="72.49" y="0" width="72.27" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="144.75" y="0" width="64.57" height="8" fill="#3D6117" data-language="TeX"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="209.32" y="0" width="62.18" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="271.50" y="0" width="59.54" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="331.04" y="0" width="46.53" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="377.57" y="0" width="46.52" height="8" fill="#f1e05a" data-language="JavaScript"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="424.10" y="0" width="8.64" height="8" fill="#3A4E3A" data-language="Cuda"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="432.74" y="0" width="27.26" height="8" fill="#cccccc" data-language="Other"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="71.03" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="71.03" y="0" width="70.64" height="8" fill="#a91e50" data-language="EJS"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="141.67" y="0" width="67.12" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="208.78" y="0" width="63.46" height="8" fill="#3D6117" data-language="TeX"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="272.24" y="0" width="58.47" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="330.71" y="0" width="47.70" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="378.42" y="0" width="45.72" height="8" fill="#f1e05a" data-language="JavaScript"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="424.14" y="0" width="8.49" height="8" fill="#3A4E3A" data-language="Cuda"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="432.64" y="0" width="27.36" height="8" fill="#cccccc" data-language="Other"/>
               </g>
             </svg>
             <div class="row fill-width">
               <section>
-                <div class="field language details" data-language="EJS">
+                <div class="field language details" data-language="Jupyter Notebook">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#a91e50" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#DA5B0B" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    EJS
+                    Jupyter Notebook
                   </div>
                   <small>
                     <div>
                       2.3 MB
                     </div>
                     <div>
-                      15.8%
+                      15.4%
                     </div>
                   </small>
                 </div>
-                <div class="field language details" data-language="TeX">
+                <div class="field language details" data-language="Go">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#3D6117" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#00ADD8" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    TeX
+                    Go
                   </div>
                   <small>
                     <div>
-                      2.1 MB
+                      2.2 MB
                     </div>
                     <div>
-                      14.0%
+                      14.6%
                     </div>
                   </small>
                 </div>
@@ -88,7 +88,7 @@
                       1.9 MB
                     </div>
                     <div>
-                      12.9%
+                      12.7%
                     </div>
                   </small>
                 </div>
@@ -104,7 +104,7 @@
                       1.5 MB
                     </div>
                     <div>
-                      10.1%
+                      9.9%
                     </div>
                   </small>
                 </div>
@@ -117,7 +117,7 @@
                   </div>
                   <small>
                     <div>
-                      887.5 kB
+                      906.5 kB
                     </div>
                     <div>
                       5.9%
@@ -126,35 +126,35 @@
                 </div>
               </section>
               <section>
-                <div class="field language details" data-language="Jupyter Notebook">
+                <div class="field language details" data-language="EJS">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#DA5B0B" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#a91e50" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    Jupyter Notebook
+                    EJS
                   </div>
                   <small>
                     <div>
                       2.3 MB
                     </div>
                     <div>
-                      15.7%
+                      15.4%
                     </div>
                   </small>
                 </div>
-                <div class="field language details" data-language="Go">
+                <div class="field language details" data-language="TeX">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#00ADD8" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#3D6117" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    Go
+                    TeX
                   </div>
                   <small>
                     <div>
-                      2.0 MB
+                      2.1 MB
                     </div>
                     <div>
-                      13.5%
+                      13.8%
                     </div>
                   </small>
                 </div>
@@ -170,7 +170,7 @@
                       1.5 MB
                     </div>
                     <div>
-                      10.1%
+                      10.4%
                     </div>
                   </small>
                 </div>
@@ -186,7 +186,7 @@
                       281.4 kB
                     </div>
                     <div>
-                      1.9%
+                      1.8%
                     </div>
                   </small>
                 </div>
