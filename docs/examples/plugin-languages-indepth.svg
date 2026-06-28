@@ -34,100 +34,18 @@
               </mask>
               <rect mask="url(#languages-bar-most)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-progress">
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="72.49" height="8" fill="#a91e50" data-language="EJS"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="72.49" y="0" width="72.27" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="144.75" y="0" width="64.57" height="8" fill="#3D6117" data-language="TeX"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="209.32" y="0" width="62.18" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="271.50" y="0" width="59.54" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="331.04" y="0" width="46.53" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="377.57" y="0" width="46.52" height="8" fill="#f1e05a" data-language="JavaScript"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="424.10" y="0" width="8.64" height="8" fill="#3A4E3A" data-language="Cuda"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="432.74" y="0" width="27.26" height="8" fill="#cccccc" data-language="Other"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="71.01" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="71.01" y="0" width="70.63" height="8" fill="#a91e50" data-language="EJS"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="141.64" y="0" width="67.10" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="208.74" y="0" width="63.44" height="8" fill="#3D6117" data-language="TeX"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="272.19" y="0" width="58.46" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="330.65" y="0" width="47.70" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="378.35" y="0" width="45.71" height="8" fill="#f1e05a" data-language="JavaScript"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="424.06" y="0" width="8.49" height="8" fill="#3A4E3A" data-language="Cuda"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="432.55" y="0" width="27.45" height="8" fill="#cccccc" data-language="Other"/>
               </g>
             </svg>
             <div class="row fill-width">
-              <section>
-                <div class="field language details" data-language="EJS">
-                  <div class="field">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#a91e50" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
-                    </svg>
-                    EJS
-                  </div>
-                  <small>
-                    <div>
-                      2.3 MB
-                    </div>
-                    <div>
-                      15.8%
-                    </div>
-                  </small>
-                </div>
-                <div class="field language details" data-language="TeX">
-                  <div class="field">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#3D6117" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
-                    </svg>
-                    TeX
-                  </div>
-                  <small>
-                    <div>
-                      2.1 MB
-                    </div>
-                    <div>
-                      14.0%
-                    </div>
-                  </small>
-                </div>
-                <div class="field language details" data-language="Shell">
-                  <div class="field">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#89e051" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
-                    </svg>
-                    Shell
-                  </div>
-                  <small>
-                    <div>
-                      265.5 kB
-                    </div>
-                    <div>
-                      12.9%
-                    </div>
-                  </small>
-                </div>
-                <div class="field language details" data-language="JavaScript">
-                  <div class="field">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#f1e05a" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
-                    </svg>
-                    JavaScript
-                  </div>
-                  <small>
-                    <div>
-                      10.0 MB
-                    </div>
-                    <div>
-                      10.1%
-                    </div>
-                  </small>
-                </div>
-                <div class="field language details" data-language="Other">
-                  <div class="field">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#cccccc" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
-                    </svg>
-                    Other
-                  </div>
-                  <small>
-                    <div>
-                      887.5 kB
-                    </div>
-                    <div>
-                      5.9%
-                    </div>
-                  </small>
-                </div>
-              </section>
               <section>
                 <div class="field language details" data-language="Jupyter Notebook">
                   <div class="field">
@@ -141,7 +59,7 @@
                       42.4 MB
                     </div>
                     <div>
-                      15.7%
+                      15.4%
                     </div>
                   </small>
                 </div>
@@ -157,7 +75,89 @@
                       115 B
                     </div>
                     <div>
-                      13.5%
+                      14.6%
+                    </div>
+                  </small>
+                </div>
+                <div class="field language details" data-language="Shell">
+                  <div class="field">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                      <path fill="#89e051" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                    </svg>
+                    Shell
+                  </div>
+                  <small>
+                    <div>
+                      265.4 kB
+                    </div>
+                    <div>
+                      12.7%
+                    </div>
+                  </small>
+                </div>
+                <div class="field language details" data-language="JavaScript">
+                  <div class="field">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                      <path fill="#f1e05a" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                    </svg>
+                    JavaScript
+                  </div>
+                  <small>
+                    <div>
+                      10.0 MB
+                    </div>
+                    <div>
+                      9.9%
+                    </div>
+                  </small>
+                </div>
+                <div class="field language details" data-language="Other">
+                  <div class="field">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                      <path fill="#cccccc" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                    </svg>
+                    Other
+                  </div>
+                  <small>
+                    <div>
+                      909.4 kB
+                    </div>
+                    <div>
+                      6.0%
+                    </div>
+                  </small>
+                </div>
+              </section>
+              <section>
+                <div class="field language details" data-language="EJS">
+                  <div class="field">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                      <path fill="#a91e50" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                    </svg>
+                    EJS
+                  </div>
+                  <small>
+                    <div>
+                      2.3 MB
+                    </div>
+                    <div>
+                      15.4%
+                    </div>
+                  </small>
+                </div>
+                <div class="field language details" data-language="TeX">
+                  <div class="field">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                      <path fill="#3D6117" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                    </svg>
+                    TeX
+                  </div>
+                  <small>
+                    <div>
+                      2.1 MB
+                    </div>
+                    <div>
+                      13.8%
                     </div>
                   </small>
                 </div>
@@ -173,7 +173,7 @@
                       18.9 MB
                     </div>
                     <div>
-                      10.1%
+                      10.4%
                     </div>
                   </small>
                 </div>
@@ -189,7 +189,7 @@
                       267.2 kB
                     </div>
                     <div>
-                      1.9%
+                      1.8%
                     </div>
                   </small>
                 </div>
@@ -204,10 +204,10 @@
               <text class="indepth-language" data-language="Rust" data-bytes="26191855">
                 Rust
               </text>
-              <text class="indepth-language" data-language="Python" data-bytes="19858768">
+              <text class="indepth-language" data-language="Python" data-bytes="19855427">
                 Python
               </text>
-              <text class="indepth-language" data-language="JSON" data-bytes="17210729">
+              <text class="indepth-language" data-language="JSON" data-bytes="17211531">
                 JSON
               </text>
               <text class="indepth-language" data-language="Jest Snapshot" data-bytes="14329594">
@@ -219,7 +219,7 @@
               <text class="indepth-language" data-language="JavaScript" data-bytes="10494023">
                 JavaScript
               </text>
-              <text class="indepth-language" data-language="Markdown" data-bytes="5741423">
+              <text class="indepth-language" data-language="Markdown" data-bytes="5740607">
                 Markdown
               </text>
               <text class="indepth-language" data-language="Java" data-bytes="5386420">
@@ -228,7 +228,7 @@
               <text class="indepth-language" data-language="TypeScript" data-bytes="4981583">
                 TypeScript
               </text>
-              <text class="indepth-language" data-language="SVG" data-bytes="3970339">
+              <text class="indepth-language" data-language="SVG" data-bytes="3985042">
                 SVG
               </text>
               <text class="indepth-language" data-language="CSV" data-bytes="2716407">
@@ -249,7 +249,7 @@
               <text class="indepth-language" data-language="CSS" data-bytes="1188869">
                 CSS
               </text>
-              <text class="indepth-language" data-language="TOML" data-bytes="1092051">
+              <text class="indepth-language" data-language="TOML" data-bytes="1089773">
                 TOML
               </text>
               <text class="indepth-language" data-language="Swift" data-bytes="378042">
@@ -258,13 +258,13 @@
               <text class="indepth-language" data-language="Cuda" data-bytes="273611">
                 Cuda
               </text>
-              <text class="indepth-language" data-language="Shell" data-bytes="271843">
+              <text class="indepth-language" data-language="Shell" data-bytes="271766">
                 Shell
               </text>
               <text class="indepth-language" data-language="R" data-bytes="265325">
                 R
               </text>
-              <text class="indepth-language" data-language="Text" data-bytes="251938">
+              <text class="indepth-language" data-language="Text" data-bytes="251918">
                 Text
               </text>
               <text class="indepth-language" data-language="Astro" data-bytes="132681">
@@ -276,10 +276,10 @@
               <text class="indepth-language" data-language="C" data-bytes="127647">
                 C
               </text>
-              <text class="indepth-language" data-language="Lua" data-bytes="104731">
+              <text class="indepth-language" data-language="Lua" data-bytes="108162">
                 Lua
               </text>
-              <text class="indepth-language" data-language="Ignore List" data-bytes="96385">
+              <text class="indepth-language" data-language="Ignore List" data-bytes="96452">
                 Ignore List
               </text>
               <text class="indepth-language" data-language="HTML" data-bytes="90035">
@@ -291,6 +291,9 @@
               <text class="indepth-language" data-language="Pip Requirements" data-bytes="52608">
                 Pip Requirements
               </text>
+              <text class="indepth-language" data-language="XML Property List" data-bytes="51593">
+                XML Property List
+              </text>
               <text class="indepth-language" data-language="Dockerfile" data-bytes="40469">
                 Dockerfile
               </text>
@@ -299,9 +302,6 @@
               </text>
               <text class="indepth-language" data-language="C++" data-bytes="36731">
                 C++
-              </text>
-              <text class="indepth-language" data-language="XML Property List" data-bytes="31877">
-                XML Property List
               </text>
               <text class="indepth-language" data-language="SQL" data-bytes="28767">
                 SQL
