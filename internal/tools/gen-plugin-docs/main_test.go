@@ -8,8 +8,12 @@ import (
 )
 
 // TestAdoptedSlugsMatchCompliance asserts the doc generator's plugin
-// list stays aligned with `tests/compliance/compliance_test.go::adoptedM4Plugins`
-// (minus base / core / languages.recent / languages.indepth).
+// list (`adoptedSlugs`) stays aligned with
+// `tests/compliance/compliance_test.go::adoptedM4Plugins`, less the
+// foundational `base` / `core` slugs (which live in `foundationalSlugs`
+// — they ship a doc page but are not in the README gallery) and the
+// `languages.recent` / `languages.indepth` sub-modes (which share the
+// `languages` page).
 func TestAdoptedSlugsMatchCompliance(t *testing.T) {
 	t.Parallel()
 	root := repoRootForTest(t)
@@ -58,7 +62,9 @@ func compliancePluginsFromSource(src string) map[string]struct{} {
 			// languages.recent / languages.indepth share the languages page.
 			continue
 		}
-		if tok == "core" {
+		if tok == "core" || tok == "base" {
+			// foundational plugins ship a doc page but are not in the
+			// adopted-19 gallery list.
 			continue
 		}
 		// Only accept tokens that look like plain slugs.
@@ -84,13 +90,15 @@ func isPlainSlug(s string) bool {
 	return true
 }
 
-// TestFoundationalSlugs_IsCoreOnly — the foundational set is the
-// singleton {core}. #605 removed `base`; adding any other foundational
-// plugin would require a constitution amendment per
-// docs/design/15-selection-answer.md.
-func TestFoundationalSlugs_IsCoreOnly(t *testing.T) {
+// TestFoundationalSlugs_IsBaseAndCore — the foundational set carries
+// the two infrastructure plugins (`base`, `core`) that ship a doc page
+// but are excluded from the README gallery. #605 removed `base`; #625
+// re-added it as a foundational plugin (no standalone card, composes
+// chrome via plugin_base*). Any further addition needs a constitution
+// amendment per docs/design/15-selection-answer.md.
+func TestFoundationalSlugs_IsBaseAndCore(t *testing.T) {
 	t.Parallel()
-	want := map[string]struct{}{"core": {}}
+	want := map[string]struct{}{"base": {}, "core": {}}
 	got := map[string]struct{}{}
 	for _, s := range foundationalSlugs {
 		got[s] = struct{}{}

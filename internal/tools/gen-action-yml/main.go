@@ -39,6 +39,7 @@ var adoptedSlugs = []string{
 	"core",
 	"achievements",
 	"activity",
+	"base",
 	"calendar",
 	"contributors",
 	"habits",
