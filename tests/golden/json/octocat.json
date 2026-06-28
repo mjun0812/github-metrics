@@ -137,6 +137,51 @@
       "mode": "",
       "skipped": true
     },
+    "base": {
+      "profile": {
+        "kind": "user",
+        "organization": null,
+        "user": {
+          "avatarURL": "https://avatars.githubusercontent.com/u/12345?v=4",
+          "commits": 7293,
+          "contributedTo": 0,
+          "createdAt": "2008-01-14T04:33:35Z",
+          "discussionAnswers": 0,
+          "discussionsComments": 0,
+          "discussionsStarted": 0,
+          "followers": 1555,
+          "following": 617,
+          "gists": 0,
+          "issueComments": 333,
+          "issuesOpened": 443,
+          "login": "octocat",
+          "name": "The Octocat",
+          "organizations": 2,
+          "pullRequestsOpened": 290,
+          "pullRequestsReviewed": 68,
+          "recentContributions": null,
+          "sponsoring": 0,
+          "sponsorshipsAsMaintainer": 4,
+          "starred": 310,
+          "watching": 16
+        }
+      },
+      "repository_summary": {
+        "count": 250,
+        "deployments": 0,
+        "diskUsage": 0,
+        "forked": 0,
+        "forks": 13,
+        "issues": 0,
+        "languages": null,
+        "licensePreference": null,
+        "packages": 0,
+        "pullRequests": 0,
+        "releases": 0,
+        "stargazers": 150,
+        "watchers": 7
+      }
+    },
     "calendar": {
       "limit": 0,
       "skipped": true,

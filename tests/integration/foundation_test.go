@@ -38,6 +38,11 @@ import (
 	// Without this side-effect import, the partial dispatcher silently
 	// skips "plugin.header" because no Lookup is registered.
 	_ "github.com/mjun0812/github-metrics/internal/plugins/header"
+
+	// #625: register the base plugin so the activity+community and
+	// repositories static partials have a Result to read when the
+	// integration suite drives engine.Compute with plugin_base=yes.
+	_ "github.com/mjun0812/github-metrics/internal/plugins/base"
 )
 
 // graphQLFixture is a tiny RoundTripper that inspects the GraphQL
