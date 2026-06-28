@@ -49,6 +49,12 @@ func currentNow() time.Time {
 
 func init() {
 	partials.Register("plugin."+Name, Partial)
+	// `base.header` is the static partial slot fired by the classic
+	// dispatcher before plugin partials. Registering BasePartial here
+	// (rather than from the partials package's own init seed) wires the
+	// header chrome into the top of every classic render whose `base`
+	// CSV includes `header`, even when plugin_header is not toggled.
+	partials.Register("base.header", BasePartial)
 }
 
 // Partial renders the classic SVG fragment for the header plugin.
@@ -67,7 +73,50 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if !ok || r == nil || r.Profile == nil {
 		return "", nil
 	}
+	return renderResult(r)
+}
 
+// BasePartial is the `base.header` static partial entry point. It
+// renders the same chrome as Partial but degrades to a Provider fetch
+// when the header plugin has not been Run (i.e. when the user enabled
+// `base=header` without also setting `plugin_header=yes`). All failure
+// modes return ("", nil) so the static dispatcher continues rendering
+// the rest of the SVG.
+func BasePartial(ctx context.Context, pc *templates.PartialContext) (string, error) {
+	if pc == nil {
+		return "", nil
+	}
+	// Prefer a Result already published by the header plugin's Run.
+	if pc.Data != nil {
+		if raw, ok := pc.Data.GetPlugin(Name); ok && raw != nil {
+			if r, ok := raw.(*Result); ok && r != nil && r.Profile != nil {
+				return renderResult(r)
+			}
+		}
+	}
+	// Lazy path: no plugin result available. Fetch the two profile
+	// pieces directly from the Provider. Any Provider failure degrades
+	// silently so the rest of the classic SVG still renders.
+	if pc.Provider == nil {
+		return "", nil
+	}
+	prof, err := pc.Provider.Profile(ctx)
+	if err != nil || prof == nil {
+		return "", nil //nolint:nilerr // partial-local degradation: a Profile fetch failure must not break the static dispatcher; classic continues rendering the rest of the SVG.
+	}
+	r := &Result{Profile: prof}
+	// CommitCalendar is decorative: a fetch failure leaves the
+	// contribution row out but keeps the avatar / counters.
+	if cal, cErr := pc.Provider.CommitCalendar(ctx); cErr == nil {
+		r.CommitCalendar = cal
+	}
+	return renderResult(r)
+}
+
+// renderResult is the shared rendering core used by Partial (plugin
+// dispatch path) and BasePartial (static dispatch path). r is assumed
+// non-nil with a populated Profile; callers handle the empty cases.
+func renderResult(r *Result) (string, error) {
 	prof := r.Profile
 	// header partial only renders for user accounts.
 	if prof.Kind != plugins.ProfileKindUser || prof.User == nil {
