@@ -250,6 +250,14 @@ var adoptedM4Plugins = []string{
 	// its own opt-in plugin so per-plugin SVG embed flows can include
 	// or exclude it independently).
 	"header",
+	// #625 base re-introduction: the activity+community / repositories
+	// summary panels that #623 deleted were restored as an opt-in
+	// plugin reading exclusively from the dataprovider.Provider layer.
+	// It ships its own internal/plugins/base/ directory and counts
+	// toward the adopted dir set, but it is structurally foundational
+	// (no standalone card) so it stays out of the docs/plugins gallery
+	// gate above (see TestCompliance_DocsPluginPagesMatchAdoptedSet).
+	"base",
 }
 
 // nonPluginInternalDirs are internal/plugins/ children that are
