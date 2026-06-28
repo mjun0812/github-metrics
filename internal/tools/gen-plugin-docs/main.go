@@ -72,11 +72,9 @@ var foundationalSlugs = []string{
 // slugsWithoutSample is the set of plugin slugs whose `docs/plugins/<slug>.md`
 // page intentionally omits the sample-image section. `core` has no
 // standalone visual output (configuration parsing + parallel runner);
-// `base` produces only composed chrome that needs another plugin's data
-// to be meaningful and therefore has no per-plugin sample under
-// docs/examples either.
+// `base` renders a real composed sample under docs/examples/plugin-base.svg
+// (see scripts/samples.json) and therefore does NOT belong here.
 var slugsWithoutSample = map[string]struct{}{
-	"base": {},
 	"core": {},
 }
 

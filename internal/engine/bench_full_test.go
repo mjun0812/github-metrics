@@ -1,12 +1,13 @@
 // Package engine_test — bench_full_test.go exercises engine.Compute
-// against all 21 採用 plugins simultaneously enabled, with mocked
-// dependencies. Provides two pieces of evidence for the M4 success
-// criteria:
+// against all 22 採用 plugins simultaneously enabled (21 + base from
+// #625), with mocked dependencies. Provides two pieces of evidence for
+// the M4 success criteria:
 //
 //   - BenchmarkCompute_Full_21Plugins (T094 / SC-003): per-call wall
 //     time. With mocked Deps the bench measures the in-process
 //     orchestration overhead (template render + plugin dispatch +
 //     marshaling), not real GitHub latency. Numbers go in the PR body.
+//     Name kept for benchstat continuity with pre-#625 baselines.
 //   - BenchmarkCompute_MemoryPeak (T095 / SC-009): allocations + peak
 //     heap delta around a Compute invocation. Same caveat: mocked Deps
 //     give us a lower bound, not the production peak.
@@ -39,10 +40,11 @@ import (
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/render"
 
-	// Side-effect imports register all 21 採用 plugins so the engine
-	// plugin registry sees them at runtime. P1 (5), P2 (12), P3 (4).
+	// Side-effect imports register all 22 採用 plugins so the engine
+	// plugin registry sees them at runtime. P1 (5), P2 (12), P3 (4), base.
 	_ "github.com/mjun0812/github-metrics/internal/plugins/achievements"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/activity"
+	_ "github.com/mjun0812/github-metrics/internal/plugins/base"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/calendar"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/contributors"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/habits"
@@ -105,6 +107,12 @@ func fullPluginInputs() map[string]any {
 		// when their `plugin_<slug>` gate is set.
 		"plugin_topics":    true,
 		"plugin_starlists": true,
+		// base (#625): foundational chrome restored as plugin_base with
+		// two sub-options; flip everything so the full-render bench
+		// exercises the activity+community and repositories panels too.
+		"plugin_base":              true,
+		"plugin_base_activity":     true,
+		"plugin_base_repositories": true,
 	}
 }
 
