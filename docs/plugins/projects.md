@@ -1,7 +1,9 @@
 <!-- AUTOGEN_START: title-and-description -->
+
 # Plugin: projects
 
 This plugin displays progress of profile and repository projects.
+
 <!-- AUTOGEN_END: title-and-description -->
 
 ## Sample
@@ -11,17 +13,20 @@ This plugin displays progress of profile and repository projects.
 > Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
+
 ## Configuration (inputs)
 
-| Input | Description | Default | Required | Type |
-| ----- | ----------- | ------- | -------- | ---- |
-| `plugin_projects` | Enable projects plugin | `no` | no | boolean |
-| `plugin_projects_limit` | Display limit | `4` | no | number |
-| `plugin_projects_repositories` | Featured repositories projects | `` | no | array |
-| `plugin_projects_descriptions` | Projects descriptions | `no` | no | boolean |
+| Input                          | Description                    | Default | Required | Type    |
+| ------------------------------ | ------------------------------ | ------- | -------- | ------- |
+| `plugin_projects`              | Enable projects plugin         | `no`    | no       | boolean |
+| `plugin_projects_limit`        | Display limit                  | `4`     | no       | number  |
+| `plugin_projects_repositories` | Featured repositories projects | ``      | no       | array   |
+| `plugin_projects_descriptions` | Projects descriptions          | `no`    | no       | boolean |
+
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
+
 ## Usage
 
 ### GitHub Action
@@ -37,10 +42,12 @@ This plugin displays progress of profile and repository projects.
 ### CLI
 
 ```sh
-metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
+# export GITHUB_TOKEN=$(gh auth token)
+metrics-cli --user <your-login> \
   --output svg --filename - \
   --plugin plugin_projects=yes
 ```
+
 <!-- AUTOGEN_END: usage-snippet -->
 
 ## References

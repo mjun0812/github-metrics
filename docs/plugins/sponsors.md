@@ -1,7 +1,9 @@
 <!-- AUTOGEN_START: title-and-description -->
+
 # Plugin: sponsors
 
 This plugin displays sponsors and introduction text from [GitHub sponsors](https://github.com/sponsors/).
+
 <!-- AUTOGEN_END: title-and-description -->
 
 ## Sample
@@ -11,18 +13,21 @@ This plugin displays sponsors and introduction text from [GitHub sponsors](https
 > Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
+
 ## Configuration (inputs)
 
-| Input | Description | Default | Required | Type |
-| ----- | ----------- | ------- | -------- | ---- |
-| `plugin_sponsors` | Enable sponsors plugin | `no` | no | boolean |
-| `plugin_sponsors_sections` | Displayed sections | `goal, list, about` | no | array |
-| `plugin_sponsors_past` | Past sponsorships | `no` | no | boolean |
-| `plugin_sponsors_size` | Profile picture display size | `24` | no | number |
-| `plugin_sponsors_title` | Title caption | `Sponsor Me!` | no | string |
+| Input                      | Description                  | Default             | Required | Type    |
+| -------------------------- | ---------------------------- | ------------------- | -------- | ------- |
+| `plugin_sponsors`          | Enable sponsors plugin       | `no`                | no       | boolean |
+| `plugin_sponsors_sections` | Displayed sections           | `goal, list, about` | no       | array   |
+| `plugin_sponsors_past`     | Past sponsorships            | `no`                | no       | boolean |
+| `plugin_sponsors_size`     | Profile picture display size | `24`                | no       | number  |
+| `plugin_sponsors_title`    | Title caption                | `Sponsor Me!`       | no       | string  |
+
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
+
 ## Usage
 
 ### GitHub Action
@@ -38,10 +43,12 @@ This plugin displays sponsors and introduction text from [GitHub sponsors](https
 ### CLI
 
 ```sh
-metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
+# export GITHUB_TOKEN=$(gh auth token)
+metrics-cli --user <your-login> \
   --output svg --filename - \
   --plugin plugin_sponsors=yes
 ```
+
 <!-- AUTOGEN_END: usage-snippet -->
 
 ## Requirements
