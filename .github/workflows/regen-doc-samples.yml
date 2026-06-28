@@ -3,13 +3,28 @@ name: Regen doc samples
 # Regenerates docs/examples/ (SVG + PNG) in parallel and opens a draft
 # PR with the diff. Triggered manually by maintainers only.
 #
+# Two modes (controlled by workflow_dispatch inputs):
+#
+#   1. `tag` (default `latest`): pulls a PUBLISHED image from GHCR
+#      (built by release.yml on every semver tag push). Use this for
+#      regen against a stable release.
+#
+#   2. `branch` (overrides `tag` when set): self-builds a single-arch
+#      linux/amd64 image from the branch's HEAD, pushes it as a
+#      `preview-<sha7>` tag to GHCR, and uses it for the render matrix.
+#      A cleanup job deletes the preview tag at the end of the run.
+#      Use this to validate a refactor PR's render changes WITHOUT
+#      having to cut a release tag first (#642).
+#
 # Pipeline:
-#   setup   — reads scripts/samples.json and emits the render matrix
-#   render  — 35 parallel jobs, each running INSIDE the published
-#             ghcr.io/mjun0812/github-metrics image as a job-level
-#             container; artifacts uploaded
-#   open-pr — collects all artifacts, normalizes the SVGs, commits to
-#             a branch, opens a draft PR via the REST API
+#   build-preview  — (branch mode only) build + push preview-<sha7> image
+#   setup          — reads scripts/samples.json and emits the render matrix
+#   render         — N parallel jobs, each running INSIDE the resolved
+#                    image as a job-level container; artifacts uploaded
+#   open-pr        — collects all artifacts, normalizes the SVGs, commits to
+#                    a branch, opens a draft PR via the REST API
+#   cleanup-preview — (branch mode only) deletes the preview-<sha7> tag
+#                    from GHCR (success or failure)
 #
 # Why job-level containers instead of `docker run` (#523): chromedp /
 # chromium does not work when the image is launched through the ARC
@@ -23,9 +38,11 @@ name: Regen doc samples
 #   - METRICS_TOKEN secret: classic PAT with read:user + repo scopes.
 #     Passed to the render step as METRICS_TOKEN so the binary can
 #     call the GitHub API. The workflow's built-in GITHUB_TOKEN is used only
-#     for GHCR pull, git push, and the PR-creation API call.
-#   - GHCR image ghcr.io/mjun0812/github-metrics:<tag> must exist.
-#     The image is published by release.yml on every semver tag push.
+#     for GHCR pull / push / delete, git push, and the PR-creation API call.
+#   - For `tag` mode: GHCR image ghcr.io/mjun0812/github-metrics:<tag> must
+#     exist. The image is published by release.yml on every semver tag push.
+#   - For `branch` mode: GITHUB_TOKEN with `packages: write` permission
+#     (already granted below).
 
 on:
   workflow_dispatch:
@@ -39,35 +56,127 @@ on:
         required: false
         default: 'flash-attention-prebuild-wheels'
       tag:
-        description: 'GHCR image tag (e.g. latest, v1.0.0)'
+        description: 'GHCR image tag (e.g. latest, v1.0.0); ignored when `branch` is set'
         required: false
         default: 'latest'
+      branch:
+        description: 'Branch to build a preview image from (overrides `tag`; pushes preview-<sha7> to GHCR, auto-deleted after run)'
+        required: false
+        default: ''
 
 permissions:
   contents: write       # git push (new branch + commit)
   pull-requests: write  # PR creation via the REST API
-  packages: read        # GHCR pull
+  packages: write       # GHCR pull AND push+delete (for `branch` preview build)
 
 env:
   GO_VERSION: "1.26.4"
+  REGISTRY_IMAGE: ghcr.io/mjun0812/github-metrics
 
 jobs:
+  # ------------------------------------------------------------------ #
+  # 0. (branch mode only) Build + push the preview image               #
+  # ------------------------------------------------------------------ #
+  build-preview:
+    name: Build preview image (branch mode)
+    if: inputs.branch != ''
+    runs-on: home-k3s-runner
+    outputs:
+      image_ref: ${{ steps.publish.outputs.image_ref }}
+      preview_tag: ${{ steps.publish.outputs.preview_tag }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Resolve preview tag from branch HEAD
+        id: tagname
+        run: |
+          short_sha="${GITHUB_SHA:0:7}"
+          # Append a numeric run suffix so a re-run on the same sha
+          # gets a fresh tag (the previous run's cleanup may have just
+          # deleted preview-<sha7>; pushing the same tag immediately
+          # afterwards races with GHCR's tag GC).
+          preview_tag="preview-${short_sha}-${GITHUB_RUN_ATTEMPT}"
+          echo "preview_tag=${preview_tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build + push preview image (linux/amd64 only)
+        id: publish
+        uses: docker/build-push-action@v5
+        env:
+          PREVIEW_TAG: ${{ steps.tagname.outputs.preview_tag }}
+        with:
+          context: .
+          # Single-arch only: the regen render jobs all run on
+          # linux/amd64 home-k3s-runner pods, so the multi-arch manifest
+          # build that release.yml does (~13min for arm64 + amd64) is
+          # wasted cost here.
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.REGISTRY_IMAGE }}:${{ steps.tagname.outputs.preview_tag }}
+          # Lean build cache: skip provenance / sbom that release.yml
+          # attaches (cosign signing isn't relevant for a transient
+          # preview tag that lives ~30 minutes).
+          provenance: false
+          sbom: false
+
+      - name: Expose resolved image ref
+        id: forward
+        env:
+          PREVIEW_TAG: ${{ steps.tagname.outputs.preview_tag }}
+        run: |
+          echo "image_ref=${REGISTRY_IMAGE}:${PREVIEW_TAG}" >> "$GITHUB_OUTPUT"
+
   # ------------------------------------------------------------------ #
   # 1. Build the render matrix from scripts/samples.json               #
   # ------------------------------------------------------------------ #
   setup:
     name: Build render matrix
     runs-on: home-k3s-runner
+    # Run even when build-preview was skipped (tag mode). Without the
+    # `always() && !failure()` guard, GitHub Actions short-circuits
+    # `setup` to "skipped" once any `needs:` entry was skipped — which
+    # then cascades to the render matrix.
+    needs: [build-preview]
+    if: always() && !failure() && !cancelled()
     outputs:
       matrix: ${{ steps.gen.outputs.matrix }}
+      image_ref: ${{ steps.image.outputs.image_ref }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.branch || github.ref }}
 
       - name: Emit matrix JSON
         id: gen
         run: |
           matrix=$(jq -c '.' scripts/samples.json)
           echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve render image ref
+        id: image
+        env:
+          BUILD_PREVIEW_REF: ${{ needs.build-preview.outputs.image_ref }}
+          TAG_INPUT: ${{ inputs.tag }}
+        run: |
+          if [[ -n "$BUILD_PREVIEW_REF" ]]; then
+            echo "image_ref=${BUILD_PREVIEW_REF}" >> "$GITHUB_OUTPUT"
+            echo "Using preview image: ${BUILD_PREVIEW_REF}"
+          else
+            ref="${REGISTRY_IMAGE}:${TAG_INPUT}"
+            echo "image_ref=${ref}" >> "$GITHUB_OUTPUT"
+            echo "Using published image: ${ref}"
+          fi
 
   # ------------------------------------------------------------------ #
   # 2. Render one sample per job (parallel)                            #
@@ -77,7 +186,7 @@ jobs:
     needs: setup
     runs-on: home-k3s-runner
     container:
-      image: ghcr.io/mjun0812/github-metrics:${{ inputs.tag }}
+      image: ${{ needs.setup.outputs.image_ref }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -114,6 +223,7 @@ jobs:
           SAMPLE_EXTRA: ${{ matrix.extra }}
           INPUT_USER: ${{ inputs.user }}
           INPUT_REPO: ${{ inputs.repo }}
+          RESOLVED_IMAGE_REF: ${{ needs.setup.outputs.image_ref }}
         run: |
           set -euo pipefail
           # The runner exports GITHUB_ACTIONS=true inside job
@@ -215,7 +325,7 @@ jobs:
           # binary — tell the operator which tag to use instead of a
           # bare "No such file or directory".
           if [[ ! -x /usr/local/bin/svg2png ]]; then
-            echo "FAIL: /usr/local/bin/svg2png not found in image '${{ inputs.tag }}' — single-fetch regen needs an image built after #527 (v1.2.1+)" >&2
+            echo "FAIL: /usr/local/bin/svg2png not found in image '${RESOLVED_IMAGE_REF}' — single-fetch regen needs an image built after #527 (v1.2.1+)" >&2
             exit 1
           fi
           if ! /usr/local/bin/svg2png --out "$outdir" "$svg_out" || [[ ! -s "$png_out" ]]; then
@@ -236,7 +346,7 @@ jobs:
   # ------------------------------------------------------------------ #
   open-pr:
     name: Open draft PR
-    needs: render
+    needs: [setup, render]
     runs-on: home-k3s-runner
     # Run even when some render matrix entries failed so that the
     # successful artifacts still land in a draft PR. download-artifact
@@ -248,6 +358,8 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          # In branch mode we want the PR base to still be `main`, so
+          # we deliberately do NOT check out the preview branch here.
 
       - uses: actions/setup-go@v6
         with:
@@ -295,18 +407,36 @@ jobs:
           COMMIT_USER: ${{ inputs.user }}
           COMMIT_REPO: ${{ inputs.repo }}
           COMMIT_TAG: ${{ inputs.tag }}
+          COMMIT_BRANCH: ${{ inputs.branch }}
+          COMMIT_IMAGE: ${{ needs.setup.outputs.image_ref }}
           COMMIT_COUNT: ${{ steps.diff.outputs.count }}
         run: |
           short_sha="${GITHUB_SHA:0:7}"
-          branch="chore/regen-doc-samples-${short_sha}"
+          # Branch suffix differs between tag mode (sha) and branch
+          # mode (branch name + sha) so concurrent regen runs do not
+          # clobber each other's draft PRs.
+          if [[ -n "$COMMIT_BRANCH" ]]; then
+            slug="${COMMIT_BRANCH//\//-}"
+            branch="chore/regen-doc-samples-${slug}-${short_sha}"
+          else
+            branch="chore/regen-doc-samples-${short_sha}"
+          fi
           echo "branch=${branch}" >> "$GITHUB_ENV"
+
+          # Render-source description for the commit message: which
+          # image actually produced the bytes in this PR.
+          if [[ -n "$COMMIT_BRANCH" ]]; then
+            source_line="Source: branch \`${COMMIT_BRANCH}\` (image ${COMMIT_IMAGE})"
+          else
+            source_line="Source: tag \`${COMMIT_TAG}\` (image ${COMMIT_IMAGE})"
+          fi
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "${branch}"
           git add docs/examples/
-          commit_msg=$(printf 'chore(docs): regenerate doc samples\n\nTriggered by workflow_dispatch on %s.\nUser: %s / Repo: %s / Tag: %s\nChanged files: %s' \
-            "${short_sha}" "${COMMIT_USER}" "${COMMIT_REPO}" "${COMMIT_TAG}" "${COMMIT_COUNT}")
+          commit_msg=$(printf 'chore(docs): regenerate doc samples\n\nTriggered by workflow_dispatch on %s.\n%s\nUser: %s / Repo: %s\nChanged files: %s' \
+            "${short_sha}" "${source_line}" "${COMMIT_USER}" "${COMMIT_REPO}" "${COMMIT_COUNT}")
           git commit -m "${commit_msg}"
           # Force push: the branch is workflow-owned and keyed to the
           # base sha, and a job rerun rebuilds it from scratch — a
@@ -323,6 +453,8 @@ jobs:
         uses: actions/github-script@v8
         env:
           PR_TAG: ${{ inputs.tag }}
+          PR_BRANCH: ${{ inputs.branch }}
+          PR_IMAGE: ${{ needs.setup.outputs.image_ref }}
           PR_USER: ${{ inputs.user }}
           PR_REPO: ${{ inputs.repo }}
           PR_COUNT: ${{ steps.diff.outputs.count }}
@@ -330,17 +462,20 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { PR_TAG, PR_USER, PR_REPO, PR_COUNT, PR_FAILED_NOTE, branch } = process.env;
+            const { PR_TAG, PR_BRANCH, PR_IMAGE, PR_USER, PR_REPO, PR_COUNT, PR_FAILED_NOTE, branch } = process.env;
             const partial = PR_FAILED_NOTE
               ? `## Partial run\n\n> ${PR_FAILED_NOTE}\n\n`
               : '';
+            const sourceLine = PR_BRANCH
+              ? `- Source: branch \`${PR_BRANCH}\` (preview image \`${PR_IMAGE}\`)`
+              : `- Source: tag \`${PR_TAG}\` (image \`${PR_IMAGE}\`)`;
             const body = [
               '## Summary',
               '',
               'Automated regeneration of `docs/examples/` triggered via **Regen doc samples** workflow.',
               '',
               `- Triggered on: \`${context.sha}\``,
-              `- Image tag: \`${PR_TAG}\``,
+              sourceLine,
               `- User: \`${PR_USER}\``,
               `- Repo: \`${PR_REPO}\``,
               `- Changed files: ${PR_COUNT}`,
@@ -362,3 +497,58 @@ jobs:
               body,
             });
             core.info(`Created draft PR: ${pr.html_url}`);
+
+  # ------------------------------------------------------------------ #
+  # 4. (branch mode only) Delete the preview image from GHCR           #
+  # ------------------------------------------------------------------ #
+  cleanup-preview:
+    name: Cleanup preview image (branch mode)
+    needs: [build-preview, open-pr]
+    if: always() && inputs.branch != '' && needs.build-preview.result == 'success'
+    runs-on: home-k3s-runner
+    steps:
+      - name: Delete preview tag from GHCR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PREVIEW_TAG: ${{ needs.build-preview.outputs.preview_tag }}
+          OWNER: ${{ github.repository_owner }}
+          PACKAGE: github-metrics
+        run: |
+          set -euo pipefail
+          # Find the GHCR version-id whose tag list contains
+          # PREVIEW_TAG. The user-packages endpoint covers both user
+          # and personal-org accounts; falls back to /orgs/ for org
+          # accounts where the user endpoint returns 404.
+          api_base_user="https://api.github.com/users/${OWNER}/packages/container/${PACKAGE}/versions"
+          api_base_org="https://api.github.com/orgs/${OWNER}/packages/container/${PACKAGE}/versions"
+
+          response_user=$(curl -s -o /tmp/versions.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${api_base_user}?per_page=100")
+          if [[ "${response_user}" != "200" ]]; then
+            echo "User endpoint returned ${response_user}; falling back to org endpoint"
+            curl -fsSL -o /tmp/versions.json \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${api_base_org}?per_page=100"
+            api_base="${api_base_org}"
+          else
+            api_base="${api_base_user}"
+          fi
+
+          version_id=$(jq -r --arg tag "${PREVIEW_TAG}" \
+            '.[] | select(.metadata.container.tags[]? == $tag) | .id' \
+            /tmp/versions.json | head -n1)
+
+          if [[ -z "${version_id}" ]]; then
+            echo "preview tag ${PREVIEW_TAG} not found on GHCR (already deleted?); nothing to do"
+            exit 0
+          fi
+
+          echo "Deleting GHCR version ${version_id} (tag ${PREVIEW_TAG})"
+          curl -fsSL -X DELETE \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${api_base}/${version_id}"
+          echo "Deleted."
