@@ -1,7 +1,9 @@
 <!-- AUTOGEN_START: title-and-description -->
+
 # Plugin: topics
 
 This plugin displays [starred topics](https://github.com/stars?filter=topics).
+
 <!-- AUTOGEN_END: title-and-description -->
 
 ## Sample
@@ -11,17 +13,20 @@ This plugin displays [starred topics](https://github.com/stars?filter=topics).
 > Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
+
 ## Configuration (inputs)
 
-| Input | Description | Default | Required | Type |
-| ----- | ----------- | ------- | -------- | ---- |
-| `plugin_topics` | Enable topics plugin | `no` | no | boolean |
-| `plugin_topics_mode` | Display mode | `starred` | no | string |
-| `plugin_topics_sort` | Sorting method | `stars` | no | string |
-| `plugin_topics_limit` | Display limit | `15` | no | number |
+| Input                 | Description          | Default   | Required | Type    |
+| --------------------- | -------------------- | --------- | -------- | ------- |
+| `plugin_topics`       | Enable topics plugin | `no`      | no       | boolean |
+| `plugin_topics_mode`  | Display mode         | `starred` | no       | string  |
+| `plugin_topics_sort`  | Sorting method       | `stars`   | no       | string  |
+| `plugin_topics_limit` | Display limit        | `15`      | no       | number  |
+
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
+
 ## Usage
 
 ### GitHub Action
@@ -37,10 +42,12 @@ This plugin displays [starred topics](https://github.com/stars?filter=topics).
 ### CLI
 
 ```sh
-metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
+# export GITHUB_TOKEN=$(gh auth token)
+metrics-cli --user <your-login> \
   --output svg --filename - \
   --plugin plugin_topics=yes
 ```
+
 <!-- AUTOGEN_END: usage-snippet -->
 
 ## References
