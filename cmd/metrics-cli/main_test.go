@@ -69,12 +69,21 @@ func TestRun_ActionMode_DispatchesEnvDetected(t *testing.T) {
 // TestRun_CLIMode_DispatchesWhenArgsProvided confirms a non-bootstrap
 // arg routes to action.RunCLI. After Phase 5 (T039), RunCLI is fully
 // implemented; we trigger the token-required branch because the test
-// supplies neither --token / --token-env nor --dryrun + mocked data,
-// which is the cheapest deterministic exit through the CLI surface.
+// supplies neither INPUT_TOKEN / GITHUB_TOKEN env vars nor --dryrun +
+// mocked data, which is the cheapest deterministic exit through the
+// CLI surface.
 func TestRun_CLIMode_DispatchesWhenArgsProvided(t *testing.T) {
-	t.Parallel()
+	// t.Setenv is used to scrub real env (cannot t.Parallel()).
+	// action.RunCLI reads os.Environ() internally, so we must scrub
+	// the host's GITHUB_TOKEN / INPUT_TOKEN to trigger the missing-token
+	// branch deterministically.
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("INPUT_TOKEN", "")
 	var out, errOut bytes.Buffer
-	err := run([]string{"--user", "octocat"}, &out, &errOut, nil)
+	// --combined avoids the per-plugin / output_action incompatibility
+	// check so we reach the token validator (the cheapest deterministic
+	// exit through the CLI surface).
+	err := run([]string{"--user", "octocat", "--combined", "--dryrun"}, &out, &errOut, nil)
 	if err == nil || !strings.Contains(err.Error(), "token required") {
 		t.Fatalf("expected token-required error from RunCLI, got err=%v", err)
 	}

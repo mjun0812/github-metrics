@@ -98,9 +98,8 @@ func TestCLI_OctocatSVG_Stdout(t *testing.T) {
 	cmd := exec.CommandContext(
 		ctx, actionBin, //nolint:gosec // actionBin is an absolute path from TestMain
 		"--config", cfgPath,
-		"--token-env", "GH_TOKEN_FOR_CLI_TEST",
 	)
-	cmd.Env = append(stripGitHubActionsEnv(os.Environ()), "GH_TOKEN_FOR_CLI_TEST=ghp_mock_pat_valid")
+	cmd.Env = append(stripGitHubActionsEnv(os.Environ()), "GITHUB_TOKEN=ghp_mock_pat_valid")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -145,9 +144,8 @@ github_api_graphql: %s/graphql
 	cmd := exec.CommandContext(
 		ctx, actionBin, //nolint:gosec // actionBin is an absolute path from TestMain
 		"--config", cfg,
-		"--token-env", "GH_TOKEN_FOR_CLI_TEST",
 	)
-	cmd.Env = append(stripGitHubActionsEnv(os.Environ()), "GH_TOKEN_FOR_CLI_TEST=ghp_mock_pat_valid")
+	cmd.Env = append(stripGitHubActionsEnv(os.Environ()), "GITHUB_TOKEN=ghp_mock_pat_valid")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -277,7 +275,7 @@ github_api_graphql: %s/graphql
 	if err := os.WriteFile(cfg, []byte(body), 0o600); err != nil {
 		t.Fatalf("write yaml: %v", err)
 	}
-	return execCLI(t, "--config", cfg, "--token-env", "GH_TOKEN_FOR_CLI_TEST")
+	return execCLI(t, "--config", cfg)
 }
 
 func runCLIWithFlags(t *testing.T, apiBase string, extra []string) string {
@@ -293,7 +291,6 @@ func runCLIWithFlags(t *testing.T, apiBase string, extra []string) string {
 		"--plugin", "use_mocked_data=true",
 		"--plugin", "github_api_rest="+apiBase,
 		"--plugin", "github_api_graphql="+apiBase+"/graphql",
-		"--token-env", "GH_TOKEN_FOR_CLI_TEST",
 	)
 	// `extra` may itself include `--user octocat` which clashes with our
 	// baseline; replace the baseline user when extra carries one. For
@@ -307,7 +304,7 @@ func execCLI(t *testing.T, args ...string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, actionBin, args...) //nolint:gosec // actionBin from TestMain
-	cmd.Env = append(stripGitHubActionsEnv(os.Environ()), "GH_TOKEN_FOR_CLI_TEST=ghp_mock_pat_valid")
+	cmd.Env = append(stripGitHubActionsEnv(os.Environ()), "GITHUB_TOKEN=ghp_mock_pat_valid")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -350,9 +347,8 @@ func TestCLI_RepoTemplate_MissingRepo_FailFast(t *testing.T) {
 		"--output", "svg",
 		"--dryrun",
 		"--filename", "-",
-		"--token-env", "GH_TOKEN_FOR_CLI_TEST",
 	)
-	cmd.Env = append(stripGitHubActionsEnv(os.Environ()), "GH_TOKEN_FOR_CLI_TEST=ghp_mock_pat_valid")
+	cmd.Env = append(stripGitHubActionsEnv(os.Environ()), "GITHUB_TOKEN=ghp_mock_pat_valid")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

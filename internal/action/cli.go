@@ -24,8 +24,6 @@ type CLIFlags struct {
 	Config          string            // --config <path>.yaml
 	User            string            // --user <login>
 	Template        string            // --template <name>
-	Token           string            // --token <PAT>
-	TokenEnv        string            // --token-env <ENV_NAME>
 	Repo            string            // --repo <name> (M7 — repository template input)
 	Plugins         map[string]string // --plugin key=value (repeatable)
 	Output          string            // --output svg|png|jpeg|json
@@ -49,8 +47,6 @@ func ParseFlags(args []string) (*CLIFlags, error) {
 	fs.StringVar(&cf.User, "user", "", "GitHub user / org login")
 	fs.StringVar(&cf.Repo, "repo", "", "repository name (required when --template=repository)")
 	fs.StringVar(&cf.Template, "template", "", "template name (default: classic)")
-	fs.StringVar(&cf.Token, "token", "", "GitHub PAT (history-visible; prefer --token-env)")
-	fs.StringVar(&cf.TokenEnv, "token-env", "", "read token from os.Getenv(<NAME>)")
 	fs.StringVar(&cf.Output, "output", "", "output format: svg|png|jpeg|json")
 	fs.StringVar(&cf.Filename, "filename", "", "output path; '-' for stdout")
 	fs.BoolVar(&cf.Dryrun, "dryrun", false, "skip commit/PR output_action side effects")
@@ -214,9 +210,6 @@ func (c *CLIFlags) ToInvocation(env map[string]string) (map[string]any, error) {
 	if c.Dryrun {
 		inputs["dryrun"] = true
 	}
-	if c.Token != "" {
-		inputs["token"] = c.Token
-	}
 	for k, v := range c.Plugins {
 		inputs[k] = v
 	}
@@ -231,36 +224,6 @@ func (c *CLIFlags) ToInvocation(env map[string]string) (map[string]any, error) {
 	}
 
 	return inputs, nil
-}
-
-// ResolveToken applies the CLI token priority rules:
-//
-//	--token-env > --token (with warning) > INPUT_TOKEN > error
-//
-// `envLookup` is dependency-injected (defaults to os.Getenv) so
-// tests can run hermetically.
-func ResolveToken(cf *CLIFlags, envLookup func(string) string, inputToken string) (string, error) {
-	if envLookup == nil {
-		envLookup = os.Getenv
-	}
-	if cf.TokenEnv != "" && cf.Token != "" {
-		slog.Warn("--token ignored when --token-env is set")
-	}
-	if cf.TokenEnv != "" {
-		val := envLookup(cf.TokenEnv)
-		if val == "" {
-			return "", fmt.Errorf("--token-env: env %q is empty or unset", cf.TokenEnv)
-		}
-		return val, nil
-	}
-	if cf.Token != "" {
-		slog.Warn("--token: token visible in shell history; prefer --token-env")
-		return cf.Token, nil
-	}
-	if inputToken != "" {
-		return inputToken, nil
-	}
-	return "", errors.New("token required: pass via --token, --token-env, or use --dryrun with use_mocked_data: yes")
 }
 
 // ResolveOutputWriter returns the io.Writer + close func for the CLI
