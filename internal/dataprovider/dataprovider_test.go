@@ -477,3 +477,90 @@ func TestProvider_RepositorySummary_IncludesIssuesAndPullRequests(t *testing.T) 
 		t.Errorf("PullRequests: got %d, want %d (sum of per-node pullRequests.totalCount)", got, want)
 	}
 }
+
+// userRepositoriesForkedResponseBody is a two-repo fixture where the
+// second node is a fork. Used by TestProvider_RepositorySummary_Forked
+// to anchor the ComputedRepositories.Forked accumulator that plugin_base
+// (#625) reads to render the "<N> Repositories (including <F> forks)"
+// heading. Both nodes carry the same shape as userRepositoriesResponseBody
+// to avoid drifting away from the production fetchOneRepoPage decoder.
+const userRepositoriesForkedResponseBody = `{
+  "data": {
+    "user": {
+      "repositories": {
+        "totalCount": 2,
+        "pageInfo": {"hasNextPage": false, "endCursor": null},
+        "nodes": [
+          {
+            "databaseId": 1, "id": "R1", "name": "alpha",
+            "nameWithOwner": "octocat/alpha", "description": null,
+            "url": "https://example.invalid/alpha",
+            "isPrivate": false, "isFork": false,
+            "createdAt": "2020-01-01T00:00:00Z",
+            "pushedAt": "2020-01-02T00:00:00Z",
+            "updatedAt": "2020-01-02T00:00:00Z",
+            "stargazerCount": 0, "forkCount": 0,
+            "issues": {"totalCount": 0}, "pullRequests": {"totalCount": 0},
+            "watchers": {"totalCount": 0}, "primaryLanguage": null,
+            "languages": null, "diskUsage": 0,
+            "releases": {"totalCount": 0}, "packages": {"totalCount": 0},
+            "deployments": {"totalCount": 0}, "licenseInfo": null
+          },
+          {
+            "databaseId": 2, "id": "R2", "name": "beta",
+            "nameWithOwner": "octocat/beta", "description": null,
+            "url": "https://example.invalid/beta",
+            "isPrivate": false, "isFork": true,
+            "createdAt": "2021-01-01T00:00:00Z",
+            "pushedAt": "2021-01-02T00:00:00Z",
+            "updatedAt": "2021-01-02T00:00:00Z",
+            "stargazerCount": 0, "forkCount": 0,
+            "issues": {"totalCount": 0}, "pullRequests": {"totalCount": 0},
+            "watchers": {"totalCount": 0}, "primaryLanguage": null,
+            "languages": null, "diskUsage": 0,
+            "releases": {"totalCount": 0}, "packages": {"totalCount": 0},
+            "deployments": {"totalCount": 0}, "licenseInfo": null
+          }
+        ]
+      }
+    }
+  }
+}`
+
+// TestProvider_RepositorySummary_Forked guards the
+// ComputedRepositories.Forked accumulator added in #625. plugin_base's
+// RepositoriesPartial renders the heading "<N> Repositories (including
+// <F> forks)" — if the per-node node.isFork is not summed during paging
+// the bracketed clause disappears and the wire-format key
+// computed.repositories.forked stays 0 on otherwise valid responses.
+func TestProvider_RepositorySummary_Forked(t *testing.T) {
+	t.Parallel()
+	tr := newCountingTransport()
+	tr.setResponse("User", userResponseBody)
+	tr.setResponse("UserRepositories", userRepositoriesForkedResponseBody)
+	p := newProviderWith(t, tr)
+
+	summary, err := p.RepositorySummary(context.Background())
+	if err != nil {
+		t.Fatalf("RepositorySummary: %v", err)
+	}
+	if summary == nil {
+		t.Fatal("RepositorySummary returned nil summary")
+	}
+	if got, want := summary.Forked, 1; got != want {
+		t.Errorf("Forked: got %d, want %d (count of nodes with isFork=true)", got, want)
+	}
+	if got, want := summary.Count, 2; got != want {
+		t.Errorf("Count: got %d, want %d (total nodes including forks)", got, want)
+	}
+
+	// Second call exercises the singleflight memoization path: must
+	// return the same Forked total without re-fetching.
+	again, err := p.RepositorySummary(context.Background())
+	if err != nil {
+		t.Fatalf("RepositorySummary (memoized): %v", err)
+	}
+	if again.Forked != summary.Forked {
+		t.Errorf("memoized Forked drifted: got %d, want %d", again.Forked, summary.Forked)
+	}
+}

@@ -54,22 +54,26 @@ var adoptedSlugs = []string{
 }
 
 // foundationalSlugs are the infrastructure plugins that ship alongside
-// the adopted user-facing plugins. `core` is the configuration +
-// parallel-runner plugin and has no standalone visual output; it ships
-// a doc page so its inputs are documented in one place even though it
-// is excluded from the README gallery. #605 removed the `base`
-// foundational slug — its surface moved into the per-plugin `header`
-// (extracted by #602) and the standalone `activity` / `repositories`
-// plugins.
+// the adopted user-facing plugins. They ship a doc page so their inputs
+// are documented in one place even though they are excluded from the
+// README gallery.
+//
+//   - `core`     — configuration + parallel-runner plugin; no
+//     standalone visual output.
+//   - `base`     — activity / community / repositories summary panels
+//     (#625). Structurally foundational: emits no standalone card on
+//     its own; composes the legacy `base` chrome on top of any other
+//     plugin set. The panels live behind `plugin_base*` opt-in toggles.
 var foundationalSlugs = []string{
+	"base",
 	"core",
 }
 
 // slugsWithoutSample is the set of plugin slugs whose `docs/plugins/<slug>.md`
-// page intentionally omits the sample-image section. `core` is the only
-// member: it has no standalone visual output (it implements configuration
-// parsing and the parallel plugin runner) so an example image would be
-// either empty or misleading.
+// page intentionally omits the sample-image section. `core` has no
+// standalone visual output (configuration parsing + parallel runner);
+// `base` renders a real composed sample under docs/examples/plugin-base.svg
+// (see scripts/samples.json) and therefore does NOT belong here.
 var slugsWithoutSample = map[string]struct{}{
 	"core": {},
 }
@@ -388,13 +392,16 @@ func formatDefault(d any) string {
 }
 
 // defaultRequirements returns the first-gen Requirements paragraph for
-// the foundational `core` plugin. Returns "" for every other slug — the
-// 19 adopted plugins have Requirements text that landed hand-written
-// in PR #410 and is pulled forward from the existing file via
-// extractHumanZones rather than emitted here.
+// the foundational `core` / `base` plugins. Returns "" for every other
+// slug — the 19 adopted plugins have Requirements text that landed
+// hand-written in PR #410 and is pulled forward from the existing file
+// via extractHumanZones rather than emitted here.
 func defaultRequirements(slug string) string {
-	if slug == "core" {
+	switch slug {
+	case "core":
 		return "Core has no standalone visual output; this page documents its inputs only. The plugin implements global configuration parsing (template selection, timezone, animations, output format, etc.) and the parallel plugin runner that drives every other plugin. There are no API scopes or render prerequisites of its own — every other plugin in this repository depends on `core` having populated `data.Config` before it runs."
+	case "base":
+		return "Base reads `Provider.Profile(ctx)` and `Provider.RepositorySummary(ctx)` from the shared `internal/dataprovider`. Both are populated lazily by the standard GraphQL user/organization + repositories paging queries — no extra API scopes beyond `public_access` are required. The plugin emits no standalone card on its own; its two panels (`plugin_base_activity`, `plugin_base_repositories`) compose with any other plugin selection to restore the legacy `base` chrome look."
 	}
 	return ""
 }
@@ -407,8 +414,11 @@ func defaultRequirements(slug string) string {
 // would be misleading for it, so we provide a purpose-written summary
 // instead.
 func defaultDescription(slug string) string {
-	if slug == "core" {
+	switch slug {
+	case "core":
 		return "`core` is the configuration plugin: it parses the global `config_*` / `template` / `optimize` inputs into `data.Config` and drives the parallel runner that fans every other plugin out across workers. It has no card of its own — every visible output comes from another plugin running on top of the state `core` produces."
+	case "base":
+		return "`base` restores the activity / community / repositories summary panels that originally lived in the upstream `base` chrome (deleted by the #623 refactor). The panels read aggregated counters from the shared `internal/dataprovider`, so enabling them adds no GitHub API calls beyond what other plugins already trigger."
 	}
 	return fmt.Sprintf("`%s` plugin output for GitHub metrics.", slug)
 }

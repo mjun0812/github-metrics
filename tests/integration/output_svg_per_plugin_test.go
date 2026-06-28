@@ -83,6 +83,20 @@ var perPluginCases = []perPluginCase{
 		goldenPath: "classic/plugin-achievements.svg",
 	},
 	{
+		// #625 base re-introduction: emits the activity + community
+		// and repositories static partials. plugin_base is the master
+		// gate (set automatically by the harness via `plugin_<slug>`);
+		// the sub-toggles below opt the two panels in.
+		name: "base",
+		slug: "base",
+		extraInputs: map[string]any{
+			"plugin_base_activity":     "yes",
+			"plugin_base_repositories": "yes",
+		},
+		fixtures:   map[string]string{},
+		goldenPath: "classic/plugin-base.svg",
+	},
+	{
 		name:     "activity",
 		slug:     "activity",
 		fixtures: map[string]string{},

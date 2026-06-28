@@ -8,6 +8,7 @@ package main
 import (
 	_ "github.com/mjun0812/github-metrics/internal/plugins/achievements"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/activity"
+	_ "github.com/mjun0812/github-metrics/internal/plugins/base"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/calendar"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/contributors"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/core"
