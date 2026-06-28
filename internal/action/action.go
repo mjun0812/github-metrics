@@ -518,10 +518,7 @@ func requireTokenUnlessMocked(inv *Invocation) error {
 	}
 	return &InputError{
 		Key: "token",
-		Msg: "token required: set the GITHUB_TOKEN env var " +
-			"(or use 'with: token:' in your GitHub Actions workflow). " +
-			"For offline demo set use_mocked_data=true (action.yml) " +
-			"or --plugin use_mocked_data=true (CLI).",
+		Msg: tokenMissingMsg,
 	}
 }
 
