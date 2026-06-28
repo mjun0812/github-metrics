@@ -266,15 +266,23 @@ render_one_repo() {
 }
 
 echo "== 16 per-plugin single-panel renders (languages handled separately) =="
+# v3.0 (#649): chrome defaults off — pass NOTHING for chrome on most
+# per-plugin renders. The traffic branch is special: `chrome_repositories=yes`
+# fires plugin_base.RepositoriesPartial (which auto-enables base.Run
+# via the chrome → plugin auto-enable wiring), and that partial
+# inlines the "<N> views in last two weeks" row that traffic data
+# merges into (see docs/plugins/traffic.md).
 for slug in "${PLUGINS[@]}"; do
-	base_arg="base="
 	if [[ "${slug}" == "traffic" ]]; then
-		base_arg="base=repositories"
+		render_one "plugin-${slug}" \
+			--template classic \
+			--plugin "chrome_repositories=yes" \
+			--plugin "plugin_${slug}=yes"
+	else
+		render_one "plugin-${slug}" \
+			--template classic \
+			--plugin "plugin_${slug}=yes"
 	fi
-	render_one "plugin-${slug}" \
-		--template classic \
-		--plugin "${base_arg}" \
-		--plugin "plugin_${slug}=yes"
 done
 
 echo
@@ -285,13 +293,11 @@ echo "== languages default + 2 sub-mode variants =="
 # below adds `lines` on top for the "full numeric column" demo.
 render_one "plugin-languages" \
 	--template classic \
-	--plugin "base=" \
 	--plugin "plugin_languages=yes" \
 	--plugin "plugin_languages_details=bytes-size,percentage"
 
 render_one "plugin-languages-recent" \
 	--template classic \
-	--plugin "base=" \
 	--plugin "plugin_languages=yes" \
 	--plugin "plugin_languages_sections=recently-used" \
 	--plugin "plugin_languages_recent_load=300" \
@@ -300,7 +306,6 @@ render_one "plugin-languages-recent" \
 
 render_one "plugin-languages-indepth" \
 	--template classic \
-	--plugin "base=" \
 	--plugin "plugin_languages=yes" \
 	--plugin "plugin_languages_indepth=yes" \
 	--plugin "plugin_languages_analysis_timeout=30" \
@@ -322,20 +327,17 @@ echo "== other upstream-parity sub-mode variants =="
 #     stargazers.chartist (deprecated alias, byte-identical to graph).
 render_one "plugin-achievements-compact" \
 	--template classic \
-	--plugin "base=" \
 	--plugin "plugin_achievements=yes" \
 	--plugin "plugin_achievements_display=compact"
 
 render_one "plugin-notable-indepth" \
 	--template classic \
-	--plugin "base=" \
 	--plugin "plugin_notable=yes" \
 	--plugin "plugin_notable_indepth=yes" \
 	--plugin "plugin_notable_repositories=yes"
 
 render_one "plugin-languages-details" \
 	--template classic \
-	--plugin "base=" \
 	--plugin "plugin_languages=yes" \
 	--plugin "plugin_languages_details=bytes-size,percentage,lines"
 
@@ -347,38 +349,32 @@ render_one "plugin-languages-details" \
 # reads "from last <=200 comments".
 render_one "plugin-reactions" \
 	--template classic \
-	--plugin "base=" \
 	--plugin "plugin_reactions=yes" \
 	--plugin "plugin_reactions_details=percentage"
 
 render_one "plugin-isocalendar-fullyear" \
 	--template classic \
-	--plugin "base=" \
 	--plugin "plugin_isocalendar=yes" \
 	--plugin "plugin_isocalendar_duration=full-year"
 
 render_one "plugin-calendar-full" \
 	--template classic \
-	--plugin "base=" \
 	--plugin "plugin_calendar=yes" \
 	--plugin "plugin_calendar_limit=0"
 
 render_one "plugin-stargazers-graph" \
 	--template classic \
-	--plugin "base=" \
 	--plugin "plugin_stargazers=yes" \
 	--plugin "plugin_stargazers_charts_type=graph"
 
 render_one "plugin-habits-facts" \
 	--template classic \
-	--plugin "base=" \
 	--plugin "plugin_habits=yes" \
 	--plugin "plugin_habits_facts=yes" \
 	--plugin "plugin_habits_charts=no"
 
 render_one "plugin-habits-charts" \
 	--template classic \
-	--plugin "base=" \
 	--plugin "plugin_habits=yes" \
 	--plugin "plugin_habits_facts=no" \
 	--plugin "plugin_habits_charts=yes"
@@ -411,7 +407,8 @@ echo "== classic template overview (upstream-parity base render) =="
 # single-line minified style block.
 render_one "metrics-classic" \
 	--template classic \
-	--plugin "base=header, repositories"
+	--plugin "chrome_header=yes" \
+	--plugin "chrome_repositories=yes"
 
 echo
 echo "== per-plugin repository-mode renders (only plugins with visible delta) =="
@@ -439,7 +436,6 @@ echo "== per-plugin repository-mode renders (only plugins with visible delta) ==
 # bodies short-circuit to a descriptive SkippedReason instead of
 # silently returning empty data.
 render_one_repo "plugin-people-repo" \
-	--plugin "base=" \
 	--plugin "plugin_people=yes"
 
 echo
@@ -449,7 +445,6 @@ echo "== repository-mode sub-mode variants =="
 # plain `plugin-contributors-repo` sample already covers commit
 # counts; this variant demonstrates the additions/deletions columns.
 render_one_repo "plugin-contributors-repo-contributions" \
-	--plugin "base=" \
 	--plugin "plugin_contributors=yes" \
 	--plugin "plugin_contributors_contributions=yes"
 
@@ -459,7 +454,6 @@ render_one_repo "plugin-contributors-repo-contributions" \
 # full repo-context set (stargazers + watchers + contributors) so
 # every supported repo-mode type renders in one card.
 render_one_repo "plugin-people-repo-types" \
-	--plugin "base=" \
 	--plugin "plugin_people=yes" \
 	--plugin "plugin_people_types=stargazers,watchers,contributors"
 
@@ -470,7 +464,6 @@ render_one_repo "plugin-people-repo-types" \
 # `plugin_languages=yes` toggle; without it the card is skipped, so
 # the default repo render does not surface it.
 render_one_repo "plugin-languages-repo" \
-	--plugin "base=" \
 	--plugin "plugin_languages=yes" \
 	--plugin "plugin_languages_details=bytes-size,percentage"
 
