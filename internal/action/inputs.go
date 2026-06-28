@@ -3,11 +3,141 @@ package action
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
+	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 )
+
+// canonicalChromeSections is the canonical ordered list of `chrome_*`
+// section names used by both the deprecation alias translator below
+// and gen-action-yml's discovered metadata. Kept in lockstep with
+// assets/plugins/chrome/metadata.yml.
+var canonicalChromeSections = []string{
+	"header", "activity", "community", "repositories", "metadata", "introduction",
+}
+
+// TranslateLegacyChromeInputs rewrites the deprecated v2 chrome inputs
+// (`base=CSV`, `plugin_base_activity`, `plugin_base_repositories`) into
+// the canonical `chrome_<section>` booleans (#640), emitting a single
+// deprecation slog.Warn per legacy key that names both the input it
+// found and the chrome_* key it set.
+//
+// The function NEVER overwrites a chrome_* key the caller already set;
+// the new input always wins so callers in the middle of a migration
+// can pin a specific section without the legacy alias overriding it.
+//
+// Returns the (possibly mutated) inputs map for chainability; callers
+// typically discard the return value and rely on the in-place edit.
+func TranslateLegacyChromeInputs(inputs map[string]any) map[string]any {
+	if inputs == nil {
+		return inputs
+	}
+
+	// 1. base= CSV → chrome_<section>=yes for each listed section.
+	if raw, ok := readBaseCSV(inputs); ok {
+		sections := splitBaseCSV(raw)
+		// Translate in canonical order so the warning's "translated"
+		// list is deterministic.
+		translated := make([]string, 0, len(sections))
+		for _, s := range canonicalChromeSections {
+			if _, want := sections[s]; !want {
+				continue
+			}
+			key := "chrome_" + s
+			if _, exists := inputs[key]; exists {
+				continue // caller already pinned this section explicitly.
+			}
+			inputs[key] = true
+			translated = append(translated, key+"=yes")
+		}
+		// Surface unknown sections so typos are visible.
+		var unknown []string
+		known := map[string]struct{}{}
+		for _, s := range canonicalChromeSections {
+			known[s] = struct{}{}
+		}
+		for s := range sections {
+			if _, ok := known[s]; !ok {
+				unknown = append(unknown, s)
+			}
+		}
+		sort.Strings(unknown)
+		slog.Warn(
+			"`base` input is deprecated; use `chrome_<section>=yes` (removed in v3.0)",
+			"base", raw,
+			"translated", strings.Join(translated, ", "),
+			"unknown_sections", strings.Join(unknown, ", "),
+		)
+	}
+
+	// 2. plugin_base_activity → chrome_activity.
+	if isTruthy(inputs["plugin_base_activity"]) {
+		if _, exists := inputs["chrome_activity"]; !exists {
+			inputs["chrome_activity"] = true
+		}
+		slog.Warn(
+			"`plugin_base_activity` is deprecated; use `chrome_activity=yes` (removed in v3.0)",
+			"translated", "chrome_activity=yes",
+		)
+	}
+
+	// 3. plugin_base_repositories → chrome_repositories.
+	if isTruthy(inputs["plugin_base_repositories"]) {
+		if _, exists := inputs["chrome_repositories"]; !exists {
+			inputs["chrome_repositories"] = true
+		}
+		slog.Warn(
+			"`plugin_base_repositories` is deprecated; use `chrome_repositories=yes` (removed in v3.0)",
+			"translated", "chrome_repositories=yes",
+		)
+	}
+
+	return inputs
+}
+
+// readBaseCSV pulls the legacy `base` input out of the map, accepting
+// the string / []string / []any shapes ParseInputs may produce.
+// Returns (value, true) when the key is present (even empty) so the
+// translator can decide based on presence.
+func readBaseCSV(in map[string]any) (string, bool) {
+	v, ok := in["base"]
+	if !ok {
+		return "", false
+	}
+	switch x := v.(type) {
+	case string:
+		return x, true
+	case []string:
+		return strings.Join(x, ","), true
+	case []any:
+		parts := make([]string, 0, len(x))
+		for _, p := range x {
+			if s, ok := p.(string); ok {
+				parts = append(parts, s)
+			}
+		}
+		return strings.Join(parts, ","), true
+	}
+	return "", false
+}
+
+// splitBaseCSV is a local copy of chrome.splitBaseCSV; the action
+// package does not import internal/templates/chrome to avoid pulling
+// the templates layer into the entrypoint.
+func splitBaseCSV(raw string) map[string]struct{} {
+	out := map[string]struct{}{}
+	for _, part := range strings.Split(raw, ",") {
+		s := strings.ToLower(strings.TrimSpace(part))
+		if s == "" {
+			continue
+		}
+		out[s] = struct{}{}
+	}
+	return out
+}
 
 // ParseInputs builds the unified inputs map used by both Action mode
 // and CLI mode. Priority (highest first):

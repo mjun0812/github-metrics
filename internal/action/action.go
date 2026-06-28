@@ -136,6 +136,11 @@ func runWith(ctx context.Context, opts runOptions) error {
 		preset.MergeInto(inputs)
 	}
 
+	// 2c. Translate the deprecated `base`=CSV / `plugin_base_*` inputs
+	// into the canonical `chrome_*` booleans (#640). Emits a slog.Warn
+	// per legacy key so the deprecation is visible in CI logs.
+	TranslateLegacyChromeInputs(inputs)
+
 	// 3. Build invocation.
 	inv, ierr := newInvocation(opts.Mode, inputs, env, opts.OutputDir)
 	if ierr != nil {
@@ -309,6 +314,9 @@ func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
 		}
 		preset.MergeInto(inputs)
 	}
+
+	// Translate deprecated chrome aliases (mirrors runWith / #640).
+	TranslateLegacyChromeInputs(inputs)
 
 	// Token resolution — applied after the merge so INPUT_TOKEN serves as
 	// the fallback when --token / --token-env are absent.
