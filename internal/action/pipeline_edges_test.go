@@ -75,6 +75,9 @@ func TestRunWith_CommitterSuccess(t *testing.T) {
 			"INPUT_TOKEN=ghp_mock_pat_valid",
 			"INPUT_OUTPUT_ACTION=commit",
 			"INPUT_DRYRUN=no",
+			// Per-plugin mode is now the default; this test exercises
+			// the single-file commit path, so opt into combined mode.
+			"INPUT_COMBINED=yes",
 		},
 		Stdout:    io.Discard,
 		OutputDir: outDir,
@@ -110,6 +113,9 @@ func TestRunWith_ComputeError(t *testing.T) {
 			"INPUT_USE_MOCKED_DATA=yes",
 			"INPUT_DRYRUN=yes",
 			"INPUT_TEMPLATE=nonexistent-template-405",
+			// Force combined mode so engine.Compute (not ComputePerPlugin)
+			// rejects the unregistered template with the expected wording.
+			"INPUT_COMBINED=yes",
 		},
 		Stdout:    io.Discard,
 		OutputDir: t.TempDir(),
@@ -138,6 +144,10 @@ func TestRunWith_WriteOutputError(t *testing.T) {
 			"INPUT_USER=octocat",
 			"INPUT_TOKEN=ghp_mock_pat_valid",
 			"INPUT_DRYRUN=yes",
+			// Combined mode so we exercise writeOutputFile (the test's
+			// blocker path is a file, breaking mkdir on the single
+			// output path with the expected "write output" wording).
+			"INPUT_COMBINED=yes",
 		},
 		Stdout:    io.Discard,
 		OutputDir: blocker,

@@ -35,6 +35,26 @@ guide and unported-feature list.
 - **Hardened runtime** — non-root user (uid 10001), chromium + Noto fonts
   bundled, no Node toolchain.
 
+## Profile README
+
+The default output mode writes one SVG per enabled plugin into `output_dir` (default `./metrics-renders/`).
+Compose your profile README by embedding the per-plugin SVGs:
+
+```markdown
+<img src="metrics-renders/header.svg" width="100%">
+
+<img src="metrics-renders/languages.svg" align="left" width="48%">
+<img src="metrics-renders/stars.svg" align="right" width="48%">
+
+<br clear="both">
+
+<img src="metrics-renders/activity.svg" width="100%">
+```
+
+See [docs/examples/profile-readme.md](docs/examples/profile-readme.md) for a complete workflow example.
+
+For a single combined SVG (legacy behavior), pass `combined: 'yes'` in your workflow.
+
 ## Quick start
 
 ### GitHub Action
@@ -55,12 +75,18 @@ jobs:
           user: octocat
           token: ${{ secrets.METRICS_TOKEN }}
           template: classic
+          combined: 'yes'
           plugin_languages: 'yes'
           plugin_languages_limit: '5'
           committer_branch: main
           output_action: commit
           output_condition: data-changed
 ```
+
+> `combined: 'yes'` opts into the single-SVG committer path. The new
+> default (`combined: 'no'`) emits one SVG per plugin into
+> `output_dir` instead and is incompatible with `output_action: commit`
+> — pick whichever workflow matches your README embed shape.
 
 `@v1` is the recommended pin — it resolves to the latest `v1.x.y`
 release so consumers automatically receive bug-fix and feature
@@ -80,6 +106,7 @@ instead of a user profile:
     repo: ${{ github.event.repository.name }}
     template: repository
     token: ${{ secrets.METRICS_TOKEN }}
+    combined: 'yes'  # repository template renders a single combined SVG
 ```
 
 The JSON output adds a `data.repo` field next to the existing `data.user`;

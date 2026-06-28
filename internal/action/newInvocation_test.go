@@ -56,6 +56,9 @@ func TestNewInvocation_FilenameWildcard(t *testing.T) {
 		"user":          "octocat",
 		"filename":      "github-metrics.*",
 		"config_output": "svg",
+		// combined mode opt-in: the per-plugin default forbids the commit
+		// committer; this test asserts filename resolution only.
+		"combined": "yes",
 	}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test-repo"}
 	inv, err := newInvocation(ModeCLI, inputs, env, "/tmp/out")
@@ -73,7 +76,7 @@ func TestNewInvocation_FilenameWildcard(t *testing.T) {
 
 func TestNewInvocation_UserFromGitHubActor(t *testing.T) {
 	t.Parallel()
-	inputs := map[string]any{} // user is absent
+	inputs := map[string]any{"combined": "yes"} // user is absent; combined opt-in to skip per-plugin fail-fast
 	env := map[string]string{
 		"GITHUB_ACTOR":      "octocat",
 		"GITHUB_REPOSITORY": "octocat/test-repo",
@@ -103,7 +106,7 @@ func TestNewInvocation_UserEmpty_Errors(t *testing.T) {
 
 func TestNewInvocation_GitHubRepositoryParsed(t *testing.T) {
 	t.Parallel()
-	inputs := map[string]any{"user": "mjun0812"}
+	inputs := map[string]any{"user": "mjun0812", "combined": "yes"}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test-repo"}
 	inv, err := newInvocation(ModeAction, inputs, env, "/tmp/out")
 	if err != nil {
@@ -120,7 +123,7 @@ func TestNewInvocation_GitHubRepositoryParsed(t *testing.T) {
 // In CLI mode, GITHUB_REPOSITORY env is NOT parsed (only Action mode reads it).
 func TestNewInvocation_GitHubRepository_CLIModeIgnored(t *testing.T) {
 	t.Parallel()
-	inputs := map[string]any{"user": "octocat"}
+	inputs := map[string]any{"user": "octocat", "combined": "yes"}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test-repo"}
 	inv, err := newInvocation(ModeCLI, inputs, env, "/tmp/out")
 	if err != nil {
@@ -139,7 +142,7 @@ func TestNewInvocation_GitHubRepository_CLIModeIgnored(t *testing.T) {
 
 func TestNewInvocation_OptimizeAbsent_InjectsDefault(t *testing.T) {
 	t.Parallel()
-	inputs := map[string]any{"user": "octocat"}
+	inputs := map[string]any{"user": "octocat", "combined": "yes"}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
 	inv, err := newInvocation(ModeAction, inputs, env, "/tmp/out")
 	if err != nil {
@@ -160,7 +163,7 @@ func TestNewInvocation_OptimizeAbsent_InjectsDefault(t *testing.T) {
 
 func TestNewInvocation_OptimizeExplicit_Preserved(t *testing.T) {
 	t.Parallel()
-	inputs := map[string]any{"user": "octocat", "optimize": "css"}
+	inputs := map[string]any{"user": "octocat", "optimize": "css", "combined": "yes"}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
 	inv, err := newInvocation(ModeAction, inputs, env, "/tmp/out")
 	if err != nil {
@@ -177,7 +180,7 @@ func TestNewInvocation_OptimizeExplicit_Preserved(t *testing.T) {
 
 func TestNewInvocation_RetryPolicyDefaults(t *testing.T) {
 	t.Parallel()
-	inputs := map[string]any{"user": "octocat"}
+	inputs := map[string]any{"user": "octocat", "combined": "yes"}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
 	inv, err := newInvocation(ModeAction, inputs, env, "/tmp/out")
 	if err != nil {
