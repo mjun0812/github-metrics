@@ -1,3 +1,5 @@
 [
-  "introduction"
+  "base.activity+community",
+  "introduction",
+  "base.repositories"
 ]
