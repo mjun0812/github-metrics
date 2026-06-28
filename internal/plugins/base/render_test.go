@@ -396,3 +396,78 @@ func TestRepositoriesPartial_EscapesLicenseName(t *testing.T) {
 		t.Errorf("license name not escaped:\n%s", got)
 	}
 }
+
+// trafficStub satisfies the interface{ TotalViews() int } contract that
+// RepositoriesPartial uses to inline the traffic row without importing
+// internal/plugins/traffic (which would risk an init cycle).
+type trafficStub struct{ total int }
+
+func (s *trafficStub) TotalViews() int { return s.total }
+
+// TestRepositoriesPartial_TrafficInline verifies that when the traffic
+// plugin published a non-zero TotalViews, the right column gains an
+// inline "<N> views in last two weeks" row. Mirrors upstream
+// base.repositories.ejs's `<%= plugins.traffic.views.count %>` block.
+func TestRepositoriesPartial_TrafficInline(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	putResult(d, activitySample())
+	d.SetPlugin("traffic", &trafficStub{total: 2345})
+	got, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
+	if err != nil {
+		t.Fatalf("RepositoriesPartial: %v", err)
+	}
+	if !strings.Contains(got, `2.3k views in last two weeks`) {
+		t.Errorf("missing traffic views row in:\n%s", got)
+	}
+}
+
+// TestRepositoriesPartial_TrafficSingularNoun verifies the pluralisation
+// flips to "view" (singular) when TotalViews == 1.
+func TestRepositoriesPartial_TrafficSingularNoun(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	putResult(d, activitySample())
+	d.SetPlugin("traffic", &trafficStub{total: 1})
+	got, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
+	if err != nil {
+		t.Fatalf("RepositoriesPartial: %v", err)
+	}
+	if !strings.Contains(got, `1 view in last two weeks`) {
+		t.Errorf("singular traffic noun missing in:\n%s", got)
+	}
+}
+
+// TestRepositoriesPartial_TrafficZeroSkipped verifies that a traffic
+// Result with TotalViews == 0 (Skipped, error, or genuinely zero
+// traffic) does NOT emit the row.
+func TestRepositoriesPartial_TrafficZeroSkipped(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	putResult(d, activitySample())
+	d.SetPlugin("traffic", &trafficStub{total: 0})
+	got, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
+	if err != nil {
+		t.Fatalf("RepositoriesPartial: %v", err)
+	}
+	if strings.Contains(got, `in last two weeks`) {
+		t.Errorf("zero-views traffic row should be suppressed in:\n%s", got)
+	}
+}
+
+// TestRepositoriesPartial_TrafficForeignType verifies that a non-traffic
+// object placed under data.Plugins["traffic"] (defensive: should never
+// happen in practice) does not crash and does not render the row.
+func TestRepositoriesPartial_TrafficForeignType(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	putResult(d, activitySample())
+	d.SetPlugin("traffic", struct{}{}) // intentionally not implementing TotalViews()
+	got, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
+	if err != nil {
+		t.Fatalf("RepositoriesPartial: %v", err)
+	}
+	if strings.Contains(got, `in last two weeks`) {
+		t.Errorf("foreign traffic type should be ignored in:\n%s", got)
+	}
+}
