@@ -6,12 +6,11 @@ description: |
   read aggregated data from the shared `dataprovider.Provider`
   (Profile + RepositorySummary) — no GraphQL or REST fetching duplication.
 
-  Visibility is now controlled by the per-section `chrome_*` booleans
-  (`chrome_activity`, `chrome_community`, `chrome_repositories`) declared
-  under `assets/plugins/chrome/metadata.yml` (#640). `plugin_base=yes`
-  remains as a v2 compatibility master switch that auto-enables the
-  three panels when no `chrome_*` input is declared; it is scheduled
-  for removal in v3.0.
+  Visibility is controlled by the per-section `chrome_*` booleans
+  (`chrome_activity`, `chrome_community`, `chrome_repositories`)
+  declared under `assets/plugins/chrome/metadata.yml` (#640).
+  `plugin_base=yes` remains as a compatibility master switch that
+  auto-enables the three panels when no `chrome_*` input is declared.
 supports:
   - user
   - organization
@@ -20,6 +19,6 @@ scopes:
 inputs:
 
   plugin_base:
-    description: 'Enable base plugin (legacy v2 master switch; prefer the per-section `chrome_*` booleans).'
+    description: 'Enable base plugin (compat master switch; prefer the per-section `chrome_*` booleans).'
     type: boolean
     default: no

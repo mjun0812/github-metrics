@@ -42,8 +42,9 @@ func TestSinglePluginInputs_ForcesChromeOff(t *testing.T) {
 		}
 	}
 
-	// Legacy CSV must also be stripped so the deprecation alias path
-	// cannot re-introduce chrome via ResolveBaseSections downstream.
+	// Legacy v2 keys must also be stripped from the per-plugin inputs
+	// map (safety-net strip retained in v3.0 — #649) so stale CI
+	// configs cannot smuggle unknown garbage into the per-plugin SVG.
 	if _, ok := out["base"]; ok {
 		t.Errorf("legacy `base` input must be stripped from per-plugin inputs; got %v", out["base"])
 	}

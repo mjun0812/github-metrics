@@ -136,10 +136,11 @@ func runWith(ctx context.Context, opts runOptions) error {
 		preset.MergeInto(inputs)
 	}
 
-	// 2c. Translate the deprecated `base`=CSV / `plugin_base_*` inputs
-	// into the canonical `chrome_*` booleans (#640). Emits a slog.Warn
-	// per legacy key so the deprecation is visible in CI logs.
-	TranslateLegacyChromeInputs(inputs)
+	// 2c. Warn (once per process per key) when a v3.0-removed legacy
+	// chrome input is still in the assembled inputs map. Purely
+	// diagnostic — no translation, no fallback. Helps users migrating
+	// long-running CI configs notice the silent no-op render.
+	WarnLegacyChromeInputs(inputs)
 
 	// 3. Build invocation.
 	inv, ierr := newInvocation(opts.Mode, inputs, env, opts.OutputDir)
@@ -323,8 +324,10 @@ func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
 		preset.MergeInto(inputs)
 	}
 
-	// Translate deprecated chrome aliases (mirrors runWith / #640).
-	TranslateLegacyChromeInputs(inputs)
+	// Warn (once per process per key) when a v3.0-removed legacy
+	// chrome input is still in the assembled inputs map. Purely
+	// diagnostic — mirrors runWith.
+	WarnLegacyChromeInputs(inputs)
 
 	inv, ierr := newInvocation(ModeCLI, inputs, env, opts.OutputDir)
 	if ierr != nil {

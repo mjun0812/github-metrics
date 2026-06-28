@@ -179,7 +179,7 @@ func TestClassic_Run_BaseInputMetadataRendersFooter(t *testing.T) {
 	data.Account = plugins.AccountUser
 	data.Config.Timezone.Name = "Asia/Tokyo"
 	pc := &templates.PartialContext{
-		Inputs: map[string]any{"base": "metadata"},
+		Inputs: map[string]any{"chrome_metadata": "yes"},
 		Data:   data,
 	}
 	out, err := classic.Template.Run(context.Background(), pc)
@@ -200,16 +200,16 @@ func TestClassic_Run_BaseInputMetadataRendersFooter(t *testing.T) {
 		`mjun0812/github-metrics@`,
 	} {
 		if !strings.Contains(out, marker) {
-			t.Fatalf("base metadata output missing %q\noutput:\n%s", marker, out)
+			t.Fatalf("chrome_metadata output missing %q\noutput:\n%s", marker, out)
 		}
 	}
 	if strings.Contains(out, `data-section="header"`) {
-		t.Fatalf("base=metadata should not render header\noutput:\n%s", out)
+		t.Fatalf("chrome_metadata=yes should not render header\noutput:\n%s", out)
 	}
 }
 
 // TestClassic_Run_HeaderDedupBaseAndPlugin asserts that when the user
-// enables BOTH `base=header` (static dispatcher path) and
+// enables BOTH `chrome_header=yes` (static dispatcher path) and
 // `plugin_header=yes` (M4 plugin partial path), the rendered SVG
 // contains exactly one <section data-section="header"> block — the
 // static base.header partial owns the slot and the plugin dispatcher
@@ -229,7 +229,7 @@ func TestClassic_Run_HeaderDedupBaseAndPlugin(t *testing.T) {
 	})
 	pc := &templates.PartialContext{
 		Inputs: map[string]any{
-			"base":          "header",
+			"chrome_header": "yes",
 			"plugin_header": "yes",
 		},
 		Data: d,
@@ -246,7 +246,7 @@ func TestClassic_Run_HeaderDedupBaseAndPlugin(t *testing.T) {
 	// "header">` wrapper must be absent — its presence would mean the
 	// dedup branch did not fire.
 	if strings.Contains(out, `data-plugin="header"`) {
-		t.Fatalf("plugin.header wrapper leaked despite base=header dedup:\n%s", out)
+		t.Fatalf("plugin.header wrapper leaked despite chrome_header dedup:\n%s", out)
 	}
 }
 
