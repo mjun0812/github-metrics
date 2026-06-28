@@ -401,7 +401,7 @@ func defaultRequirements(slug string) string {
 	case "core":
 		return "Core has no standalone visual output; this page documents its inputs only. The plugin implements global configuration parsing (template selection, timezone, animations, output format, etc.) and the parallel plugin runner that drives every other plugin. There are no API scopes or render prerequisites of its own — every other plugin in this repository depends on `core` having populated `data.Config` before it runs."
 	case "base":
-		return "Base reads `Provider.Profile(ctx)` and `Provider.RepositorySummary(ctx)` from the shared `internal/dataprovider`. Both are populated lazily by the standard GraphQL user/organization + repositories paging queries — no extra API scopes beyond `public_access` are required. The plugin emits no standalone card on its own; its two panels (`plugin_base_activity`, `plugin_base_repositories`) compose with any other plugin selection to restore the legacy `base` chrome look."
+		return "Base reads `Provider.Profile(ctx)` and `Provider.RepositorySummary(ctx)` from the shared `internal/dataprovider`. Both are populated lazily by the standard GraphQL user/organization + repositories paging queries — no extra API scopes beyond `public_access` are required. The plugin emits no standalone card on its own; its two panels (gated by `chrome_activity` / `chrome_community` and `chrome_repositories` from `assets/plugins/chrome/metadata.yml`, #640) compose with any other plugin selection to restore the legacy `base` chrome look."
 	}
 	return ""
 }

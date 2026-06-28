@@ -18,9 +18,7 @@ read aggregated data from the shared `dataprovider.Provider`
 
 | Input | Description | Default | Required | Type |
 | ----- | ----------- | ------- | -------- | ---- |
-| `plugin_base` | Enable base plugin (master switch for the activity / community and repositories summary panels). | `no` | no | boolean |
-| `plugin_base_activity` | Render the activity + community panel (commits, PR reviews, organizations, sponsoring, starred, watching, ...). Requires `plugin_base: yes`. | `no` | no | boolean |
-| `plugin_base_repositories` | Render the repositories summary panel (license preference, releases, packages, disk usage, sponsors, stargazers, forks, watchers). Requires `plugin_base: yes`. | `no` | no | boolean |
+| `plugin_base` | Enable base plugin (legacy v2 master switch; prefer the per-section `chrome_*` booleans). | `no` | no | boolean |
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
@@ -47,7 +45,7 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
 
 ## Requirements
 
-Base reads `Provider.Profile(ctx)` and `Provider.RepositorySummary(ctx)` from the shared `internal/dataprovider`. Both are populated lazily by the standard GraphQL user/organization + repositories paging queries — no extra API scopes beyond `public_access` are required. The plugin emits no standalone card on its own; its two panels (`plugin_base_activity`, `plugin_base_repositories`) compose with any other plugin selection to restore the legacy `base` chrome look.
+Base reads `Provider.Profile(ctx)` and `Provider.RepositorySummary(ctx)` from the shared `internal/dataprovider`. Both are populated lazily by the standard GraphQL user/organization + repositories paging queries — no extra API scopes beyond `public_access` are required. The plugin emits no standalone card on its own; its two panels (gated by `chrome_activity` / `chrome_community` and `chrome_repositories` from `assets/plugins/chrome/metadata.yml`, #640) compose with any other plugin selection to restore the legacy `base` chrome look.
 
 ## References
 
