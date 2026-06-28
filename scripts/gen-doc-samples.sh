@@ -201,11 +201,12 @@ render_one_repo() {
 	# render_one_repo <basename-without-ext> <extra-args...>
 	# Repository-mode render: `--user ${USER} --repo ${REPO} --template
 	# repository` are injected automatically. The caller passes
-	# `--plugin key=value` overrides (typically `--plugin base=` to
-	# suppress the default base sections + `--plugin plugin_<slug>=yes`
-	# to enable a single plugin). Output handling is identical to
-	# render_one: render the .svg once, derive the .png from it via
-	# svg2png (no API), then move both into ${OUTDIR}.
+	# `--plugin key=value` overrides (typically
+	# `--plugin chrome_<section>=yes` to opt sections in +
+	# `--plugin plugin_<slug>=yes` to enable a single plugin).
+	# Output handling is identical to render_one: render the .svg
+	# once, derive the .png from it via svg2png (no API), then move
+	# both into ${OUTDIR}.
 	local base="$1"
 	shift
 
