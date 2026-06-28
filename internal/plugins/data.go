@@ -261,6 +261,13 @@ type ComputedRepositories struct {
 	// owned repositories. Feeds the achievements Deployer badge
 	// (mirrors upstream `computed.repositories.deployments`).
 	Deployments int
+	// Forked counts the owned repositories that are themselves forks
+	// (i.e. node.isFork == true in the GraphQL repositories connection).
+	// Distinct from Forks (which sums per-repo forkCount). Surfaced by
+	// the base plugin's repositories panel as the "(including N forks)"
+	// suffix on the Repositor[y/ies] total — mirrors upstream
+	// `computed.repositories.forked`.
+	Forked int
 }
 
 // LicenseShare is one entry in the License-preference top-N. Percent is
