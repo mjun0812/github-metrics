@@ -52,6 +52,7 @@ CLI mode (direct invocation):
               [--token <PAT> | --token-env <ENV_NAME>]
               [--plugin key=value ...] [--output svg|png|jpeg|json]
               [--filename <path-or-->] [--dryrun]
+              [--output-dir <dir>] [--combined] [--plugins a,b,c]
 
 Common flags:
   -h, --help        Show this help message and exit.
