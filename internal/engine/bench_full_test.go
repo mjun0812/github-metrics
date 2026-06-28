@@ -107,12 +107,14 @@ func fullPluginInputs() map[string]any {
 		// when their `plugin_<slug>` gate is set.
 		"plugin_topics":    true,
 		"plugin_starlists": true,
-		// base (#625): foundational chrome restored as plugin_base with
-		// two sub-options; flip everything so the full-render bench
-		// exercises the activity+community and repositories panels too.
-		"plugin_base":              true,
-		"plugin_base_activity":     true,
-		"plugin_base_repositories": true,
+		// base (#625, #640): foundational chrome. Flip the chrome_*
+		// section booleans so the full-render bench exercises the
+		// activity+community and repositories panels too. plugin_base
+		// is retained as the v2-compat master switch.
+		"plugin_base":         true,
+		"chrome_activity":     true,
+		"chrome_community":    true,
+		"chrome_repositories": true,
 	}
 }
 

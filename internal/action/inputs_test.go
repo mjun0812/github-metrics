@@ -181,3 +181,102 @@ func TestPresetBundle_MergeInto_NilReceiver(t *testing.T) {
 		t.Errorf("nil MergeInto mutated inputs: %v", inputs)
 	}
 }
+
+// ---------------------------------------------------------------------
+// TranslateLegacyChromeInputs (#640)
+// ---------------------------------------------------------------------
+
+func TestTranslateLegacyChromeInputs_BaseCSV(t *testing.T) {
+	t.Parallel()
+	in := map[string]any{"base": "header,repositories"}
+	TranslateLegacyChromeInputs(in)
+	if v, ok := in["chrome_header"]; !ok || v != true {
+		t.Errorf("chrome_header = %v (ok=%v); want true", v, ok)
+	}
+	if v, ok := in["chrome_repositories"]; !ok || v != true {
+		t.Errorf("chrome_repositories = %v (ok=%v); want true", v, ok)
+	}
+	// Sections NOT in the CSV must remain absent.
+	if _, ok := in["chrome_metadata"]; ok {
+		t.Errorf("chrome_metadata should not be set; got %v", in["chrome_metadata"])
+	}
+}
+
+func TestTranslateLegacyChromeInputs_BaseEmpty(t *testing.T) {
+	t.Parallel()
+	in := map[string]any{"base": ""}
+	TranslateLegacyChromeInputs(in)
+	// No sections to translate → no chrome_* keys set.
+	for _, s := range []string{
+		"chrome_header", "chrome_activity", "chrome_community",
+		"chrome_repositories", "chrome_metadata", "chrome_introduction",
+	} {
+		if _, ok := in[s]; ok {
+			t.Errorf("%s should not be set; got %v", s, in[s])
+		}
+	}
+}
+
+func TestTranslateLegacyChromeInputs_DoesNotOverwriteCanonical(t *testing.T) {
+	t.Parallel()
+	// Caller pinned chrome_header=false explicitly; base= should NOT
+	// override that even though the CSV lists "header".
+	in := map[string]any{
+		"base":          "header,activity",
+		"chrome_header": false,
+	}
+	TranslateLegacyChromeInputs(in)
+	if v, ok := in["chrome_header"]; !ok || v != false {
+		t.Errorf("chrome_header overwritten: got %v (ok=%v); want false", v, ok)
+	}
+	// activity wasn't pre-set, should now be true.
+	if v, ok := in["chrome_activity"]; !ok || v != true {
+		t.Errorf("chrome_activity = %v (ok=%v); want true", v, ok)
+	}
+}
+
+func TestTranslateLegacyChromeInputs_PluginBaseActivity(t *testing.T) {
+	t.Parallel()
+	in := map[string]any{"plugin_base_activity": "yes"}
+	TranslateLegacyChromeInputs(in)
+	if v, ok := in["chrome_activity"]; !ok || v != true {
+		t.Errorf("chrome_activity = %v (ok=%v); want true", v, ok)
+	}
+}
+
+func TestTranslateLegacyChromeInputs_PluginBaseRepositories(t *testing.T) {
+	t.Parallel()
+	in := map[string]any{"plugin_base_repositories": true}
+	TranslateLegacyChromeInputs(in)
+	if v, ok := in["chrome_repositories"]; !ok || v != true {
+		t.Errorf("chrome_repositories = %v (ok=%v); want true", v, ok)
+	}
+}
+
+func TestTranslateLegacyChromeInputs_NoOp(t *testing.T) {
+	t.Parallel()
+	// Already on chrome_*; no legacy inputs to translate.
+	in := map[string]any{"chrome_metadata": true}
+	TranslateLegacyChromeInputs(in)
+	if len(in) != 1 || in["chrome_metadata"] != true {
+		t.Errorf("expected no mutations; got %v", in)
+	}
+}
+
+func TestTranslateLegacyChromeInputs_NilMap(t *testing.T) {
+	t.Parallel()
+	// Must not panic.
+	TranslateLegacyChromeInputs(nil)
+}
+
+func TestTranslateLegacyChromeInputs_SliceBase(t *testing.T) {
+	t.Parallel()
+	in := map[string]any{"base": []string{"header", "metadata"}}
+	TranslateLegacyChromeInputs(in)
+	if v, ok := in["chrome_header"]; !ok || v != true {
+		t.Errorf("chrome_header = %v (ok=%v); want true", v, ok)
+	}
+	if v, ok := in["chrome_metadata"]; !ok || v != true {
+		t.Errorf("chrome_metadata = %v (ok=%v); want true", v, ok)
+	}
+}

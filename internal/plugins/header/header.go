@@ -65,6 +65,13 @@ func (*headerPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, e
 	if pc == nil || pc.Provider == nil {
 		return &Result{}, nil
 	}
+	// Auto-enable (#640): only fetch when the user enabled the header
+	// plugin directly OR opted into the chrome_header section. The
+	// legacy `plugin_base=yes` master switch is honoured as v2 compat
+	// while no chrome_* input is declared.
+	if !runEnabledForInputs(pc.Inputs) {
+		return &Result{}, nil
+	}
 
 	res := &Result{}
 

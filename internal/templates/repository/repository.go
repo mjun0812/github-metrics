@@ -135,9 +135,9 @@ func (t *repositoryTemplate) Run(ctx context.Context, pc *templates.PartialConte
 	b.WriteString(`<div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper">`)
 
 	// Resolve which base.* sections are enabled. Mirrors the classic
-	// template: `base` is a CSV of section names. Absent → all on;
-	// present-but-empty → none (used by per-plugin / `base=` renders to
-	// strip the base.header chrome). #464.
+	// template: the canonical input surface is the six `chrome_*`
+	// booleans (#640); ResolveBaseSections also accepts the legacy
+	// `base` CSV / absent fallbacks for direct engine callers.
 	baseSections := chrome.ResolveBaseSections(pc.Inputs)
 
 	// Dispatch partials in `_.json` order. Unknown / not-yet-adopted

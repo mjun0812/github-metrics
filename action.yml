@@ -14,6 +14,36 @@ branding:
   color: 'blue'
 
 inputs:
+  chrome_activity:
+    description: 'Render the activity panel (commits / pull requests reviewed / pull requests opened / issues opened / issue comments).'
+    default: 'no'
+    required: false
+
+  chrome_community:
+    description: 'Render the community panel (organizations / following / sponsoring / starred / watching).'
+    default: 'no'
+    required: false
+
+  chrome_header:
+    description: 'Render the profile header section (avatar / login / followers / commit calendar mini-row).'
+    default: 'no'
+    required: false
+
+  chrome_introduction:
+    description: 'Render the introduction section (legacy upstream-only header copy).'
+    default: 'no'
+    required: false
+
+  chrome_metadata:
+    description: 'Render the metadata footer (last-updated timestamp / generator version / timezone / private-contributions notice).'
+    default: 'no'
+    required: false
+
+  chrome_repositories:
+    description: 'Render the repositories summary panel (license preference / releases / packages / disk usage / sponsors / stargazers / forks / watchers / traffic).'
+    default: 'no'
+    required: false
+
   clean_workflows:
     description: 'Clean previous workflows jobs'
     required: false
@@ -259,17 +289,7 @@ inputs:
     required: false
 
   plugin_base:
-    description: 'Enable base plugin (master switch for the activity / community and repositories summary panels).'
-    default: 'no'
-    required: false
-
-  plugin_base_activity:
-    description: 'Render the activity + community panel (commits, PR reviews, organizations, sponsoring, starred, watching, ...). Requires `plugin_base: yes`.'
-    default: 'no'
-    required: false
-
-  plugin_base_repositories:
-    description: 'Render the repositories summary panel (license preference, releases, packages, disk usage, sponsors, stargazers, forks, watchers). Requires `plugin_base: yes`.'
+    description: 'Enable base plugin (legacy v2 master switch; prefer the per-section `chrome_*` booleans).'
     default: 'no'
     required: false
 

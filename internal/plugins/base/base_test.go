@@ -12,6 +12,17 @@ import (
 	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 )
 
+// enabledInputs returns the input map used by Run-side tests so the
+// chrome auto-enable gate (#640) lets Run reach the Provider calls.
+func enabledInputs() map[string]any {
+	return map[string]any{
+		"user":                "octocat",
+		"chrome_activity":     "yes",
+		"chrome_community":    "yes",
+		"chrome_repositories": "yes",
+	}
+}
+
 // TestBase_Requires_Static asserts that base.Plugin.Requires() declares
 // exactly [KeyProfile, KeyRepositorySummary]. The dynamic test below
 // catches the case where Run silently starts calling additional
@@ -25,10 +36,18 @@ func TestBase_Requires_Static(t *testing.T) {
 
 // TestBase_Requires_Dynamic wires a CountingMock and asserts the set of
 // Provider methods touched by Run equals the declared Requires() set.
+// Auto-enable gates (#640) require an explicit chrome_* input so Run
+// reaches the Provider calls — otherwise the drift test sees an empty
+// "actually called" set even though Requires() is correct.
 func TestBase_Requires_Dynamic(t *testing.T) {
 	mock := dataprovidertest.NewCountingMock()
 
-	pc := mocks.NewPluginContext(t)
+	pc := mocks.NewPluginContext(t, mocks.WithInputs(map[string]any{
+		"user":                "octocat",
+		"chrome_activity":     "yes",
+		"chrome_community":    "yes",
+		"chrome_repositories": "yes",
+	}))
 	pc.Provider = mock
 
 	_, _ = base.Plugin.Run(context.Background(), pc)
@@ -101,7 +120,7 @@ func TestRun_SuccessPath(t *testing.T) {
 		return &plugins.ComputedRepositories{Count: 7, Stargazers: 100}, nil
 	}
 
-	pc := mocks.NewPluginContext(t)
+	pc := mocks.NewPluginContext(t, mocks.WithInputs(enabledInputs()))
 	pc.Provider = mock
 
 	got, err := base.Plugin.Run(context.Background(), pc)
@@ -129,7 +148,7 @@ func TestRun_ProfileErrorRecordsAndReturnsNilErr(t *testing.T) {
 	mock := dataprovidertest.NewCountingMock()
 	mock.ProfileFn = func(_ context.Context) (*plugins.Profile, error) { return nil, sentinel }
 
-	pc := mocks.NewPluginContext(t)
+	pc := mocks.NewPluginContext(t, mocks.WithInputs(enabledInputs()))
 	pc.Provider = mock
 
 	got, err := base.Plugin.Run(context.Background(), pc)
@@ -162,7 +181,7 @@ func TestRun_RepositorySummaryErrorRecorded(t *testing.T) {
 		return nil, sentinel
 	}
 
-	pc := mocks.NewPluginContext(t)
+	pc := mocks.NewPluginContext(t, mocks.WithInputs(enabledInputs()))
 	pc.Provider = mock
 
 	got, err := base.Plugin.Run(context.Background(), pc)
