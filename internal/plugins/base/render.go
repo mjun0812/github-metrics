@@ -162,7 +162,10 @@ func RepositoriesPartial(_ context.Context, pc *templates.PartialContext) (strin
 	b.WriteString(`<div class="row">`)
 	b.WriteString(`<section>`)
 
-	// Heading: "<N> Repositor[y/ies] (including <F> forks)"
+	// Heading: "<N> Repositor[y/ies]". The upstream parenthesised
+	// "(including <F> forks)" suffix was dropped intentionally — the
+	// fork count is already surfaced in the Forkers row below, and the
+	// duplicate phrasing crowded the heading on dense profiles.
 	heading := repositoriesHeading(summary)
 	b.WriteString(`<h2 class="field">` + octRepo + heading + `</h2>`)
 	b.WriteString(`<div class="row">`)
@@ -223,8 +226,11 @@ func writeOfRow(b *strings.Builder, icon, prefix string, count int, singular, pl
 	b.WriteString(`</div>`)
 }
 
-// repositoriesHeading returns "<N> Repositor[y/ies] (including <F> fork[s])"
-// when summary.Forked > 0, else just the leading count phrase.
+// repositoriesHeading returns "<N> Repositor[y/ies]" with Repository /
+// Repositories pluralised on Count. The upstream "(including <F>
+// forks)" suffix was dropped — ComputedRepositories.Forked is still
+// populated and surfaced via the JSON envelope, but the heading no
+// longer renders it.
 func repositoriesHeading(s *plugins.ComputedRepositories) string {
 	if s == nil {
 		return "0 Repositories"
@@ -233,15 +239,7 @@ func repositoriesHeading(s *plugins.ComputedRepositories) string {
 	if s.Count == 1 {
 		noun = "Repository"
 	}
-	head := fmt.Sprintf("%s %s", partials.FormatCount(int64(s.Count)), noun)
-	if s.Forked <= 0 {
-		return head
-	}
-	forkNoun := "forks"
-	if s.Forked == 1 {
-		forkNoun = "fork"
-	}
-	return fmt.Sprintf("%s (including %s %s)", head, partials.FormatCount(int64(s.Forked)), forkNoun)
+	return fmt.Sprintf("%s %s", partials.FormatCount(int64(s.Count)), noun)
 }
 
 // licensePreference returns the "Prefers <license> license" label when

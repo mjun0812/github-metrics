@@ -301,7 +301,7 @@ func TestRepositoriesPartial_RendersHeadingAndRows(t *testing.T) {
 	}
 	for _, want := range []string{
 		`<section class="largeable largeable-inline-flex">`,
-		`50 Repositories (including 5 forks)`,
+		`50 Repositories`,
 		`Prefers MIT License license`,
 		`15 Releases`,
 		`2 Packages`,
@@ -314,6 +314,11 @@ func TestRepositoriesPartial_RendersHeadingAndRows(t *testing.T) {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in repositories output:\n%s", want, got)
 		}
+	}
+	// The "(including N forks)" clause was dropped from the heading;
+	// the fork count is still represented via the "<F> Forkers" row.
+	if strings.Contains(got, "(including") {
+		t.Errorf("repositories heading must no longer carry the forks clause:\n%s", got)
 	}
 }
 
@@ -359,8 +364,12 @@ func TestRepositoriesPartial_SingularHeading(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RepositoriesPartial: %v", err)
 	}
-	if !strings.Contains(got, `1 Repository (including 1 fork)`) {
+	if !strings.Contains(got, `1 Repository`) {
 		t.Errorf("expected singular heading, got:\n%s", got)
+	}
+	// Forked counter must not surface in the heading even when > 0.
+	if strings.Contains(got, "(including") {
+		t.Errorf("heading must no longer carry the forks clause:\n%s", got)
 	}
 }
 
