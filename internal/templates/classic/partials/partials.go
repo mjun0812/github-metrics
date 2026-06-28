@@ -62,11 +62,14 @@ var registry = map[string]templates.PartialFunc{}
 
 func init() {
 	Register("introduction", Introduction)
-	// #625: seed the base.* slots with no-op partials so the static
+	// Seed the base.* slots with no-op partials so the static
 	// dispatcher does not error out when a test binary compiles the
-	// classic template without the internal/plugins/base side-effect
-	// import. The base plugin's init() overrides these entries with the
-	// real implementations whenever the binary links it in.
+	// classic template without the owning plugin packages as
+	// side-effect imports. The plugin packages' init()s override these
+	// entries with the real implementations whenever the binary links
+	// them in (internal/plugins/base for the activity+community and
+	// repositories partials; internal/plugins/header for base.header).
+	Register("base.header", emptyPartial)
 	Register("base.activity+community", emptyPartial)
 	Register("base.repositories", emptyPartial)
 }
