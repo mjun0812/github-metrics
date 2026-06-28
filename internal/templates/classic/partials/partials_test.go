@@ -30,7 +30,7 @@ func TestLookup_CoversManifest(t *testing.T) {
 	// partials.Register when it is link-loaded. Lookup must resolve all
 	// three manifest entries unconditionally even without the base
 	// import below (the static dispatcher errors on missing partials).
-	for _, name := range []string{"introduction", "base.activity+community", "base.repositories"} {
+	for _, name := range []string{"introduction", "base.header", "base.activity+community", "base.repositories"} {
 		if _, ok := partials.Lookup(name); !ok {
 			t.Errorf("Lookup(%q) missing", name)
 		}
