@@ -12,7 +12,6 @@ func TestParseFlags_AllRecognized(t *testing.T) {
 	cf, err := ParseFlags([]string{
 		"--user", "octocat",
 		"--template", "classic",
-		"--token-env", "GH_TOKEN",
 		"--plugin", "plugin_languages=true",
 		"--plugin", "plugin_languages_limit=5",
 		"--output", "png",
@@ -23,7 +22,7 @@ func TestParseFlags_AllRecognized(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseFlags: %v", err)
 	}
-	if cf.User != "octocat" || cf.Template != "classic" || cf.TokenEnv != "GH_TOKEN" {
+	if cf.User != "octocat" || cf.Template != "classic" {
 		t.Errorf("scalar flags: %+v", cf)
 	}
 	if cf.Output != "png" || cf.Filename != "-" || !cf.Dryrun {
@@ -34,6 +33,21 @@ func TestParseFlags_AllRecognized(t *testing.T) {
 	}
 	if cf.Preset != "p.yaml" {
 		t.Errorf("preset = %q", cf.Preset)
+	}
+}
+
+// TestParseFlags_TokenFlagsRejected pins the v3.0 removal of --token /
+// --token-env. The flag parser must reject both with the standard
+// `flag provided but not defined` error.
+func TestParseFlags_TokenFlagsRejected(t *testing.T) {
+	t.Parallel()
+	for _, args := range [][]string{
+		{"--token", "ghp_xxx"},
+		{"--token-env", "GH_TOKEN"},
+	} {
+		if _, err := ParseFlags(args); err == nil {
+			t.Errorf("ParseFlags(%v): expected error for removed flag", args)
+		}
 	}
 }
 
@@ -204,48 +218,6 @@ func TestToInvocation_ConfigErrorPropagates(t *testing.T) {
 	cf := &CLIFlags{Config: filepath.Join(t.TempDir(), "missing.yaml"), Plugins: map[string]string{}}
 	if _, err := cf.ToInvocation(map[string]string{}); err == nil {
 		t.Errorf("expected config load error")
-	}
-}
-
-func TestResolveToken_FlagEnvPrecedence(t *testing.T) {
-	t.Parallel()
-	env := map[string]string{"FOO": "from-env"}
-	get := func(k string) string { return env[k] }
-	tok, err := ResolveToken(&CLIFlags{TokenEnv: "FOO", Token: "ignored"}, get, "")
-	if err != nil || tok != "from-env" {
-		t.Errorf("tok=%q err=%v want from-env", tok, err)
-	}
-}
-
-func TestResolveToken_TokenFlagOnly(t *testing.T) {
-	t.Parallel()
-	tok, err := ResolveToken(&CLIFlags{Token: "ghp_abc"}, nil, "")
-	if err != nil || tok != "ghp_abc" {
-		t.Errorf("tok=%q err=%v", tok, err)
-	}
-}
-
-func TestResolveToken_InputTokenFallback(t *testing.T) {
-	t.Parallel()
-	tok, err := ResolveToken(&CLIFlags{}, nil, "ghp_from_env")
-	if err != nil || tok != "ghp_from_env" {
-		t.Errorf("tok=%q err=%v", tok, err)
-	}
-}
-
-func TestResolveToken_EnvEmptyIsError(t *testing.T) {
-	t.Parallel()
-	_, err := ResolveToken(&CLIFlags{TokenEnv: "MISSING"}, func(string) string { return "" }, "")
-	if err == nil {
-		t.Errorf("expected error for empty --token-env target")
-	}
-}
-
-func TestResolveToken_NoneIsError(t *testing.T) {
-	t.Parallel()
-	_, err := ResolveToken(&CLIFlags{}, nil, "")
-	if err == nil {
-		t.Errorf("expected error when no token provided")
 	}
 }
 

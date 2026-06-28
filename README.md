@@ -63,7 +63,7 @@ For a single combined SVG (legacy behavior), pass `combined: 'yes'` in your work
 # .github/workflows/metrics.yml
 name: Metrics
 on:
-  schedule: [{cron: '0 0 * * *'}]
+  schedule: [{ cron: "0 0 * * *" }]
   workflow_dispatch:
 
 jobs:
@@ -75,9 +75,9 @@ jobs:
           user: octocat
           token: ${{ secrets.METRICS_TOKEN }}
           template: classic
-          combined: 'yes'
-          plugin_languages: 'yes'
-          plugin_languages_limit: '5'
+          combined: "yes"
+          plugin_languages: "yes"
+          plugin_languages_limit: "5"
           committer_branch: main
           output_action: commit
           output_condition: data-changed
@@ -106,7 +106,7 @@ instead of a user profile:
     repo: ${{ github.event.repository.name }}
     template: repository
     token: ${{ secrets.METRICS_TOKEN }}
-    combined: 'yes'  # repository template renders a single combined SVG
+    combined: "yes" # repository template renders a single combined SVG
 ```
 
 The JSON output adds a `data.repo` field next to the existing `data.user`;
@@ -126,7 +126,7 @@ chmod +x metrics-cli
 go install github.com/mjun0812/github-metrics/cmd/metrics-cli@v1.0.0
 
 # Render an SVG to stdout. GITHUB_TOKEN must be set in your shell.
-metrics-cli --user octocat --token-env GITHUB_TOKEN \
+GITHUB_TOKEN=$(gh auth token) metrics-cli --user octocat \
   --output svg --dryrun --filename -
 ```
 
@@ -138,9 +138,13 @@ docker run --rm \
   -w /renders \
   -e GITHUB_TOKEN \
   ghcr.io/mjun0812/github-metrics:v1.0.0 \
-  --user octocat --token-env GITHUB_TOKEN --template classic \
+  --user octocat --template classic \
   --output svg --filename github-metrics.svg
 ```
+
+`-e GITHUB_TOKEN` forwards the env var into the container; the binary
+reads it via its CLI-mode token resolver. Set `GITHUB_TOKEN` in the
+host shell first, e.g. `export GITHUB_TOKEN=$(gh auth token)`.
 
 The image is multi-arch — `docker pull` automatically resolves to your
 host architecture.
@@ -152,8 +156,10 @@ Every invocation needs a GitHub token:
 - **Action mode**: pass via `with.token` — typically
   `${{ secrets.METRICS_TOKEN }}` (a Personal Access Token) for full
   metrics, or `${{ github.token }}` for public-only data.
-- **CLI / Docker mode**: set `GITHUB_TOKEN` in the environment and use
-  `--token-env GITHUB_TOKEN`.
+- **CLI / Docker mode**: export `GITHUB_TOKEN` in the environment
+  (e.g. `GITHUB_TOKEN=$(gh auth token)`); the binary reads it
+  automatically. The `--token` / `--token-env` flags were removed in
+  v3.0.
 
 The token needs at minimum `public_repo` (classic PAT) or the read scopes
 for each enabled plugin's data (issues, pulls, projects, etc.) for
@@ -163,22 +169,24 @@ user's profile, so a missing token fails immediately.
 ## Plugins
 
 <!-- AUTOGEN_START: plugins-gallery -->
-| | | |
-|:---:|:---:|:---:|
-| [![achievements](docs/examples/plugin-achievements.svg)](docs/plugins/achievements.md) | [![activity](docs/examples/plugin-activity.svg)](docs/plugins/activity.md) | [![calendar](docs/examples/plugin-calendar.svg)](docs/plugins/calendar.md) |
-| [`achievements`](docs/plugins/achievements.md) | [`activity`](docs/plugins/activity.md) | [`calendar`](docs/plugins/calendar.md) |
-| [![contributors](docs/examples/plugin-contributors-repo-contributions.svg)](docs/plugins/contributors.md) | [![habits](docs/examples/plugin-habits.svg)](docs/plugins/habits.md) | [![header](docs/examples/plugin-header.svg)](docs/plugins/header.md) |
-| [`contributors`](docs/plugins/contributors.md) | [`habits`](docs/plugins/habits.md) | [`header`](docs/plugins/header.md) |
-| [![isocalendar](docs/examples/plugin-isocalendar.svg)](docs/plugins/isocalendar.md) | [![languages](docs/examples/plugin-languages.svg)](docs/plugins/languages.md) | [![notable](docs/examples/plugin-notable.svg)](docs/plugins/notable.md) |
-| [`isocalendar`](docs/plugins/isocalendar.md) | [`languages`](docs/plugins/languages.md) | [`notable`](docs/plugins/notable.md) |
-| [![people](docs/examples/plugin-people.svg)](docs/plugins/people.md) | [![projects](docs/examples/plugin-projects.svg)](docs/plugins/projects.md) | [![reactions](docs/examples/plugin-reactions.svg)](docs/plugins/reactions.md) |
-| [`people`](docs/plugins/people.md) | [`projects`](docs/plugins/projects.md) | [`reactions`](docs/plugins/reactions.md) |
-| [![repositories](docs/examples/plugin-repositories.svg)](docs/plugins/repositories.md) | [![sponsors](docs/examples/plugin-sponsors.svg)](docs/plugins/sponsors.md) | [![sponsorships](docs/examples/plugin-sponsorships.svg)](docs/plugins/sponsorships.md) |
-| [`repositories`](docs/plugins/repositories.md) | [`sponsors`](docs/plugins/sponsors.md) | [`sponsorships`](docs/plugins/sponsorships.md) |
-| [![stargazers](docs/examples/plugin-stargazers.svg)](docs/plugins/stargazers.md) | [![starlists](docs/examples/plugin-starlists.svg)](docs/plugins/starlists.md) | [![stars](docs/examples/plugin-stars.svg)](docs/plugins/stars.md) |
-| [`stargazers`](docs/plugins/stargazers.md) | [`starlists`](docs/plugins/starlists.md) | [`stars`](docs/plugins/stars.md) |
-| [![topics](docs/examples/plugin-topics.svg)](docs/plugins/topics.md) | [![traffic](docs/examples/plugin-traffic.svg)](docs/plugins/traffic.md) | |
-| [`topics`](docs/plugins/topics.md) | [`traffic`](docs/plugins/traffic.md) | |
+
+|                                                                                                           |                                                                               |                                                                                        |
+| :-------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------: | :------------------------------------------------------------------------------------: |
+|          [![achievements](docs/examples/plugin-achievements.svg)](docs/plugins/achievements.md)           |  [![activity](docs/examples/plugin-activity.svg)](docs/plugins/activity.md)   |       [![calendar](docs/examples/plugin-calendar.svg)](docs/plugins/calendar.md)       |
+|                              [`achievements`](docs/plugins/achievements.md)                               |                    [`activity`](docs/plugins/activity.md)                     |                         [`calendar`](docs/plugins/calendar.md)                         |
+| [![contributors](docs/examples/plugin-contributors-repo-contributions.svg)](docs/plugins/contributors.md) |     [![habits](docs/examples/plugin-habits.svg)](docs/plugins/habits.md)      |          [![header](docs/examples/plugin-header.svg)](docs/plugins/header.md)          |
+|                              [`contributors`](docs/plugins/contributors.md)                               |                      [`habits`](docs/plugins/habits.md)                       |                           [`header`](docs/plugins/header.md)                           |
+|            [![isocalendar](docs/examples/plugin-isocalendar.svg)](docs/plugins/isocalendar.md)            | [![languages](docs/examples/plugin-languages.svg)](docs/plugins/languages.md) |        [![notable](docs/examples/plugin-notable.svg)](docs/plugins/notable.md)         |
+|                               [`isocalendar`](docs/plugins/isocalendar.md)                                |                   [`languages`](docs/plugins/languages.md)                    |                          [`notable`](docs/plugins/notable.md)                          |
+|                   [![people](docs/examples/plugin-people.svg)](docs/plugins/people.md)                    |  [![projects](docs/examples/plugin-projects.svg)](docs/plugins/projects.md)   |     [![reactions](docs/examples/plugin-reactions.svg)](docs/plugins/reactions.md)      |
+|                                    [`people`](docs/plugins/people.md)                                     |                    [`projects`](docs/plugins/projects.md)                     |                        [`reactions`](docs/plugins/reactions.md)                        |
+|          [![repositories](docs/examples/plugin-repositories.svg)](docs/plugins/repositories.md)           |  [![sponsors](docs/examples/plugin-sponsors.svg)](docs/plugins/sponsors.md)   | [![sponsorships](docs/examples/plugin-sponsorships.svg)](docs/plugins/sponsorships.md) |
+|                              [`repositories`](docs/plugins/repositories.md)                               |                    [`sponsors`](docs/plugins/sponsors.md)                     |                     [`sponsorships`](docs/plugins/sponsorships.md)                     |
+|             [![stargazers](docs/examples/plugin-stargazers.svg)](docs/plugins/stargazers.md)              | [![starlists](docs/examples/plugin-starlists.svg)](docs/plugins/starlists.md) |           [![stars](docs/examples/plugin-stars.svg)](docs/plugins/stars.md)            |
+|                                [`stargazers`](docs/plugins/stargazers.md)                                 |                   [`starlists`](docs/plugins/starlists.md)                    |                            [`stars`](docs/plugins/stars.md)                            |
+|                   [![topics](docs/examples/plugin-topics.svg)](docs/plugins/topics.md)                    |    [![traffic](docs/examples/plugin-traffic.svg)](docs/plugins/traffic.md)    |                                                                                        |
+|                                    [`topics`](docs/plugins/topics.md)                                     |                     [`traffic`](docs/plugins/traffic.md)                      |                                                                                        |
+
 <!-- AUTOGEN_END: plugins-gallery -->
 
 The 20 user-facing plugins above are always available; enable each via
@@ -198,11 +206,11 @@ ignored — no migration of existing workflows is required.
 
 ## Output formats
 
-| Format         | MIME              | Rendering pipeline                                  |
-| -------------- | ----------------- | --------------------------------------------------- |
-| `svg`          | `image/svg+xml`   | Go templates → chromedp `Resize`                    |
-| `png` / `jpeg` | `image/png/jpeg`  | + chromedp `CaptureScreenshot`                      |
-| `json`         | `application/json`| Upstream byte-compatible envelope                   |
+| Format         | MIME               | Rendering pipeline                |
+| -------------- | ------------------ | --------------------------------- |
+| `svg`          | `image/svg+xml`    | Go templates → chromedp `Resize`  |
+| `png` / `jpeg` | `image/png/jpeg`   | + chromedp `CaptureScreenshot`    |
+| `json`         | `application/json` | Upstream byte-compatible envelope |
 
 JSON output is **byte-compatible** with upstream `lowlighter/metrics` for
 the adopted plugins; downstream tools that consume the JSON envelope work

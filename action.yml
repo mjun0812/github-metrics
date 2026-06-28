@@ -899,7 +899,7 @@ inputs:
     required: false
 
   token:
-    description: 'GitHub Personal Access Token'
+    description: 'GitHub Personal Access Token (Action mode input).'
     required: true
 
   use_mocked_data:

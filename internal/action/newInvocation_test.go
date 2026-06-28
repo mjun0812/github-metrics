@@ -175,6 +175,98 @@ func TestNewInvocation_OptimizeExplicit_Preserved(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// newInvocation: token resolution chain (#647)
+//
+// After the v3.0 removal of --token / --token-env, the binary resolves the
+// GitHub PAT through a single deterministic chain:
+//
+//	inputs["token"] (= INPUT_TOKEN via ParseInputs) > env["GITHUB_TOKEN"]
+//	                                                > empty (delegated to
+//	                                                  TokenValidator stage 1)
+// ---------------------------------------------------------------------------
+
+func TestNewInvocation_Token_InputTokenWinsOverGitHubToken(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]any{
+		"user":     "octocat",
+		"token":    "input_token_value",
+		"dryrun":   true,
+		"combined": "yes",
+	}
+	env := map[string]string{"GITHUB_TOKEN": "github_token_value"}
+	inv, err := newInvocation(ModeCLI, inputs, env, "/tmp/out")
+	if err != nil {
+		t.Fatalf("newInvocation: %v", err)
+	}
+	if got := inv.Token.Reveal(); got != "input_token_value" {
+		t.Errorf("token = %q, want %q (INPUT_TOKEN must beat GITHUB_TOKEN)",
+			got, "input_token_value")
+	}
+}
+
+func TestNewInvocation_Token_GitHubTokenFallback(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]any{
+		"user":     "octocat",
+		"dryrun":   true,
+		"combined": "yes",
+	} // no inputs["token"]
+	env := map[string]string{"GITHUB_TOKEN": "github_token_value"}
+	inv, err := newInvocation(ModeCLI, inputs, env, "/tmp/out")
+	if err != nil {
+		t.Fatalf("newInvocation: %v", err)
+	}
+	if got := inv.Token.Reveal(); got != "github_token_value" {
+		t.Errorf("token = %q, want fallback to GITHUB_TOKEN", got)
+	}
+	// The fallback also seeds inputs["token"] so downstream readers
+	// (banner / validators) see the same resolved value.
+	if got := inv.Inputs["token"]; got != "github_token_value" {
+		t.Errorf("inputs[\"token\"] = %v, want fallback value", got)
+	}
+}
+
+func TestNewInvocation_Token_InputTokenAloneActionPath(t *testing.T) {
+	t.Parallel()
+	// Action-mode happy path: GitHub Actions runner sets INPUT_TOKEN
+	// from `with: token:`; GITHUB_TOKEN is absent. ParseInputs would
+	// already have copied INPUT_TOKEN into inputs["token"].
+	inputs := map[string]any{
+		"user":     "octocat",
+		"token":    "input_token_only",
+		"combined": "yes",
+	}
+	env := map[string]string{"GITHUB_REPOSITORY": "octocat/test"}
+	inv, err := newInvocation(ModeAction, inputs, env, "/tmp/out")
+	if err != nil {
+		t.Fatalf("newInvocation: %v", err)
+	}
+	if got := inv.Token.Reveal(); got != "input_token_only" {
+		t.Errorf("token = %q, want %q", got, "input_token_only")
+	}
+}
+
+func TestNewInvocation_Token_NeitherSet_DelegatesToValidator(t *testing.T) {
+	t.Parallel()
+	// newInvocation does NOT itself error on a missing token — the
+	// TokenValidator stage 1 surfaces that diagnostic so the
+	// use_mocked_data / MOCKED_TOKEN paths can still bypass it.
+	inputs := map[string]any{
+		"user":     "octocat",
+		"dryrun":   true,
+		"combined": "yes",
+	}
+	env := map[string]string{}
+	inv, err := newInvocation(ModeCLI, inputs, env, "/tmp/out")
+	if err != nil {
+		t.Fatalf("newInvocation: %v", err)
+	}
+	if got := inv.Token.Reveal(); got != "" {
+		t.Errorf("token = %q, want empty string (delegated to validator)", got)
+	}
+}
+
+// ---------------------------------------------------------------------------
 // newInvocation: RetryPolicy defaults
 // ---------------------------------------------------------------------------
 

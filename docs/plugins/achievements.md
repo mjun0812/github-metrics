@@ -1,7 +1,9 @@
 <!-- AUTOGEN_START: title-and-description -->
+
 # Plugin: achievements
 
 This plugin displays several highlights about what an account has achieved on GitHub.
+
 <!-- AUTOGEN_END: title-and-description -->
 
 ## Sample
@@ -11,20 +13,23 @@ This plugin displays several highlights about what an account has achieved on Gi
 > Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
+
 ## Configuration (inputs)
 
-| Input | Description | Default | Required | Type |
-| ----- | ----------- | ------- | -------- | ---- |
-| `plugin_achievements` | Enable achievements plugin | `no` | no | boolean |
-| `plugin_achievements_threshold` | Rank threshold filter | `C` | no | string |
-| `plugin_achievements_secrets` | Secrets achievements | `yes` | no | boolean |
-| `plugin_achievements_display` | Display style | `detailed` | no | string |
-| `plugin_achievements_limit` | Display limit | `0` | no | number |
-| `plugin_achievements_ignored` | Ignored achievements | `` | no | array |
-| `plugin_achievements_only` | Showcased achievements | `` | no | array |
+| Input                           | Description                | Default    | Required | Type    |
+| ------------------------------- | -------------------------- | ---------- | -------- | ------- |
+| `plugin_achievements`           | Enable achievements plugin | `no`       | no       | boolean |
+| `plugin_achievements_threshold` | Rank threshold filter      | `C`        | no       | string  |
+| `plugin_achievements_secrets`   | Secrets achievements       | `yes`      | no       | boolean |
+| `plugin_achievements_display`   | Display style              | `detailed` | no       | string  |
+| `plugin_achievements_limit`     | Display limit              | `0`        | no       | number  |
+| `plugin_achievements_ignored`   | Ignored achievements       | ``         | no       | array   |
+| `plugin_achievements_only`      | Showcased achievements     | ``         | no       | array   |
+
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
+
 ## Usage
 
 ### GitHub Action
@@ -40,10 +45,12 @@ This plugin displays several highlights about what an account has achieved on Gi
 ### CLI
 
 ```sh
-metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
+# export GITHUB_TOKEN=$(gh auth token)
+metrics-cli --user <your-login> \
   --output svg --filename - \
   --plugin plugin_achievements=yes
 ```
+
 <!-- AUTOGEN_END: usage-snippet -->
 
 ## References
