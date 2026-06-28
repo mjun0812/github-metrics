@@ -11,9 +11,10 @@
 // The generator walks `assets/plugins/<slug>/metadata.yml` for the
 // adopted plugin set (constitution 原則 III). `core` contributes the
 // shared inputs (token / user / repo / committer_* / filename /
-// output / etc.) without any `plugin_<slug>` gate. `base` contributes
-// its section selector and repository-fetching inputs without any
-// `plugin_base` gate.
+// output / etc.) without any `plugin_<slug>` gate. `chrome` is a
+// synthetic input-only namespace that defines the six `chrome_*`
+// per-section booleans (#640). `base` contributes its
+// repository-fetching inputs without any `plugin_base` gate.
 package main
 
 import (
@@ -37,6 +38,7 @@ import (
 // such as `template` / `config_display` / `committer_*`.
 var adoptedSlugs = []string{
 	"core",
+	"chrome",
 	"achievements",
 	"activity",
 	"base",
