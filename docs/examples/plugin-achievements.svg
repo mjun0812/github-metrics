@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="737" class="">
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="770" class="">
   <defs>
     <style/>
   </defs>
   <style>
-    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}@keyframes animation-gauge{from{stroke-dasharray:0 329}}.achievement{display:flex;margin:4px 0}.achievement .icon{margin:0 4px;width:44px;height:44px}.achievement .text{font-size:12px;color:#666}.achievement .title{font-size:14px;color:#58a6ff}.achievement .value{background-color:#58a6ff26}.achievement.b .title{color:#9d8fff}.achievement.b .value{background-color:#9e91ff26}.achievement.a .title{color:#d79533}.achievement.a .value{background-color:#e7bd6926}.achievement.s .title{color:#eb355e}.achievement.s .value{background-color:#eb355e26}.achievement .gh,.achievement .value{border:1px solid;border-radius:16px;font-size:10px;padding:0 5px;white-space:nowrap}.achievement .value{margin-left:46px}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
+    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}footer{margin-top:8px;font-size:10px;font-style:italic;color:#666;text-align:right;display:flex;flex-direction:column;justify-content:flex-end;width:440px;padding:0;margin-left:auto;overflow-wrap:anywhere}footer span{max-width:440px;padding-right:6px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}.achievement{display:flex;margin:4px 0}.achievement .icon{margin:0 4px;width:44px;height:44px}.achievement .text{font-size:12px;color:#666}.achievement .title{font-size:14px;color:#58a6ff}.achievement .value{background-color:#58a6ff26}.achievement.b .title{color:#9d8fff}.achievement.b .value{background-color:#9e91ff26}.achievement.a .title{color:#d79533}.achievement.a .value{background-color:#e7bd6926}.achievement.s .title{color:#eb355e}.achievement.s .value{background-color:#eb355e26}.achievement .gh,.achievement .value{border:1px solid;border-radius:16px;font-size:10px;padding:0 5px;white-space:nowrap}.achievement .value{margin-left:46px}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
   </style>
   <style/>
   <foreignObject x="0" y="0" width="100%" height="100%">
@@ -75,11 +75,11 @@
                     </span>
                     contributor
                     <span class="value">
-                      629
+                      666
                     </span>
                   </div>
                   <div class="text">
-                    Opened 629 pull requests
+                    Opened 666 pull requests
                   </div>
                 </div>
               </div>
@@ -110,11 +110,11 @@
                     </span>
                     developer
                     <span class="value">
-                      52
+                      53
                     </span>
                   </div>
                   <div class="text">
-                    Published 52 public repositories
+                    Published 53 public repositories
                   </div>
                 </div>
               </div>
@@ -241,11 +241,11 @@
                     </span>
                     maintainer
                     <span class="value">
-                      1551
+                      1565
                     </span>
                   </div>
                   <div class="text">
-                    Most popular repository has 1551 stars
+                    Most popular repository has 1565 stars
                   </div>
                 </div>
               </div>
@@ -269,11 +269,11 @@
                     </span>
                     stargazer
                     <span class="value">
-                      321
+                      325
                     </span>
                   </div>
                   <div class="text">
-                    Starred 321 repositories
+                    Starred 325 repositories
                   </div>
                 </div>
               </div>
@@ -293,11 +293,11 @@
                   <div class="title">
                     Follower
                     <span class="value">
-                      25
+                      26
                     </span>
                   </div>
                   <div class="text">
-                    Following 25 users
+                    Following 26 users
                   </div>
                 </div>
               </div>
@@ -409,11 +409,11 @@
                   <div class="title">
                     Reviewer
                     <span class="value">
-                      95
+                      109
                     </span>
                   </div>
                   <div class="text">
-                    Reviewed 95 pull requests
+                    Reviewed 109 pull requests
                   </div>
                 </div>
               </div>
@@ -447,6 +447,16 @@
           </div>
         </section>
       </div>
+      <section data-section="metadata">
+        <footer>
+          <span>
+            These metrics include private contributions
+          </span>
+          <span>
+            Last updated 2026-06-28T02:07:13Z with mjun0812/github-metrics@v2.0.0
+          </span>
+        </footer>
+      </section>
       <div id="metrics-end"></div>
     </div>
   </foreignObject>

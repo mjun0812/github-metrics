@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="141" class="">
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="194" class="">
   <defs>
     <style/>
   </defs>
   <style>
-    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}h3{font-size:14px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}.column{display:flex;flex-direction:column;align-items:center}.fill-width{width:100%}svg.bar{margin:4px 0}.field.language{margin:0 8px;flex-grow:0}.field.language.details{display:flex;justify-content:space-between}.field.language.details small{display:flex;justify-content:space-between;color:#666;text-align:right}.field.language.details&gt;*,.field.language.details small&gt;*{flex:1}.field.language.details small&gt;*:not(:last-child){margin-right:6px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
+    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}h3{font-size:14px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}.column{display:flex;flex-direction:column;align-items:center}.fill-width{width:100%}svg.bar{margin:4px 0}.field.language{margin:0 8px;flex-grow:0}.field.language.details{display:flex;justify-content:space-between}.field.language.details small{display:flex;justify-content:space-between;color:#666;text-align:right}.field.language.details&gt;*,.field.language.details small&gt;*{flex:1}.field.language.details small&gt;*:not(:last-child){margin-right:6px}footer{margin-top:8px;font-size:10px;font-style:italic;color:#666;text-align:right;display:flex;flex-direction:column;justify-content:flex-end;width:440px;padding:0;margin-left:auto;overflow-wrap:anywhere}footer span{max-width:440px;padding-right:6px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
   </style>
   <style/>
   <foreignObject x="0" y="0" width="100%" height="100%">
@@ -23,7 +23,7 @@
               Recently used languages
             </h3>
             <small>
-              activity from 88 repositories analysed over last 30 days
+              activity from 49 repositories analysed over last 30 days
             </small>
             <svg xmlns="http://www.w3.org/2000/svg" class="bar" width="460" height="8" role="img" aria-label="Recently used languages distribution">
               <title>
@@ -34,29 +34,15 @@
               </mask>
               <rect mask="url(#languages-bar-recent)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-recent">
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="355.61" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="355.61" y="0" width="71.67" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="427.29" y="0" width="32.71" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="351.15" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="351.15" y="0" width="92.50" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="443.65" y="0" width="8.34" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="451.99" y="0" width="6.96" height="8" fill="#701516" data-language="Ruby"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="458.95" y="0" width="1.05" height="8" fill="#384d54" data-language="Dockerfile"/>
               </g>
             </svg>
             <div class="row fill-width">
               <section>
-                <div class="field language details" data-language="Shell">
-                  <div class="field">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#89e051" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
-                    </svg>
-                    Shell
-                  </div>
-                  <small>
-                    <div>
-                      4.7 kB
-                    </div>
-                    <div>
-                      77.3%
-                    </div>
-                  </small>
-                </div>
                 <div class="field language details" data-language="Go">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -66,10 +52,42 @@
                   </div>
                   <small>
                     <div>
-                      440 B
+                      8.5 kB
                     </div>
                     <div>
-                      7.1%
+                      76.3%
+                    </div>
+                  </small>
+                </div>
+                <div class="field language details" data-language="Shell">
+                  <div class="field">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                      <path fill="#89e051" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                    </svg>
+                    Shell
+                  </div>
+                  <small>
+                    <div>
+                      206 B
+                    </div>
+                    <div>
+                      1.8%
+                    </div>
+                  </small>
+                </div>
+                <div class="field language details" data-language="Dockerfile">
+                  <div class="field">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                      <path fill="#384d54" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                    </svg>
+                    Dockerfile
+                  </div>
+                  <small>
+                    <div>
+                      26 B
+                    </div>
+                    <div>
+                      0.2%
                     </div>
                   </small>
                 </div>
@@ -84,10 +102,26 @@
                   </div>
                   <small>
                     <div>
-                      964 B
+                      2.2 kB
                     </div>
                     <div>
-                      15.6%
+                      20.1%
+                    </div>
+                  </small>
+                </div>
+                <div class="field language details" data-language="Ruby">
+                  <div class="field">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                      <path fill="#701516" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                    </svg>
+                    Ruby
+                  </div>
+                  <small>
+                    <div>
+                      172 B
+                    </div>
+                    <div>
+                      1.5%
                     </div>
                   </small>
                 </div>
@@ -96,6 +130,16 @@
           </section>
         </section>
       </div>
+      <section data-section="metadata">
+        <footer>
+          <span>
+            These metrics include private contributions
+          </span>
+          <span>
+            Last updated 2026-06-28T02:13:57Z with mjun0812/github-metrics@v2.0.0
+          </span>
+        </footer>
+      </section>
       <div id="metrics-end"></div>
     </div>
   </foreignObject>

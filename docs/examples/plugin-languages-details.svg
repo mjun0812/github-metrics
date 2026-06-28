@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="186" class="">
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="219" class="">
   <defs>
     <style/>
   </defs>
   <style>
-    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}h3{font-size:14px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}.column{display:flex;flex-direction:column;align-items:center}.fill-width{width:100%}svg.bar{margin:4px 0}.field.language{margin:0 8px;flex-grow:0}.field.language.details{display:flex;justify-content:space-between}.field.language.details small{display:flex;justify-content:space-between;color:#666;text-align:right}.field.language.details&gt;*,.field.language.details small&gt;*{flex:1}.field.language.details small&gt;*:not(:last-child){margin-right:6px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
+    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}h3{font-size:14px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}.column{display:flex;flex-direction:column;align-items:center}.fill-width{width:100%}svg.bar{margin:4px 0}.field.language{margin:0 8px;flex-grow:0}.field.language.details{display:flex;justify-content:space-between}.field.language.details small{display:flex;justify-content:space-between;color:#666;text-align:right}.field.language.details&gt;*,.field.language.details small&gt;*{flex:1}.field.language.details small&gt;*:not(:last-child){margin-right:6px}footer{margin-top:8px;font-size:10px;font-style:italic;color:#666;text-align:right;display:flex;flex-direction:column;justify-content:flex-end;width:440px;padding:0;margin-left:auto;overflow-wrap:anywhere}footer span{max-width:440px;padding-right:6px}@keyframes animation-gauge{from{stroke-dasharray:0 329}}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
   </style>
   <style/>
   <foreignObject x="0" y="0" width="100%" height="100%">
@@ -31,48 +31,48 @@
               </mask>
               <rect mask="url(#languages-bar-most)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-progress">
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="72.49" height="8" fill="#a91e50" data-language="EJS"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="72.49" y="0" width="72.27" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="144.75" y="0" width="64.57" height="8" fill="#3D6117" data-language="TeX"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="209.32" y="0" width="62.18" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="271.50" y="0" width="59.54" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="331.04" y="0" width="46.53" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="377.57" y="0" width="46.52" height="8" fill="#f1e05a" data-language="JavaScript"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="424.10" y="0" width="8.64" height="8" fill="#3A4E3A" data-language="Cuda"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="432.74" y="0" width="27.26" height="8" fill="#cccccc" data-language="Other"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="71.03" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="71.03" y="0" width="70.64" height="8" fill="#a91e50" data-language="EJS"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="141.67" y="0" width="67.12" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="208.78" y="0" width="63.46" height="8" fill="#3D6117" data-language="TeX"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="272.24" y="0" width="58.47" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="330.71" y="0" width="47.70" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="378.42" y="0" width="45.72" height="8" fill="#f1e05a" data-language="JavaScript"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="424.14" y="0" width="8.49" height="8" fill="#3A4E3A" data-language="Cuda"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="432.64" y="0" width="27.36" height="8" fill="#cccccc" data-language="Other"/>
               </g>
             </svg>
             <div class="row fill-width">
               <section>
-                <div class="field language details" data-language="EJS">
+                <div class="field language details" data-language="Jupyter Notebook">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#a91e50" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#DA5B0B" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    EJS
+                    Jupyter Notebook
                   </div>
                   <small>
                     <div>
                       2.3 MB
                     </div>
                     <div>
-                      15.8%
+                      15.4%
                     </div>
                   </small>
                 </div>
-                <div class="field language details" data-language="TeX">
+                <div class="field language details" data-language="Go">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#3D6117" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#00ADD8" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    TeX
+                    Go
                   </div>
                   <small>
                     <div>
-                      2.1 MB
+                      2.2 MB
                     </div>
                     <div>
-                      14.0%
+                      14.6%
                     </div>
                   </small>
                 </div>
@@ -88,7 +88,7 @@
                       1.9 MB
                     </div>
                     <div>
-                      12.9%
+                      12.7%
                     </div>
                   </small>
                 </div>
@@ -104,7 +104,7 @@
                       1.5 MB
                     </div>
                     <div>
-                      10.1%
+                      9.9%
                     </div>
                   </small>
                 </div>
@@ -117,7 +117,7 @@
                   </div>
                   <small>
                     <div>
-                      887.5 kB
+                      906.5 kB
                     </div>
                     <div>
                       5.9%
@@ -126,35 +126,35 @@
                 </div>
               </section>
               <section>
-                <div class="field language details" data-language="Jupyter Notebook">
+                <div class="field language details" data-language="EJS">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#DA5B0B" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#a91e50" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    Jupyter Notebook
+                    EJS
                   </div>
                   <small>
                     <div>
                       2.3 MB
                     </div>
                     <div>
-                      15.7%
+                      15.4%
                     </div>
                   </small>
                 </div>
-                <div class="field language details" data-language="Go">
+                <div class="field language details" data-language="TeX">
                   <div class="field">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                      <path fill="#00ADD8" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+                      <path fill="#3D6117" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
                     </svg>
-                    Go
+                    TeX
                   </div>
                   <small>
                     <div>
-                      2.0 MB
+                      2.1 MB
                     </div>
                     <div>
-                      13.5%
+                      13.8%
                     </div>
                   </small>
                 </div>
@@ -170,7 +170,7 @@
                       1.5 MB
                     </div>
                     <div>
-                      10.1%
+                      10.4%
                     </div>
                   </small>
                 </div>
@@ -186,7 +186,7 @@
                       281.4 kB
                     </div>
                     <div>
-                      1.9%
+                      1.8%
                     </div>
                   </small>
                 </div>
@@ -195,6 +195,16 @@
           </section>
         </section>
       </div>
+      <section data-section="metadata">
+        <footer>
+          <span>
+            These metrics include private contributions
+          </span>
+          <span>
+            Last updated 2026-06-28T02:15:32Z with mjun0812/github-metrics@v2.0.0
+          </span>
+        </footer>
+      </section>
       <div id="metrics-end"></div>
     </div>
   </foreignObject>
