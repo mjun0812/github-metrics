@@ -94,12 +94,13 @@ func (p *languagesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 	// org_repo/source/app/metrics/index.mjs:143-148. The repository
 	// template's fixed partial order
 	// (assets/templates/repository/partials/_.json) includes
-	// "languages", and base.runRepository populates a single-repo
-	// RepositoryList regardless of the `base=` value, so without
-	// this gate every repo-mode sample with `--plugin base=` still
-	// leaked a `<section data-section="languages">` (plugin-base-repo
-	// / plugin-people-repo* / plugin-contributors-repo-contributions
-	// / metrics-repository). Gating here also keeps the JSON output
+	// "languages", and internal/dataprovider's repository-mode
+	// Provider synthesizes a single-repo RepositoryList regardless of
+	// chrome/base inputs, so without this gate every repo-mode
+	// sample still leaked a `<section data-section="languages">`
+	// (plugin-base-repo / plugin-people-repo* /
+	// plugin-contributors-repo-contributions / metrics-repository).
+	// Gating here also keeps the JSON output
 	// upstream-parity by omitting languages from data.plugins when
 	// the toggle is off.
 	if !pluginutil.Truthy(pc.Inputs["plugin_languages"]) {

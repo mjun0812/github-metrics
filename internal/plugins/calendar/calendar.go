@@ -1,5 +1,6 @@
 // Package calendar owns the M4 "calendar" plugin. It collapses the
-// per-day contribution data already populated by base.runIndepth
+// per-day contribution data populated lazily by
+// internal/dataprovider's indepth fetch
 // (Computed.ContributionCalendar) into a per-year × per-month
 // histogram.
 package calendar
