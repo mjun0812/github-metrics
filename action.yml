@@ -289,7 +289,7 @@ inputs:
     required: false
 
   plugin_base:
-    description: 'Enable base plugin (legacy v2 master switch; prefer the per-section `chrome_*` booleans).'
+    description: 'Enable base plugin (compat master switch; prefer the per-section `chrome_*` booleans).'
     default: 'no'
     required: false
 
