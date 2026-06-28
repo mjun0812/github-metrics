@@ -12,6 +12,18 @@ import (
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 )
 
+// tokenMissingMsg is the canonical user-facing diagnostic for "no
+// token configured" surfaced by both action.requireTokenUnlessMocked
+// (pre-deps gate, the user-friendly path) and TokenValidator.Validate
+// stage 1 (post-deps gate, the use_mocked_data=true entry that
+// reaches the validator with an empty token). Single source of truth
+// keeps the two callsites in lockstep — see PR #648 cap-1 review
+// SHOULD-FIX #1.
+const tokenMissingMsg = "token required: set the GITHUB_TOKEN env var " +
+	"(or use 'with: token:' in your GitHub Actions workflow). " +
+	"For offline demo set use_mocked_data=true (action.yml) " +
+	"or --plugin use_mocked_data=true (CLI)."
+
 // InputError signals a user-supplied input value that fails token /
 // config validation at startup. Like ConfigError it is never retried;
 // callers print the message + exit 1.
@@ -91,10 +103,7 @@ func (v *TokenValidator) Validate(ctx context.Context) (ValidationResult, error)
 		if !v.UseMockedData {
 			return ValidationResult{}, &InputError{
 				Key: "token",
-				Msg: "token required: set the GITHUB_TOKEN env var " +
-					"(or use 'with: token:' in your GitHub Actions workflow). " +
-					"For offline demo set use_mocked_data=true (action.yml) " +
-					"or --plugin use_mocked_data=true (CLI).",
+				Msg: tokenMissingMsg,
 			}
 		}
 		// Empty token + mocked data is the offline-demo path.
