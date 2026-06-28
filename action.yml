@@ -289,17 +289,7 @@ inputs:
     required: false
 
   plugin_base:
-    description: 'Enable base plugin (master switch for the activity / community and repositories summary panels).'
-    default: 'no'
-    required: false
-
-  plugin_base_activity:
-    description: 'Render the activity + community panel (commits, PR reviews, organizations, sponsoring, starred, watching, ...). Requires `plugin_base: yes`.'
-    default: 'no'
-    required: false
-
-  plugin_base_repositories:
-    description: 'Render the repositories summary panel (license preference, releases, packages, disk usage, sponsors, stargazers, forks, watchers). Requires `plugin_base: yes`.'
+    description: 'Enable base plugin (legacy v2 master switch; prefer the per-section `chrome_*` booleans).'
     default: 'no'
     required: false
 

@@ -82,6 +82,13 @@ func (*basePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, err
 	if pc == nil || pc.Provider == nil {
 		return &Result{}, nil
 	}
+	// Auto-enable (#640): skip the Profile / RepositorySummary fetches
+	// when the user did not opt into any of the chrome panels the base
+	// plugin populates. The legacy `plugin_base=yes` master switch is
+	// honoured as v2 compat while no chrome_* input is declared.
+	if !runEnabledForInputs(pc.Inputs) {
+		return &Result{}, nil
+	}
 
 	res := &Result{}
 

@@ -76,14 +76,56 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	return renderResult(r)
 }
 
+// basePartialEnabled is the explicit input-level gate for BasePartial.
+// `chrome_header=yes` is the canonical surface (#640); the legacy
+// `plugin_base=yes` master switch is honoured as a v2 compat path when
+// no chrome_* input is declared, so workflows that have not migrated
+// still get the identity card.
+func basePartialEnabled(pc *templates.PartialContext) bool {
+	if pc == nil {
+		return false
+	}
+	return runEnabledForInputs(pc.Inputs)
+}
+
+// runEnabledForInputs reports whether the header plugin should produce
+// any output (either as a Run-time fetch or as a static-partial
+// render). Shared by header.Run and BasePartial so the two paths stay
+// in lockstep.
+func runEnabledForInputs(in map[string]any) bool {
+	if chrome.TruthyInput(in, "chrome_header") {
+		return true
+	}
+	if chrome.TruthyInput(in, "plugin_"+Name) {
+		return true
+	}
+	if !chrome.AnyChromeInputPresent(in) &&
+		chrome.TruthyInput(in, "plugin_base") {
+		return true
+	}
+	if chrome.LegacyDefaultAllSections(in) {
+		return true
+	}
+	return false
+}
+
 // BasePartial is the `base.header` static partial entry point. It
 // renders the same chrome as Partial but degrades to a Provider fetch
 // when the header plugin has not been Run (i.e. when the user enabled
-// `base=header` without also setting `plugin_header=yes`). All failure
-// modes return ("", nil) so the static dispatcher continues rendering
-// the rest of the SVG.
+// `chrome_header=yes` without also setting `plugin_header=yes`). All
+// failure modes return ("", nil) so the static dispatcher continues
+// rendering the rest of the SVG.
+//
+// Reading `chrome_header` directly here (rather than relying solely on
+// classic/repository.partialEnabledByBase) keeps the input contract
+// readable when this function is exercised in isolation — and lets
+// the legacy `plugin_base=yes` v2 compat path still pull in the
+// identity card without forcing callers to also set chrome_header.
 func BasePartial(ctx context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil {
+		return "", nil
+	}
+	if !basePartialEnabled(pc) {
 		return "", nil
 	}
 	// Prefer a Result already published by the header plugin's Run.

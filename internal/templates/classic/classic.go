@@ -118,12 +118,11 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 	b.WriteString(`<foreignObject x="0" y="0" width="100%" height="100%">`)
 	b.WriteString(`<div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper">`)
 
-	// Resolve which base.* partials are enabled. Per upstream
-	// behaviour, the `base` input is a CSV of section names
-	// ("header, activity, community, repositories, metadata"). When the
-	// input is absent we render all sections (preserves v1 behaviour).
-	// When the input is the empty string we render NONE (used by
-	// per-plugin renders like mjun0812's metrics_languages.svg etc.).
+	// Resolve which base.* partials are enabled. The canonical input
+	// surface is the six `chrome_<section>` booleans (#640). The
+	// legacy `base` CSV / "input-absent → all sections" paths are
+	// preserved as deprecated fallbacks inside ResolveBaseSections so
+	// direct engine callers keep working until v3.
 	baseSections := chrome.ResolveBaseSections(pc.Inputs)
 
 	for _, name := range t.partials {
@@ -157,11 +156,12 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 		if !chrome.TruthyInput(pc.Inputs, "plugin_"+slug) {
 			continue
 		}
-		// Dedup: when the user enables both `base=header` and
-		// `plugin_header=yes`, the static base.header partial above has
-		// already emitted the identity card. Skipping the plugin entry
-		// here keeps the SVG to a single <section data-section="header">
-		// instead of duplicating it.
+		// Dedup: when the user enables both `chrome_header=yes` (or
+		// the legacy `base=header`) and `plugin_header=yes`, the static
+		// base.header partial above has already emitted the identity
+		// card. Skipping the plugin entry here keeps the SVG to a
+		// single <section data-section="header"> instead of
+		// duplicating it.
 		if slug == "header" {
 			if _, headerEnabledByBase := baseSections["header"]; headerEnabledByBase {
 				continue
@@ -217,29 +217,28 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 }
 
 // partialEnabledByBase reports whether the named partial should be
-// rendered given the resolved baseSections set. Only partials whose
-// name starts with "base." (plus "introduction") are gated by this
-// check; other partials (plugin.*) pass through unaffected.
+// rendered given the resolved section set. Only partials whose name
+// starts with "base." (plus "introduction") are gated by this check;
+// other partials (plugin.*) pass through unaffected.
 //
-// Mapping mirrors upstream's classic template:
+// Mapping (the section names themselves now come from `chrome_<X>`
+// booleans — see chrome.ResolveBaseSections):
 //
 //	introduction              → "introduction"
 //	base.header               → "header"
 //	base.activity+community   → "activity" OR "community"
 //	base.repositories         → "repositories"
 //
-// base.header is restored as a static partial (rendered ahead of plugin
-// partials so the identity card always sits at the top of the SVG).
-// The standalone `header` plugin still exists; the M4 dispatcher
-// deduplicates the slug when sections["header"] is also enabled.
+// base.header is rendered ahead of the plugin partials so the
+// identity card always sits at the top of the SVG. The standalone
+// `header` plugin still exists; the M4 dispatcher deduplicates the
+// slug when sections["header"] is also enabled.
 //
 // `metadata` is gated separately by chrome.MetadataFooter.
 //
-// The base.activity+community / base.repositories partials are
-// additionally gated by the `plugin_base*` inputs inside their own
-// partial bodies (see internal/plugins/base/render.go). The legacy
-// section gate here keeps upstream-style `base=header,repositories`
-// CSV invocations working unchanged.
+// The base.activity+community / base.repositories partials no longer
+// need their own `plugin_base*` sub-gates — the chrome-driven section
+// set is the single gating surface (#640).
 func partialEnabledByBase(name string, sections map[string]struct{}) bool {
 	switch name {
 	case "introduction":

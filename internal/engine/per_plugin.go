@@ -189,10 +189,17 @@ func resolvePerPluginTargets(inputs map[string]any, allowlist []string) []string
 // singlePluginInputs returns a copy of inputs modified so that:
 //   - only the target plugin's gate (plugin_<slug>) is truthy,
 //   - all other top-level plugin gates are disabled,
-//   - base sections and the metadata footer are suppressed (base="").
+//   - every chrome section is explicitly off (#640) so neither the
+//     v2 default-all fallback nor a leaked chrome_X from the caller
+//     pulls extra chrome into the per-plugin SVG.
 func singlePluginInputs(inputs map[string]any, slug string) map[string]any {
-	out := make(map[string]any, len(inputs)+2)
+	out := make(map[string]any, len(inputs)+8)
 	for k, v := range inputs {
+		// Drop legacy chrome aliases — we set the canonical chrome_*
+		// keys below and want a clean section state.
+		if k == "base" || k == "plugin_base_activity" || k == "plugin_base_repositories" {
+			continue
+		}
 		if strings.HasPrefix(k, "plugin_") {
 			rest := strings.TrimPrefix(k, "plugin_")
 			if !strings.Contains(rest, "_") {
@@ -209,8 +216,15 @@ func singlePluginInputs(inputs map[string]any, slug string) map[string]any {
 	}
 	// Enable the target plugin gate (in case it was absent from inputs).
 	out["plugin_"+slug] = true
-	// Suppress base sections and the metadata footer.
-	out["base"] = ""
+	// Suppress base sections and the metadata footer explicitly via the
+	// chrome_* booleans — presence (any value) short-circuits the v2
+	// "absent → all sections" fallback in chrome.ResolveBaseSections.
+	for _, section := range []string{
+		"chrome_header", "chrome_activity", "chrome_community",
+		"chrome_repositories", "chrome_metadata", "chrome_introduction",
+	} {
+		out[section] = false
+	}
 	return out
 }
 
