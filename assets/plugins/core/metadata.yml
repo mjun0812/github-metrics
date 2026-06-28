@@ -10,9 +10,12 @@ inputs:
 
   token:
     description: |
-      GitHub Personal Access Token
+      GitHub Personal Access Token (Action mode input).
 
-      No scopes are required by default, though some plugins and features may require additional scopes.
+      Action mode: pass via `with: token: ${{ secrets.METRICS_TOKEN }}`; the runner forwards it as the `INPUT_TOKEN` env var.
+      CLI mode: omit this input and export `GITHUB_TOKEN` in the shell instead (the `--token` / `--token-env` flags were removed in v3.0).
+
+      Resolution order: `INPUT_TOKEN` > `GITHUB_TOKEN` env. No scopes are required by default, though some plugins and features may require additional scopes.
 
       When using a configuration which does not requires a GitHub PAT, it is possible to pass `NOT_NEEDED` instead.
       When doing so, any settings which defaults on user fetched values will not be templated (e.g. `.user.*`) and will usually need to be set manually.

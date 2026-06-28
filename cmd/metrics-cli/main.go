@@ -47,12 +47,13 @@ Usage:
 Action mode (set automatically by the GitHub Actions runner):
   GITHUB_ACTIONS=true INPUT_USER=octocat INPUT_TOKEN=<PAT> metrics-cli
 
-CLI mode (direct invocation):
-  metrics-cli --user <login> --template classic [--config inputs.yaml]
-              [--token <PAT> | --token-env <ENV_NAME>]
-              [--plugin key=value ...] [--output svg|png|jpeg|json]
-              [--filename <path-or-->] [--dryrun]
-              [--output-dir <dir>] [--combined] [--plugins a,b,c]
+CLI mode (direct invocation; the GitHub token is read from the
+GITHUB_TOKEN env var — there is no --token / --token-env flag):
+  GITHUB_TOKEN=$(gh auth token) \
+    metrics-cli --user <login> --template classic [--config inputs.yaml]
+                [--plugin key=value ...] [--output svg|png|jpeg|json]
+                [--filename <path-or-->] [--dryrun]
+                [--output-dir <dir>] [--combined] [--plugins a,b,c]
 
 Common flags:
   -h, --help        Show this help message and exit.

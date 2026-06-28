@@ -216,7 +216,6 @@ func TestRunCLIWith_PresetOverlayError(t *testing.T) {
 	err := runCLIWith(context.Background(), &CLIFlags{
 		User:     "octocat",
 		Template: "classic",
-		Token:    "ghp_mock_pat_valid",
 		Output:   "svg",
 		Filename: "github-metrics.svg",
 		Dryrun:   true,
@@ -263,7 +262,6 @@ func TestRunCLIWith_RepositoryValidationError(t *testing.T) {
 	err := runCLIWith(context.Background(), &CLIFlags{
 		User:     "octocat",
 		Template: "repository",
-		Token:    "ghp_mock_pat_valid",
 		Output:   "svg",
 		Filename: "github-metrics.svg",
 		Dryrun:   true,
@@ -282,12 +280,12 @@ func TestRunCLIWith_BuildDepsError(t *testing.T) {
 	err := runCLIWith(context.Background(), &CLIFlags{
 		User:     "octocat",
 		Template: "classic",
-		Token:    "ghp_mock_pat_valid",
 		Output:   "svg",
 		Filename: "github-metrics.svg",
 		Dryrun:   true,
 		Plugins:  map[string]string{},
 	}, runOptions{
+		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
 		OutputDir: t.TempDir(),
 		BuildDeps: func(context.Context, *Invocation) (engine.Deps, error) {
 			return engine.Deps{}, errBoom
@@ -307,12 +305,12 @@ func TestRunCLIWith_NonDryrunCommitterInitError(t *testing.T) {
 	err := runCLIWith(context.Background(), &CLIFlags{
 		User:     "octocat",
 		Template: "classic",
-		Token:    "ghp_mock_pat_valid",
 		Output:   "svg",
 		Filename: out,
 		Dryrun:   false,
 		Plugins:  map[string]string{},
 	}, runOptions{
+		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
 		OutputDir: t.TempDir(),
 		BuildDeps: buildTestDeps(t, newFakeREST()),
 	})

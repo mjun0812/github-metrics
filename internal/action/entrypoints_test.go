@@ -34,10 +34,10 @@ func TestRun_EntryPointRejectsUnsupportedOutputAction(t *testing.T) {
 // TestRunCLI_EntryPointRejectsUnsupportedOutputAction covers the exported
 // CLI entry point without reaching real deps construction.
 func TestRunCLI_EntryPointRejectsUnsupportedOutputAction(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "ghp_mock_pat_valid")
 	out := filepath.Join(t.TempDir(), "github-metrics.svg")
 	err := RunCLI(context.Background(), []string{
 		"--user", "octocat",
-		"--token", "ghp_mock_pat_valid",
 		"--filename", out,
 		"--plugin", "output_action=gist",
 	})

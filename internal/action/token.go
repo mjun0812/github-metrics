@@ -91,10 +91,10 @@ func (v *TokenValidator) Validate(ctx context.Context) (ValidationResult, error)
 		if !v.UseMockedData {
 			return ValidationResult{}, &InputError{
 				Key: "token",
-				Msg: "Error: token is required to fetch real GitHub data. " +
-					"Either pass a PAT (INPUT_TOKEN / --token / --token-env), " +
-					"or set use_mocked_data=true (action.yml) / --plugin use_mocked_data=true (CLI) " +
-					"for offline demo.",
+				Msg: "token required: set the GITHUB_TOKEN env var " +
+					"(or use 'with: token:' in your GitHub Actions workflow). " +
+					"For offline demo set use_mocked_data=true (action.yml) " +
+					"or --plugin use_mocked_data=true (CLI).",
 			}
 		}
 		// Empty token + mocked data is the offline-demo path.

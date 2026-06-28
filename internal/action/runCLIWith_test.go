@@ -21,7 +21,6 @@ func TestRunCLIWith_HappyPath_Dryrun(t *testing.T) {
 	cf := &CLIFlags{
 		User:     "octocat",
 		Template: "classic",
-		Token:    "ghp_mock_pat_valid",
 		Output:   "svg",
 		Filename: "github-metrics.svg",
 		Dryrun:   true,
@@ -30,7 +29,7 @@ func TestRunCLIWith_HappyPath_Dryrun(t *testing.T) {
 
 	err := runCLIWith(context.Background(), cf, runOptions{
 		Mode:      ModeCLI,
-		Env:       []string{},
+		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
 		Stdout:    nil, // CLI mode uses os.Stderr for banner; stdout unused here
 		OutputDir: outDir,
 		BuildDeps: buildTestDeps(t, rest),
@@ -63,7 +62,6 @@ func TestRunCLIWith_FilenameStdout(t *testing.T) {
 	cf := &CLIFlags{
 		User:     "octocat",
 		Template: "classic",
-		Token:    "ghp_mock_pat_valid",
 		Output:   "svg",
 		Filename: "-",
 		Dryrun:   true,
@@ -72,7 +70,7 @@ func TestRunCLIWith_FilenameStdout(t *testing.T) {
 
 	err := runCLIWith(context.Background(), cf, runOptions{
 		Mode:      ModeCLI,
-		Env:       []string{},
+		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
 		Stdout:    nil,
 		OutputDir: outDir,
 		BuildDeps: buildTestDeps(t, rest),
@@ -100,7 +98,6 @@ func TestRunCLIWith_OutputAction_UnsupportedFailFast(t *testing.T) {
 	cf := &CLIFlags{
 		User:     "octocat",
 		Template: "classic",
-		Token:    "ghp_mock_pat_valid",
 		Output:   "svg",
 		Dryrun:   true,
 		Plugins:  map[string]string{"output_action": "gist"},
@@ -108,7 +105,7 @@ func TestRunCLIWith_OutputAction_UnsupportedFailFast(t *testing.T) {
 
 	err := runCLIWith(context.Background(), cf, runOptions{
 		Mode:      ModeCLI,
-		Env:       []string{},
+		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
 		OutputDir: outDir,
 		BuildDeps: buildTestDeps(t, rest),
 	})
@@ -132,7 +129,6 @@ func TestRunCLIWith_MissingUser_Errors(t *testing.T) {
 	cf := &CLIFlags{
 		// User deliberately omitted.
 		Template: "classic",
-		Token:    "ghp_mock_pat_valid",
 		Output:   "svg",
 		Dryrun:   true,
 		Plugins:  map[string]string{},
@@ -140,7 +136,7 @@ func TestRunCLIWith_MissingUser_Errors(t *testing.T) {
 
 	err := runCLIWith(context.Background(), cf, runOptions{
 		Mode:      ModeCLI,
-		Env:       []string{},
+		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
 		OutputDir: outDir,
 		BuildDeps: buildTestDeps(t, rest),
 	})
