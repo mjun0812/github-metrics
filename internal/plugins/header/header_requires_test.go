@@ -43,7 +43,12 @@ func TestHeader_Requires_Static(t *testing.T) {
 func TestHeader_Requires_Dynamic(t *testing.T) {
 	mock := dataprovidertest.NewCountingMock()
 
-	pc := mocks.NewPluginContext(t)
+	// Auto-enable gate (#640): without chrome_header (or plugin_header)
+	// set, header.Run early-returns before touching the Provider.
+	pc := mocks.NewPluginContext(t, mocks.WithInputs(map[string]any{
+		"user":          "octocat",
+		"chrome_header": "yes",
+	}))
 	pc.Provider = mock
 
 	_, _ = header.Plugin.Run(context.Background(), pc)

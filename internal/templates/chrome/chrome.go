@@ -53,6 +53,23 @@ func AnyChromeInputPresent(in map[string]any) bool {
 	return false
 }
 
+// LegacyDefaultAllSections reports whether the inputs map triggers the
+// v2 "all sections by default" backwards-compat path. True iff neither
+// any `chrome_*` key nor the legacy `base` CSV input is declared.
+// Plugin auto-enable helpers in internal/plugins/{base,header} consult
+// this so the v2 default behaviour is preserved end-to-end: not only
+// does ResolveBaseSections return the full section set, the relevant
+// plugin Run calls also fire, so the partials have data to render.
+func LegacyDefaultAllSections(in map[string]any) bool {
+	if AnyChromeInputPresent(in) {
+		return false
+	}
+	if _, present := ReadBaseInput(in); present {
+		return false
+	}
+	return true
+}
+
 // resolveBaseDefaultLogged is set when the v2 "absent → all sections"
 // fallback emits its deprecation warning at most once per process so
 // repeated render calls do not spam the log.

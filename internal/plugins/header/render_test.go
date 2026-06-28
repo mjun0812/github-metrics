@@ -321,6 +321,54 @@ func TestPartial_OrgEmptyLoginAndName(t *testing.T) {
 	}
 }
 
+// TestBasePartial_ChromeHeaderGate (#640) verifies that BasePartial
+// returns ("", nil) when `chrome_header` is off and another `chrome_*`
+// key is declared (which short-circuits the v2 default-all fallback).
+// A populated plugin Result + Provider must not bypass the gate.
+func TestBasePartial_ChromeHeaderGate(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	putResult(d, &header.Result{
+		Profile: &plugins.Profile{
+			Kind: plugins.ProfileKindUser,
+			User: &plugins.User{Login: "octocat", Name: "Octo"},
+		},
+	})
+	pc := &templates.PartialContext{
+		Data:   d,
+		Inputs: map[string]any{"chrome_metadata": "yes"},
+	}
+	got, err := header.BasePartial(context.Background(), pc)
+	if err != nil || got != "" {
+		t.Fatalf("BasePartial(no chrome_header) = %q, %v; want \"\", nil", got, err)
+	}
+}
+
+// TestBasePartial_LegacyPluginBaseEnables verifies the v2 compat path:
+// `plugin_base=yes` alone (no chrome_* declared) still pulls the
+// identity card in.
+func TestBasePartial_LegacyPluginBaseEnables(t *testing.T) {
+	t.Parallel()
+	d := plugins.NewData()
+	putResult(d, &header.Result{
+		Profile: &plugins.Profile{
+			Kind: plugins.ProfileKindUser,
+			User: &plugins.User{Login: "octocat", Name: "Octo"},
+		},
+	})
+	pc := &templates.PartialContext{
+		Data:   d,
+		Inputs: map[string]any{"plugin_base": "yes"},
+	}
+	got, err := header.BasePartial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("BasePartial: %v", err)
+	}
+	if !strings.Contains(got, `data-section="header"`) {
+		t.Errorf("legacy plugin_base=yes should render header; got:\n%s", got)
+	}
+}
+
 // TestBasePartial_NilContext returns ("", nil) when the dispatcher
 // passes nil.
 func TestBasePartial_NilContext(t *testing.T) {
@@ -360,7 +408,11 @@ func TestBasePartial_UsesPluginResult(t *testing.T) {
 	// Provider would panic if consulted (nil method bodies on the
 	// stub return nil errors, so a sentinel is the clearest signal).
 	prov := &providerStub{profileErr: errors.New("must not be called")}
-	pc := &templates.PartialContext{Data: d, Provider: prov}
+	pc := &templates.PartialContext{
+		Data:     d,
+		Provider: prov,
+		Inputs:   map[string]any{"chrome_header": "yes"},
+	}
 	got, err := header.BasePartial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("BasePartial: %v", err)
@@ -402,7 +454,10 @@ func TestBasePartial_LazyFetchSuccess(t *testing.T) {
 		},
 		cal: &plugins.ContributionCalendar{Weeks: []plugins.ContributionWeek{week}},
 	}
-	pc := &templates.PartialContext{Provider: prov}
+	pc := &templates.PartialContext{
+		Provider: prov,
+		Inputs:   map[string]any{"chrome_header": "yes"},
+	}
 	got, err := header.BasePartial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("BasePartial: %v", err)
@@ -450,7 +505,10 @@ func TestBasePartial_CalendarErrorDegrades(t *testing.T) {
 		},
 		calErr: errors.New("api down"),
 	}
-	pc := &templates.PartialContext{Provider: prov}
+	pc := &templates.PartialContext{
+		Provider: prov,
+		Inputs:   map[string]any{"chrome_header": "yes"},
+	}
 	got, err := header.BasePartial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("BasePartial: %v", err)
