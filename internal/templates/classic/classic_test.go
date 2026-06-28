@@ -11,6 +11,13 @@ import (
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/classic"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
+
+	// #625: the base plugin owns the base.activity+community /
+	// base.repositories static partials listed in _.json. Without this
+	// side-effect import classic.Template.Run errors with
+	// "partial X listed in _.json but not implemented" because the
+	// classic package no longer registers them itself.
+	_ "github.com/mjun0812/github-metrics/internal/plugins/base"
 )
 
 func TestClassic_Check_UserSVG(t *testing.T) {
