@@ -23,7 +23,6 @@ func TestRunCLIWith_PerPlugin_DefaultMode(t *testing.T) {
 	cf := &CLIFlags{
 		User:     "octocat",
 		Template: "classic",
-		Token:    "ghp_mock_pat_valid",
 		Output:   "svg",
 		Filename: "", // not set → per-plugin mode
 		Dryrun:   true,
@@ -35,7 +34,7 @@ func TestRunCLIWith_PerPlugin_DefaultMode(t *testing.T) {
 
 	err := runCLIWith(context.Background(), cf, runOptions{
 		Mode:      ModeCLI,
-		Env:       []string{},
+		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
 		Stdout:    io.Discard,
 		OutputDir: outDir,
 		BuildDeps: buildTestDeps(t, rest),
@@ -62,7 +61,6 @@ func TestRunCLIWith_PerPlugin_WithAllowlist(t *testing.T) {
 	cf := &CLIFlags{
 		User:            "octocat",
 		Template:        "classic",
-		Token:           "ghp_mock_pat_valid",
 		Output:          "svg",
 		Filename:        "",
 		Dryrun:          true,
@@ -75,7 +73,7 @@ func TestRunCLIWith_PerPlugin_WithAllowlist(t *testing.T) {
 
 	err := runCLIWith(context.Background(), cf, runOptions{
 		Mode:      ModeCLI,
-		Env:       []string{},
+		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
 		Stdout:    io.Discard,
 		OutputDir: outDir,
 		BuildDeps: buildTestDeps(t, rest),
@@ -103,7 +101,6 @@ func TestRunCLIWith_Combined_ExplicitFlag(t *testing.T) {
 	cf := &CLIFlags{
 		User:     "octocat",
 		Template: "classic",
-		Token:    "ghp_mock_pat_valid",
 		Output:   "svg",
 		Filename: "metrics.svg",
 		Combined: true,
@@ -113,7 +110,7 @@ func TestRunCLIWith_Combined_ExplicitFlag(t *testing.T) {
 
 	err := runCLIWith(context.Background(), cf, runOptions{
 		Mode:      ModeCLI,
-		Env:       []string{},
+		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
 		Stdout:    io.Discard,
 		OutputDir: outDir,
 		BuildDeps: buildTestDeps(t, rest),
@@ -139,7 +136,6 @@ func TestRunCLIWith_FilenameImpliesCombined(t *testing.T) {
 	cf := &CLIFlags{
 		User:     "octocat",
 		Template: "classic",
-		Token:    "ghp_mock_pat_valid",
 		Output:   "svg",
 		Filename: "foo.svg", // explicit filename → combined mode
 		Dryrun:   true,
@@ -148,7 +144,7 @@ func TestRunCLIWith_FilenameImpliesCombined(t *testing.T) {
 
 	err := runCLIWith(context.Background(), cf, runOptions{
 		Mode:      ModeCLI,
-		Env:       []string{},
+		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
 		Stdout:    io.Discard,
 		OutputDir: outDir,
 		BuildDeps: buildTestDeps(t, rest),

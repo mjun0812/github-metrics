@@ -162,7 +162,6 @@ render_one() {
 			-v "${WORKDIR}:/out" \
 			"$IMAGE" \
 			--user "$USER" \
-			--token-env GITHUB_TOKEN \
 			--output svg \
 			--filename "/out/${outfile}" \
 			--dryrun \
@@ -230,7 +229,6 @@ render_one_repo() {
 			--user "$USER" \
 			--repo "$REPO" \
 			--template repository \
-			--token-env GITHUB_TOKEN \
 			--output svg \
 			--filename "/out/${outfile}" \
 			--dryrun \

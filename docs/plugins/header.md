@@ -40,7 +40,8 @@ follower count, and a 2-week contribution calendar mini-bar.
 ### CLI
 
 ```sh
-metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
+# export GITHUB_TOKEN=$(gh auth token)
+metrics-cli --user <your-login> \
   --output svg --filename - \
   --plugin plugin_header=yes
 ```

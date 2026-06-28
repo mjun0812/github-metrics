@@ -42,7 +42,8 @@ read aggregated data from the shared `dataprovider.Provider`
 ### CLI
 
 ```sh
-metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
+# export GITHUB_TOKEN=$(gh auth token)
+metrics-cli --user <your-login> \
   --output svg --filename - \
   --plugin plugin_base=yes
 ```

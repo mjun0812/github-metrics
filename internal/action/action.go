@@ -158,6 +158,14 @@ func runWith(ctx context.Context, opts runOptions) error {
 		return verr
 	}
 
+	// 4c. Missing-token guard (#647). Surfaces the canonical
+	// "set GITHUB_TOKEN" diagnostic before deps build so the user
+	// does not see the deeper "token does not match recognized prefix"
+	// returned by the auth layer.
+	if terr := requireTokenUnlessMocked(inv); terr != nil {
+		return terr
+	}
+
 	// 5. Build engine deps (real or mocked).
 	var deps engine.Deps
 	if opts.BuildDeps != nil {
@@ -318,20 +326,6 @@ func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
 	// Translate deprecated chrome aliases (mirrors runWith / #640).
 	TranslateLegacyChromeInputs(inputs)
 
-	// Token resolution — applied after the merge so INPUT_TOKEN serves as
-	// the fallback when --token / --token-env are absent.
-	inputTok, _ := inputs["token"].(string)
-	tok, terr := ResolveToken(cf, os.Getenv, inputTok)
-	if terr != nil {
-		// Allow dryrun + mocked-data to bypass token requirement.
-		if !cf.Dryrun || !boolInput(inputs, "use_mocked_data", false) {
-			return terr
-		}
-	}
-	if tok != "" {
-		inputs["token"] = tok
-	}
-
 	inv, ierr := newInvocation(ModeCLI, inputs, env, opts.OutputDir)
 	if ierr != nil {
 		return ierr
@@ -342,6 +336,11 @@ func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
 	}
 	if verr := validateRepositoryInput(inv); verr != nil {
 		return verr
+	}
+
+	// Missing-token guard (#647), mirrors runWith.
+	if terr := requireTokenUnlessMocked(inv); terr != nil {
+		return terr
 	}
 
 	var deps engine.Deps
@@ -499,6 +498,30 @@ func targetOutputPath(inv *Invocation) string {
 
 // ---------- helpers ----------
 
+// requireTokenUnlessMocked surfaces the canonical "set GITHUB_TOKEN"
+// diagnostic when no token reached newInvocation through either
+// inputs["token"] (= INPUT_TOKEN) or the env["GITHUB_TOKEN"] fallback.
+//
+// Runs before deps construction so the user sees the helpful
+// "set GITHUB_TOKEN" guidance instead of the auth layer's deeper
+// "token does not match recognized prefix" message (#647).
+//
+// `use_mocked_data` (offline demo) and MOCKED_TOKEN bypass the guard
+// — the validator stage 1 path that handled this before still gates
+// the deeper check on the same condition.
+func requireTokenUnlessMocked(inv *Invocation) error {
+	if inv == nil || inv.UseMockedData {
+		return nil
+	}
+	if inv.Token.Reveal() != "" {
+		return nil
+	}
+	return &InputError{
+		Key: "token",
+		Msg: tokenMissingMsg,
+	}
+}
+
 // validateRepositoryInput enforces the M7 requirement that the
 // `repository` template runs only when the user provided a non-empty
 // `repo` input. Returns nil for non-repository templates so the
@@ -586,7 +609,28 @@ func newInvocation(mode RunMode, inputs map[string]any, env map[string]string, o
 		GitHubAPIGraphQL: stringInput(inputs, "github_api_graphql", "https://api.github.com/graphql"),
 		OutputDir:        outputDir,
 	}
-	inv.Token = config.NewToken(stringInput(inputs, "token", ""))
+	// Token resolution chain (#647):
+	//
+	//  1. inputs["token"] — populated from INPUT_TOKEN via ParseInputs
+	//     (Action mode: `with: token:` becomes INPUT_TOKEN by runner
+	//     convention; CLI mode: user can still export INPUT_TOKEN).
+	//  2. env["GITHUB_TOKEN"] — the canonical convention used by gh
+	//     CLI, GitHub Actions, and most tooling. The fallback covers
+	//     direct CLI invocations and workflow steps that set
+	//     `env: GITHUB_TOKEN:` instead of the action input.
+	//
+	// Neither set is not fatal here — runWith / runCLIWith surface the
+	// missing-token diagnostic before deps build (the auth layer's
+	// "token does not match recognized prefix" message would be less
+	// helpful than the canonical "set GITHUB_TOKEN" guidance).
+	tokenRaw := stringInput(inputs, "token", "")
+	if tokenRaw == "" {
+		tokenRaw = env["GITHUB_TOKEN"]
+		if tokenRaw != "" {
+			inputs["token"] = tokenRaw
+		}
+	}
+	inv.Token = config.NewToken(tokenRaw)
 	inv.RetryPolicy = RetryPolicy{
 		Retries: intInput(inputs, "retries", DefaultRetries),
 		Delay:   durationMsInput(inputs, "retries_delay", DefaultRetryDelay),
