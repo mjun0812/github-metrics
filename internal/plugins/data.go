@@ -123,13 +123,14 @@ func (d *Data) SnapshotErrors() []error {
 // upstream `base.header.ejs` as "Contributed to N repositories".
 //
 // 429 Phase 3: RecentContributions carries the last 14 calendar days
-// used by the BaseHeader mini calendar. Sourced from
+// used by the header partial's mini calendar. Sourced from
 // `user.contributionsCollection.contributionCalendar.weeks`, flattened
 // into a chronological day list and sliced to the trailing 14 by
-// base.runUser — mirroring upstream `core/index.mjs`'s `slice(-14)`.
-// Empty when GraphQL returned no calendar (e.g. a freshly-created
-// account or a transient API failure) so the partial hides the block
-// instead of rendering a row of empty cells.
+// internal/plugins/header/render.go::recentDays — mirroring upstream
+// `core/index.mjs`'s `slice(-14)`. Empty when GraphQL returned no
+// calendar (e.g. a freshly-created account or a transient API
+// failure) so the partial hides the block instead of rendering a row
+// of empty cells.
 type User struct {
 	Login                    string
 	Name                     string
@@ -227,10 +228,11 @@ type Computed struct {
 	Repositories   ComputedRepositories
 	RepositoryList []Repository
 
-	// Indepth fields are populated by base.runIndepth when at least one
-	// indepth-dependent plugin (isocalendar, calendar, habits, ...) is
-	// enabled. They stay zero-value when indepth is not triggered, or
-	// when the indepth GraphQL call returned an error (degraded path).
+	// Indepth fields are populated lazily by internal/dataprovider
+	// when at least one indepth-dependent plugin (isocalendar,
+	// calendar, habits, ...) requests them via Provider. They stay
+	// zero-value when no consumer triggers the indepth GraphQL call,
+	// or when that call returned an error (degraded path).
 	TotalCommits         int
 	TotalIssues          int
 	TotalPullRequests    int
@@ -355,9 +357,10 @@ type LanguageStat struct {
 	Value float64
 }
 
-// ContributionCalendar mirrors GitHub's contributionCalendar payload as
-// surfaced by base.runIndepth. Downstream plugins (isocalendar,
-// calendar) consume it to compute weekly / yearly summaries.
+// ContributionCalendar mirrors GitHub's contributionCalendar payload
+// as surfaced by internal/dataprovider's lazy indepth fetch.
+// Downstream plugins (isocalendar, calendar) consume it to compute
+// weekly / yearly summaries.
 type ContributionCalendar struct {
 	TotalContributions int
 	Weeks              []ContributionWeek
