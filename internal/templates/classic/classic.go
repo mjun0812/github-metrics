@@ -157,6 +157,16 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 		if !chrome.TruthyInput(pc.Inputs, "plugin_"+slug) {
 			continue
 		}
+		// Dedup: when the user enables both `base=header` and
+		// `plugin_header=yes`, the static base.header partial above has
+		// already emitted the identity card. Skipping the plugin entry
+		// here keeps the SVG to a single <section data-section="header">
+		// instead of duplicating it.
+		if slug == "header" {
+			if _, headerEnabledByBase := baseSections["header"]; headerEnabledByBase {
+				continue
+			}
+		}
 		// Plugin result must exist and not be Skipped. We use the
 		// minimal SkippableResult interface so the dispatcher does not
 		// need a hard dependency on every plugin's Result type.
@@ -214,12 +224,14 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 // Mapping mirrors upstream's classic template:
 //
 //	introduction              → "introduction"
+//	base.header               → "header"
 //	base.activity+community   → "activity" OR "community"
 //	base.repositories         → "repositories"
 //
-// Note: base.header is no longer a static partial; the identity card
-// moved to the standalone `header` plugin (#602) and is dispatched via
-// the M4 plugin partial loop.
+// base.header is restored as a static partial (rendered ahead of plugin
+// partials so the identity card always sits at the top of the SVG).
+// The standalone `header` plugin still exists; the M4 dispatcher
+// deduplicates the slug when sections["header"] is also enabled.
 //
 // `metadata` is gated separately by chrome.MetadataFooter.
 //
@@ -232,6 +244,9 @@ func partialEnabledByBase(name string, sections map[string]struct{}) bool {
 	switch name {
 	case "introduction":
 		_, ok := sections["introduction"]
+		return ok
+	case "base.header":
+		_, ok := sections["header"]
 		return ok
 	case "base.activity+community":
 		_, a := sections["activity"]
