@@ -118,11 +118,10 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 	b.WriteString(`<foreignObject x="0" y="0" width="100%" height="100%">`)
 	b.WriteString(`<div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper">`)
 
-	// Resolve which base.* partials are enabled. The canonical input
-	// surface is the six `chrome_<section>` booleans (#640). The
-	// legacy `base` CSV / "input-absent → all sections" paths are
-	// preserved as deprecated fallbacks inside ResolveBaseSections so
-	// direct engine callers keep working until v3.
+	// Resolve which base.* partials are enabled from the six
+	// `chrome_<section>` boolean inputs (#640). v3.0 (#649) dropped
+	// the legacy `base`=CSV translator and the default-all fallback —
+	// callers must opt into each section explicitly.
 	baseSections := chrome.ResolveBaseSections(pc.Inputs)
 
 	for _, name := range t.partials {

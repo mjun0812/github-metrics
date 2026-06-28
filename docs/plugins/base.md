@@ -19,9 +19,9 @@ read aggregated data from the shared `dataprovider.Provider`
 
 ## Configuration (inputs)
 
-| Input         | Description                                                                               | Default | Required | Type    |
-| ------------- | ----------------------------------------------------------------------------------------- | ------- | -------- | ------- |
-| `plugin_base` | Enable base plugin (legacy v2 master switch; prefer the per-section `chrome_*` booleans). | `no`    | no       | boolean |
+| Input         | Description                                                                            | Default | Required | Type    |
+| ------------- | -------------------------------------------------------------------------------------- | ------- | -------- | ------- |
+| `plugin_base` | Enable base plugin (compat master switch; prefer the per-section `chrome_*` booleans). | `no`    | no       | boolean |
 
 <!-- AUTOGEN_END: config-table -->
 
@@ -54,11 +54,13 @@ metrics-cli --user <your-login> \
 
 Base reads `Provider.Profile(ctx)` and `Provider.RepositorySummary(ctx)` from the shared `internal/dataprovider`. Both are populated lazily by the standard GraphQL user/organization + repositories paging queries — no extra API scopes beyond `public_access` are required. The plugin emits no standalone card on its own; its two panels (gated by `chrome_activity` / `chrome_community` and `chrome_repositories` from `assets/plugins/chrome/metadata.yml`, #640) compose with any other plugin selection to restore the legacy `base` chrome look.
 
-## Chrome inputs (v2.1+)
+## Chrome inputs
 
-Since v2.1.0 (#640) the v2 `--plugin base=<csv>` + `plugin_base_activity` / `plugin_base_repositories` triad is superseded by six boolean Action inputs in the `chrome_*` namespace:
+The chrome section gate is controlled by six boolean Action inputs in the `chrome_*` namespace (introduced in v2.1.0 / #640). Each input defaults to `no` — opt-in only, matching the v2 per-plugin SVG default UX. See `assets/plugins/chrome/metadata.yml` for the canonical descriptions surfaced in `action.yml`.
 
-| Legacy v2 input                         | v2.1+ replacement                  |
+> **v3.0 removal**: the legacy inputs in the left column below were removed in v3.0 (#649). The table is preserved as a migration reference for users upgrading from v2.x. New invocations must use the right-column form; passing a legacy key now emits a one-shot `slog.Warn` and is otherwise silently ignored.
+
+| Legacy v2 input (removed in v3.0)       | v2.1+ / v3.0 replacement           |
 | --------------------------------------- | ---------------------------------- |
 | `--plugin base=header`                  | `--plugin chrome_header=yes`       |
 | `--plugin base=activity`                | `--plugin chrome_activity=yes`     |
@@ -68,10 +70,6 @@ Since v2.1.0 (#640) the v2 `--plugin base=<csv>` + `plugin_base_activity` / `plu
 | `--plugin base=introduction`            | `--plugin chrome_introduction=yes` |
 | `--plugin plugin_base_activity=yes`     | `--plugin chrome_activity=yes`     |
 | `--plugin plugin_base_repositories=yes` | `--plugin chrome_repositories=yes` |
-
-Each chrome input defaults to `no` — opt-in only, matching the v2 per-plugin SVG default UX. The legacy inputs still translate transparently with a deprecation warning; they are removed in v3.0.
-
-See `assets/plugins/chrome/metadata.yml` for the canonical descriptions surfaced in `action.yml`.
 
 ## References
 

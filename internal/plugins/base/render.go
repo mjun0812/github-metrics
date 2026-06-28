@@ -76,16 +76,9 @@ func resolveResult(pc *templates.PartialContext) (*Result, bool) {
 // runEnabledForInputs reports whether the base plugin should perform
 // any Provider fetch — true when any of the chrome panels it populates
 // is opted into via `chrome_activity` / `chrome_community` /
-// `chrome_repositories`, when the legacy `plugin_base=yes` master
+// `chrome_repositories`, or when the legacy `plugin_base=yes` master
 // switch is on (v2 compat — only honoured while no chrome_* input is
-// declared), or when the v2 "absent → all sections" fallback applies.
-//
-// The default-all branch keeps Run firing so JSON output mode and
-// downstream plugins that introspect the published base.Result still
-// see populated Profile / RepositorySummary fields, matching v2.
-// The activity / repositories partials remain silent in that branch
-// (see activityEnabled / repositoriesEnabled) so the v2 silence-by-
-// default contract for those panels stays intact.
+// declared).
 func runEnabledForInputs(in map[string]any) bool {
 	if chrome.TruthyInput(in, "chrome_activity") ||
 		chrome.TruthyInput(in, "chrome_community") ||
@@ -96,9 +89,6 @@ func runEnabledForInputs(in map[string]any) bool {
 		chrome.TruthyInput(in, "plugin_"+Name) {
 		return true
 	}
-	if chrome.LegacyDefaultAllSections(in) {
-		return true
-	}
 	return false
 }
 
@@ -107,11 +97,10 @@ func runEnabledForInputs(in map[string]any) bool {
 // (#640); the legacy `plugin_base=yes` master switch still works as a
 // compat shim while no chrome_* input is declared.
 //
-// Note: the v2 "absent → all sections" fallback intentionally does NOT
-// auto-enable this panel — under v2 the activity panel required the
-// `plugin_base` + `plugin_base_activity` pair to be explicitly set,
-// even when the section set defaulted to all-on. Preserving that
-// silence-by-default keeps the existing classic-octocat golden intact.
+// Silence-by-default is preserved when no `chrome_*` input is
+// declared and only `plugin_base=yes` is set — that combination keeps
+// the panel hidden (matching the classic-octocat golden), so users on
+// the legacy master switch see the same render they had under v2.
 func activityEnabled(pc *templates.PartialContext) bool {
 	if pc == nil {
 		return false
@@ -130,8 +119,7 @@ func activityEnabled(pc *templates.PartialContext) bool {
 // repositoriesEnabled reports whether the repositories summary panel
 // should render. `chrome_repositories` is the canonical surface;
 // `plugin_base=yes` alone (no chrome_* declared) is the legacy compat
-// fallback. As with activityEnabled, the v2 default-all path does NOT
-// auto-enable this panel.
+// fallback.
 func repositoriesEnabled(pc *templates.PartialContext) bool {
 	if pc == nil {
 		return false

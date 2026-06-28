@@ -84,11 +84,11 @@ func TestActivityPartial_NilContextNoGate(t *testing.T) {
 
 func TestActivityPartial_GatedOff(t *testing.T) {
 	t.Parallel()
-	// The activity panel requires an explicit opt-in: under v2 it was
-	// off until `plugin_base + plugin_base_activity` were set, and we
-	// preserve that silence-by-default. Bare `nil` / `{}` inputs hit
-	// the v2 default-all section gate but do NOT auto-render the
-	// panels — keeping the classic-octocat golden byte-stable.
+	// The activity panel requires an explicit opt-in via
+	// chrome_activity / chrome_community (or the legacy plugin_base
+	// master switch while no chrome_* is declared). Bare `nil` / `{}`
+	// inputs render nothing in v3.0 (#649 removed the v2 default-all
+	// fallback).
 	cases := []map[string]any{
 		nil,
 		{},
@@ -102,8 +102,9 @@ func TestActivityPartial_GatedOff(t *testing.T) {
 		// no chrome_* input is declared. Combining the two below
 		// suppresses the panel.
 		{"plugin_base": "yes", "chrome_header": "yes"},
-		// `base` CSV present-but-empty selects no sections.
+		// Legacy `base` input is silently ignored in v3.0.
 		{"base": ""},
+		{"base": "activity,community"},
 	}
 	for i, in := range cases {
 		d := plugins.NewData()
@@ -320,8 +321,9 @@ func TestRepositoriesPartial_GatedOff(t *testing.T) {
 		// plugin_base=yes combined with any chrome_* key suppresses
 		// the v2 compat fallback.
 		{"plugin_base": "yes", "chrome_header": "yes"},
-		// `base` CSV present-but-empty selects no sections.
+		// Legacy `base` input is silently ignored in v3.0.
 		{"base": ""},
+		{"base": "repositories"},
 	} {
 		got, err := base.RepositoriesPartial(context.Background(), newPC(d, in))
 		if err != nil || got != "" {

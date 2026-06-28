@@ -39,7 +39,12 @@ func TestRun_PartialOrder_MatchesUnderscoreJsonIntersection(t *testing.T) {
 		// `plugin_introduction`; enable it so this ordering test can assert
 		// header → introduction. A plain base render omits introduction
 		// entirely (matching upstream's base-only repository output).
-		Inputs: map[string]any{"repo": "hello-world", "plugin_introduction": "yes"},
+		Inputs: map[string]any{
+			"repo":                "hello-world",
+			"chrome_header":       "yes",
+			"chrome_introduction": "yes",
+			"plugin_introduction": "yes",
+		},
 	}
 	out, err := Template.Run(context.Background(), pc)
 	if err != nil {

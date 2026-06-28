@@ -65,7 +65,7 @@ func TestRun_EmitsValidSVGSkeleton(t *testing.T) {
 	}
 	pc := &templates.PartialContext{
 		Data:   d,
-		Inputs: map[string]any{"repo": "hello-world"},
+		Inputs: map[string]any{"repo": "hello-world", "chrome_header": "yes"},
 	}
 	out, err := Template.Run(context.Background(), pc)
 	if err != nil {
@@ -89,24 +89,25 @@ func TestRun_EmitsValidSVGSkeleton(t *testing.T) {
 	}
 }
 
-// TestRun_BaseEmptySuppressesChrome asserts `base=` strips the
-// base.header section, matching the classic template + upstream
-// per-plugin repository renders. #464.
-func TestRun_BaseEmptySuppressesChrome(t *testing.T) {
+// TestRun_NoChromeSuppressesChrome asserts that without any
+// chrome_* opt-in, the base.header section is suppressed — matching
+// the classic template + upstream per-plugin repository renders.
+// (#464; updated for v3.0 default-empty behavior in #649.)
+func TestRun_NoChromeSuppressesChrome(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	d.Account = plugins.AccountRepository
 	d.Repo = &plugins.Repo{Owner: "octocat", Name: "hello-world", Deployments: 3}
 	pc := &templates.PartialContext{
 		Data:   d,
-		Inputs: map[string]any{"repo": "hello-world", "base": ""},
+		Inputs: map[string]any{"repo": "hello-world"},
 	}
 	out, err := Template.Run(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	if strings.Contains(out, `data-section="header"`) {
-		t.Errorf("base= should suppress the base.header section; got %s", truncate(out, 400))
+		t.Errorf("no chrome_* should suppress the base.header section; got %s", truncate(out, 400))
 	}
 }
 
