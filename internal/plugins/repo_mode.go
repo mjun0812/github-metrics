@@ -3,7 +3,9 @@ package plugins
 // AggregationMode tags the per-plugin Result with which aggregation
 // path it took: "user" when computing over data.User (the M2/M4
 // classic-template behavior) or "repo" when computing over the
-// single-repository data populated by base.runRepository (M7).
+// single-repository data synthesized by internal/dataprovider's
+// repository-mode Provider (M7; the legacy base.runRepository
+// pipeline was removed in #623).
 //
 // Plugins call this helper from their Run() to keep the per-plugin
 // branching contract in one place. Each of the 7 reused plugins (activity, contributors,

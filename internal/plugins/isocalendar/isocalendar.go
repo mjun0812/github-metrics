@@ -1,7 +1,9 @@
 // Package isocalendar owns the M4 "isocalendar" plugin. It reshapes
-// the contributionsCollection.contributionCalendar payload (already
-// fetched by base.runIndepth when isocalendar's input is enabled) into
-// a week×day matrix and computes streaks.
+// the contributionsCollection.contributionCalendar payload (fetched
+// lazily by internal/dataprovider's Provider.CommitCalendar; the
+// shared indepth window is reused via the fetch.go degraded path
+// when isocalendar's own GraphQL query is unavailable) into a
+// week×day matrix and computes streaks.
 package isocalendar
 
 import (

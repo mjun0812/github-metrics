@@ -1,10 +1,12 @@
 <!-- AUTOGEN_START: title-and-description -->
+
 # Plugin: base
 
 Restores the activity / community / repositories summary panels that
 were originally bundled into the upstream `base` chrome. The panels
 read aggregated data from the shared `dataprovider.Provider`
 (Profile + RepositorySummary) — no GraphQL or REST fetching duplication.
+
 <!-- AUTOGEN_END: title-and-description -->
 
 ## Sample
@@ -14,14 +16,17 @@ read aggregated data from the shared `dataprovider.Provider`
 > Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
+
 ## Configuration (inputs)
 
-| Input | Description | Default | Required | Type |
-| ----- | ----------- | ------- | -------- | ---- |
-| `plugin_base` | Enable base plugin (legacy v2 master switch; prefer the per-section `chrome_*` booleans). | `no` | no | boolean |
+| Input         | Description                                                                               | Default | Required | Type    |
+| ------------- | ----------------------------------------------------------------------------------------- | ------- | -------- | ------- |
+| `plugin_base` | Enable base plugin (legacy v2 master switch; prefer the per-section `chrome_*` booleans). | `no`    | no       | boolean |
+
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
+
 ## Usage
 
 ### GitHub Action
@@ -41,6 +46,7 @@ metrics-cli --user <your-login> --token-env GITHUB_TOKEN \
   --output svg --filename - \
   --plugin plugin_base=yes
 ```
+
 <!-- AUTOGEN_END: usage-snippet -->
 
 ## Requirements
@@ -51,15 +57,15 @@ Base reads `Provider.Profile(ctx)` and `Provider.RepositorySummary(ctx)` from th
 
 Since v2.1.0 (#640) the v2 `--plugin base=<csv>` + `plugin_base_activity` / `plugin_base_repositories` triad is superseded by six boolean Action inputs in the `chrome_*` namespace:
 
-| Legacy v2 input | v2.1+ replacement |
-| --- | --- |
-| `--plugin base=header` | `--plugin chrome_header=yes` |
-| `--plugin base=activity` | `--plugin chrome_activity=yes` |
-| `--plugin base=community` | `--plugin chrome_community=yes` |
-| `--plugin base=repositories` | `--plugin chrome_repositories=yes` |
-| `--plugin base=metadata` | `--plugin chrome_metadata=yes` |
-| `--plugin base=introduction` | `--plugin chrome_introduction=yes` |
-| `--plugin plugin_base_activity=yes` | `--plugin chrome_activity=yes` |
+| Legacy v2 input                         | v2.1+ replacement                  |
+| --------------------------------------- | ---------------------------------- |
+| `--plugin base=header`                  | `--plugin chrome_header=yes`       |
+| `--plugin base=activity`                | `--plugin chrome_activity=yes`     |
+| `--plugin base=community`               | `--plugin chrome_community=yes`    |
+| `--plugin base=repositories`            | `--plugin chrome_repositories=yes` |
+| `--plugin base=metadata`                | `--plugin chrome_metadata=yes`     |
+| `--plugin base=introduction`            | `--plugin chrome_introduction=yes` |
+| `--plugin plugin_base_activity=yes`     | `--plugin chrome_activity=yes`     |
 | `--plugin plugin_base_repositories=yes` | `--plugin chrome_repositories=yes` |
 
 Each chrome input defaults to `no` — opt-in only, matching the v2 per-plugin SVG default UX. The legacy inputs still translate transparently with a deprecation warning; they are removed in v3.0.
