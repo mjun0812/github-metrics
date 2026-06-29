@@ -181,6 +181,12 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 		deps.GraphQL,
 		deps.REST,
 		deps.Logger,
+		dataprovider.Options{
+			// repositories_skip_private (#656) is a cross-plugin filter
+			// honoured by the account-wide paging fetch in fetch.go.
+			// Repo-mode (synthesizeRepoResult) bypasses it.
+			SkipPrivate: pluginutil.TruthyInput(inputs, "repositories_skip_private"),
+		},
 	)
 
 	pc := &plugins.PluginContext{

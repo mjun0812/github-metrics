@@ -861,6 +861,11 @@ inputs:
     description: 'GitHub repository'
     required: false
 
+  repositories_skip_private:
+    description: 'Exclude private repositories from every plugin''s view (cross-plugin filter).'
+    default: 'no'
+    required: false
+
   retries:
     description: 'Retries in case of failures (for rendering)'
     default: '3'
