@@ -175,7 +175,6 @@ func TestRun_Dryrun_NoCommitterCall(t *testing.T) {
 
 	var stdout bytes.Buffer
 	err := runWith(context.Background(), runOptions{
-		Mode: ModeAction,
 		Env: []string{
 			"GITHUB_REPOSITORY=mjun0812/test-repo",
 			"GITHUB_ACTOR=octocat",
@@ -229,7 +228,6 @@ func TestRun_OutputAction_UnsupportedFailFast(t *testing.T) {
 	outDir := t.TempDir()
 
 	err := runWith(context.Background(), runOptions{
-		Mode: ModeAction,
 		Env: []string{
 			"GITHUB_REPOSITORY=mjun0812/test-repo",
 			"INPUT_USER=octocat",
@@ -267,7 +265,6 @@ func TestRun_GithubPatRejected(t *testing.T) {
 	outDir := t.TempDir()
 
 	err := runWith(context.Background(), runOptions{
-		Mode: ModeAction,
 		Env: []string{
 			"GITHUB_REPOSITORY=mjun0812/test-repo",
 			"INPUT_USER=octocat",
@@ -296,7 +293,6 @@ func TestRun_SkipEvent(t *testing.T) {
 	_ = os.WriteFile(eventPath, []byte(`{"head_commit":{"message":"chore: [Skip GitHub Action]"}}`), 0o600)
 
 	err := runWith(context.Background(), runOptions{
-		Mode: ModeAction,
 		Env: []string{
 			"GITHUB_REPOSITORY=mjun0812/test-repo",
 			"INPUT_USER=octocat",
@@ -317,7 +313,7 @@ func TestNewInvocation_Defaults(t *testing.T) {
 	t.Parallel()
 	inputs := map[string]any{"user": "octocat", "combined": "yes"}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
-	inv, err := newInvocation(ModeAction, inputs, env, "/tmp/out")
+	inv, err := newInvocation(inputs, env, "/tmp/out")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -368,7 +364,7 @@ func TestNewInvocation_OptimizeDefault(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			inv, err := newInvocation(ModeAction, tc.given, env, "/tmp/out")
+			inv, err := newInvocation(tc.given, env, "/tmp/out")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -383,7 +379,7 @@ func TestNewInvocation_OptimizeDefault(t *testing.T) {
 // TestNewInvocation_MissingLogin_Errors — required-input check.
 func TestNewInvocation_MissingLogin_Errors(t *testing.T) {
 	t.Parallel()
-	if _, err := newInvocation(ModeAction, map[string]any{}, map[string]string{}, "/tmp"); err == nil {
+	if _, err := newInvocation(map[string]any{}, map[string]string{}, "/tmp"); err == nil {
 		t.Error("expected error when user / GITHUB_ACTOR both empty")
 	}
 }
@@ -418,7 +414,6 @@ func TestRun_RepoTemplate_MissingRepo_FailFast(t *testing.T) {
 	t.Parallel()
 	rest := newFakeREST()
 	err := runWith(context.Background(), runOptions{
-		Mode: ModeAction,
 		Env: []string{
 			"GITHUB_REPOSITORY=mjun0812/test-repo",
 			"INPUT_USER=octocat",
@@ -458,7 +453,6 @@ func TestRun_ClassicTemplate_WithRepoInput_Ignored(t *testing.T) {
 	t.Setenv("GITHUB_OUTPUT", filepath.Join(outDir, "github_output"))
 
 	err := runWith(context.Background(), runOptions{
-		Mode: ModeAction,
 		Env: []string{
 			"GITHUB_REPOSITORY=mjun0812/test-repo",
 			"INPUT_USER=octocat",

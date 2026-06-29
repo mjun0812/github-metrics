@@ -10,10 +10,10 @@ import (
 	"github.com/mjun0812/github-metrics/internal/config"
 )
 
-// TestRun_EntryPointRejectsUnsupportedOutputAction covers the exported
-// Action entry point through a fail-fast path that stops before deps or
-// network clients are constructed.
-func TestRun_EntryPointRejectsUnsupportedOutputAction(t *testing.T) {
+// TestRun_EntryPointRejectsUnsupportedOutputAction_FromEnv covers the
+// unified Run entry point via the env layer (INPUT_<UPPER>) — i.e. the
+// flow that the GitHub Actions runner drives.
+func TestRun_EntryPointRejectsUnsupportedOutputAction_FromEnv(t *testing.T) {
 	t.Setenv("GITHUB_REPOSITORY", "mjun0812/test-repo")
 	t.Setenv("GITHUB_ACTOR", "octocat")
 	t.Setenv("INPUT_USER", "octocat")
@@ -21,7 +21,7 @@ func TestRun_EntryPointRejectsUnsupportedOutputAction(t *testing.T) {
 	t.Setenv("INPUT_OUTPUT_ACTION", "gist")
 	t.Setenv("INPUT_DRYRUN", "yes")
 
-	err := Run(context.Background())
+	err := Run(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected unsupported output_action error")
 	}
@@ -31,12 +31,13 @@ func TestRun_EntryPointRejectsUnsupportedOutputAction(t *testing.T) {
 	}
 }
 
-// TestRunCLI_EntryPointRejectsUnsupportedOutputAction covers the exported
-// CLI entry point without reaching real deps construction.
-func TestRunCLI_EntryPointRejectsUnsupportedOutputAction(t *testing.T) {
+// TestRun_EntryPointRejectsUnsupportedOutputAction_FromFlags covers the
+// unified Run entry point via the CLI flag layer (no INPUT_<UPPER>).
+// Both layers feed the same fail-fast path so the assertion is the same.
+func TestRun_EntryPointRejectsUnsupportedOutputAction_FromFlags(t *testing.T) {
 	t.Setenv("GITHUB_TOKEN", "ghp_mock_pat_valid")
 	out := filepath.Join(t.TempDir(), "github-metrics.svg")
-	err := RunCLI(context.Background(), []string{
+	err := Run(context.Background(), []string{
 		"--user", "octocat",
 		"--filename", out,
 		"--plugin", "output_action=gist",

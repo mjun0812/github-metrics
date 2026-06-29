@@ -7,8 +7,9 @@ import (
 )
 
 // TestRun_NoArgs prints the banner + usage and returns nil. This is
-// the legacy M1 behavior preserved through M6 so anyone running
-// `metrics-cli` with no args gets a friendly help screen.
+// the legacy M1 behavior preserved through #646 so anyone running
+// `metrics-cli` with no args (and no INPUT_<UPPER> env layer) gets a
+// friendly help screen instead of falling into the pipeline.
 func TestRun_NoArgs(t *testing.T) {
 	t.Parallel()
 	var out, errOut bytes.Buffer
@@ -47,51 +48,69 @@ func TestRun_Version(t *testing.T) {
 	}
 }
 
-// TestRun_ActionMode_DispatchesEnvDetected confirms the
-// GITHUB_ACTIONS=true env triggers the Action dispatch path. Without
-// the required `user` input the dispatch surfaces a clear error from
-// action.Run — verifying the routing wired up correctly.
-func TestRun_ActionMode_DispatchesEnvDetected(t *testing.T) {
-	t.Parallel()
-	var out, errOut bytes.Buffer
-	err := run(nil, &out, &errOut, []string{"GITHUB_ACTIONS=true"})
-	if err == nil {
-		t.Fatalf("expected error from action.Run (no inputs supplied)")
-	}
-	// Either the M6 "input required" error or an upstream binding
-	// error counts as evidence that action.Run was reached.
-	msg := err.Error()
-	if !strings.Contains(msg, "action") {
-		t.Errorf("expected error from action.Run; got %q", msg)
-	}
-}
-
-// TestRun_CLIMode_DispatchesWhenArgsProvided confirms a non-bootstrap
-// arg routes to action.RunCLI. After Phase 5 (T039), RunCLI is fully
-// implemented; we trigger the token-required branch because the test
-// supplies neither INPUT_TOKEN / GITHUB_TOKEN env vars nor --dryrun +
-// mocked data, which is the cheapest deterministic exit through the
-// CLI surface.
-func TestRun_CLIMode_DispatchesWhenArgsProvided(t *testing.T) {
+// TestRun_CLIFlagDispatch confirms that any non-bootstrap CLI arg
+// routes into the unified action.Run pipeline. After #646 there is no
+// separate Action-mode / CLI-mode dispatch — every invocation reads
+// env vars AND CLI flags. We trigger the token-required branch (the
+// cheapest deterministic exit) by scrubbing GITHUB_TOKEN/INPUT_TOKEN
+// from the test process env.
+func TestRun_CLIFlagDispatch(t *testing.T) {
 	// t.Setenv is used to scrub real env (cannot t.Parallel()).
-	// action.RunCLI reads os.Environ() internally, so we must scrub
-	// the host's GITHUB_TOKEN / INPUT_TOKEN to trigger the missing-token
-	// branch deterministically.
+	// action.Run reads os.Environ() internally, so we must scrub
+	// the host's GITHUB_TOKEN / INPUT_TOKEN to trigger the
+	// missing-token branch deterministically.
 	t.Setenv("GITHUB_TOKEN", "")
 	t.Setenv("INPUT_TOKEN", "")
 	var out, errOut bytes.Buffer
 	// --combined avoids the per-plugin / output_action incompatibility
 	// check so we reach the token validator (the cheapest deterministic
-	// exit through the CLI surface).
+	// exit through the unified surface).
 	err := run([]string{"--user", "octocat", "--combined", "--dryrun"}, &out, &errOut, nil)
 	if err == nil || !strings.Contains(err.Error(), "token required") {
-		t.Fatalf("expected token-required error from RunCLI, got err=%v", err)
+		t.Fatalf("expected token-required error from action.Run, got err=%v", err)
+	}
+}
+
+// TestRun_EnvOnlyDispatch confirms that an invocation with no CLI args
+// but with INPUT_<UPPER> env vars present routes into the unified
+// pipeline (rather than printing the no-arg banner+usage). This is the
+// "GitHub Actions runner sets `with:` keys, workflow has no `run:`"
+// flow that drives most installations.
+func TestRun_EnvOnlyDispatch(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("INPUT_USER", "octocat")
+	t.Setenv("INPUT_COMBINED", "yes")
+	t.Setenv("INPUT_DRYRUN", "yes")
+	var out, errOut bytes.Buffer
+	err := run(nil, &out, &errOut, nil)
+	if err == nil || !strings.Contains(err.Error(), "token required") {
+		t.Fatalf("expected token-required error from env-only dispatch, got err=%v", err)
+	}
+}
+
+// TestRun_GitHubActionsEnvIgnored confirms that GITHUB_ACTIONS=true
+// alone (no INPUT_*) is NOT enough to skip the no-arg banner+usage
+// short-circuit. The pre-v3.0 binary dispatched purely on that env
+// var; after #646 the binary ignores GITHUB_ACTIONS and looks for
+// actual inputs (INPUT_*/INPUTS or CLI flags).
+func TestRun_GitHubActionsEnvIgnored(t *testing.T) {
+	t.Setenv("GITHUB_ACTIONS", "true")
+	// Scrub INPUT_* / GITHUB_TOKEN so only the marker is set.
+	t.Setenv("INPUT_USER", "")
+	t.Setenv("INPUT_TOKEN", "")
+	t.Setenv("GITHUB_TOKEN", "")
+	var out, errOut bytes.Buffer
+	if err := run(nil, &out, &errOut, nil); err != nil {
+		t.Fatalf("run(nil) with GITHUB_ACTIONS=true alone: %v", err)
+	}
+	if !strings.Contains(out.String(), "Usage") {
+		t.Errorf("expected banner+usage when only GITHUB_ACTIONS is set; got %q", out.String())
 	}
 }
 
 // TestSplitBootstrapArgs confirms the bootstrap-flag splitter
 // separates --help / --version / --debug / --log-format from the rest
-// so action.RunCLI's own flag.FlagSet only sees its expected args.
+// so action.Run's own flag.FlagSet only sees its expected args.
 func TestSplitBootstrapArgs(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -120,20 +139,35 @@ func TestSplitBootstrapArgs(t *testing.T) {
 	}
 }
 
-// TestEnvValue resolves NAME=value pairs from a slice.
-func TestEnvValue(t *testing.T) {
+// TestHasActionInputs verifies the INPUT_<UPPER> / INPUTS detector
+// that decides whether to short-circuit to the banner or hand off to
+// the unified pipeline when no CLI args are present.
+func TestHasActionInputs(t *testing.T) {
 	t.Parallel()
-	env := []string{"FOO=bar", "GITHUB_ACTIONS=true", "OTHER=x=y=z"}
-	cases := map[string]string{
-		"FOO":            "bar",
-		"GITHUB_ACTIONS": "true",
-		"OTHER":          "x=y=z",
-		"MISSING":        "",
+	cases := []struct {
+		name string
+		env  []string
+		want bool
+	}{
+		{"empty", nil, false},
+		{"unrelated_only", []string{"PATH=/usr/bin", "HOME=/root"}, false},
+		{"github_actions_marker_alone", []string{"GITHUB_ACTIONS=true"}, false},
+		{"input_user", []string{"INPUT_USER=octocat"}, true},
+		{"input_token", []string{"PATH=/usr/bin", "INPUT_TOKEN=ghp_x"}, true},
+		{"inputs_json", []string{"INPUTS={\"user\":\"x\"}"}, true},
+		// Runner-emitted INPUT_FOO= entries for unset workflow inputs
+		// MUST NOT trigger the dispatch — otherwise an empty `with:`
+		// block would pre-empt the no-arg banner+usage short-circuit.
+		{"empty_input_value", []string{"INPUT_USER=", "PATH=/usr/bin"}, false},
+		{"empty_inputs_json", []string{"INPUTS="}, false},
 	}
-	for name, want := range cases {
-		if got := envValue(env, name); got != want {
-			t.Errorf("envValue(%q) = %q, want %q", name, got, want)
-		}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := hasActionInputs(tc.env); got != tc.want {
+				t.Errorf("hasActionInputs(%v) = %v, want %v", tc.env, got, tc.want)
+			}
+		})
 	}
 }
 

@@ -126,7 +126,6 @@ func TestAction_OutputAction_FailureWarning_Matrix(t *testing.T) {
 
 			restTransport := &failureMatrixREST{name: tc.name}
 			err := runWith(context.Background(), runOptions{
-				Mode: ModeAction,
 				Env: []string{
 					"GITHUB_REPOSITORY=o/r",
 					"GITHUB_ACTOR=octocat",
