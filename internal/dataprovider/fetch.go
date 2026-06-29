@@ -169,6 +169,12 @@ func (p *Provider) fetchRepoResult(ctx context.Context) (*repoResult, error) {
 // base.runRepository synthesis (upstream template.mjs:14-17). User-
 // centric plugins (languages / activity / stargazers / ...) then operate
 // in repo scope without special-casing.
+//
+// repositories_skip_private is intentionally NOT honoured here: the user
+// explicitly named the target repo via `--repo owner/name`, so honouring
+// the cross-plugin private filter would silently erase the single repo
+// they asked for. The filter only governs the implicit account-wide
+// paging walk (fetchOneRepoPage).
 func (p *Provider) synthesizeRepoResult(ctx context.Context) (*repoResult, error) {
 	r, err := p.fetchRepo(ctx)
 	if err != nil {
@@ -276,6 +282,17 @@ func (p *Provider) fetchOneRepoPage(ctx context.Context, isUser bool, state *rep
 			if node == nil {
 				continue
 			}
+			// repositories_skip_private: drop private nodes before
+			// they reach the accumulator so both Computed.RepositoryList
+			// AND every aggregate counter reflect the public subset.
+			// Note: the totalCount above is the unfiltered server-side
+			// total — we overwrite it with len(state.acc) at the end so
+			// state.count matches the visible list. We do this only
+			// when filtering is active so the unfiltered code path is
+			// byte-identical to the previous behavior.
+			if p.skipPrivate && node.IsPrivate {
+				continue
+			}
 			state.acc = append(state.acc, repositoryFromUserNode(node))
 			state.stargazers += node.StargazerCount
 			state.forks += node.ForkCount
@@ -311,6 +328,9 @@ func (p *Provider) fetchOneRepoPage(ctx context.Context, isUser bool, state *rep
 				state.licensedRepos++
 			}
 		}
+		if p.skipPrivate {
+			state.count = len(state.acc)
+		}
 		pi := conn.PageInfo
 		return pi.HasNextPage, pi.EndCursor, nil
 	}
@@ -327,6 +347,12 @@ func (p *Provider) fetchOneRepoPage(ctx context.Context, isUser bool, state *rep
 	}
 	for _, node := range conn.Nodes {
 		if node == nil {
+			continue
+		}
+		// repositories_skip_private: see the symmetric user-branch
+		// comment above. Same rationale — drop private nodes before
+		// the accumulator so both list and aggregates exclude them.
+		if p.skipPrivate && node.IsPrivate {
 			continue
 		}
 		state.acc = append(state.acc, repositoryFromOrgNode(node))
@@ -363,6 +389,9 @@ func (p *Provider) fetchOneRepoPage(ctx context.Context, isUser bool, state *rep
 			state.licenseCounts[node.LicenseInfo.Name]++
 			state.licensedRepos++
 		}
+	}
+	if p.skipPrivate {
+		state.count = len(state.acc)
 	}
 	pi := conn.PageInfo
 	return pi.HasNextPage, pi.EndCursor, nil
