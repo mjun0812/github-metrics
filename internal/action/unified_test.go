@@ -18,6 +18,19 @@ import (
 // compute path.
 var errCaptured = errors.New("test: invocation captured")
 
+// recordCapturer is a slog.Handler that records every emitted record
+// into the supplied slice. The wrapped Handler is responsible for the
+// actual formatting (we discard it via io.Discard).
+type recordCapturer struct {
+	slog.Handler
+	records *[]slog.Record
+}
+
+func (c *recordCapturer) Handle(ctx context.Context, r slog.Record) error {
+	*c.records = append(*c.records, r)
+	return c.Handler.Handle(ctx, r)
+}
+
 func captureInvocation(out **Invocation) func(context.Context, *Invocation) (engine.Deps, error) {
 	return func(_ context.Context, inv *Invocation) (engine.Deps, error) {
 		*out = inv

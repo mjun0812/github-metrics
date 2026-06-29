@@ -110,10 +110,6 @@ inputs:
     default: '0, 8 + 11%'
     required: false
 
-  config_presets:
-    description: 'Configuration presets'
-    required: false
-
   config_rate_limit_guard:
     description: 'Startup rate-limit gate'
     default: 'off'

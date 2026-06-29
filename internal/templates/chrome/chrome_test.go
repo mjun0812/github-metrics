@@ -40,8 +40,7 @@ func TestResolveBaseSections(t *testing.T) {
 		{"empty", map[string]any{}, []string{}},
 
 		// Legacy `base` input is silently ignored — v3.0 removed the
-		// CSV translator. The action layer surfaces a slog.Warn for
-		// the key separately via WarnLegacyChromeInputs.
+		// CSV translator (#649 / #652).
 		{"legacy-base-csv-ignored", map[string]any{"base": "header,metadata"}, []string{}},
 
 		// Canonical chrome_* path (#640).
