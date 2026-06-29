@@ -2,6 +2,7 @@ package action
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -22,30 +23,10 @@ import (
 	"github.com/mjun0812/github-metrics/internal/render"
 )
 
-// RunMode distinguishes Action mode (GITHUB_ACTIONS=true) from CLI
-// mode. Set by Run / RunCLI before any business logic runs so the
-// banner + log fields can record which path the invocation took.
-type RunMode int
-
-const (
-	// ModeAction = GitHub Actions runtime (GITHUB_ACTIONS=true).
-	ModeAction RunMode = iota
-	// ModeCLI = local / scripted CLI invocation.
-	ModeCLI
-)
-
-func (m RunMode) String() string {
-	if m == ModeAction {
-		return "action"
-	}
-	return "cli"
-}
-
-// Invocation is the resolved per-run state Run / RunCLI hand off to
-// the engine + committer pipeline. It is built from the merged
-// inputs (INPUTS JSON / INPUT_<UPPER> / CLI flags / preset / env).
+// Invocation is the resolved per-run state Run hands off to the engine
+// + committer pipeline. It is built from the merged inputs (INPUT_<UPPER>
+// / INPUTS JSON / --config YAML / --preset / CLI flags).
 type Invocation struct {
-	Mode             RunMode
 	Inputs           map[string]any
 	Token            config.Token
 	Template         string
@@ -55,7 +36,7 @@ type Invocation struct {
 	OutputAction     string
 	OutputCondition  string
 	OutputFilename   string
-	OutputDir        string   // "/renders" by default in Action mode; pwd in CLI
+	OutputDir        string
 	PerPlugin        bool     // true when in per-plugin SVG output mode
 	PluginAllowlist  []string // comma-separated allowlist from `plugins` input
 	UseMockedData    bool
@@ -72,94 +53,106 @@ type Invocation struct {
 	GitHubAPIGraphQL string
 }
 
-// Run is the Action-mode entry point. Spec FR-001 / FR-002.
+// Run is the unified entry point for the metrics-cli binary. It reads
+// CLI flags from args AND env vars (INPUT_<UPPER> / INPUTS JSON) every
+// invocation; CLI flags take precedence on conflict.
 //
 // Pipeline:
 //
 //  1. Skip detection — short-circuits when GITHUB_EVENT_PATH commit
 //     message contains "[Skip GitHub Action]" or "Auto-generated
 //     metrics for run #N".
-//  2. Input parsing — merges INPUTS JSON + INPUT_<UPPER>.
-//  3. Output_action validation — fail-fast on gist / markdown-*.
-//  4. Token validation — github_pat_* reject + scope check + quota
-//     check. Quota insufficient → exit 0 (skipped).
-//  5. Banner print (English fixed, slog-handler-agnostic).
-//  6. engine.Compute (wrapped in RetryPolicy).
-//  7. Write output to OutputDir/OutputFilename.
-//  8. Committer.Run (commit / pull-request*) unless Dryrun.
-//  9. SetOutput metrics_url + metrics_sha to $GITHUB_OUTPUT.
-func Run(ctx context.Context) error {
+//  2. Input assembly — merges env layer (INPUT_<UPPER> + INPUTS JSON,
+//     unless --no-env), --config YAML overlay, --preset overlay (fills
+//     missing keys only), and CLI flag overrides (highest priority).
+//  3. Output_action + repository-template + token gates run fail-fast
+//     before any GitHub API call.
+//  4. engine.Compute (wrapped in RetryPolicy).
+//  5. Write output to OutputDir/OutputFilename (or stdout when
+//     --filename -).
+//  6. Committer.Run (commit / pull-request*) unless --dryrun.
+//  7. SetOutput metrics_url + metrics_sha to $GITHUB_OUTPUT (no-op
+//     outside the GitHub Actions runner).
+func Run(ctx context.Context, args []string) error {
+	cwd, _ := os.Getwd()
+	// Stdout is left nil so the unified pipeline routes the startup
+	// banner to os.Stderr (the safe default — it never collides with
+	// `--filename -`, which streams rendered bytes to stdout). Tests
+	// inject their own opts.Stdout when they need to capture banner
+	// output for assertions.
 	return runWith(ctx, runOptions{
-		Mode:      ModeAction,
-		Env:       os.Environ(),
-		Stdout:    os.Stdout,
-		EventPath: os.Getenv("GITHUB_EVENT_PATH"),
-		OutputDir: defaultOutputDir(),
+		Args:       args,
+		Env:        os.Environ(),
+		EventPath:  os.Getenv("GITHUB_EVENT_PATH"),
+		OutputDir:  defaultOutputDir(cwd),
+		WorkingDir: cwd,
 	})
 }
 
-// runOptions captures everything Run touches in the real world so
-// tests can inject deterministic values. The exported Run / RunCLI
-// callers fill defaults from os.Environ / os.Stdout / etc.
+// runOptions captures everything Run touches in the real world so tests
+// can inject deterministic values. Run fills these from os.Environ /
+// os.Stdout / etc; tests construct them explicitly.
 type runOptions struct {
-	Mode       RunMode
 	Env        []string
 	Stdout     io.Writer
 	EventPath  string
 	OutputDir  string
-	WorkingDir string                                                          // for CLI mode (defaults to pwd)
+	WorkingDir string
+	Args       []string                                                        // CLI flag args; nil when no CLI invocation
+	Flags      *CLIFlags                                                       // test seam: when non-nil, skips ParseFlags(opts.Args)
 	BuildDeps  func(ctx context.Context, inv *Invocation) (engine.Deps, error) // optional override for tests
 }
 
 func runWith(ctx context.Context, opts runOptions) error {
 	// 1. Skip detection.
-	if opts.Mode == ModeAction {
+	if opts.EventPath != "" {
 		if skip, reason := shouldSkip(opts.EventPath); skip {
 			slog.Info("metrics-cli skipped", "reason", reason)
 			return nil
 		}
 	}
 
-	// 2. Input parsing.
-	env := envSliceToMap(opts.Env)
-	inputs, err := ParseInputs(env)
-	if err != nil {
-		return fmt.Errorf("action: parse inputs: %w", err)
-	}
-
-	// 2b. Preset overlay (if config_presets is set).
-	if presetPath, ok := inputs["config_presets"].(string); ok && presetPath != "" {
-		preset, perr := LoadPreset(presetPath)
-		if perr != nil {
-			return fmt.Errorf("action: load preset: %w", perr)
+	// 2. Parse CLI flags (or use the test-injected ones).
+	cf := opts.Flags
+	if cf == nil {
+		parsed, err := ParseFlags(opts.Args)
+		if err != nil {
+			return fmt.Errorf("action: cli flags: %w", err)
 		}
-		preset.MergeInto(inputs)
+		cf = parsed
 	}
 
-	// 2c. Warn (once per process per key) when a v3.0-removed legacy
+	// 3. Assemble inputs with source attribution.
+	env := envSliceToMap(opts.Env)
+	inputs, sources, err := assembleInputs(cf, env)
+	if err != nil {
+		return err
+	}
+
+	// 4. Warn (once per process per key) when a v3.0-removed legacy
 	// chrome input is still in the assembled inputs map. Purely
 	// diagnostic — no translation, no fallback. Helps users migrating
 	// long-running CI configs notice the silent no-op render.
 	WarnLegacyChromeInputs(inputs)
 
-	// 3. Build invocation.
-	inv, ierr := newInvocation(opts.Mode, inputs, env, opts.OutputDir)
+	// 5. Build invocation.
+	inv, ierr := newInvocation(inputs, env, opts.OutputDir)
 	if ierr != nil {
 		return ierr
 	}
 
-	// 4. Output_action validation — fail-fast before any API call.
+	// 6. Output_action validation — fail-fast before any API call.
 	if verr := DefaultRegistry().Validate(inv.OutputAction); verr != nil {
 		return verr
 	}
 
-	// 4b. M7: repository template requires the `repo` input. Validate
+	// 6b. M7: repository template requires the `repo` input. Validate
 	// before deps so SC-003 holds (5-second exit, zero API calls).
 	if verr := validateRepositoryInput(inv); verr != nil {
 		return verr
 	}
 
-	// 4c. Missing-token guard (#647). Surfaces the canonical
+	// 6c. Missing-token guard (#647). Surfaces the canonical
 	// "set GITHUB_TOKEN" diagnostic before deps build so the user
 	// does not see the deeper "token does not match recognized prefix"
 	// returned by the auth layer.
@@ -167,7 +160,13 @@ func runWith(ctx context.Context, opts runOptions) error {
 		return terr
 	}
 
-	// 5. Build engine deps (real or mocked).
+	// 7. Source attribution debug log — names the layer each resolved
+	// input came from (env / inputs_json / flag / preset / config).
+	// Emitted once per invocation; only fires when slog debug level is
+	// enabled, so production runs pay no cost.
+	logResolvedSources(sources)
+
+	// 8. Build engine deps (real or mocked).
 	var deps engine.Deps
 	if opts.BuildDeps != nil {
 		deps, err = opts.BuildDeps(ctx, inv)
@@ -178,15 +177,12 @@ func runWith(ctx context.Context, opts runOptions) error {
 		return fmt.Errorf("action: build deps: %w", err)
 	}
 
-	// 6. Token validation.
+	// 9. Token validation.
 	if !inv.UseMockedData {
 		validator := &TokenValidator{
 			Token:         inv.Token,
 			REST:          deps.REST,
 			UseMockedData: inv.UseMockedData,
-			// RequiredScopes + Quota are zero by default — Phase 3 ships
-			// the minimal validator; per-plugin scope/quota aggregation
-			// lands incrementally as integration tests demand it.
 		}
 		vRes, verr := validator.Validate(ctx)
 		if verr != nil {
@@ -203,10 +199,21 @@ func runWith(ctx context.Context, opts runOptions) error {
 		}
 	}
 
-	// 7. Print banner.
-	PrintBanner(opts.Stdout, BannerInfo{
+	// 10. Print banner. Always goes to stderr so it can never contaminate
+	// the rendered output stream — specifically `--filename -` streams the
+	// SVG/PNG payload to stdout, and a banner prepended to that stream
+	// would corrupt PNG bytes outright and pollute committed SVG diffs.
+	// stderr keeps the banner human-visible in a terminal (and in GitHub
+	// Actions logs, which capture both streams) while leaving the data
+	// path clean for redirection and pipelines.
+	bannerOut := io.Writer(os.Stderr)
+	if opts.Stdout != nil {
+		// Tests inject an explicit Stdout writer to capture banner output;
+		// honor that override so existing assertions stay deterministic.
+		bannerOut = opts.Stdout
+	}
+	PrintBanner(bannerOut, BannerInfo{
 		Version:     engine.Version(),
-		Mode:        inv.Mode.String(),
 		Template:    inv.Template,
 		Plugins:     sortedTruthyPluginGates(inputs),
 		TokenMasked: inv.Token.String(),
@@ -214,14 +221,14 @@ func runWith(ctx context.Context, opts runOptions) error {
 		OSArch:      runtime.GOOS + "/" + runtime.GOARCH,
 	})
 
-	// 8. Notice — best-effort newer-version hint.
+	// 11. Notice — best-effort newer-version hint.
 	if inv.NoticeReleases && deps.REST != nil {
 		if msg := CheckLatestRelease(ctx, deps.REST, "mjun0812/github-metrics", engine.Version()); msg != "" {
 			slog.Info(msg)
 		}
 	}
 
-	// 9. Compute + write output.
+	// 12. Compute + write output.
 	if inv.PerPlugin {
 		if perr := runPerPluginDispatch(ctx, inv, deps); perr != nil {
 			return fmt.Errorf("action: per-plugin dispatch: %w", perr)
@@ -249,13 +256,22 @@ func runWith(ctx context.Context, opts runOptions) error {
 		return errors.New("action: engine.Compute returned nil result")
 	}
 
-	// 10. Write output.
-	outputPath := filepath.Join(inv.OutputDir, inv.OutputFilename)
-	if werr := writeOutputFile(outputPath, res.Output); werr != nil {
+	// 13. Write output. ResolveOutputWriter handles both file targets and
+	// the "-" stdout sentinel.
+	target := targetOutputPath(inv)
+	w, closeFn, oerr := ResolveOutputWriter(target, inv.Format)
+	if oerr != nil {
+		return fmt.Errorf("action: write output: %w", oerr)
+	}
+	if _, werr := w.Write(res.Output); werr != nil {
+		_ = closeFn()
 		return fmt.Errorf("action: write output: %w", werr)
 	}
+	if cerr := closeFn(); cerr != nil {
+		return fmt.Errorf("action: write output: %w", cerr)
+	}
 
-	// 11. metrics_sha output (always set, even on dryrun + skipped Committer).
+	// 14. metrics_sha output (always set, even on dryrun + skipped Committer).
 	sha, hashErr := render.Hash(string(res.Output))
 	if hashErr != nil {
 		slog.Warn("render.Hash failed; metrics_sha output skipped", "err", hashErr)
@@ -263,7 +279,7 @@ func runWith(ctx context.Context, opts runOptions) error {
 		slog.Warn("metrics_sha output write failed", "err", oerr)
 	}
 
-	// 12. Committer — only when not dryrun and output_action != none.
+	// 15. Committer — only when not dryrun and output_action != none.
 	if !inv.Dryrun && inv.OutputAction != "none" {
 		committer, nerr := NewCommitter(deps.REST, inv, res.Output)
 		if nerr != nil {
@@ -283,158 +299,103 @@ func runWith(ctx context.Context, opts runOptions) error {
 	return nil
 }
 
-// RunCLI is the CLI-mode entry point (spec FR-019). Pipeline:
-//
-//  1. Parse flags (T034) + load --config YAML (T035).
-//  2. Merge inputs via CLIFlags.ToInvocation (T036).
-//  3. Resolve token (T037) — flag > env > error.
-//  4. newInvocation + output_action validation (shared with Action).
-//  5. Banner + engine.Compute + retry policy (shared).
-//  6. Write output to --filename or stdout (T038).
-//  7. Committer dispatch unless --dryrun.
-func RunCLI(ctx context.Context, args []string) error {
-	cf, err := ParseFlags(args)
-	if err != nil {
-		return fmt.Errorf("action: cli flags: %w", err)
-	}
-	cwd, _ := os.Getwd()
-	return runCLIWith(ctx, cf, runOptions{
-		Mode:       ModeCLI,
-		Env:        os.Environ(),
-		Stdout:     os.Stdout,
-		OutputDir:  cwd,
-		WorkingDir: cwd,
-	})
+// runCLIWith is a test-only seam that drives runWith with a pre-built
+// CLIFlags. The unified pipeline normally constructs the flags via
+// ParseFlags(opts.Args); tests skip that step so they can pin
+// invocation shape directly without spelling out CLI arg strings.
+func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
+	opts.Flags = cf
+	return runWith(ctx, opts)
 }
 
-func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
-	env := envSliceToMap(opts.Env)
-	inputs, err := cf.ToInvocation(env)
-	if err != nil {
-		return err
+// assembleInputs merges the four input layers — env (INPUT_<UPPER> +
+// INPUTS JSON), --config YAML, --preset YAML, CLI flags — into a single
+// map. CLI flags win; preset fills only missing keys (lowest priority).
+//
+// The sources map records the originating layer of each resolved key so
+// logResolvedSources can emit the per-key attribution debug log.
+func assembleInputs(cf *CLIFlags, env map[string]string) (map[string]any, map[string]string, error) {
+	inputs := map[string]any{}
+	sources := map[string]string{}
+
+	// Layer 1: env (INPUT_<UPPER> + INPUTS JSON). Suppressed by --no-env.
+	if !cf.NoEnv {
+		parsed, err := ParseInputs(env)
+		if err != nil {
+			return nil, nil, fmt.Errorf("action: parse inputs: %w", err)
+		}
+		for k, v := range parsed {
+			inputs[k] = v
+			sources[k] = "env"
+		}
+		// INPUTS JSON wins over INPUT_<UPPER> on collision; re-mark
+		// those keys so the source log distinguishes the two channels.
+		if raw, ok := env["INPUTS"]; ok && raw != "" {
+			var decoded map[string]any
+			if err := json.Unmarshal([]byte(raw), &decoded); err == nil {
+				for k := range decoded {
+					sources[strings.ToLower(k)] = "inputs_json"
+				}
+			}
+		}
 	}
 
-	// Preset overlay (mirrors Action path) — runs after --config so the
-	// preset's q: map overrides defaults but not CLI flags / config.
+	// Layer 2: --config YAML overlay (beats env, loses to CLI flag).
+	if cf.Config != "" {
+		ycfg, yerr := LoadYAMLConfig(cf.Config)
+		if yerr != nil {
+			return nil, nil, yerr
+		}
+		for k, v := range ycfg {
+			inputs[k] = v
+			sources[k] = "config"
+		}
+	}
+
+	// Layer 3: CLI flag overrides (highest priority).
+	applied := cf.applyFlagsOver(inputs)
+	for _, k := range applied {
+		sources[k] = "flag"
+	}
+
+	// Layer 4: --preset overlay. MergeInto only writes keys that are
+	// NOT already present, so preset has the LOWEST priority (fills
+	// defaults that no other layer set).
 	if presetPath, ok := inputs["config_presets"].(string); ok && presetPath != "" {
 		preset, perr := LoadPreset(presetPath)
 		if perr != nil {
-			return fmt.Errorf("action: load preset: %w", perr)
+			return nil, nil, fmt.Errorf("action: load preset: %w", perr)
 		}
-		preset.MergeInto(inputs)
-	}
-
-	// Warn (once per process per key) when a v3.0-removed legacy
-	// chrome input is still in the assembled inputs map. Purely
-	// diagnostic — mirrors runWith.
-	WarnLegacyChromeInputs(inputs)
-
-	inv, ierr := newInvocation(ModeCLI, inputs, env, opts.OutputDir)
-	if ierr != nil {
-		return ierr
-	}
-
-	if verr := DefaultRegistry().Validate(inv.OutputAction); verr != nil {
-		return verr
-	}
-	if verr := validateRepositoryInput(inv); verr != nil {
-		return verr
-	}
-
-	// Missing-token guard (#647), mirrors runWith.
-	if terr := requireTokenUnlessMocked(inv); terr != nil {
-		return terr
-	}
-
-	var deps engine.Deps
-	if opts.BuildDeps != nil {
-		deps, err = opts.BuildDeps(ctx, inv)
-	} else {
-		deps, err = defaultBuildDeps(ctx, inv)
-	}
-	if err != nil {
-		return fmt.Errorf("action: build deps: %w", err)
-	}
-
-	if !inv.UseMockedData {
-		validator := &TokenValidator{Token: inv.Token, REST: deps.REST, UseMockedData: inv.UseMockedData}
-		vRes, verr := validator.Validate(ctx)
-		if verr != nil {
-			return verr
-		}
-		if !vRes.QuotaSufficient {
-			slog.Info("metrics-cli skipped: insufficient GitHub API quota",
-				"reset", vRes.RateState.REST.Reset)
-			return nil
-		}
-		if len(vRes.MissingScopes) > 0 {
-			slog.Warn("token is missing some scopes; affected plugins will skip",
-				"missing", vRes.MissingScopes)
+		for key, value := range preset.Q {
+			kl := strings.ToLower(key)
+			if _, exists := inputs[kl]; !exists {
+				inputs[kl] = value
+				sources[kl] = "preset"
+			}
 		}
 	}
 
-	// Banner goes to stderr in CLI mode so it can never contaminate the
-	// rendered output. Specifically: `--filename -` streams the SVG/PNG
-	// payload to stdout, and a banner prepended to that stream would
-	// corrupt PNG bytes outright and pollute committed SVG diffs. stderr
-	// keeps the banner human-visible in a terminal while leaving the
-	// data path clean for redirection and pipelines.
-	PrintBanner(os.Stderr, BannerInfo{
-		Version:     engine.Version(),
-		Mode:        inv.Mode.String(),
-		Template:    inv.Template,
-		Plugins:     sortedTruthyPluginGates(inputs),
-		TokenMasked: inv.Token.String(),
-		GoVersion:   runtime.Version(),
-		OSArch:      runtime.GOOS + "/" + runtime.GOARCH,
-	})
+	return inputs, sources, nil
+}
 
-	if inv.PerPlugin {
-		if perr := runPerPluginDispatch(ctx, inv, deps); perr != nil {
-			return fmt.Errorf("action: per-plugin dispatch: %w", perr)
-		}
-		return nil
+// logResolvedSources emits a single slog.Debug record whose attrs name
+// the originating layer of every resolved input key. The attrs are
+// sorted alphabetically by key so log diffs stay deterministic across
+// runs. Skipped silently when the resolved map is empty.
+func logResolvedSources(sources map[string]string) {
+	if len(sources) == 0 {
+		return
 	}
-
-	var res *engine.Result
-	cerr := inv.RetryPolicy.Do(ctx, func() error {
-		var e error
-		res, e = engine.Compute(ctx, engine.Request{
-			Login:    inv.Login,
-			Repo:     stringInput(inv.Inputs, "repo", ""),
-			Account:  accountForTemplate(inv.Template),
-			Template: inv.Template,
-			Format:   inv.Format,
-			Inputs:   inv.Inputs,
-		}, deps)
-		return e
-	})
-	if cerr != nil {
-		return fmt.Errorf("action: engine.Compute: %w", cerr)
+	keys := make([]string, 0, len(sources))
+	for k := range sources {
+		keys = append(keys, k)
 	}
-	if res == nil {
-		return errors.New("action: engine.Compute returned nil result")
+	sort.Strings(keys)
+	attrs := make([]any, 0, len(keys)*2)
+	for _, k := range keys {
+		attrs = append(attrs, k, sources[k])
 	}
-
-	w, closeFn, oerr := ResolveOutputWriter(targetOutputPath(inv), inv.Format)
-	if oerr != nil {
-		return fmt.Errorf("action: open output: %w", oerr)
-	}
-	defer func() { _ = closeFn() }()
-	if _, werr := w.Write(res.Output); werr != nil {
-		return fmt.Errorf("action: write output: %w", werr)
-	}
-
-	if !inv.Dryrun && inv.OutputAction != "none" {
-		committer, nerr := NewCommitter(deps.REST, inv, res.Output)
-		if nerr != nil {
-			return fmt.Errorf("action: committer init: %w", nerr)
-		}
-		if cerr := committer.Run(ctx); cerr != nil {
-			slog.Warn("committer failed (action continues)", "err", cerr)
-		}
-	}
-	return nil
+	slog.Debug("inputs resolved", attrs...)
 }
 
 // runPerPluginDispatch runs ComputePerPlugin and writes one SVG file per
@@ -486,7 +447,7 @@ func runPerPluginDispatch(ctx context.Context, inv *Invocation, deps engine.Deps
 	return nil
 }
 
-// targetOutputPath chooses the destination for the CLI Write step.
+// targetOutputPath chooses the destination for the unified Write step.
 // `-` (stdout) stays as is; otherwise the resolved filename is joined
 // to OutputDir when it's relative.
 func targetOutputPath(inv *Invocation) string {
@@ -559,12 +520,15 @@ func accountForTemplate(template string) plugins.AccountKind {
 	return plugins.AccountUser
 }
 
-func defaultOutputDir() string {
+func defaultOutputDir(cwd string) string {
 	// Action mode writes to /renders inside the Docker container.
-	// Falls back to pwd when the dir does not exist (= running
-	// outside the container, e.g., go test).
+	// Falls back to the supplied working directory when /renders is
+	// absent (= running outside the container, e.g., local CLI / tests).
 	if _, err := os.Stat("/renders"); err == nil {
 		return "/renders"
+	}
+	if cwd != "" {
+		return cwd
 	}
 	return "."
 }
@@ -581,7 +545,7 @@ func envSliceToMap(env []string) map[string]string {
 	return out
 }
 
-func newInvocation(mode RunMode, inputs map[string]any, env map[string]string, outputDir string) (*Invocation, error) {
+func newInvocation(inputs map[string]any, env map[string]string, outputDir string) (*Invocation, error) {
 	// Materialize the `optimize` metadata default. The action / CLI
 	// input layer (ParseInputs) only carries explicitly-provided
 	// inputs — it does not apply metadata.yml defaults — so without
@@ -594,7 +558,6 @@ func newInvocation(mode RunMode, inputs map[string]any, env map[string]string, o
 		inputs["optimize"] = []string{"css", "xml"}
 	}
 	inv := &Invocation{
-		Mode:             mode,
 		Inputs:           inputs,
 		Template:         stringInput(inputs, "template", "classic"),
 		Login:            stringInput(inputs, "user", ""),
@@ -615,17 +578,17 @@ func newInvocation(mode RunMode, inputs map[string]any, env map[string]string, o
 	// Token resolution chain (#647):
 	//
 	//  1. inputs["token"] — populated from INPUT_TOKEN via ParseInputs
-	//     (Action mode: `with: token:` becomes INPUT_TOKEN by runner
-	//     convention; CLI mode: user can still export INPUT_TOKEN).
+	//     (Action runtime: `with: token:` becomes INPUT_TOKEN by runner
+	//     convention; local CLI: user can still export INPUT_TOKEN).
 	//  2. env["GITHUB_TOKEN"] — the canonical convention used by gh
 	//     CLI, GitHub Actions, and most tooling. The fallback covers
 	//     direct CLI invocations and workflow steps that set
 	//     `env: GITHUB_TOKEN:` instead of the action input.
 	//
-	// Neither set is not fatal here — runWith / runCLIWith surface the
-	// missing-token diagnostic before deps build (the auth layer's
-	// "token does not match recognized prefix" message would be less
-	// helpful than the canonical "set GITHUB_TOKEN" guidance).
+	// Neither set is not fatal here — runWith surfaces the missing-token
+	// diagnostic before deps build (the auth layer's "token does not
+	// match recognized prefix" message would be less helpful than the
+	// canonical "set GITHUB_TOKEN" guidance).
 	tokenRaw := stringInput(inputs, "token", "")
 	if tokenRaw == "" {
 		tokenRaw = env["GITHUB_TOKEN"]
@@ -685,20 +648,22 @@ func newInvocation(mode RunMode, inputs map[string]any, env map[string]string, o
 		}
 	}
 
-	// Resolve repo from GITHUB_REPOSITORY + run id from GITHUB_RUN_ID.
-	if mode == ModeAction {
-		if repo, ok := env["GITHUB_REPOSITORY"]; ok && repo != "" {
-			parts := strings.SplitN(repo, "/", 2)
-			if len(parts) == 2 {
-				inv.RepoOwner = parts[0]
-				inv.RepoName = parts[1]
-			}
+	// Resolve repo + run id from GitHub Actions runner env vars. These
+	// fields populate when the env var is set (Action runtime) and stay
+	// empty otherwise (local CLI); the committer reads them when present.
+	if repo, ok := env["GITHUB_REPOSITORY"]; ok && repo != "" {
+		parts := strings.SplitN(repo, "/", 2)
+		if len(parts) == 2 {
+			inv.RepoOwner = parts[0]
+			inv.RepoName = parts[1]
 		}
-		inv.RunID = env["GITHUB_RUN_ID"]
 	}
+	inv.RunID = env["GITHUB_RUN_ID"]
 
-	// Login fallback: GITHUB_ACTOR.
-	if inv.Login == "" && mode == ModeAction {
+	// Login fallback: GITHUB_ACTOR (set by the GitHub Actions runner).
+	// In local CLI invocations the env var is typically absent, so the
+	// fallback no-ops and the missing-user error below fires as before.
+	if inv.Login == "" {
 		inv.Login = env["GITHUB_ACTOR"]
 	}
 
@@ -762,13 +727,6 @@ func defaultBuildDeps(_ context.Context, inv *Invocation) (engine.Deps, error) {
 		Render:     renderer,
 		HTTPClient: imgClient,
 	}, nil
-}
-
-func writeOutputFile(path string, body []byte) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil { //nolint:gosec // committer-style path under inv.OutputDir
-		return err
-	}
-	return os.WriteFile(path, body, 0o600)
 }
 
 func sortedTruthyPluginGates(inputs map[string]any) []string {
@@ -846,6 +804,17 @@ func durationMsInput(in map[string]any, key string, def time.Duration) time.Dura
 	}
 	ms := intInput(map[string]any{key: v}, key, int(def/time.Millisecond))
 	return time.Duration(ms) * time.Millisecond
+}
+
+// writeOutputFile is the historical "mkdir -p + write 0o600" helper
+// retained because helpers_test exercises it directly. The runtime
+// pipeline now goes through ResolveOutputWriter to keep the stdout
+// (`--filename -`) and file paths in a single code branch.
+func writeOutputFile(path string, body []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil { //nolint:gosec // committer-style path under inv.OutputDir
+		return err
+	}
+	return os.WriteFile(path, body, 0o600)
 }
 
 // pluginSlugPattern restricts user-supplied plugin slugs to a safe subset

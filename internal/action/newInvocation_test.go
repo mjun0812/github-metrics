@@ -22,7 +22,7 @@ func TestNewInvocation_FilenameExplicit(t *testing.T) {
 		"filename": "foo.svg",
 	}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test-repo"}
-	inv, err := newInvocation(ModeCLI, inputs, env, "/tmp/out")
+	inv, err := newInvocation(inputs, env, "/tmp/out")
 	if err != nil {
 		t.Fatalf("newInvocation: %v", err)
 	}
@@ -39,7 +39,7 @@ func TestNewInvocation_FilenameStdout(t *testing.T) {
 		"filename": "-",
 	}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test-repo"}
-	inv, err := newInvocation(ModeCLI, inputs, env, "/tmp/out")
+	inv, err := newInvocation(inputs, env, "/tmp/out")
 	if err != nil {
 		t.Fatalf("newInvocation: %v", err)
 	}
@@ -61,7 +61,7 @@ func TestNewInvocation_FilenameWildcard(t *testing.T) {
 		"combined": "yes",
 	}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test-repo"}
-	inv, err := newInvocation(ModeCLI, inputs, env, "/tmp/out")
+	inv, err := newInvocation(inputs, env, "/tmp/out")
 	if err != nil {
 		t.Fatalf("newInvocation: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestNewInvocation_UserFromGitHubActor(t *testing.T) {
 		"GITHUB_ACTOR":      "octocat",
 		"GITHUB_REPOSITORY": "octocat/test-repo",
 	}
-	inv, err := newInvocation(ModeAction, inputs, env, "/tmp/out")
+	inv, err := newInvocation(inputs, env, "/tmp/out")
 	if err != nil {
 		t.Fatalf("newInvocation: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestNewInvocation_UserEmpty_Errors(t *testing.T) {
 	t.Parallel()
 	inputs := map[string]any{}
 	env := map[string]string{} // no GITHUB_ACTOR either
-	_, err := newInvocation(ModeAction, inputs, env, "/tmp")
+	_, err := newInvocation(inputs, env, "/tmp")
 	if err == nil {
 		t.Error("expected error when user and GITHUB_ACTOR are both empty")
 	}
@@ -108,7 +108,7 @@ func TestNewInvocation_GitHubRepositoryParsed(t *testing.T) {
 	t.Parallel()
 	inputs := map[string]any{"user": "mjun0812", "combined": "yes"}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test-repo"}
-	inv, err := newInvocation(ModeAction, inputs, env, "/tmp/out")
+	inv, err := newInvocation(inputs, env, "/tmp/out")
 	if err != nil {
 		t.Fatalf("newInvocation: %v", err)
 	}
@@ -120,19 +120,23 @@ func TestNewInvocation_GitHubRepositoryParsed(t *testing.T) {
 	}
 }
 
-// In CLI mode, GITHUB_REPOSITORY env is NOT parsed (only Action mode reads it).
-func TestNewInvocation_GitHubRepository_CLIModeIgnored(t *testing.T) {
+// After the v3.0 mode unification (#646), GITHUB_REPOSITORY is parsed
+// in every invocation — there is no longer a CLI-mode skip. The env
+// var still no-ops when absent (local CLI without the runner sets it),
+// but when present it populates RepoOwner / RepoName regardless of
+// whether the invocation came from the GitHub Actions runner or the
+// shell. This test pins that always-on behaviour.
+func TestNewInvocation_GitHubRepository_AlwaysParsed(t *testing.T) {
 	t.Parallel()
 	inputs := map[string]any{"user": "octocat", "combined": "yes"}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test-repo"}
-	inv, err := newInvocation(ModeCLI, inputs, env, "/tmp/out")
+	inv, err := newInvocation(inputs, env, "/tmp/out")
 	if err != nil {
 		t.Fatalf("newInvocation: %v", err)
 	}
-	// In CLI mode, RepoOwner/RepoName come from the `repo` input, not env.
-	// With no `repo` input, they stay empty.
-	if inv.RepoOwner != "" {
-		t.Errorf("CLI mode: RepoOwner should be empty, got %q", inv.RepoOwner)
+	if inv.RepoOwner != "mjun0812" || inv.RepoName != "test-repo" {
+		t.Errorf("RepoOwner/RepoName = %q/%q, want mjun0812/test-repo",
+			inv.RepoOwner, inv.RepoName)
 	}
 }
 
@@ -144,7 +148,7 @@ func TestNewInvocation_OptimizeAbsent_InjectsDefault(t *testing.T) {
 	t.Parallel()
 	inputs := map[string]any{"user": "octocat", "combined": "yes"}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
-	inv, err := newInvocation(ModeAction, inputs, env, "/tmp/out")
+	inv, err := newInvocation(inputs, env, "/tmp/out")
 	if err != nil {
 		t.Fatalf("newInvocation: %v", err)
 	}
@@ -165,7 +169,7 @@ func TestNewInvocation_OptimizeExplicit_Preserved(t *testing.T) {
 	t.Parallel()
 	inputs := map[string]any{"user": "octocat", "optimize": "css", "combined": "yes"}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
-	inv, err := newInvocation(ModeAction, inputs, env, "/tmp/out")
+	inv, err := newInvocation(inputs, env, "/tmp/out")
 	if err != nil {
 		t.Fatalf("newInvocation: %v", err)
 	}
@@ -194,7 +198,7 @@ func TestNewInvocation_Token_InputTokenWinsOverGitHubToken(t *testing.T) {
 		"combined": "yes",
 	}
 	env := map[string]string{"GITHUB_TOKEN": "github_token_value"}
-	inv, err := newInvocation(ModeCLI, inputs, env, "/tmp/out")
+	inv, err := newInvocation(inputs, env, "/tmp/out")
 	if err != nil {
 		t.Fatalf("newInvocation: %v", err)
 	}
@@ -212,7 +216,7 @@ func TestNewInvocation_Token_GitHubTokenFallback(t *testing.T) {
 		"combined": "yes",
 	} // no inputs["token"]
 	env := map[string]string{"GITHUB_TOKEN": "github_token_value"}
-	inv, err := newInvocation(ModeCLI, inputs, env, "/tmp/out")
+	inv, err := newInvocation(inputs, env, "/tmp/out")
 	if err != nil {
 		t.Fatalf("newInvocation: %v", err)
 	}
@@ -237,7 +241,7 @@ func TestNewInvocation_Token_InputTokenAloneActionPath(t *testing.T) {
 		"combined": "yes",
 	}
 	env := map[string]string{"GITHUB_REPOSITORY": "octocat/test"}
-	inv, err := newInvocation(ModeAction, inputs, env, "/tmp/out")
+	inv, err := newInvocation(inputs, env, "/tmp/out")
 	if err != nil {
 		t.Fatalf("newInvocation: %v", err)
 	}
@@ -257,7 +261,7 @@ func TestNewInvocation_Token_NeitherSet_DelegatesToValidator(t *testing.T) {
 		"combined": "yes",
 	}
 	env := map[string]string{}
-	inv, err := newInvocation(ModeCLI, inputs, env, "/tmp/out")
+	inv, err := newInvocation(inputs, env, "/tmp/out")
 	if err != nil {
 		t.Fatalf("newInvocation: %v", err)
 	}
@@ -274,7 +278,7 @@ func TestNewInvocation_RetryPolicyDefaults(t *testing.T) {
 	t.Parallel()
 	inputs := map[string]any{"user": "octocat", "combined": "yes"}
 	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
-	inv, err := newInvocation(ModeAction, inputs, env, "/tmp/out")
+	inv, err := newInvocation(inputs, env, "/tmp/out")
 	if err != nil {
 		t.Fatalf("newInvocation: %v", err)
 	}

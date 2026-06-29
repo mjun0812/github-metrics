@@ -14,12 +14,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// CLIFlags is the parsed result of `metrics-cli <flags>` when the
-// binary runs outside GitHub Actions.
+// CLIFlags is the parsed result of `metrics-cli <flags>`. After the
+// v3.0 mode-unification (#646) every invocation goes through this
+// parser; flags are layered on top of the INPUT_<UPPER> / INPUTS JSON
+// env values so a workflow can mix `with: token:` from a secret with
+// `run: metrics-cli --debug` overrides.
 //
-// The fields map 1:1 onto action.yml inputs so the merged
-// *Invocation produced by ToInvocation is interchangeable with the
-// Action-mode pipeline.
+// The fields map 1:1 onto action.yml inputs so the merged inputs map
+// produced by applyFlagsOver / ToInvocation feeds the same engine
+// pipeline regardless of whether the data came from env, YAML, or
+// flags.
 type CLIFlags struct {
 	Config          string            // --config <path>.yaml
 	User            string            // --user <login>
@@ -33,11 +37,28 @@ type CLIFlags struct {
 	OutputDir       string            // --output-dir <dir> (per-plugin mode)
 	Combined        bool              // --combined (opt into single-SVG mode)
 	PluginAllowlist string            // --plugins a,b,c (comma-separated allowlist)
+	NoEnv           bool              // --no-env (skip INPUT_*/INPUTS env layer; CLI flags only)
+
+	// setFlags records which flags were explicitly provided on the
+	// command line (populated via fs.Visit in ParseFlags). The unified
+	// pipeline uses it to decide whether to override env-provided
+	// inputs: a flag without a user-supplied value MUST NOT clobber
+	// INPUT_<UPPER>. When nil (CLIFlags built directly in tests),
+	// applyFlagsOver falls back to "non-zero value == set" semantics
+	// to preserve historical test behaviour.
+	setFlags map[string]bool
 }
 
-// ParseFlags parses the supplied args (typically os.Args[1:] after
-// bootstrap flags are stripped in cmd/metrics-cli) into a CLIFlags
-// struct. Errors come from flag.FlagSet (continue on error).
+// ParseFlags parses the supplied args (typically os.Args[1:] passed in
+// by cmd/metrics-cli after bootstrap flags are stripped) into a
+// CLIFlags struct. Errors come from flag.FlagSet (continue on error).
+//
+// Default values for `template` and `output` are applied so callers
+// that read CLIFlags directly (not through applyFlagsOver) still see
+// the historical "classic" / "svg" defaults. The setFlags map only
+// records flags the user explicitly passed — defaults do NOT participate
+// — so the unified pipeline correctly leaves INPUT_TEMPLATE alone when
+// the user did not pass --template.
 func ParseFlags(args []string) (*CLIFlags, error) {
 	cf := &CLIFlags{Plugins: map[string]string{}}
 	fs := flag.NewFlagSet("metrics-cli", flag.ContinueOnError)
@@ -54,12 +75,25 @@ func ParseFlags(args []string) (*CLIFlags, error) {
 	fs.StringVar(&cf.OutputDir, "output-dir", "", "directory for per-plugin SVG output (default mode)")
 	fs.BoolVar(&cf.Combined, "combined", false, "render a single combined SVG instead of per-plugin files")
 	fs.StringVar(&cf.PluginAllowlist, "plugins", "", "comma-separated plugin slug allowlist")
+	fs.BoolVar(&cf.NoEnv, "no-env", false, "ignore INPUT_*/INPUTS env vars; resolve inputs from CLI flags only")
 
 	fs.Var(&pluginFlag{m: cf.Plugins}, "plugin", "key=value plugin input (repeatable)")
 
 	if err := fs.Parse(args); err != nil {
 		return nil, err
 	}
+
+	// Record only flags the user explicitly passed (fs.Visit skips
+	// defaults). This is what the unified pipeline consults so a
+	// hybrid `INPUT_TEMPLATE=foo metrics-cli --debug` invocation
+	// keeps INPUT_TEMPLATE intact.
+	cf.setFlags = map[string]bool{}
+	fs.Visit(func(f *flag.Flag) { cf.setFlags[f.Name] = true })
+
+	// Defaults are applied AFTER setFlags is populated so callers that
+	// read cf.Template / cf.Output directly still see the historical
+	// fallback values. Tests + the unified pipeline check setFlags, not
+	// the value, to decide whether a flag was actually supplied.
 	if cf.Template == "" {
 		cf.Template = "classic"
 	}
@@ -67,6 +101,80 @@ func ParseFlags(args []string) (*CLIFlags, error) {
 		cf.Output = "svg"
 	}
 	return cf, nil
+}
+
+// applyFlagsOver overlays CLI-supplied flags onto inputs and returns
+// the list of overwritten input keys.
+//
+// When setFlags is populated (= ParseFlags path), only flags the user
+// explicitly passed override env-provided values — this is what makes
+// hybrid `INPUT_TOKEN=secret metrics-cli --debug` invocations work
+// correctly. When setFlags is nil (= test-constructed CLIFlags), every
+// non-zero scalar field counts as "set", preserving the legacy
+// ToInvocation semantics those tests depend on.
+func (c *CLIFlags) applyFlagsOver(inputs map[string]any) []string {
+	if c == nil {
+		return nil
+	}
+	wasSet := func(name string, present bool) bool {
+		if c.setFlags == nil {
+			return present
+		}
+		return c.setFlags[name]
+	}
+	var applied []string
+	set := func(key string, value any) {
+		inputs[key] = value
+		applied = append(applied, key)
+	}
+
+	// `--config` is layered as a distinct overlay in assembleInputs, so
+	// we do not write to inputs here. The keys it brings carry their
+	// own "config" source label in that step.
+	_ = wasSet
+
+	if wasSet("user", c.User != "") {
+		set("user", c.User)
+	}
+	if wasSet("repo", c.Repo != "") {
+		repo := c.Repo
+		if idx := strings.LastIndex(repo, "/"); idx >= 0 {
+			slog.Warn("--repo: drop the 'owner/' prefix; canonical form is --user <owner> --repo <name>",
+				"got", repo, "using", repo[idx+1:])
+			repo = repo[idx+1:]
+		}
+		set("repo", repo)
+	}
+	if wasSet("template", c.Template != "") {
+		set("template", c.Template)
+	}
+	if wasSet("output", c.Output != "") {
+		set("config_output", c.Output)
+	}
+	if wasSet("filename", c.Filename != "") {
+		set("filename", c.Filename)
+	}
+	if wasSet("dryrun", c.Dryrun) {
+		set("dryrun", true)
+	}
+	if wasSet("output-dir", c.OutputDir != "") {
+		set("output_dir", c.OutputDir)
+	}
+	if wasSet("combined", c.Combined) {
+		set("combined", true)
+	}
+	if wasSet("plugins", c.PluginAllowlist != "") {
+		set("plugins", c.PluginAllowlist)
+	}
+	if wasSet("preset", c.Preset != "") {
+		set("config_presets", c.Preset)
+	}
+	// --plugin key=value entries always overlay; each Set call already
+	// reflects an explicit user intent at the flag layer.
+	for k, v := range c.Plugins {
+		set(k, v)
+	}
+	return applied
 }
 
 // pluginFlag is the flag.Value used to accumulate repeated
@@ -149,21 +257,20 @@ func LoadYAMLConfig(path string) (map[string]any, error) {
 	return out, nil
 }
 
-// ToInvocation merges CLI flags (highest priority), YAML config, env,
-// and metadata defaults into a flat `map[string]any` suitable for
-// newInvocation.
+// ToInvocation merges --config YAML, env, preset emission, and CLI flag
+// overrides into a flat `map[string]any` suitable for newInvocation.
 //
 // Priority (highest first):
 //  1. CLI flag (--user, --plugin key=val, ...)
 //  2. --config <path>.yaml
-//  3. --preset <path>.yaml (loaded by Run-side preset overlay; we
-//     just emit `config_presets` here so the unified pipeline runs
-//     it through LoadPreset like the Action path).
-//  4. INPUT_<UPPER> env variables (loaded via ParseInputs).
-//  5. metadata.yml defaults (applied by ParseInputs).
+//  3. INPUT_<UPPER> / INPUTS env variables (loaded via ParseInputs).
+//  4. metadata.yml defaults (applied by ParseInputs).
 //
-// Returns the flat inputs map; the caller passes it through
-// ParseInputs's metadata-default layer (newInvocation already does).
+// The unified runtime pipeline (runWith → assembleInputs) does NOT go
+// through ToInvocation — it does the layering inline so it can also
+// emit per-key source attribution for debug logs. ToInvocation is
+// retained because internal tests construct CLIFlags directly and
+// assert on the merged map shape.
 func (c *CLIFlags) ToInvocation(env map[string]string) (map[string]any, error) {
 	inputs, err := ParseInputs(env)
 	if err != nil {
@@ -180,56 +287,14 @@ func (c *CLIFlags) ToInvocation(env map[string]string) (map[string]any, error) {
 		}
 	}
 
-	if c.Preset != "" {
-		inputs["config_presets"] = c.Preset
-	}
-
-	if c.User != "" {
-		inputs["user"] = c.User
-	}
-	if c.Repo != "" {
-		// Strip an accidental `owner/` prefix; canonical CLI form is
-		// `--user owner --repo name`. Warn once when we do.
-		repo := c.Repo
-		if idx := strings.LastIndex(repo, "/"); idx >= 0 {
-			slog.Warn("--repo: drop the 'owner/' prefix; canonical form is --user <owner> --repo <name>",
-				"got", repo, "using", repo[idx+1:])
-			repo = repo[idx+1:]
-		}
-		inputs["repo"] = repo
-	}
-	if c.Template != "" {
-		inputs["template"] = c.Template
-	}
-	if c.Output != "" {
-		inputs["config_output"] = c.Output
-	}
-	if c.Filename != "" {
-		inputs["filename"] = c.Filename
-	}
-	if c.Dryrun {
-		inputs["dryrun"] = true
-	}
-	for k, v := range c.Plugins {
-		inputs[k] = v
-	}
-	if c.OutputDir != "" {
-		inputs["output_dir"] = c.OutputDir
-	}
-	if c.Combined {
-		inputs["combined"] = true
-	}
-	if c.PluginAllowlist != "" {
-		inputs["plugins"] = c.PluginAllowlist
-	}
-
+	c.applyFlagsOver(inputs)
 	return inputs, nil
 }
 
-// ResolveOutputWriter returns the io.Writer + close func for the CLI
-// output target. `-` returns os.Stdout (no close), with a warning when
-// the format is non-text (png/jpeg). Other filenames are os.Create'd
-// after mkdir -p of their parent.
+// ResolveOutputWriter returns the io.Writer + close func for the
+// resolved output target. `-` returns os.Stdout (no close), with a
+// warning when the format is non-text (png/jpeg). Other filenames are
+// os.Create'd after mkdir -p of their parent.
 func ResolveOutputWriter(filename, format string) (io.Writer, func() error, error) {
 	if filename == "-" {
 		if format == "png" || format == "jpeg" {

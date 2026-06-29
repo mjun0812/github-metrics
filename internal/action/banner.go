@@ -7,10 +7,12 @@ import (
 	"strings"
 )
 
-// BannerInfo carries the data the startup banner displays.
+// BannerInfo carries the data the startup banner displays. The pre-v3.0
+// "Mode" row (action vs cli) was removed when the dispatch was unified
+// (#646) — there is now exactly one entry pipeline, so the row no longer
+// conveyed useful information.
 type BannerInfo struct {
 	Version     string   // semver tag or "dev"
-	Mode        string   // "action" or "cli"
 	Template    string   // e.g. "classic"
 	Plugins     []string // enabled plugin slugs (sorted, deprecated entries suffixed " (deprecated)")
 	TokenMasked string   // masked token string (config.Token.String() output)
@@ -34,10 +36,6 @@ func PrintBanner(w io.Writer, info BannerInfo) {
 		pluginsCell = strings.Join(plugins, ", ")
 	}
 
-	mode := info.Mode
-	if mode == "" {
-		mode = "cli"
-	}
 	template := info.Template
 	if template == "" {
 		template = "classic"
@@ -52,7 +50,6 @@ func PrintBanner(w io.Writer, info BannerInfo) {
 	_, _ = fmt.Fprintln(w, ruler)
 	_, _ = fmt.Fprintln(w, "── metrics-cli — startup banner ──")
 	_, _ = fmt.Fprintf(w, "Version            │ %s\n", info.Version)
-	_, _ = fmt.Fprintf(w, "Mode               │ %s\n", mode)
 	_, _ = fmt.Fprintf(w, "Template           │ %s\n", template)
 	_, _ = fmt.Fprintf(w, "Plugins            │ %s\n", pluginsCell)
 	_, _ = fmt.Fprintf(w, "Token              │ %s\n", tokenCell)
