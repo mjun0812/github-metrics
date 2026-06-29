@@ -109,7 +109,37 @@ func newProviderWith(t *testing.T, transport http.RoundTripper) *dataprovider.Pr
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)
 	}
-	return dataprovider.New("octocat", "", gql, nil, nil)
+	return dataprovider.New("octocat", "", gql, nil, nil, dataprovider.Options{})
+}
+
+// newProviderWithRepo is newProviderWith but in repository-template mode
+// (M7): synthesizeRepoResult fires instead of the paging fetch, which
+// the skip-private bypass test (TestProvider_SkipPrivate_RepoModeBypassesFilter)
+// uses to confirm `--repo` wins over the global filter.
+func newProviderWithRepo(t *testing.T, repo string, transport http.RoundTripper) *dataprovider.Provider {
+	t.Helper()
+	gql, err := githubapi.NewGraphQL(config.NewToken("ghp_test"), "", httpx.Options{
+		Transport:  transport,
+		MaxRetries: 0,
+	})
+	if err != nil {
+		t.Fatalf("NewGraphQL: %v", err)
+	}
+	return dataprovider.New("octocat", repo, gql, nil, nil, dataprovider.Options{SkipPrivate: true})
+}
+
+// newProviderWithOpts is newProviderWith but with an explicit Options
+// override, used by the skip-private filter tests.
+func newProviderWithOpts(t *testing.T, transport http.RoundTripper, opts dataprovider.Options) *dataprovider.Provider {
+	t.Helper()
+	gql, err := githubapi.NewGraphQL(config.NewToken("ghp_test"), "", httpx.Options{
+		Transport:  transport,
+		MaxRetries: 0,
+	})
+	if err != nil {
+		t.Fatalf("NewGraphQL: %v", err)
+	}
+	return dataprovider.New("octocat", "", gql, nil, nil, opts)
 }
 
 const userResponseBody = `{
@@ -562,5 +592,223 @@ func TestProvider_RepositorySummary_Forked(t *testing.T) {
 	}
 	if again.Forked != summary.Forked {
 		t.Errorf("memoized Forked drifted: got %d, want %d", again.Forked, summary.Forked)
+	}
+}
+
+// userRepositoriesSkipPrivateFixture is a four-node paging fixture
+// (2 public + 2 private) used by the repositories_skip_private (#656)
+// tests. Each node carries a distinct stargazerCount so the filter's
+// effect on the aggregate (RepositorySummary.Stargazers) is observable
+// and not just a list-length comparison.
+const userRepositoriesSkipPrivateFixture = `{
+  "data": {
+    "user": {
+      "repositories": {
+        "totalCount": 4,
+        "pageInfo": {"hasNextPage": false, "endCursor": null},
+        "nodes": [
+          {
+            "databaseId": 1, "id": "R1", "name": "pub-a",
+            "nameWithOwner": "octocat/pub-a", "description": null,
+            "url": "https://example.invalid/pub-a",
+            "isPrivate": false, "isFork": false,
+            "createdAt": "2020-01-01T00:00:00Z",
+            "pushedAt": "2020-01-02T00:00:00Z",
+            "updatedAt": "2020-01-02T00:00:00Z",
+            "stargazerCount": 10, "forkCount": 0,
+            "issues": {"totalCount": 0}, "pullRequests": {"totalCount": 0},
+            "watchers": {"totalCount": 0}, "primaryLanguage": null,
+            "languages": null, "diskUsage": 0,
+            "releases": {"totalCount": 0}, "packages": {"totalCount": 0},
+            "deployments": {"totalCount": 0}, "licenseInfo": null
+          },
+          {
+            "databaseId": 2, "id": "R2", "name": "priv-a",
+            "nameWithOwner": "octocat/priv-a", "description": null,
+            "url": "https://example.invalid/priv-a",
+            "isPrivate": true, "isFork": false,
+            "createdAt": "2020-01-01T00:00:00Z",
+            "pushedAt": "2020-01-02T00:00:00Z",
+            "updatedAt": "2020-01-02T00:00:00Z",
+            "stargazerCount": 100, "forkCount": 0,
+            "issues": {"totalCount": 0}, "pullRequests": {"totalCount": 0},
+            "watchers": {"totalCount": 0}, "primaryLanguage": null,
+            "languages": null, "diskUsage": 0,
+            "releases": {"totalCount": 0}, "packages": {"totalCount": 0},
+            "deployments": {"totalCount": 0}, "licenseInfo": null
+          },
+          {
+            "databaseId": 3, "id": "R3", "name": "pub-b",
+            "nameWithOwner": "octocat/pub-b", "description": null,
+            "url": "https://example.invalid/pub-b",
+            "isPrivate": false, "isFork": false,
+            "createdAt": "2020-01-01T00:00:00Z",
+            "pushedAt": "2020-01-02T00:00:00Z",
+            "updatedAt": "2020-01-02T00:00:00Z",
+            "stargazerCount": 20, "forkCount": 0,
+            "issues": {"totalCount": 0}, "pullRequests": {"totalCount": 0},
+            "watchers": {"totalCount": 0}, "primaryLanguage": null,
+            "languages": null, "diskUsage": 0,
+            "releases": {"totalCount": 0}, "packages": {"totalCount": 0},
+            "deployments": {"totalCount": 0}, "licenseInfo": null
+          },
+          {
+            "databaseId": 4, "id": "R4", "name": "priv-b",
+            "nameWithOwner": "octocat/priv-b", "description": null,
+            "url": "https://example.invalid/priv-b",
+            "isPrivate": true, "isFork": false,
+            "createdAt": "2020-01-01T00:00:00Z",
+            "pushedAt": "2020-01-02T00:00:00Z",
+            "updatedAt": "2020-01-02T00:00:00Z",
+            "stargazerCount": 200, "forkCount": 0,
+            "issues": {"totalCount": 0}, "pullRequests": {"totalCount": 0},
+            "watchers": {"totalCount": 0}, "primaryLanguage": null,
+            "languages": null, "diskUsage": 0,
+            "releases": {"totalCount": 0}, "packages": {"totalCount": 0},
+            "deployments": {"totalCount": 0}, "licenseInfo": null
+          }
+        ]
+      }
+    }
+  }
+}`
+
+// TestProvider_SkipPrivate_FiltersFromList guards the
+// repositories_skip_private (#656) acceptance: when the flag is on, the
+// account-wide paging fetch drops isPrivate nodes before they reach the
+// repoPagingState accumulator, so both Repositories() and the aggregates
+// in RepositorySummary() reflect the public-only subset.
+func TestProvider_SkipPrivate_FiltersFromList(t *testing.T) {
+	t.Parallel()
+	tr := newCountingTransport()
+	tr.setResponse("User", userResponseBody)
+	tr.setResponse("UserRepositories", userRepositoriesSkipPrivateFixture)
+	p := newProviderWithOpts(t, tr, dataprovider.Options{SkipPrivate: true})
+
+	repos, err := p.Repositories(context.Background())
+	if err != nil {
+		t.Fatalf("Repositories: %v", err)
+	}
+	if got, want := len(repos), 2; got != want {
+		t.Fatalf("len(Repositories) = %d, want %d (private nodes must be dropped)", got, want)
+	}
+	for _, r := range repos {
+		if strings.Contains(r.NameWithOwner, "priv-") {
+			t.Errorf("private repo %q leaked into Repositories()", r.NameWithOwner)
+		}
+	}
+
+	summary, err := p.RepositorySummary(context.Background())
+	if err != nil {
+		t.Fatalf("RepositorySummary: %v", err)
+	}
+	if summary == nil {
+		t.Fatal("RepositorySummary returned nil")
+	}
+	if got, want := summary.Count, 2; got != want {
+		t.Errorf("Count = %d, want %d (visible-only count)", got, want)
+	}
+	// Stargazers spot-check: 10 (pub-a) + 20 (pub-b) = 30. The
+	// private nodes contribute 100 + 200 = 300 and MUST be absent.
+	if got, want := summary.Stargazers, 30; got != want {
+		t.Errorf("Stargazers = %d, want %d (private stars must be excluded)", got, want)
+	}
+}
+
+// TestProvider_SkipPrivate_DefaultOffIncludesPrivate is the negative
+// control: with the flag absent the existing behavior is preserved —
+// every node (public + private) appears in the list and aggregates.
+func TestProvider_SkipPrivate_DefaultOffIncludesPrivate(t *testing.T) {
+	t.Parallel()
+	tr := newCountingTransport()
+	tr.setResponse("User", userResponseBody)
+	tr.setResponse("UserRepositories", userRepositoriesSkipPrivateFixture)
+	p := newProviderWithOpts(t, tr, dataprovider.Options{}) // flag off
+
+	repos, err := p.Repositories(context.Background())
+	if err != nil {
+		t.Fatalf("Repositories: %v", err)
+	}
+	if got, want := len(repos), 4; got != want {
+		t.Fatalf("len(Repositories) = %d, want %d (flag off: all 4 nodes pass through)", got, want)
+	}
+
+	summary, err := p.RepositorySummary(context.Background())
+	if err != nil {
+		t.Fatalf("RepositorySummary: %v", err)
+	}
+	if got, want := summary.Count, 4; got != want {
+		t.Errorf("Count = %d, want %d (server-side totalCount)", got, want)
+	}
+	// 10 + 100 + 20 + 200 = 330 — every node contributes.
+	if got, want := summary.Stargazers, 330; got != want {
+		t.Errorf("Stargazers = %d, want %d (no nodes filtered out)", got, want)
+	}
+}
+
+// repositorySecretResponseBody is a single-repo Repository operation
+// response simulating an explicitly-requested private repo. The
+// repo-mode bypass test pairs it with SkipPrivate: true to confirm the
+// `--repo` argument wins over the global filter (synthesizeRepoResult
+// never consults p.skipPrivate).
+const repositorySecretResponseBody = `{
+  "data": {
+    "repository": {
+      "databaseId": 9001,
+      "name": "secret",
+      "nameWithOwner": "octocat/secret",
+      "description": "private repo, explicitly requested",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "diskUsage": 0,
+      "stargazerCount": 7,
+      "forkCount": 0,
+      "isArchived": false,
+      "watchers": {"totalCount": 0},
+      "languages": null,
+      "deployments": {"totalCount": 0},
+      "environments": {"totalCount": 0},
+      "primaryLanguage": null,
+      "licenseInfo": null,
+      "defaultBranchRef": {"name": "main"},
+      "owner": {"__typename": "User", "login": "octocat", "avatarUrl": "https://example.invalid/avatar.png"},
+      "issues": {"totalCount": 0},
+      "pullRequests": {"totalCount": 0}
+    }
+  }
+}`
+
+// TestProvider_SkipPrivate_RepoModeBypassesFilter guards the carve-out
+// from the issue's Acceptance ("Repository-mode bypasses the filter —
+// the user explicitly chose this repo"). synthesizeRepoResult is the
+// only producer in repo-mode; it does not — and must not — consult
+// p.skipPrivate. Even with SkipPrivate=true and a repo that would be
+// dropped by the account-wide paging filter, the synthesized list still
+// contains the named repo.
+func TestProvider_SkipPrivate_RepoModeBypassesFilter(t *testing.T) {
+	t.Parallel()
+	tr := newCountingTransport()
+	tr.setResponse("Repository", repositorySecretResponseBody)
+	p := newProviderWithRepo(t, "secret", tr)
+
+	repos, err := p.Repositories(context.Background())
+	if err != nil {
+		t.Fatalf("Repositories: %v", err)
+	}
+	if got, want := len(repos), 1; got != want {
+		t.Fatalf("len(Repositories) = %d, want %d (repo-mode must bypass skipPrivate)", got, want)
+	}
+	if got, want := repos[0].NameWithOwner, "octocat/secret"; got != want {
+		t.Errorf("NameWithOwner = %q, want %q", got, want)
+	}
+
+	summary, err := p.RepositorySummary(context.Background())
+	if err != nil {
+		t.Fatalf("RepositorySummary: %v", err)
+	}
+	if summary == nil {
+		t.Fatal("RepositorySummary returned nil in repo-mode")
+	}
+	if got, want := summary.Count, 1; got != want {
+		t.Errorf("Count = %d, want %d (single synthesized repo)", got, want)
 	}
 }
