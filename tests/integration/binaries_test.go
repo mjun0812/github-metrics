@@ -78,9 +78,11 @@ func exeSuffix() string {
 }
 
 // runBin runs the given binary with args and returns stdout, stderr, exit code.
-// The child env strips GITHUB_ACTIONS so the binary dispatches to CLI mode
-// regardless of whether the test itself runs under GitHub Actions (where
-// GITHUB_ACTIONS=true is baked into os.Environ).
+// The child env strips GITHUB_ACTIONS — after the v3.0 mode unification
+// (#646) the binary ignores the marker anyway, but stripping it keeps
+// the test env minimal so future regressions that reintroduce env-based
+// dispatch surface immediately rather than passing under the inherited
+// runner marker.
 func runBin(t *testing.T, bin string, args ...string) (stdout, stderr string, exitCode int) {
 	t.Helper()
 	cmd := exec.Command(bin, args...)
@@ -99,12 +101,11 @@ func runBin(t *testing.T, bin string, args ...string) (stdout, stderr string, ex
 	return outBuf.String(), errBuf.String(), exitCode
 }
 
-// stripGitHubActionsEnv removes GITHUB_ACTIONS (and the related
-// CI / RUNNER_OS marker) so the spawned binary doesn't route to
-// Action mode when the test happens to run on a GitHub Actions
-// runner. Without this, every integration test inherits
-// GITHUB_ACTIONS=true and hits action.Run (which requires INPUT_*)
-// instead of action.RunCLI (which the tests are exercising).
+// stripGitHubActionsEnv removes GITHUB_ACTIONS from the child env.
+// The marker has no behavioural effect after the v3.0 mode unification
+// (#646) — the binary no longer consults it — but stripping it keeps
+// the test invocation environment minimal so any future regression
+// that re-introduces env-based dispatch is caught here.
 func stripGitHubActionsEnv(env []string) []string {
 	out := env[:0:0]
 	for _, kv := range env {

@@ -33,7 +33,6 @@ func TestRunCLIWith_PerPlugin_DefaultMode(t *testing.T) {
 	}
 
 	err := runCLIWith(context.Background(), cf, runOptions{
-		Mode:      ModeCLI,
 		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
 		Stdout:    io.Discard,
 		OutputDir: outDir,
@@ -72,7 +71,6 @@ func TestRunCLIWith_PerPlugin_WithAllowlist(t *testing.T) {
 	}
 
 	err := runCLIWith(context.Background(), cf, runOptions{
-		Mode:      ModeCLI,
 		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
 		Stdout:    io.Discard,
 		OutputDir: outDir,
@@ -109,7 +107,6 @@ func TestRunCLIWith_Combined_ExplicitFlag(t *testing.T) {
 	}
 
 	err := runCLIWith(context.Background(), cf, runOptions{
-		Mode:      ModeCLI,
 		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
 		Stdout:    io.Discard,
 		OutputDir: outDir,
@@ -143,7 +140,6 @@ func TestRunCLIWith_FilenameImpliesCombined(t *testing.T) {
 	}
 
 	err := runCLIWith(context.Background(), cf, runOptions{
-		Mode:      ModeCLI,
 		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
 		Stdout:    io.Discard,
 		OutputDir: outDir,

@@ -16,7 +16,6 @@ import (
 func TestRunWith_ParseInputsError(t *testing.T) {
 	t.Parallel()
 	err := runWith(context.Background(), runOptions{
-		Mode:      ModeAction,
 		Env:       []string{"INPUTS=not-json"},
 		Stdout:    io.Discard,
 		OutputDir: t.TempDir(),
@@ -30,7 +29,6 @@ func TestRunWith_ParseInputsError(t *testing.T) {
 func TestRunWith_PresetOverlayError(t *testing.T) {
 	t.Parallel()
 	err := runWith(context.Background(), runOptions{
-		Mode: ModeAction,
 		Env: []string{
 			"INPUT_USER=octocat",
 			"INPUT_TOKEN=ghp_mock_pat_valid",
@@ -48,7 +46,6 @@ func TestRunWith_PresetOverlayError(t *testing.T) {
 func TestRunWith_NewInvocationError(t *testing.T) {
 	t.Parallel()
 	err := runWith(context.Background(), runOptions{
-		Mode:      ModeAction,
 		Env:       []string{"INPUT_TOKEN=ghp_mock_pat_valid"},
 		Stdout:    io.Discard,
 		OutputDir: t.TempDir(),
@@ -66,7 +63,6 @@ func TestRunWith_CommitterSuccess(t *testing.T) {
 
 	rest := newFakeREST()
 	err := runWith(context.Background(), runOptions{
-		Mode: ModeAction,
 		Env: []string{
 			"GITHUB_REPOSITORY=mjun0812/test-repo",
 			"GITHUB_ACTOR=octocat",
@@ -104,7 +100,6 @@ func TestRunWith_CommitterSuccess(t *testing.T) {
 func TestRunWith_ComputeError(t *testing.T) {
 	t.Parallel()
 	err := runWith(context.Background(), runOptions{
-		Mode: ModeAction,
 		Env: []string{
 			"GITHUB_REPOSITORY=mjun0812/test-repo",
 			"GITHUB_ACTOR=octocat",
@@ -137,7 +132,6 @@ func TestRunWith_WriteOutputError(t *testing.T) {
 		t.Fatalf("write blocker: %v", err)
 	}
 	err := runWith(context.Background(), runOptions{
-		Mode: ModeAction,
 		Env: []string{
 			"GITHUB_REPOSITORY=mjun0812/test-repo",
 			"GITHUB_ACTOR=octocat",
@@ -164,7 +158,6 @@ func TestRunWith_BuildDepsError(t *testing.T) {
 	t.Parallel()
 	errBoom := errors.New("boom")
 	err := runWith(context.Background(), runOptions{
-		Mode: ModeAction,
 		Env: []string{
 			"GITHUB_REPOSITORY=mjun0812/test-repo",
 			"GITHUB_ACTOR=octocat",
@@ -190,7 +183,6 @@ func TestRunWith_QuotaInsufficientSkips(t *testing.T) {
 	rest := newFakeREST()
 	rest.rateBody = `{"resources":{"core":{"remaining":0,"limit":5000,"reset":0},"graphql":{"remaining":5000,"limit":5000,"reset":0},"search":{"remaining":30,"limit":30,"reset":0}}}`
 	err := runWith(context.Background(), runOptions{
-		Mode: ModeAction,
 		Env: []string{
 			"GITHUB_REPOSITORY=mjun0812/test-repo",
 			"GITHUB_ACTOR=octocat",

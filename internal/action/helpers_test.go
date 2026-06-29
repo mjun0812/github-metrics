@@ -11,24 +11,6 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// RunMode.String()
-// ---------------------------------------------------------------------------
-
-func TestRunMode_String_Action(t *testing.T) {
-	t.Parallel()
-	if got := ModeAction.String(); got != "action" {
-		t.Errorf("ModeAction.String() = %q, want %q", got, "action")
-	}
-}
-
-func TestRunMode_String_CLI(t *testing.T) {
-	t.Parallel()
-	if got := ModeCLI.String(); got != "cli" {
-		t.Errorf("ModeCLI.String() = %q, want %q", got, "cli")
-	}
-}
-
-// ---------------------------------------------------------------------------
 // accountForTemplate
 // ---------------------------------------------------------------------------
 
