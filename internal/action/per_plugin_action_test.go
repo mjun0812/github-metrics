@@ -51,45 +51,6 @@ func TestRunCLIWith_PerPlugin_DefaultMode(t *testing.T) {
 	}
 }
 
-// TestRunCLIWith_PerPlugin_WithAllowlist verifies that --plugins restricts
-// output to only the listed plugins.
-func TestRunCLIWith_PerPlugin_WithAllowlist(t *testing.T) {
-	outDir := t.TempDir()
-
-	rest := newFakeREST()
-	cf := &CLIFlags{
-		User:            "octocat",
-		Template:        "classic",
-		Output:          "svg",
-		Filename:        "",
-		Dryrun:          true,
-		PluginAllowlist: "header", // only header, even though stars is enabled
-		Plugins: map[string]string{
-			"plugin_header": "true",
-			"plugin_stars":  "true",
-		},
-	}
-
-	err := runCLIWith(context.Background(), cf, runOptions{
-		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
-		Stdout:    io.Discard,
-		OutputDir: outDir,
-		BuildDeps: buildTestDeps(t, rest),
-	})
-	if err != nil {
-		t.Fatalf("runCLIWith per-plugin with allowlist: %v", err)
-	}
-
-	// Only header.svg should exist.
-	if _, err := os.Stat(filepath.Join(outDir, "header.svg")); err != nil {
-		t.Errorf("expected header.svg; err=%v", err)
-	}
-	// stars.svg must NOT exist.
-	if _, err := os.Stat(filepath.Join(outDir, "stars.svg")); err == nil {
-		t.Error("stars.svg should not exist (filtered by allowlist)")
-	}
-}
-
 // TestRunCLIWith_Combined_ExplicitFlag verifies that --combined produces
 // a single combined SVG file.
 func TestRunCLIWith_Combined_ExplicitFlag(t *testing.T) {

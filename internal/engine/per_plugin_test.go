@@ -46,7 +46,7 @@ func TestComputePerPlugin_ThreePlugins(t *testing.T) {
 		Format:   "svg",
 		Inputs:   baseInputsForPerPlugin(),
 	}
-	results, err := engine.ComputePerPlugin(ctx, req, newPerPluginTestDeps(), nil)
+	results, err := engine.ComputePerPlugin(ctx, req, newPerPluginTestDeps())
 	if err != nil {
 		t.Fatalf("ComputePerPlugin: %v", err)
 	}
@@ -71,67 +71,10 @@ func TestComputePerPlugin_ThreePlugins(t *testing.T) {
 	}
 }
 
-// TestComputePerPlugin_AllowlistFilters verifies that an explicit allowlist
-// limits the output to only the listed plugins.
-func TestComputePerPlugin_AllowlistFilters(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	req := engine.Request{
-		Login:    "octocat",
-		Template: "classic",
-		Format:   "svg",
-		// All three plugins enabled in inputs...
-		Inputs: baseInputsForPerPlugin(),
-	}
-	// ...but allowlist restricts to only two.
-	results, err := engine.ComputePerPlugin(ctx, req, newPerPluginTestDeps(), []string{"header", "stars"})
-	if err != nil {
-		t.Fatalf("ComputePerPlugin: %v", err)
-	}
-	if len(results) != 2 {
-		t.Fatalf("len(results) = %d, want 2 (allowlist restricted)", len(results))
-	}
-	for _, pr := range results {
-		if pr.Plugin != "header" && pr.Plugin != "stars" {
-			t.Errorf("unexpected plugin %q in results", pr.Plugin)
-		}
-	}
-}
-
-// TestComputePerPlugin_StarsAllowlistOnly verifies the single-plugin case
-// works (renderer produces non-empty SVG output for the listed plugin).
-func TestComputePerPlugin_StarsAllowlistOnly(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	req := engine.Request{
-		Login:    "octocat",
-		Template: "classic",
-		Format:   "svg",
-		Inputs: map[string]any{
-			"user":            "octocat",
-			"use_mocked_data": true,
-			"optimize":        []string{"css", "xml"},
-			"plugin_stars":    true,
-		},
-	}
-	results, err := engine.ComputePerPlugin(ctx, req, newPerPluginTestDeps(), []string{"stars"})
-	if err != nil {
-		t.Fatalf("ComputePerPlugin: %v", err)
-	}
-	if len(results) != 1 {
-		t.Fatalf("len(results) = %d, want 1", len(results))
-	}
-	if results[0].Error != nil {
-		t.Errorf("stars plugin: unexpected error: %v", results[0].Error)
-	}
-	if len(results[0].Output) == 0 {
-		t.Errorf("stars plugin: empty output")
-	}
-}
-
-// TestComputePerPlugin_EmptyAllowlist checks that an empty allowlist
-// renders all truthy plugin gates (and excludes false ones).
-func TestComputePerPlugin_EmptyAllowlist(t *testing.T) {
+// TestComputePerPlugin_HonorsTruthyGates checks that only truthy
+// `plugin_<slug>=true` gates produce SVG output; explicit `false`
+// gates are excluded, matching the post-#654 single-resolution path.
+func TestComputePerPlugin_HonorsTruthyGates(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	req := engine.Request{
@@ -146,11 +89,16 @@ func TestComputePerPlugin_EmptyAllowlist(t *testing.T) {
 			"plugin_stars":     false,
 		},
 	}
-	results, err := engine.ComputePerPlugin(ctx, req, newPerPluginTestDeps(), nil)
+	results, err := engine.ComputePerPlugin(ctx, req, newPerPluginTestDeps())
 	if err != nil {
 		t.Fatalf("ComputePerPlugin: %v", err)
 	}
 	if len(results) != 2 {
 		t.Fatalf("want 2 results (header+languages), got %d", len(results))
+	}
+	for _, pr := range results {
+		if pr.Plugin == "stars" {
+			t.Errorf("stars=false should have been excluded; got result %+v", pr)
+		}
 	}
 }
