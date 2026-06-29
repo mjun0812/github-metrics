@@ -19,17 +19,14 @@ type PerPluginResult struct {
 }
 
 // ComputePerPlugin runs the full plugin data-collection stage once (via
-// Compute with template="noop"), then renders each plugin in `allowlist`
-// into a standalone SVG file. Plugin-local failures are recorded in
-// PerPluginResult.Error and skip only that plugin's file; other plugins
-// continue.
-//
-// If allowlist is empty, all enabled plugins (plugin_<slug>=true in
-// req.Inputs) are rendered.
+// Compute with template="noop"), then renders each plugin enabled in
+// req.Inputs (plugin_<slug>=truthy) into a standalone SVG file.
+// Plugin-local failures are recorded in PerPluginResult.Error and skip
+// only that plugin's file; other plugins continue.
 //
 // Design decision: single Compute pass + partial-render per plugin (efficient).
 // Running Compute N times would re-fetch GitHub API data N times.
-func ComputePerPlugin(ctx context.Context, req Request, deps Deps, allowlist []string) ([]*PerPluginResult, error) {
+func ComputePerPlugin(ctx context.Context, req Request, deps Deps) ([]*PerPluginResult, error) {
 	if deps.Logger == nil {
 		deps.Logger = slog.Default()
 	}
@@ -55,7 +52,7 @@ func ComputePerPlugin(ctx context.Context, req Request, deps Deps, allowlist []s
 	}
 
 	// Determine the set of plugins to render.
-	targets := resolvePerPluginTargets(req.Inputs, allowlist)
+	targets := resolvePerPluginTargets(req.Inputs)
 
 	// Obtain renderer once so all plugins share a single browser instance.
 	renderer, closeBrowser, rerr := obtainRenderer(deps)
@@ -150,24 +147,8 @@ func renderOnePlugin(
 }
 
 // resolvePerPluginTargets returns the sorted list of plugin slugs to render.
-// If allowlist is non-empty it is returned as-is (after dedup). Otherwise
-// every top-level plugin gate that is truthy in inputs is included.
-func resolvePerPluginTargets(inputs map[string]any, allowlist []string) []string {
-	if len(allowlist) > 0 {
-		// Deduplicate while preserving order.
-		seen := make(map[string]bool, len(allowlist))
-		out := make([]string, 0, len(allowlist))
-		for _, s := range allowlist {
-			s = strings.TrimSpace(s)
-			if s != "" && !seen[s] {
-				seen[s] = true
-				out = append(out, s)
-			}
-		}
-		return out
-	}
-
-	// No explicit allowlist: collect all enabled plugin gates.
+// Collects every top-level `plugin_<slug>` gate that is truthy in inputs.
+func resolvePerPluginTargets(inputs map[string]any) []string {
 	var out []string
 	for k, v := range inputs {
 		if !strings.HasPrefix(k, "plugin_") {

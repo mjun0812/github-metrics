@@ -70,7 +70,7 @@ Common invocations:
     metrics-cli --user <login> --template classic [--config inputs.yaml]
                 [--plugin key=value ...] [--output svg|png|jpeg|json]
                 [--filename <path-or-->] [--dryrun]
-                [--output-dir <dir>] [--combined] [--plugins a,b,c]
+                [--output-dir <dir>] [--combined]
 
   # Hybrid — token from a workflow secret, --debug from the run: step:
   GITHUB_TOKEN=<PAT> metrics-cli --debug --user octocat

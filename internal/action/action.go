@@ -37,8 +37,7 @@ type Invocation struct {
 	OutputCondition  string
 	OutputFilename   string
 	OutputDir        string
-	PerPlugin        bool     // true when in per-plugin SVG output mode
-	PluginAllowlist  []string // comma-separated allowlist from `plugins` input
+	PerPlugin        bool // true when in per-plugin SVG output mode
 	UseMockedData    bool
 	NoticeReleases   bool
 	RepoOwner        string
@@ -422,7 +421,7 @@ func runPerPluginDispatch(ctx context.Context, inv *Invocation, deps engine.Deps
 		Template: inv.Template,
 		Format:   inv.Format,
 		Inputs:   inv.Inputs,
-	}, deps, inv.PluginAllowlist)
+	}, deps)
 	if err != nil {
 		return err
 	}
@@ -442,11 +441,10 @@ func runPerPluginDispatch(ctx context.Context, inv *Invocation, deps engine.Deps
 				"plugin", pr.Plugin)
 			continue
 		}
-		// Defense in depth: even though `newInvocation` validates allowlist
-		// slugs, refuse to write a per-plugin file whose slug could escape
-		// OutputDir. Plugin slugs coming from the in-process registry are
-		// already safe; this guards against any future caller that bypasses
-		// the allowlist validation step.
+		// Defense in depth: refuse to write a per-plugin file whose slug
+		// could escape OutputDir. Plugin slugs coming from the in-process
+		// registry are already safe; this guards against any future caller
+		// that supplies a slug from an untrusted source.
 		if !isValidPluginSlug(pr.Plugin) {
 			slog.Warn("per-plugin slug rejected as unsafe; skipping file",
 				"plugin", pr.Plugin)
@@ -643,21 +641,6 @@ func newInvocation(inputs map[string]any, env map[string]string, outputDir strin
 		} else if inv.OutputDir == "" || inv.OutputDir == "." {
 			// Default per-plugin output directory.
 			inv.OutputDir = "./metrics-renders"
-		}
-	}
-
-	// Plugin allowlist.
-	pluginsRaw := stringInput(inputs, "plugins", "")
-	if pluginsRaw != "" {
-		for _, s := range strings.Split(pluginsRaw, ",") {
-			s = strings.TrimSpace(s)
-			if s == "" {
-				continue
-			}
-			if !isValidPluginSlug(s) {
-				return nil, fmt.Errorf("action: invalid plugin slug %q in `plugins` input (allowed: lowercase ASCII letters, digits, '_', '-'; must start with a letter)", s)
-			}
-			inv.PluginAllowlist = append(inv.PluginAllowlist, s)
 		}
 	}
 

@@ -104,18 +104,6 @@ inputs:
     type: boolean
     default: 'no'
 
-  plugins:
-    description: |
-      Comma-separated plugin allowlist for per-plugin mode (e.g. `languages,stars,activity`).
-
-      Each entry is a plugin slug (lowercase ASCII, digits, '_', '-'; must start with a letter).
-      Only listed plugins are rendered to `<output_dir>/<slug>.svg`. Default (empty) renders
-      every enabled `plugin_<slug>` gate.
-
-      Ignored when `combined: yes` — combined mode is controlled exclusively by the
-      `plugin_<slug>` gates.
-    type: string
-
   markdown:
     description: |
       Markdown template path
