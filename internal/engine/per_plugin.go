@@ -195,11 +195,6 @@ func resolvePerPluginTargets(inputs map[string]any, allowlist []string) []string
 func singlePluginInputs(inputs map[string]any, slug string) map[string]any {
 	out := make(map[string]any, len(inputs)+8)
 	for k, v := range inputs {
-		// Legacy aliases removed in v3.0 (#649); strip retained as a
-		// safety net for stale CI configs that still pass the v2 keys.
-		if k == "base" || k == "plugin_base_activity" || k == "plugin_base_repositories" {
-			continue
-		}
 		if strings.HasPrefix(k, "plugin_") {
 			rest := strings.TrimPrefix(k, "plugin_")
 			if !strings.Contains(rest, "_") {

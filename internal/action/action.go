@@ -25,7 +25,7 @@ import (
 
 // Invocation is the resolved per-run state Run hands off to the engine
 // + committer pipeline. It is built from the merged inputs (INPUT_<UPPER>
-// / INPUTS JSON / --config YAML / --preset / CLI flags).
+// / INPUTS JSON / --config YAML / CLI flags).
 type Invocation struct {
 	Inputs           map[string]any
 	Token            config.Token
@@ -63,8 +63,8 @@ type Invocation struct {
 //     message contains "[Skip GitHub Action]" or "Auto-generated
 //     metrics for run #N".
 //  2. Input assembly — merges env layer (INPUT_<UPPER> + INPUTS JSON,
-//     unless --no-env), --config YAML overlay, --preset overlay (fills
-//     missing keys only), and CLI flag overrides (highest priority).
+//     unless --no-env), --config YAML overlay, and CLI flag overrides
+//     (highest priority).
 //  3. Output_action + repository-template + token gates run fail-fast
 //     before any GitHub API call.
 //  4. engine.Compute (wrapped in RetryPolicy).
@@ -130,19 +130,13 @@ func runWith(ctx context.Context, opts runOptions) error {
 		return err
 	}
 
-	// 4. Warn (once per process per key) when a v3.0-removed legacy
-	// chrome input is still in the assembled inputs map. Purely
-	// diagnostic — no translation, no fallback. Helps users migrating
-	// long-running CI configs notice the silent no-op render.
-	WarnLegacyChromeInputs(inputs)
-
-	// 5. Build invocation.
+	// 4. Build invocation.
 	inv, ierr := newInvocation(inputs, env, opts.OutputDir)
 	if ierr != nil {
 		return ierr
 	}
 
-	// 5b. Source attribution for the GITHUB_TOKEN fallback path.
+	// 4b. Source attribution for the GITHUB_TOKEN fallback path.
 	// newInvocation seeds inputs["token"] from env["GITHUB_TOKEN"] when
 	// no INPUT_TOKEN was supplied; assembleInputs has already run by
 	// then so the sources map misses the attribution. Patch it now so
@@ -174,7 +168,7 @@ func runWith(ctx context.Context, opts runOptions) error {
 	}
 
 	// 7. Source attribution debug log — names the layer each resolved
-	// input came from (env / inputs_json / flag / preset / config).
+	// input came from (env / inputs_json / flag / config).
 	// Emitted once per invocation; only fires when slog debug level is
 	// enabled, so production runs pay no cost.
 	logResolvedSources(sources)
@@ -334,9 +328,9 @@ func runCLIWith(ctx context.Context, cf *CLIFlags, opts runOptions) error {
 	return runWith(ctx, opts)
 }
 
-// assembleInputs merges the four input layers — env (INPUT_<UPPER> +
-// INPUTS JSON), --config YAML, --preset YAML, CLI flags — into a single
-// map. CLI flags win; preset fills only missing keys (lowest priority).
+// assembleInputs merges the three input layers — env (INPUT_<UPPER> +
+// INPUTS JSON), --config YAML, CLI flags — into a single map. CLI flags
+// win.
 //
 // The sources map records the originating layer of each resolved key so
 // logResolvedSources can emit the per-key attribution debug log.
@@ -392,23 +386,6 @@ func assembleInputs(cf *CLIFlags, env map[string]string) (map[string]any, map[st
 	applied := cf.applyFlagsOver(inputs)
 	for _, k := range applied {
 		sources[k] = "flag"
-	}
-
-	// Layer 4: --preset overlay. MergeInto only writes keys that are
-	// NOT already present, so preset has the LOWEST priority (fills
-	// defaults that no other layer set).
-	if presetPath, ok := inputs["config_presets"].(string); ok && presetPath != "" {
-		preset, perr := LoadPreset(presetPath)
-		if perr != nil {
-			return nil, nil, fmt.Errorf("action: load preset: %w", perr)
-		}
-		for key, value := range preset.Q {
-			kl := strings.ToLower(key)
-			if _, exists := inputs[kl]; !exists {
-				inputs[kl] = value
-				sources[kl] = "preset"
-			}
-		}
 	}
 
 	return inputs, sources, nil
