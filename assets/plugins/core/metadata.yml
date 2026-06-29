@@ -522,6 +522,23 @@ inputs:
     type: boolean
     default: yes
 
+  repositories_skip_private:
+    description: |
+      Exclude private repositories from every plugin's view (cross-plugin filter).
+
+      When `yes`, `dataprovider.Provider` drops `isPrivate == true` repositories
+      during the user / organization paging fetch. Consumer plugins
+      (languages / activity / traffic / notable / repositories / stargazers / …)
+      see only the public subset; aggregate counts in `Computed.Repositories`
+      (Count, Stargazers, Forks, Watchers, Releases, Packages, DiskUsage, Forked,
+      Issues, PullRequests) reflect public repos only.
+
+      Repository-mode (`--template repository --repo owner/name`) is NOT
+      affected — the user explicitly named the target repo, so the filter
+      is bypassed even when it points at a private repo.
+    type: boolean
+    default: 'no'
+
   # ====================================================================================
   # 🚧 Options below are mostly used for testing
 

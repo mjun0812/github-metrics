@@ -48,8 +48,23 @@ type Provider struct {
 	rest   *githubapi.REST
 	logger *slog.Logger
 
+	// skipPrivate, when true, instructs the repository paging fetch
+	// (fetchOneRepoPage) to drop nodes with isPrivate == true before
+	// they reach the accumulator. Repo-mode (synthesizeRepoResult)
+	// bypasses the filter — the user explicitly named the repo.
+	skipPrivate bool
+
 	group singleflight.Group
 	cache sync.Map // string -> *result
+}
+
+// Options carries optional Provider configuration. Use the zero value
+// when no overrides are needed.
+type Options struct {
+	// SkipPrivate, when true, drops isPrivate repositories during the
+	// account-wide paging fetch so every consumer plugin sees only the
+	// public subset. Has no effect in repository-template mode.
+	SkipPrivate bool
 }
 
 // result is the cached value behind a cache key. Both Value and Err are
@@ -63,17 +78,20 @@ type result struct {
 // New returns a Provider that fetches the profile of login via gql/rest.
 // repo is the single repository name for the M7 repository template;
 // pass "" for the classic user / organization templates. logger may be
-// nil; callers typically pass the engine's logger.
-func New(login, repo string, gql *githubapi.GraphQL, rest *githubapi.REST, logger *slog.Logger) *Provider {
+// nil; callers typically pass the engine's logger. opts carries
+// optional behavior toggles (e.g. SkipPrivate); pass Options{} when no
+// overrides are needed.
+func New(login, repo string, gql *githubapi.GraphQL, rest *githubapi.REST, logger *slog.Logger, opts Options) *Provider {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	return &Provider{
-		login:  login,
-		repo:   repo,
-		gql:    gql,
-		rest:   rest,
-		logger: logger,
+		login:       login,
+		repo:        repo,
+		gql:         gql,
+		rest:        rest,
+		logger:      logger,
+		skipPrivate: opts.SkipPrivate,
 	}
 }
 
