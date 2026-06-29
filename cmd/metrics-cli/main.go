@@ -1,12 +1,17 @@
 // Package main provides the metrics-cli binary entrypoint.
 //
-// This is the GitHub Action / CLI surface for the Go port of
-// lowlighter/metrics. The binary dispatches based on the
-// `GITHUB_ACTIONS=true` env var: when set, the Action path
-// (action.Run) reads INPUTS / INPUT_<UPPER> env vars; otherwise the
-// CLI path (action.RunCLI) parses os.Args flags. The legacy
-// --help / --version / --debug / --log-format flags from M1 stay
-// supported so existing wrappers do not break.
+// This is the unified GitHub Action / CLI surface for the Go port of
+// lowlighter/metrics. After the v3.0 mode-unification (#646) there is
+// a single dispatch path: the binary always reads INPUT_<UPPER> /
+// INPUTS env vars first and then layers any CLI flags on top (flags
+// win on conflict). The pre-v3.0 GITHUB_ACTIONS=true switch is no
+// longer consulted — the GitHub Actions runner still sets it, but the
+// binary ignores it because the runner-supplied INPUT_<UPPER> env vars
+// already feed the same unified pipeline. Pass `--no-env` to suppress
+// the env layer for local debug runs.
+//
+// The legacy --help / --version / --debug / --log-format bootstrap
+// flags from M1 stay supported so existing wrappers do not break.
 package main
 
 import (
@@ -39,21 +44,36 @@ func init() {
 
 const binaryName = "metrics-cli"
 
-const usageText = `metrics-cli: GitHub Action / CLI entry point for github-metrics.
+const usageText = `metrics-cli: unified GitHub Action / CLI entry point for github-metrics.
 
 Usage:
   metrics-cli [flags]
 
-Action mode (set automatically by the GitHub Actions runner):
-  GITHUB_ACTIONS=true INPUT_USER=octocat INPUT_TOKEN=<PAT> metrics-cli
+The binary reads inputs from two layers on every invocation; later
+layers override earlier ones:
 
-CLI mode (direct invocation; the GitHub token is read from the
-GITHUB_TOKEN env var — there is no --token / --token-env flag):
+  1. Env vars   INPUT_<UPPER> (GitHub Actions runner) and INPUTS (JSON).
+  2. CLI flags  --user / --template / --plugin key=value / ...
+
+Pass --no-env to skip layer 1 entirely (useful for local debug runs).
+The GitHub token is read from inputs["token"] (= INPUT_TOKEN) or the
+GITHUB_TOKEN env var — there is no --token / --token-env flag.
+
+Common invocations:
+
+  # GitHub Actions runner — the workflow's with: keys arrive as
+  # INPUT_<UPPER> env vars and feed the unified pipeline:
+  INPUT_USER=octocat INPUT_TOKEN=<PAT> metrics-cli
+
+  # Local CLI — same pipeline, driven by flags (and GITHUB_TOKEN):
   GITHUB_TOKEN=$(gh auth token) \
     metrics-cli --user <login> --template classic [--config inputs.yaml]
                 [--plugin key=value ...] [--output svg|png|jpeg|json]
                 [--filename <path-or-->] [--dryrun]
                 [--output-dir <dir>] [--combined] [--plugins a,b,c]
+
+  # Hybrid — token from a workflow secret, --debug from the run: step:
+  GITHUB_TOKEN=<PAT> metrics-cli --debug --user octocat
 
 Common flags:
   -h, --help        Show this help message and exit.
@@ -70,11 +90,11 @@ func main() {
 	}
 }
 
-func run(args []string, stdout, stderr io.Writer, env []string) error {
-	// Handle the no-arg help-friendly bootstrap flags (--help / --version /
-	// --debug / --log-format) first. These are kept outside action.Run /
-	// action.RunCLI so the binary stays usable as a diagnostic tool even
-	// when full Action / CLI inputs are unavailable.
+func run(args []string, stdout, stderr io.Writer, _ []string) error {
+	// Handle the bootstrap flags (--help / --version / --debug /
+	// --log-format) first. These are kept outside action.Run so the
+	// binary stays usable as a diagnostic tool even when full
+	// pipeline inputs are unavailable.
 	cliArgs, bootArgs := splitBootstrapArgs(args)
 
 	fs := flag.NewFlagSet(binaryName, flag.ContinueOnError)
@@ -115,28 +135,23 @@ func run(args []string, stdout, stderr io.Writer, env []string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	// Dispatch: Action mode when GitHub Actions runner sets
-	// GITHUB_ACTIONS=true; CLI mode otherwise. The CLI path receives
-	// the user-supplied args after the bootstrap flags are removed so
-	// `--user`, `--template`, `--plugin key=value` etc. land in the
-	// flag.FlagSet that action.RunCLI defines.
-	if envValue(env, "GITHUB_ACTIONS") == "true" {
-		return action.Run(ctx)
-	}
-
-	// No-arg CLI invocation = print banner + usage (legacy M1 behavior).
-	if len(cliArgs) == 0 {
+	// No-arg invocation = print banner + usage (legacy M1 behavior).
+	// Anything else flows into the unified action.Run pipeline. We do
+	// NOT branch on GITHUB_ACTIONS — runner-supplied INPUT_<UPPER> env
+	// vars already feed the same pipeline whether or not the workflow
+	// step passes additional CLI args.
+	if len(cliArgs) == 0 && !hasActionInputs(os.Environ()) {
 		banner(stdout)
 		_, _ = fmt.Fprintln(stdout, usageText)
 		return nil
 	}
-	return action.RunCLI(ctx, cliArgs)
+	return action.Run(ctx, cliArgs)
 }
 
 // splitBootstrapArgs separates the M1 bootstrap flags (--help, -h,
 // --version, --debug, --log-format) from the rest of the args so the
 // bootstrap fs only sees what it understands and the remaining args
-// flow into action.RunCLI's own flag set.
+// flow into action.Run's own flag set.
 func splitBootstrapArgs(args []string) (cliArgs, bootArgs []string) {
 	bootstrap := map[string]bool{
 		"--help": true, "-h": true,
@@ -166,17 +181,33 @@ func splitBootstrapArgs(args []string) (cliArgs, bootArgs []string) {
 	return cliArgs, bootArgs
 }
 
-// envValue looks up `name=value` in the supplied env slice (matching
-// os.Environ()'s format). Returns "" when missing — same semantics as
-// os.Getenv but operating on a passed-in slice for testability.
-func envValue(env []string, name string) string {
-	prefix := name + "="
-	for _, e := range env {
-		if strings.HasPrefix(e, prefix) {
-			return strings.TrimPrefix(e, prefix)
+// hasActionInputs reports whether any non-empty INPUT_<UPPER> / INPUTS
+// env var is present. The unified pipeline treats those vars as a
+// valid source of inputs (the GitHub Actions runner populates them
+// from `with:` keys), so we MUST hand control to action.Run even when
+// the invocation has no CLI args — otherwise a workflow that only
+// sets `with:` (no extra `run:` step) would never reach the pipeline.
+//
+// We deliberately do NOT consult GITHUB_ACTIONS=true (#646): the
+// presence of actual inputs is what matters, not the runner marker.
+// Empty INPUT_* values are ignored because the runner emits
+// `INPUT_FOO=` for every workflow input regardless of whether the
+// user supplied a value, so the presence of an empty entry is not
+// evidence that the workflow intends to drive the pipeline.
+func hasActionInputs(env []string) bool {
+	for _, kv := range env {
+		switch {
+		case strings.HasPrefix(kv, "INPUT_"):
+			if idx := strings.IndexByte(kv, '='); idx >= 0 && idx < len(kv)-1 {
+				return true
+			}
+		case strings.HasPrefix(kv, "INPUTS="):
+			if len(kv) > len("INPUTS=") {
+				return true
+			}
 		}
 	}
-	return ""
+	return false
 }
 
 func banner(w io.Writer) {

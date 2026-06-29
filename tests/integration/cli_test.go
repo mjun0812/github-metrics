@@ -26,7 +26,8 @@ import (
 )
 
 // startGitHubMock returns an httptest.Server that answers the minimal
-// REST + GraphQL surface action.RunCLI hits during a dryrun:
+// REST + GraphQL surface the unified action.Run pipeline hits during
+// a dryrun:
 //
 //	GET /                 → token scopes (X-OAuth-Scopes: repo)
 //	GET /rate_limit       → 5000 remaining
@@ -332,8 +333,8 @@ func trunc(s string, n int) string {
 // TestCLI_RepoTemplate_MissingRepo_FailFast (M7 T034 / SC-003):
 // Invoke the binary with `--template repository` but no `--repo`
 // flag and assert it exits with code 1 in under 5 seconds without
-// contacting GitHub. We strip GITHUB_ACTIONS so the binary dispatches
-// to RunCLI even on a CI runner.
+// contacting GitHub. The unified Run pipeline (#646) hits the same
+// fail-fast path regardless of CI vs local invocation.
 func TestCLI_RepoTemplate_MissingRepo_FailFast(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
