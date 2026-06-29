@@ -1,10 +1,12 @@
 package action
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
 	"log/slog"
+	"strings"
 	"testing"
 
 	"github.com/mjun0812/github-metrics/internal/engine"
@@ -261,6 +263,43 @@ func TestUnified_SourceAttributionLog(t *testing.T) {
 // TestUnified_InputsJSONSourceLabel verifies the INPUTS JSON layer
 // receives its dedicated `inputs_json` source label so debug logs
 // distinguish it from individual INPUT_<UPPER> entries.
+// TestUnified_BannerWritesToStderr pins the v3.0 behavior change: the
+// startup banner goes to stderr (not stdout), so `--filename -` payloads
+// streamed to stdout cannot be corrupted by banner bytes. A future
+// refactor that flips the default would silently regress PNG output
+// over stdout (and contaminate committed SVG diffs piped from stdout).
+// PR #651 cap-1 review SHOULD-FIX #3.
+func TestUnified_BannerWritesToStderr(t *testing.T) {
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cf, err := ParseFlags([]string{"--combined", "--dryrun"})
+	if err != nil {
+		t.Fatalf("ParseFlags: %v", err)
+	}
+	var inv *Invocation
+	err = runCLIWith(context.Background(), cf, runOptions{
+		Env: []string{
+			"INPUT_USER=octocat",
+			"INPUT_TOKEN=ghp_mock_pat_valid",
+		},
+		Stdout:    &stdoutBuf,
+		Stderr:    &stderrBuf,
+		OutputDir: t.TempDir(),
+		BuildDeps: captureInvocation(&inv),
+	})
+	if !errors.Is(err, errCaptured) {
+		t.Fatalf("runCLIWith: %v", err)
+	}
+	// Banner must land on stderr (not stdout) so payload streams stay
+	// clean for `--filename -` consumers.
+	if !strings.Contains(stderrBuf.String(), "metrics-cli") {
+		t.Errorf("banner missing from stderr; got %q", stderrBuf.String())
+	}
+	if strings.Contains(stdoutBuf.String(), "metrics-cli") ||
+		strings.Contains(stdoutBuf.String(), "startup banner") {
+		t.Errorf("banner leaked into stdout; got %q", stdoutBuf.String())
+	}
+}
+
 func TestUnified_InputsJSONSourceLabel(t *testing.T) {
 	var captured []slog.Record
 	cap := &recordCapturer{
