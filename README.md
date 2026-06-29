@@ -142,24 +142,34 @@ docker run --rm \
   --output svg --filename github-metrics.svg
 ```
 
-`-e GITHUB_TOKEN` forwards the env var into the container; the binary
-reads it via its CLI-mode token resolver. Set `GITHUB_TOKEN` in the
-host shell first, e.g. `export GITHUB_TOKEN=$(gh auth token)`.
+`-e GITHUB_TOKEN` forwards the env var into the container; the unified
+pipeline reads it through its token fallback chain (`INPUT_TOKEN` →
+`GITHUB_TOKEN`). Set `GITHUB_TOKEN` in the host shell first, e.g.
+`export GITHUB_TOKEN=$(gh auth token)`.
 
 The image is multi-arch — `docker pull` automatically resolves to your
 host architecture.
 
 ## Authentication
 
-Every invocation needs a GitHub token:
+Every invocation needs a GitHub token. The binary has a single
+unified input pipeline (v3.0, [#646](https://github.com/mjun0812/github-metrics/issues/646)) — it always reads INPUT\_<UPPER> / INPUTS env vars first and then layers CLI flags on top (flags win on conflict):
 
-- **Action mode**: pass via `with.token` — typically
+- **GitHub Action**: pass via `with.token` — typically
   `${{ secrets.METRICS_TOKEN }}` (a Personal Access Token) for full
-  metrics, or `${{ github.token }}` for public-only data.
-- **CLI / Docker mode**: export `GITHUB_TOKEN` in the environment
+  metrics, or `${{ github.token }}` for public-only data. The runner
+  exposes `with:` keys as `INPUT_<UPPER>` env vars which the unified
+  pipeline reads automatically.
+- **CLI / Docker**: export `GITHUB_TOKEN` in the environment
   (e.g. `GITHUB_TOKEN=$(gh auth token)`); the binary reads it
   automatically. The `--token` / `--token-env` flags were removed in
   v3.0.
+- **Hybrid**: a workflow can layer CLI overrides on top of `with:`
+  inputs — `INPUT_TOKEN=$SECRET metrics-cli --debug --user octocat`
+  resolves token from the env layer and the rest from flags. Pass
+  `--no-env` to suppress the INPUT\_/INPUTS env layer entirely for
+  local debug runs where stray `INPUT_FOO=bar` from the shell would
+  interfere.
 
 The token needs at minimum `public_repo` (classic PAT) or the read scopes
 for each enabled plugin's data (issues, pulls, projects, etc.) for
