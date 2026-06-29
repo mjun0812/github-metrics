@@ -426,17 +426,6 @@ inputs:
       - markdown-pdf
       - insights
 
-  config_presets:
-    description: |
-      Configuration presets
-    type: array
-    format: comma-separated
-    default: ""
-    preset: no
-    example: "@lunar-red"
-    extras:
-      - metrics.setup.community.presets
-
   retries:
     description: |
       Retries in case of failures (for rendering)

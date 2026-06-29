@@ -25,7 +25,6 @@ type InputDef struct {
 	Min         *float64   `yaml:"min"`
 	Max         *float64   `yaml:"max"`
 	Global      bool       `yaml:"global"`
-	Preset      *bool      `yaml:"preset"`
 	Extras      []string   `yaml:"extras"`
 }
 

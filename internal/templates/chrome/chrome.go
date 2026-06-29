@@ -78,10 +78,8 @@ func TruthyInput(in map[string]any, key string) bool {
 // back to a default-all set — opt-in is the only path in v3.
 //
 // The legacy v2 `base=<csv>` and `plugin_base_<section>` aliases are
-// no longer accepted (v3.0, #649); they are silently ignored here.
-// Action / CLI callers surface a diagnostic slog.Warn for those keys
-// via internal/action.WarnLegacyChromeInputs before reaching this
-// layer.
+// no longer accepted (v3.0, #649 / #652); they are silently ignored
+// here.
 func ResolveBaseSections(in map[string]any) map[string]struct{} {
 	out := map[string]struct{}{}
 	for _, k := range chromeSectionKeys {

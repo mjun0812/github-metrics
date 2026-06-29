@@ -33,7 +33,6 @@ type CLIFlags struct {
 	Output          string            // --output svg|png|jpeg|json
 	Filename        string            // --filename <path-or-->; setting this implies --combined.
 	Dryrun          bool              // --dryrun
-	Preset          string            // --preset <path>.yaml
 	OutputDir       string            // --output-dir <dir> (per-plugin mode)
 	Combined        bool              // --combined (opt into single-SVG mode)
 	PluginAllowlist string            // --plugins a,b,c (comma-separated allowlist)
@@ -71,7 +70,6 @@ func ParseFlags(args []string) (*CLIFlags, error) {
 	fs.StringVar(&cf.Output, "output", "", "output format: svg|png|jpeg|json")
 	fs.StringVar(&cf.Filename, "filename", "", "output path; '-' for stdout")
 	fs.BoolVar(&cf.Dryrun, "dryrun", false, "skip commit/PR output_action side effects")
-	fs.StringVar(&cf.Preset, "preset", "", "preset YAML path (config_presets)")
 	fs.StringVar(&cf.OutputDir, "output-dir", "", "directory for per-plugin SVG output (default mode)")
 	fs.BoolVar(&cf.Combined, "combined", false, "render a single combined SVG instead of per-plugin files")
 	fs.StringVar(&cf.PluginAllowlist, "plugins", "", "comma-separated plugin slug allowlist")
@@ -166,9 +164,6 @@ func (c *CLIFlags) applyFlagsOver(inputs map[string]any) []string {
 	if wasSet("plugins", c.PluginAllowlist != "") {
 		set("plugins", c.PluginAllowlist)
 	}
-	if wasSet("preset", c.Preset != "") {
-		set("config_presets", c.Preset)
-	}
 	// --plugin key=value entries always overlay; each Set call already
 	// reflects an explicit user intent at the flag layer.
 	for k, v := range c.Plugins {
@@ -257,8 +252,8 @@ func LoadYAMLConfig(path string) (map[string]any, error) {
 	return out, nil
 }
 
-// ToInvocation merges --config YAML, env, preset emission, and CLI flag
-// overrides into a flat `map[string]any` suitable for newInvocation.
+// ToInvocation merges --config YAML, env, and CLI flag overrides into
+// a flat `map[string]any` suitable for newInvocation.
 //
 // Priority (highest first):
 //  1. CLI flag (--user, --plugin key=val, ...)

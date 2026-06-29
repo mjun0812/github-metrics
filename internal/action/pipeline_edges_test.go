@@ -25,23 +25,6 @@ func TestRunWith_ParseInputsError(t *testing.T) {
 	}
 }
 
-// TestRunWith_PresetOverlayError covers Action preset load failures.
-func TestRunWith_PresetOverlayError(t *testing.T) {
-	t.Parallel()
-	err := runWith(context.Background(), runOptions{
-		Env: []string{
-			"INPUT_USER=octocat",
-			"INPUT_TOKEN=ghp_mock_pat_valid",
-			"INPUT_CONFIG_PRESETS=/nonexistent/preset.yaml",
-		},
-		Stdout:    io.Discard,
-		OutputDir: t.TempDir(),
-	})
-	if err == nil || !strings.Contains(err.Error(), "load preset") {
-		t.Fatalf("expected load preset error, got %v", err)
-	}
-}
-
 // TestRunWith_NewInvocationError covers required login validation.
 func TestRunWith_NewInvocationError(t *testing.T) {
 	t.Parallel()
@@ -199,51 +182,6 @@ func TestRunWith_QuotaInsufficientSkips(t *testing.T) {
 	}
 	if len(rest.putBodies) != 0 {
 		t.Fatalf("PUT should not run on quota skip: %v", rest.putBodies)
-	}
-}
-
-// TestRunCLIWith_PresetOverlayError covers CLI preset load failures.
-func TestRunCLIWith_PresetOverlayError(t *testing.T) {
-	t.Parallel()
-	err := runCLIWith(context.Background(), &CLIFlags{
-		User:     "octocat",
-		Template: "classic",
-		Output:   "svg",
-		Filename: "github-metrics.svg",
-		Dryrun:   true,
-		Preset:   "/nonexistent/preset.yaml",
-		Plugins:  map[string]string{},
-	}, runOptions{OutputDir: t.TempDir()})
-	if err == nil || !strings.Contains(err.Error(), "load preset") {
-		t.Fatalf("expected load preset error, got %v", err)
-	}
-}
-
-// TestRunCLIWith_PresetOverlayAndTokenBypass covers successful preset merge
-// plus the dryrun/use_mocked_data token bypass branch.
-func TestRunCLIWith_PresetOverlayAndTokenBypass(t *testing.T) {
-	t.Parallel()
-	preset := filepath.Join(t.TempDir(), "preset.yaml")
-	if err := os.WriteFile(preset, []byte("q:\n  plugin_languages: true\n"), 0o600); err != nil {
-		t.Fatalf("write preset: %v", err)
-	}
-	errBoom := errors.New("boom")
-	err := runCLIWith(context.Background(), &CLIFlags{
-		User:     "octocat",
-		Template: "classic",
-		Output:   "svg",
-		Filename: "github-metrics.svg",
-		Dryrun:   true,
-		Preset:   preset,
-		Plugins:  map[string]string{"use_mocked_data": "yes"},
-	}, runOptions{
-		OutputDir: t.TempDir(),
-		BuildDeps: func(context.Context, *Invocation) (engine.Deps, error) {
-			return engine.Deps{}, errBoom
-		},
-	})
-	if !errors.Is(err, errBoom) {
-		t.Fatalf("err = %v, want wrapped boom", err)
 	}
 }
 
