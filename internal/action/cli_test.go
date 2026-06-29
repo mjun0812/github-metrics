@@ -17,7 +17,6 @@ func TestParseFlags_AllRecognized(t *testing.T) {
 		"--output", "png",
 		"--filename", "-",
 		"--dryrun",
-		"--preset", "p.yaml",
 	})
 	if err != nil {
 		t.Fatalf("ParseFlags: %v", err)
@@ -30,9 +29,6 @@ func TestParseFlags_AllRecognized(t *testing.T) {
 	}
 	if cf.Plugins["plugin_languages"] != "true" || cf.Plugins["plugin_languages_limit"] != "5" {
 		t.Errorf("plugin map = %v", cf.Plugins)
-	}
-	if cf.Preset != "p.yaml" {
-		t.Errorf("preset = %q", cf.Preset)
 	}
 }
 
@@ -168,18 +164,6 @@ func TestToInvocation_PriorityCLIBeatsConfig(t *testing.T) {
 	}
 	if inputs["user"] != "from-cli" {
 		t.Errorf("CLI flag must beat YAML config; got %v", inputs["user"])
-	}
-}
-
-func TestToInvocation_PresetEmitsConfigPresets(t *testing.T) {
-	t.Parallel()
-	cf := &CLIFlags{User: "x", Template: "classic", Output: "svg", Preset: "p.yaml", Plugins: map[string]string{}}
-	inputs, err := cf.ToInvocation(map[string]string{})
-	if err != nil {
-		t.Fatalf("ToInvocation: %v", err)
-	}
-	if inputs["config_presets"] != "p.yaml" {
-		t.Errorf("preset path should land in config_presets; got %v", inputs["config_presets"])
 	}
 }
 
