@@ -25,18 +25,17 @@ import (
 // pipeline regardless of whether the data came from env, YAML, or
 // flags.
 type CLIFlags struct {
-	Config          string            // --config <path>.yaml
-	User            string            // --user <login>
-	Template        string            // --template <name>
-	Repo            string            // --repo <name> (M7 — repository template input)
-	Plugins         map[string]string // --plugin key=value (repeatable)
-	Output          string            // --output svg|png|jpeg|json
-	Filename        string            // --filename <path-or-->; setting this implies --combined.
-	Dryrun          bool              // --dryrun
-	OutputDir       string            // --output-dir <dir> (per-plugin mode)
-	Combined        bool              // --combined (opt into single-SVG mode)
-	PluginAllowlist string            // --plugins a,b,c (comma-separated allowlist)
-	NoEnv           bool              // --no-env (skip INPUT_*/INPUTS env layer; CLI flags only)
+	Config    string            // --config <path>.yaml
+	User      string            // --user <login>
+	Template  string            // --template <name>
+	Repo      string            // --repo <name> (M7 — repository template input)
+	Plugins   map[string]string // --plugin key=value (repeatable)
+	Output    string            // --output svg|png|jpeg|json
+	Filename  string            // --filename <path-or-->; setting this implies --combined.
+	Dryrun    bool              // --dryrun
+	OutputDir string            // --output-dir <dir> (per-plugin mode)
+	Combined  bool              // --combined (opt into single-SVG mode)
+	NoEnv     bool              // --no-env (skip INPUT_*/INPUTS env layer; CLI flags only)
 
 	// setFlags records which flags were explicitly provided on the
 	// command line (populated via fs.Visit in ParseFlags). The unified
@@ -72,7 +71,6 @@ func ParseFlags(args []string) (*CLIFlags, error) {
 	fs.BoolVar(&cf.Dryrun, "dryrun", false, "skip commit/PR output_action side effects")
 	fs.StringVar(&cf.OutputDir, "output-dir", "", "directory for per-plugin SVG output (default mode)")
 	fs.BoolVar(&cf.Combined, "combined", false, "render a single combined SVG instead of per-plugin files")
-	fs.StringVar(&cf.PluginAllowlist, "plugins", "", "comma-separated plugin slug allowlist")
 	fs.BoolVar(&cf.NoEnv, "no-env", false, "ignore INPUT_*/INPUTS env vars; resolve inputs from CLI flags only")
 
 	fs.Var(&pluginFlag{m: cf.Plugins}, "plugin", "key=value plugin input (repeatable)")
@@ -160,9 +158,6 @@ func (c *CLIFlags) applyFlagsOver(inputs map[string]any) []string {
 	}
 	if wasSet("combined", c.Combined) {
 		set("combined", true)
-	}
-	if wasSet("plugins", c.PluginAllowlist != "") {
-		set("plugins", c.PluginAllowlist)
 	}
 	// --plugin key=value entries always overlay; each Set call already
 	// reflects an explicit user intent at the flag layer.
