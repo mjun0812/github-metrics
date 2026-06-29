@@ -95,6 +95,7 @@ func Run(ctx context.Context, args []string) error {
 type runOptions struct {
 	Env        []string
 	Stdout     io.Writer
+	Stderr     io.Writer // test seam: when non-nil, banner is written here instead of os.Stderr.
 	EventPath  string
 	OutputDir  string
 	WorkingDir string
@@ -141,6 +142,18 @@ func runWith(ctx context.Context, opts runOptions) error {
 		return ierr
 	}
 
+	// 5b. Source attribution for the GITHUB_TOKEN fallback path.
+	// newInvocation seeds inputs["token"] from env["GITHUB_TOKEN"] when
+	// no INPUT_TOKEN was supplied; assembleInputs has already run by
+	// then so the sources map misses the attribution. Patch it now so
+	// the debug log records where the token actually came from
+	// (PR #651 cap-1 review SHOULD-FIX #2).
+	if _, hasTokenSource := sources["token"]; !hasTokenSource {
+		if _, set := inputs["token"]; set && env["GITHUB_TOKEN"] != "" {
+			sources["token"] = "env(GITHUB_TOKEN)"
+		}
+	}
+
 	// 6. Output_action validation — fail-fast before any API call.
 	if verr := DefaultRegistry().Validate(inv.OutputAction); verr != nil {
 		return verr
@@ -165,6 +178,17 @@ func runWith(ctx context.Context, opts runOptions) error {
 	// Emitted once per invocation; only fires when slog debug level is
 	// enabled, so production runs pay no cost.
 	logResolvedSources(sources)
+
+	// 7b. Print the startup banner BEFORE deps build / token validation
+	// so it reaches users even when those later stages fail. Always
+	// goes to stderr so it can never contaminate the rendered output
+	// stream — `--filename -` streams the SVG/PNG payload to stdout,
+	// and a banner prepended to that stream would corrupt PNG bytes
+	// outright and pollute committed SVG diffs. stderr keeps the banner
+	// human-visible in a terminal (and in GitHub Actions logs, which
+	// capture both streams) while leaving the data path clean for
+	// redirection and pipelines.
+	emitBanner(opts, inv, inputs)
 
 	// 8. Build engine deps (real or mocked).
 	var deps engine.Deps
@@ -199,27 +223,7 @@ func runWith(ctx context.Context, opts runOptions) error {
 		}
 	}
 
-	// 10. Print banner. Always goes to stderr so it can never contaminate
-	// the rendered output stream — specifically `--filename -` streams the
-	// SVG/PNG payload to stdout, and a banner prepended to that stream
-	// would corrupt PNG bytes outright and pollute committed SVG diffs.
-	// stderr keeps the banner human-visible in a terminal (and in GitHub
-	// Actions logs, which capture both streams) while leaving the data
-	// path clean for redirection and pipelines.
-	bannerOut := io.Writer(os.Stderr)
-	if opts.Stdout != nil {
-		// Tests inject an explicit Stdout writer to capture banner output;
-		// honor that override so existing assertions stay deterministic.
-		bannerOut = opts.Stdout
-	}
-	PrintBanner(bannerOut, BannerInfo{
-		Version:     engine.Version(),
-		Template:    inv.Template,
-		Plugins:     sortedTruthyPluginGates(inputs),
-		TokenMasked: inv.Token.String(),
-		GoVersion:   runtime.Version(),
-		OSArch:      runtime.GOOS + "/" + runtime.GOARCH,
-	})
+	// Banner already emitted at step 7b above.
 
 	// 11. Notice — best-effort newer-version hint.
 	if inv.NoticeReleases && deps.REST != nil {
@@ -299,6 +303,28 @@ func runWith(ctx context.Context, opts runOptions) error {
 	return nil
 }
 
+// emitBanner writes the startup banner to opts.Stderr (preferred test
+// seam) / opts.Stdout (legacy test seam) / os.Stderr (production).
+// Extracted from runWith so the early-exit paths and the post-deps
+// path can share the same destination logic.
+func emitBanner(opts runOptions, inv *Invocation, inputs map[string]any) {
+	bannerOut := io.Writer(os.Stderr)
+	switch {
+	case opts.Stderr != nil:
+		bannerOut = opts.Stderr
+	case opts.Stdout != nil:
+		bannerOut = opts.Stdout
+	}
+	PrintBanner(bannerOut, BannerInfo{
+		Version:     engine.Version(),
+		Template:    inv.Template,
+		Plugins:     sortedTruthyPluginGates(inputs),
+		TokenMasked: inv.Token.String(),
+		GoVersion:   runtime.Version(),
+		OSArch:      runtime.GOOS + "/" + runtime.GOARCH,
+	})
+}
+
 // runCLIWith is a test-only seam that drives runWith with a pre-built
 // CLIFlags. The unified pipeline normally constructs the flags via
 // ParseFlags(opts.Args); tests skip that step so they can pin
@@ -325,6 +351,16 @@ func assembleInputs(cf *CLIFlags, env map[string]string) (map[string]any, map[st
 			return nil, nil, fmt.Errorf("action: parse inputs: %w", err)
 		}
 		for k, v := range parsed {
+			// Skip empty-string env values: a real GitHub Actions runner
+			// emits `INPUT_<KEY>=` for every unset workflow input
+			// (~30+ keys for this action), and recording them as
+			// "from env" pollutes the source-attribution debug log
+			// with values the user did not actually set. Pairs with the
+			// same guard in cmd/metrics-cli/main.go::hasActionInputs.
+			// PR #651 cap-1 review SHOULD-FIX #1.
+			if s, ok := v.(string); ok && s == "" {
+				continue
+			}
 			inputs[k] = v
 			sources[k] = "env"
 		}
