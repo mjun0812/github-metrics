@@ -112,6 +112,17 @@ Two additional input namespaces live outside this `core` page even though they s
 - **`chrome_*`** (v2.1+, [`assets/plugins/chrome/metadata.yml`](../../assets/plugins/chrome/metadata.yml)) — six per-section boolean inputs that gate the legacy chrome sections (`chrome_header` / `chrome_activity` / `chrome_community` / `chrome_repositories` / `chrome_metadata` / `chrome_introduction`). See [`base.md`](base.md#chrome-inputs-v21) for the migration table from the deprecated `base=<csv>` / `plugin_base_*` triad.
 - **`plugin_<slug>` / `plugin_<slug>_<opt>`** — declared in each plugin's own `assets/plugins/<slug>/metadata.yml`; see the corresponding `docs/plugins/<slug>.md` page.
 
+## Input resolution (v3.0)
+
+After the v3.0 mode unification ([#646](https://github.com/mjun0812/github-metrics/issues/646)) the binary has a single dispatch path. Every invocation resolves inputs from these layers, applied in this order (later layers override earlier ones):
+
+1. **Env layer**: `INPUT_<UPPER>` env vars (one per `with:` key set by the GitHub Actions runner) and the `INPUTS` env var (a single JSON object).
+2. **`--config <path>.yaml`**: nested `plugins:` / `config:` / `committer:` sub-maps flatten into the same `plugin_*` / `config_*` / `committer_*` namespace.
+3. **CLI flags**: `--user`, `--template`, `--plugin key=value`, ... (highest priority).
+4. **`--preset <path>.yaml`** (lowest priority): only fills keys still missing after layers 1–3.
+
+The token is resolved from `inputs["token"]` (= `INPUT_TOKEN`) first, then falls back to the `GITHUB_TOKEN` env var. The pre-v3.0 `GITHUB_ACTIONS=true` dispatch marker is no longer consulted — the GitHub Actions runner still sets it, but the binary ignores it because the runner-supplied `INPUT_<UPPER>` env vars already feed the unified pipeline. Pass `--no-env` to skip the env layer entirely for local debug runs.
+
 ## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
