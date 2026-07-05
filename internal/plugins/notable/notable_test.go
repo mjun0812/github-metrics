@@ -195,6 +195,82 @@ func TestRun_RepositoriesShowsFullHandle(t *testing.T) {
 	}
 }
 
+// TestRun_LimitReadsStringInput pins the #661 fix: Action mode delivers
+// plugin_notable_limit as a string (INPUT_* env), which the previous
+// bare v.(int) assertion silently ignored.
+func TestRun_LimitReadsStringInput(t *testing.T) {
+	t.Parallel()
+	r, _ := runWithGraphQL(t, map[string]any{
+		"user":                        "octocat",
+		"plugin_notable":              true,
+		"plugin_notable_repositories": true,
+		"plugin_notable_limit":        "1",
+	}, notableGraphQLContributionsBody)
+	if len(r.List) != 1 {
+		t.Fatalf("List len = %d, want 1 (string limit honored): %+v", len(r.List), r.List)
+	}
+}
+
+// TestRun_TypesAcceptsJSONArray pins the #664 fix: INPUTS-JSON arrays
+// decode to []any, which the previous []string-only switch dropped —
+// silently collapsing the requested types back to [COMMIT].
+func TestRun_TypesAcceptsJSONArray(t *testing.T) {
+	t.Parallel()
+	gql := mocks.NewGraphQLMux(t)
+	var gotTypes []any
+	gql.OnFunc("UserNotable", func(vars map[string]any) (int, string) {
+		if v, ok := vars["types"].([]any); ok {
+			gotTypes = v
+		}
+		return 200, notableGraphQLContributionsBody
+	})
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithGraphQL(gql),
+		mocks.WithInputs(map[string]any{
+			"user":                 "octocat",
+			"plugin_notable":       true,
+			"plugin_notable_types": []any{"commit", "pull_request"},
+		}),
+	)
+	if _, err := notable.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(gotTypes) != 2 {
+		t.Fatalf("query types = %v, want [COMMIT PULL_REQUEST]", gotTypes)
+	}
+	want := map[string]bool{"COMMIT": false, "PULL_REQUEST": false}
+	for _, v := range gotTypes {
+		if s, ok := v.(string); ok {
+			want[s] = true
+		}
+	}
+	for k, seen := range want {
+		if !seen {
+			t.Errorf("type %s missing from query variables %v", k, gotTypes)
+		}
+	}
+}
+
+// TestRun_SkippedAcceptsJSONArray pins the #664 fix for
+// plugin_notable_skipped: a JSON-array value ([]any) must populate the
+// skip filter like the comma-separated string form.
+func TestRun_SkippedAcceptsJSONArray(t *testing.T) {
+	t.Parallel()
+	r, _ := runWithGraphQL(t, map[string]any{
+		"user":                        "octocat",
+		"plugin_notable":              true,
+		"plugin_notable_repositories": true,
+		"plugin_notable_skipped":      []any{"huggingface/accelerate"},
+	}, notableGraphQLContributionsBody)
+	if len(r.List) != 1 {
+		t.Fatalf("List len = %d, want 1 (accelerate skipped): %+v", len(r.List), r.List)
+	}
+	if r.List[0].Name != "huggingface/transformers" {
+		t.Errorf("Name = %q, want huggingface/transformers", r.List[0].Name)
+	}
+}
+
 // TestRun_SkipPrivateDropsPrivateContributions asserts the cross-plugin
 // repositories_skip_private input (#656) drops isPrivate nodes from the
 // contributions list.

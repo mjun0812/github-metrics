@@ -143,11 +143,11 @@ func (p *sponsorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 	if v, ok := pc.Inputs["plugin_sponsors_past"]; ok {
 		past = pluginutil.Truthy(v)
 	}
+	// ReadInt handles the string / float64 shapes that INPUT_* env and
+	// INPUTS JSON deliver (#661) — a bare v.(int) only matched YAML.
 	size := 24
-	if v, ok := pc.Inputs["plugin_sponsors_size"]; ok {
-		if n, ok := v.(int); ok && n > 0 {
-			size = n
-		}
+	if n, ok := pluginutil.ReadInt(pc.Inputs, "plugin_sponsors_size"); ok && n > 0 {
+		size = n
 	}
 	title := "Sponsor Me!"
 	user := loginFromProvider(ctx, pc)
