@@ -134,6 +134,10 @@ func (p *notablePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	useHandle := pluginutil.Truthy(pc.Inputs["plugin_notable_repositories"])
 	skipped := skippedSet(pc.Inputs)
 	limit := notableLimit(pc.Inputs)
+	// repositories_skip_private (#656) is a cross-plugin filter;
+	// repositoriesContributedTo is fetched here (not via the provider
+	// repo list), so the node-level isPrivate check happens locally.
+	skipPrivate := pluginutil.Truthy(pc.Inputs["repositories_skip_private"])
 
 	resp, err := pc.GraphQL.UserNotable(ctx, login, notablePageSize, nil, types, &self)
 	if err != nil {
@@ -142,7 +146,7 @@ func (p *notablePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 		pc.Data.AppendError(xerrors.NewRetryableError(err))
 		return base, nil
 	}
-	base.List = collectNotable(resp, indepth, from, useHandle, skipped, limit)
+	base.List = collectNotable(resp, indepth, from, useHandle, skipped, limit, skipPrivate)
 	return base, nil
 }
 
@@ -153,6 +157,7 @@ func collectNotable(
 	useHandle bool,
 	skipped map[string]struct{},
 	limit int,
+	skipPrivate bool,
 ) []NotableContrib {
 	if resp == nil || resp.User == nil || resp.User.RepositoriesContributedTo == nil {
 		return []NotableContrib{}
@@ -168,6 +173,10 @@ func collectNotable(
 
 	for _, n := range nodes {
 		if n == nil {
+			continue
+		}
+		// repositories_skip_private: drop private contributions entirely.
+		if skipPrivate && n.IsPrivate {
 			continue
 		}
 		// from filter: all / organization / user via isInOrganization.

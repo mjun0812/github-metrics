@@ -544,6 +544,34 @@ func TestRun_VisibilityDefaultIncludesPrivate(t *testing.T) {
 	}
 }
 
+// TestRun_SkipPrivateForcesPublicVisibility asserts the cross-plugin
+// repositories_skip_private input (#656) hides private events even
+// though the default visibility is "all".
+func TestRun_SkipPrivateForcesPublicVisibility(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	mux := newRESTMux()
+	mux.on(
+		"/users/octocat/events",
+		http.StatusOK,
+		eventsBody(
+			ev("PushEvent", "octocat/pub", now.Add(-1*time.Hour), true),
+			ev("PushEvent", "octocat/priv", now.Add(-2*time.Hour), false),
+		),
+	)
+	pc := newPC(t, mux, map[string]any{
+		"repositories_skip_private": "yes",
+	})
+	out, _ := activity.Plugin.Run(context.Background(), pc)
+	r := out.(*activity.Result)
+	if len(r.Events) != 1 {
+		t.Fatalf("Events len = %d, want 1 (public only); %+v", len(r.Events), r.Events)
+	}
+	if r.Events[0].Repo != "octocat/pub" {
+		t.Errorf("expected public repo only; got %s", r.Events[0].Repo)
+	}
+}
+
 // TestRun_PullRequestStats_DedupAcrossEvents asserts the /pulls/{n}
 // fallback is called exactly once per (repo, number) even when the
 // same PR surfaces through several PullRequestEvent rows (opened /

@@ -195,6 +195,40 @@ func TestRun_RepositoriesShowsFullHandle(t *testing.T) {
 	}
 }
 
+// TestRun_SkipPrivateDropsPrivateContributions asserts the cross-plugin
+// repositories_skip_private input (#656) drops isPrivate nodes from the
+// contributions list.
+func TestRun_SkipPrivateDropsPrivateContributions(t *testing.T) {
+	t.Parallel()
+	r, _ := runWithGraphQL(t, map[string]any{
+		"user":                        "octocat",
+		"plugin_notable":              true,
+		"plugin_notable_repositories": true,
+		"repositories_skip_private":   "yes",
+	}, notableGraphQLMixedVisibilityBody)
+	if len(r.List) != 1 {
+		t.Fatalf("List len = %d, want 1 (public only): %+v", len(r.List), r.List)
+	}
+	if r.List[0].Name != "huggingface/accelerate" {
+		t.Errorf("Name = %q, want huggingface/accelerate", r.List[0].Name)
+	}
+}
+
+// TestRun_SkipPrivateDefaultOffKeepsPrivateContributions pins the
+// default: without the flag, private contributions the token can see
+// stay in the list.
+func TestRun_SkipPrivateDefaultOffKeepsPrivateContributions(t *testing.T) {
+	t.Parallel()
+	r, _ := runWithGraphQL(t, map[string]any{
+		"user":                        "octocat",
+		"plugin_notable":              true,
+		"plugin_notable_repositories": true,
+	}, notableGraphQLMixedVisibilityBody)
+	if len(r.List) != 2 {
+		t.Fatalf("List len = %d, want 2 (public + private): %+v", len(r.List), r.List)
+	}
+}
+
 func TestRun_IndepthCollectsExtendedStats(t *testing.T) {
 	t.Parallel()
 	r, gql := runWithGraphQL(t, map[string]any{
@@ -577,6 +611,58 @@ const notableGraphQLContributionsBody = `{
             "defaultBranchRef": { "target": { "__typename": "Commit", "history": { "totalCount": 1200000 } } },
             "issues": { "totalCount": 0 },
             "pullRequests": { "totalCount": 0 }
+          }
+        ]
+      }
+    }
+  }
+}`
+
+// notableGraphQLMixedVisibilityBody mixes one public and one private
+// organization-owned repository so the repositories_skip_private filter
+// can be exercised.
+const notableGraphQLMixedVisibilityBody = `{
+  "data": {
+    "user": {
+      "repositoriesContributedTo": {
+        "totalCount": 2,
+        "pageInfo": { "hasNextPage": false, "endCursor": null },
+        "nodes": [
+          {
+            "nameWithOwner": "huggingface/accelerate",
+            "description": "Accelerate library",
+            "url": "https://github.com/huggingface/accelerate",
+            "isInOrganization": true,
+            "owner": {
+              "__typename": "Organization",
+              "login": "huggingface",
+              "avatarUrl": "https://avatars.githubusercontent.com/u/25720743?v=4"
+            },
+            "stargazerCount": 8000,
+            "forkCount": 900,
+            "isFork": false,
+            "isPrivate": false,
+            "defaultBranchRef": { "target": { "__typename": "Commit", "history": { "totalCount": 1000 } } },
+            "issues": { "totalCount": 100 },
+            "pullRequests": { "totalCount": 200 }
+          },
+          {
+            "nameWithOwner": "acme/secret-tool",
+            "description": "Internal tool",
+            "url": "https://github.com/acme/secret-tool",
+            "isInOrganization": true,
+            "owner": {
+              "__typename": "Organization",
+              "login": "acme",
+              "avatarUrl": "https://avatars.githubusercontent.com/u/1?v=4"
+            },
+            "stargazerCount": 2,
+            "forkCount": 0,
+            "isFork": false,
+            "isPrivate": true,
+            "defaultBranchRef": { "target": { "__typename": "Commit", "history": { "totalCount": 10 } } },
+            "issues": { "totalCount": 1 },
+            "pullRequests": { "totalCount": 2 }
           }
         ]
       }
