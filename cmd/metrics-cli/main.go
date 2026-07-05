@@ -71,6 +71,7 @@ Common invocations:
                 [--plugin key=value ...] [--output svg|png|jpeg|json]
                 [--filename <path-or-->] [--dryrun]
                 [--output-dir <dir>] [--combined]
+                [--skip-private-repo]
 
   # Hybrid — token from a workflow secret, --debug from the run: step:
   GITHUB_TOKEN=<PAT> metrics-cli --debug --user octocat
