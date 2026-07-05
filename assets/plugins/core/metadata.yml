@@ -533,6 +533,10 @@ inputs:
       (Count, Stargazers, Forks, Watchers, Releases, Packages, DiskUsage, Forked,
       Issues, PullRequests) reflect public repos only.
 
+      Plugins that fetch outside the provider repo list also honor the
+      flag locally: activity forces its event visibility to `public`, and
+      notable drops `isPrivate` contributions.
+
       Repository-mode (`--template repository --repo owner/name`) is NOT
       affected — the user explicitly named the target repo, so the filter
       is bypassed even when it points at a private repo.

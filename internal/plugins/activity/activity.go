@@ -143,6 +143,13 @@ func (p *activityPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 		return &Result{Skipped: true, SkippedReason: "no login"}, nil
 	}
 	in := parseInputs(pc.Inputs)
+	// repositories_skip_private (#656) is a cross-plugin filter, but the
+	// activity feed is event-based (not fed by the provider repo list),
+	// so the dataprovider-level filter cannot cover it. Forcing
+	// visibility=public keeps private repo names out of the timeline.
+	if pluginutil.Truthy(pc.Inputs["repositories_skip_private"]) {
+		in.visibility = "public"
+	}
 	cutoff := time.Now().UTC().AddDate(0, 0, -in.days)
 
 	raws, err := fetchEvents(ctx, pc, login, in.load)
