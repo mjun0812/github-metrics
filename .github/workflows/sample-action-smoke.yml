@@ -1,9 +1,16 @@
 name: Sample (post-release smoke)
 
-# Post-release smoke verification for `uses: mjun0812/github-metrics@v1.0.0`.
-# Triggered manually by maintainers after publishing a release; not on a
-# schedule and not auto-triggered. Runs the published Action on both x86
-# and arm64 hosted runners and asserts both jobs complete within 90s.
+# Post-release smoke verification for the published Action at the
+# dispatched `release_tag`. Triggered manually by maintainers after
+# publishing a release; not on a schedule and not auto-triggered. Runs
+# the published Action on both x86 and arm64 hosted runners and asserts
+# both jobs complete within 90s.
+#
+# `uses:` refs cannot be interpolated with `${{ }}` (#662), so the job
+# checks out `release_tag` and runs `uses: ./` instead. That tag's
+# action.yml is rewritten by the release pipeline to a docker://
+# reference pinned to the published GHCR image, so this exercises the
+# exact artifact consumers get from `uses: mjun0812/github-metrics@<tag>`.
 #
 # The two jobs use --dryrun so they do not need write access to anything;
 # they just exercise the metrics-action binary inside the published GHCR
@@ -31,12 +38,19 @@ jobs:
     runs-on: home-k3s-runner
     timeout-minutes: 5
     steps:
-      - uses: mjun0812/github-metrics@v1.0.0
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.release_tag }}
+      - uses: ./
         with:
           user: octocat
           token: ${{ secrets.METRICS_TOKEN }}
           template: classic
-          output: svg
+          # `config_output` is the declared action input; the bare
+          # `output` key was never defined in action.yml and the runner
+          # silently dropped it (surfaced by actionlint once `uses: ./`
+          # made the input list checkable).
+          config_output: svg
           dryrun: 'yes'
 
   # smoke-arm is temporarily disabled to conserve GitHub-hosted Actions
@@ -48,10 +62,13 @@ jobs:
   #   runs-on: ubuntu-24.04-arm
   #   timeout-minutes: 5
   #   steps:
-  #     - uses: mjun0812/github-metrics@v1.0.0
+  #     - uses: actions/checkout@v5
+  #       with:
+  #         ref: ${{ inputs.release_tag }}
+  #     - uses: ./
   #       with:
   #         user: octocat
   #         token: ${{ secrets.METRICS_TOKEN }}
   #         template: classic
-  #         output: svg
+  #         config_output: svg
   #         dryrun: 'yes'
