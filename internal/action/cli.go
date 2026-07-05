@@ -37,6 +37,12 @@ type CLIFlags struct {
 	Combined  bool              // --combined (opt into single-SVG mode)
 	NoEnv     bool              // --no-env (skip INPUT_*/INPUTS env layer; CLI flags only)
 
+	// SkipPrivateRepo is the dedicated CLI surface for the core input
+	// `repositories_skip_private`. Equivalent to
+	// `--plugin repositories_skip_private=yes` but avoids threading a
+	// core-level filter through the per-plugin flag namespace.
+	SkipPrivateRepo bool // --skip-private-repo
+
 	// setFlags records which flags were explicitly provided on the
 	// command line (populated via fs.Visit in ParseFlags). The unified
 	// pipeline uses it to decide whether to override env-provided
@@ -72,6 +78,7 @@ func ParseFlags(args []string) (*CLIFlags, error) {
 	fs.StringVar(&cf.OutputDir, "output-dir", "", "directory for per-plugin SVG output (default mode)")
 	fs.BoolVar(&cf.Combined, "combined", false, "render a single combined SVG instead of per-plugin files")
 	fs.BoolVar(&cf.NoEnv, "no-env", false, "ignore INPUT_*/INPUTS env vars; resolve inputs from CLI flags only")
+	fs.BoolVar(&cf.SkipPrivateRepo, "skip-private-repo", false, "exclude private repositories across all plugins (sets repositories_skip_private=yes)")
 
 	fs.Var(&pluginFlag{m: cf.Plugins}, "plugin", "key=value plugin input (repeatable)")
 
@@ -159,8 +166,14 @@ func (c *CLIFlags) applyFlagsOver(inputs map[string]any) []string {
 	if wasSet("combined", c.Combined) {
 		set("combined", true)
 	}
+	if wasSet("skip-private-repo", c.SkipPrivateRepo) {
+		set("repositories_skip_private", true)
+	}
 	// --plugin key=value entries always overlay; each Set call already
-	// reflects an explicit user intent at the flag layer.
+	// reflects an explicit user intent at the flag layer. This runs
+	// AFTER the dedicated flag above so an explicit
+	// `--plugin repositories_skip_private=no` still wins as an escape
+	// hatch.
 	for k, v := range c.Plugins {
 		set(k, v)
 	}

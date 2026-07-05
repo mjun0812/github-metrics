@@ -58,6 +58,42 @@ func TestParseFlags_DefaultsApplied(t *testing.T) {
 	}
 }
 
+func TestParseFlags_SkipPrivateRepo(t *testing.T) {
+	t.Parallel()
+	cf, err := ParseFlags([]string{"--user", "x", "--skip-private-repo"})
+	if err != nil {
+		t.Fatalf("ParseFlags: %v", err)
+	}
+	if !cf.SkipPrivateRepo {
+		t.Errorf("--skip-private-repo not parsed: %+v", cf)
+	}
+	inputs, err := cf.ToInvocation(map[string]string{})
+	if err != nil {
+		t.Fatalf("ToInvocation: %v", err)
+	}
+	if inputs["repositories_skip_private"] != true {
+		t.Errorf("repositories_skip_private = %v, want true", inputs["repositories_skip_private"])
+	}
+}
+
+func TestParseFlags_SkipPrivateRepo_DefaultOff(t *testing.T) {
+	t.Parallel()
+	cf, err := ParseFlags([]string{"--user", "x"})
+	if err != nil {
+		t.Fatalf("ParseFlags: %v", err)
+	}
+	if cf.SkipPrivateRepo {
+		t.Errorf("SkipPrivateRepo must default to false")
+	}
+	inputs, err := cf.ToInvocation(map[string]string{})
+	if err != nil {
+		t.Fatalf("ToInvocation: %v", err)
+	}
+	if _, ok := inputs["repositories_skip_private"]; ok {
+		t.Errorf("repositories_skip_private must not be set without the flag; got %v", inputs["repositories_skip_private"])
+	}
+}
+
 func TestParseFlags_PluginMustBeKV(t *testing.T) {
 	t.Parallel()
 	_, err := ParseFlags([]string{"--plugin", "bogus"})
