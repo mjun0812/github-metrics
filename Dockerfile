@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1.7
 #
 # github-metrics production container (M10 T-126). The image bundles
-# chromium so the chromedp-backed svg.Resize / PNG / JPEG path can run
-# without additional setup — METRICS_CHROME_PATH points at the system
-# chromium binary.
+# chromium-headless-shell so the chromedp-backed svg.Resize / PNG /
+# JPEG path can run without additional setup — METRICS_CHROME_PATH
+# points at the headless-shell binary.
 #
 # Multi-arch: built for linux/amd64 + linux/arm64 via `docker buildx`
 # in .github/workflows/release.yml. No arch-specific RUN steps; the Go
@@ -61,22 +61,30 @@ RUN go build -trimpath \
 # --- Runtime stage --------------------------------------------------
 FROM debian:bookworm-slim
 
-# Install chromium + fonts and clean apt metadata in the same layer
-# so the cleanup actually shrinks the image. The Noto CJK font set
-# costs ~80 MB but is required for CJK glyph rendering in repo /
-# display names; if the per-platform size budget tightens, this is
-# the first lever per research.md R-003.
+# Install chromium-headless-shell + fonts and clean apt metadata in the
+# same layer so the cleanup actually shrinks the image. The Noto CJK
+# font set costs ~80 MB but is required for CJK glyph rendering in
+# repo / display names; if the per-platform size budget tightens, this
+# is the first lever per research.md R-003.
+#
+# headless-shell instead of the full `chromium` package: bookworm's
+# chromium 150.0.7871 crashes with SIGTRAP on startup in containers
+# under every headless flag combination (149 was fine), which silently
+# broke the chromedp Resize path — every SVG shipped untrimmed at the
+# height=99999 placeholder. chromium-headless-shell 150 starts and
+# renders correctly, and is the purpose-built binary for exactly this
+# chromedp use case (no UI, smaller footprint).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
-        chromium \
+        chromium-headless-shell \
         fonts-noto-color-emoji \
         fonts-noto-cjk \
         fonts-liberation \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*.deb
 
-ENV METRICS_CHROME_PATH=/usr/bin/chromium
+ENV METRICS_CHROME_PATH=/usr/lib/chromium/chromium-headless-shell
 
 # Binaries land at /usr/local/bin/, owned by root and mode 0755 so
 # the non-root runtime user can execute but not modify.
