@@ -84,8 +84,13 @@ jobs:
     if: inputs.branch != ''
     runs-on: home-k3s-runner
     outputs:
-      image_ref: ${{ steps.publish.outputs.image_ref }}
-      preview_tag: ${{ steps.publish.outputs.preview_tag }}
+      # `forward` / `tagname` are the steps that actually emit these
+      # values. The docker/build-push-action step (`publish`) exposes
+      # only imageid/digest/metadata — referencing it here left both
+      # outputs empty, so branch mode silently rendered with :latest
+      # and cleanup-preview never matched a tag to delete.
+      image_ref: ${{ steps.forward.outputs.image_ref }}
+      preview_tag: ${{ steps.tagname.outputs.preview_tag }}
     steps:
       - uses: actions/checkout@v5
         with:
