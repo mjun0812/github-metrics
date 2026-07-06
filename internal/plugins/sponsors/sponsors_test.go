@@ -120,6 +120,26 @@ func TestRun_DefaultSections(t *testing.T) {
 	}
 }
 
+// TestRun_SizeReadsStringInput pins the #661 fix: Action mode delivers
+// plugin_sponsors_size as a string (INPUT_* env), which the previous
+// bare v.(int) assertion silently ignored (size stayed at 24).
+func TestRun_SizeReadsStringInput(t *testing.T) {
+	t.Parallel()
+	pc := &plugins.PluginContext{
+		Data:   plugins.NewData(),
+		Inputs: map[string]any{"plugin_sponsors_size": "48"},
+		REST:   newREST(t, "read:user, read:org"),
+	}
+	out, err := sponsors.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*sponsors.Result)
+	if r.Size != 48 {
+		t.Errorf("Size = %d, want 48 (string input honored)", r.Size)
+	}
+}
+
 // TestRun_NilREST_NotSkipped verifies the plugin renders even without a
 // REST client. The old scope gate called REST.Scopes() and Skipped on a
 // nil client; upstream never reads scopes, so a nil REST must not blank

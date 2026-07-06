@@ -101,6 +101,26 @@ func TestRun_WithProjectScope_NotSkipped(t *testing.T) {
 	}
 }
 
+// TestRun_LimitReadsStringInput pins the #661 fix: Action mode delivers
+// plugin_projects_limit as a string (INPUT_* env), which the previous
+// bare v.(int) assertion silently ignored (limit stayed at 4).
+func TestRun_LimitReadsStringInput(t *testing.T) {
+	t.Parallel()
+	pc := &plugins.PluginContext{
+		Data:   plugins.NewData(),
+		Inputs: map[string]any{"plugin_projects_limit": "7"},
+		REST:   newREST(t, "repo, read:project"),
+	}
+	out, err := projects.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*projects.Result)
+	if r.Limit != 7 {
+		t.Errorf("Limit = %d, want 7 (string input honored)", r.Limit)
+	}
+}
+
 func TestRun_NilRESTSkipped(t *testing.T) {
 	t.Parallel()
 	pc := &plugins.PluginContext{Data: plugins.NewData(), Inputs: map[string]any{}}

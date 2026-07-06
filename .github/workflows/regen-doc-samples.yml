@@ -191,6 +191,12 @@ jobs:
   render:
     name: Render ${{ matrix.name }}
     needs: setup
+    # Same skip-cascade guard as `setup` (#658): in tag mode
+    # `build-preview` is skipped, and GitHub Actions' default success()
+    # condition evaluates false when any *transitive* dependency was
+    # skipped — without this guard every render job silently skips and
+    # the run still ends green.
+    if: always() && !failure() && !cancelled()
     runs-on: home-k3s-runner
     container:
       image: ${{ needs.setup.outputs.image_ref }}

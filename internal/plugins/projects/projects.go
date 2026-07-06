@@ -101,11 +101,11 @@ func (p *projectsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 		}, nil
 	}
 	// Spec 013: GraphQL fetch wiring.
+	// ReadInt handles the string / float64 shapes that INPUT_* env and
+	// INPUTS JSON deliver (#661) — a bare v.(int) only matched YAML.
 	limit := 4
-	if v, ok := pc.Inputs["plugin_projects_limit"]; ok {
-		if n, ok := v.(int); ok && n > 0 {
-			limit = n
-		}
+	if n, ok := pluginutil.ReadInt(pc.Inputs, "plugin_projects_limit"); ok && n > 0 {
+		limit = n
 	}
 	base := &Result{Mode: plugins.AggregationMode(pc.Data), List: []Project{}, Limit: limit}
 	if pc.GraphQL == nil || !pluginutil.Truthy(pc.Inputs["plugin_projects"]) {
