@@ -14,8 +14,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sort"
-	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
@@ -64,9 +62,10 @@ type Topic struct {
 	Description string `json:"description"`
 	Icon        string `json:"icon"`
 	URL         string `json:"url"`
-	// StarredAt is opaque metadata used only for sorting when the user
-	// requested sort="starred-at". Not part of the public JSON shape;
-	// upstream does not expose it.
+	// StarredAt is opaque scrape metadata (the <li data-starred-at>
+	// attribute when GitHub exposes it). Not part of the public JSON
+	// shape; upstream does not expose it. Kept for potential debugging;
+	// ordering comes from the page's own sort parameter (#672).
 	StarredAt string `json:"-"`
 }
 
@@ -149,7 +148,12 @@ func (p *topicsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		}, nil
 	}
 
-	url := fmt.Sprintf("https://github.com/stars/%s/topics", login)
+	// Ordering is delegated to the page itself (#672): the stars/topics
+	// page implements all three declared sort methods server-side, so we
+	// pass the mapped parameter and preserve the returned order, exactly
+	// like upstream's browser-based navigation did.
+	url := fmt.Sprintf("https://github.com/stars/%s/topics?direction=desc&sort=%s",
+		login, pageSortParam(in.sort))
 	list, err := nav.Fetch(ctx, url)
 	if err != nil {
 		wrapped := fmt.Errorf("topics: %w", err)
@@ -159,18 +163,15 @@ func (p *topicsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		return nil, xerrors.NewRetryableError(wrapped)
 	}
 
-	switch in.sort {
-	case "starred-at":
-		sort.SliceStable(list, func(i, j int) bool {
-			return list[i].StarredAt > list[j].StarredAt
-		})
-	default:
-		sort.SliceStable(list, func(i, j int) bool {
-			return strings.ToLower(list[i].Name) < strings.ToLower(list[j].Name)
-		})
-	}
 	if in.limit > 0 && len(list) > in.limit {
-		list = list[:in.limit]
+		removed := len(list) - in.limit
+		list = list[:in.limit:in.limit]
+		// Upstream appends an "and N more..." pseudo-label after
+		// truncation (visible in docs/original_examples). Labels mode
+		// only — the icons renderer has nothing to draw for it.
+		if renderType(in.mode) == "labels" {
+			list = append(list, Topic{Name: fmt.Sprintf("and %d more...", removed)})
+		}
 	}
 
 	return &Result{
@@ -205,11 +206,30 @@ func pickNavigator(pc *plugins.PluginContext) Navigator {
 	return NewHTTPNavigator(client, "")
 }
 
+// pageSortParam maps the declared plugin_topics_sort values
+// (assets/plugins/topics/metadata.yml: stars / activity / starred) to
+// the sort parameter of github.com/stars/{user}/topics. Unknown values
+// fall back to the declared default "stars" (#672).
+func pageSortParam(sort string) string {
+	switch sort {
+	case "activity":
+		return "updated" // "Recently active"
+	case "starred":
+		return "created" // "Recently starred"
+	default: // "stars" and unknown values → "Most stars"
+		return "stars"
+	}
+}
+
 func parseInputs(in map[string]any) topicsInputs {
+	// Defaults mirror assets/plugins/topics/metadata.yml (mode: starred,
+	// sort: stars). The previous mode default "icons" diverged from the
+	// declared contract (#672): ParseInputs does not inject metadata
+	// defaults, so this literal IS the effective default.
 	out := topicsInputs{
-		mode:  "icons",
+		mode:  "starred",
 		limit: 15,
-		sort:  "name",
+		sort:  "stars",
 	}
 	if v, ok := in["plugin_topics_mode"]; ok {
 		if s, ok := v.(string); ok && s != "" {

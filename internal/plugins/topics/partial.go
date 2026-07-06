@@ -30,13 +30,13 @@ func headerLabel(mode string) string {
 	}
 }
 
-// renderType derives the EJS `plugins.topics.type` switch value. Upstream
-// sets type = mode (starred / labels / icons). For our pragmatic
-// implementation: "icons" mode emits images; everything else emits text
-// labels.
+// renderType derives the EJS `plugins.topics.type` switch value using
+// the metadata.yml aliases: `starred` is an alias for labels and
+// `mastered` for icons (#672). "icons"/"mastered" emit images;
+// everything else emits text labels.
 func renderType(mode string) string {
 	switch mode {
-	case "icons":
+	case "icons", "mastered":
 		return "icons"
 	default:
 		return "labels"
