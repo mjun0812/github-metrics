@@ -20,12 +20,15 @@ import (
 var updateGolden = flag.Bool("update", false, "update golden files in tests/golden/...")
 
 // fakeNavigator returns a canned topic list, optionally with an error.
+// It records the last fetched URL so tests can assert the sort mapping.
 type fakeNavigator struct {
-	list []topics.Topic
-	err  error
+	list   []topics.Topic
+	err    error
+	gotURL string
 }
 
-func (f *fakeNavigator) Fetch(_ context.Context, _ string) ([]topics.Topic, error) {
+func (f *fakeNavigator) Fetch(_ context.Context, url string) ([]topics.Topic, error) {
+	f.gotURL = url
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -121,8 +124,8 @@ func TestRun_Skipped_PuppeteerDisabled(t *testing.T) {
 	}
 }
 
-// TestRun_Normal_FakeNavigator — happy path: 3 topics, sort=name (default),
-// limit not hit. Asserts the plugin returns them in alpha order.
+// TestRun_Normal_FakeNavigator — happy path: 3 topics, limit not hit.
+// Asserts the plugin preserves the page's own order (#672).
 func TestRun_Normal_FakeNavigator(t *testing.T) {
 	t.Parallel()
 	nav := &fakeNavigator{list: []topics.Topic{
@@ -143,9 +146,123 @@ func TestRun_Normal_FakeNavigator(t *testing.T) {
 	for _, top := range r.List {
 		names = append(names, top.Name)
 	}
-	want := []string{"Go", "python", "rust"}
+	// Page order is preserved (#672): sorting is delegated to the
+	// stars/topics page's own sort parameter, so no client-side
+	// re-ordering happens.
+	want := []string{"rust", "Go", "python"}
 	if strings.Join(names, ",") != strings.Join(want, ",") {
-		t.Errorf("names = %v, want %v", names, want)
+		t.Errorf("names = %v, want %v (page order preserved)", names, want)
+	}
+}
+
+// TestRun_SortMapsToPageParameter pins the #672 fix: the declared
+// plugin_topics_sort values map to the stars/topics page's server-side
+// sort parameter, and the default is the declared "stars" (previously
+// every declared value silently fell back to alphabetical).
+func TestRun_SortMapsToPageParameter(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		sort  any // absent when nil
+		param string
+	}{
+		{nil, "sort=stars"},           // declared default
+		{"stars", "sort=stars"},       // Most stars
+		{"activity", "sort=updated"},  // Recently active
+		{"starred", "sort=created"},   // Recently starred
+		{"bogus-value", "sort=stars"}, // unknown → declared default
+	}
+	for _, c := range cases {
+		nav := &fakeNavigator{}
+		inputs := map[string]any{}
+		if c.sort != nil {
+			inputs["plugin_topics_sort"] = c.sort
+		}
+		pc := newPC(t, nav, inputs)
+		if _, err := topics.Plugin.Run(context.Background(), pc); err != nil {
+			t.Fatalf("Run(sort=%v): %v", c.sort, err)
+		}
+		if !strings.Contains(nav.gotURL, c.param) || !strings.Contains(nav.gotURL, "direction=desc") {
+			t.Errorf("sort=%v: fetched %q, want it to contain %q and direction=desc",
+				c.sort, nav.gotURL, c.param)
+		}
+	}
+}
+
+// TestRun_DefaultModeIsStarred pins the #672 fix: absent
+// plugin_topics_mode must behave as the metadata default `starred`
+// (labels), not the previous internal default `icons`.
+func TestRun_DefaultModeIsStarred(t *testing.T) {
+	t.Parallel()
+	nav := &fakeNavigator{list: []topics.Topic{{Name: "go"}}}
+	pc := newPC(t, nav, nil)
+	out, err := topics.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*topics.Result)
+	if r.Mode != "starred" {
+		t.Errorf("Mode = %q, want starred (metadata default)", r.Mode)
+	}
+}
+
+// TestRun_TruncationAppendsMoreLabel pins the #672 fix: labels-mode
+// truncation appends the upstream "and N more..." pseudo-label, while
+// icons mode truncates silently (the icons renderer has nothing to
+// draw for a text-only entry).
+func TestRun_TruncationAppendsMoreLabel(t *testing.T) {
+	t.Parallel()
+	five := []topics.Topic{
+		{Name: "a"}, {Name: "b"}, {Name: "c"}, {Name: "d"}, {Name: "e"},
+	}
+	// labels (default starred) mode: trailer appended.
+	nav := &fakeNavigator{list: five}
+	pc := newPC(t, nav, map[string]any{"plugin_topics_limit": "2"})
+	out, err := topics.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*topics.Result)
+	if len(r.List) != 3 {
+		t.Fatalf("List len = %d, want 3 (2 kept + trailer): %+v", len(r.List), r.List)
+	}
+	if r.List[2].Name != "and 3 more..." {
+		t.Errorf("trailer = %q, want 'and 3 more...'", r.List[2].Name)
+	}
+	// icons mode: plain truncation, no trailer.
+	nav = &fakeNavigator{list: five}
+	pc = newPC(t, nav, map[string]any{"plugin_topics_limit": "2", "plugin_topics_mode": "icons"})
+	out, err = topics.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run(icons): %v", err)
+	}
+	r = out.(*topics.Result)
+	if len(r.List) != 2 {
+		t.Errorf("icons List len = %d, want 2 (no trailer): %+v", len(r.List), r.List)
+	}
+}
+
+// TestPartial_MasteredRendersIcons pins the #672 fix: `mastered` is the
+// metadata alias for icons mode, so its body must be <img> entries, not
+// text labels (previously only literal "icons" hit the image branch).
+func TestPartial_MasteredRendersIcons(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.SetPlugin(topics.Name, &topics.Result{
+		Mode: "mastered",
+		List: []topics.Topic{{Name: "go", Icon: "/img/go.png"}},
+	})
+	got, err := topics.Partial(context.Background(), &templates.PartialContext{Data: data})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	if !strings.Contains(got, "Mastered technologies and topics") {
+		t.Errorf("missing mastered heading in:\n%s", got)
+	}
+	if !strings.Contains(got, "<img src=") {
+		t.Errorf("mastered mode should render icons (<img>); got:\n%s", got)
+	}
+	if strings.Contains(got, `class="label"`) {
+		t.Errorf("mastered mode must not render text labels; got:\n%s", got)
 	}
 }
 

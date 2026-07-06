@@ -463,9 +463,9 @@
     "topics": {
       "limit": 15,
       "list": [],
-      "mode": "icons",
+      "mode": "starred",
       "skipped": true,
-      "sort": "name"
+      "sort": "stars"
     },
     "traffic": {
       "hide_empty": true,
