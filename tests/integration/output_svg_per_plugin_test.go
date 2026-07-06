@@ -68,7 +68,7 @@ type perPluginCase struct {
 	extraInputs map[string]any
 	fixtures    map[string]string // GraphQL op name -> response body
 	// restSetup is non-nil for plugins that touch the REST surface
-	// (activity, habits, projects, repositories, traffic). Leaving it
+	// (activity, habits, repositories, traffic). Leaving it
 	// nil signals a pure GraphQL test and skips REST wiring entirely so
 	// the activity default events handler is not registered either.
 	restSetup  func(*mocks.RESTMux)
@@ -162,20 +162,6 @@ var perPluginCases = []perPluginCase{
 			"UserFollowers": `{"data":{"user":{"followers":{"totalCount":0,"nodes":[]},"following":{"totalCount":0,"nodes":[]}}}}`,
 		},
 		goldenPath: "classic/plugin-people.svg",
-	},
-	{
-		name: "projects",
-		slug: "projects",
-		fixtures: map[string]string{
-			"ViewerProjects": `{"data":{"viewer":{"projectsV2":{"totalCount":0,"nodes":[]}}}}`,
-		},
-		restSetup: func(m *mocks.RESTMux) {
-			// projects checks read:project scope via REST.Scopes() → GET /
-			m.OnHeader("/", 200, `{}`, map[string][]string{
-				"X-OAuth-Scopes": {"read:project, repo"},
-			})
-		},
-		goldenPath: "classic/plugin-projects.svg",
 	},
 	{
 		name: "reactions",

@@ -17,7 +17,7 @@ import (
 // response carried no X-OAuth-Scopes header, or the request itself was
 // unauthenticated (HTTP 401, which GitHub returns for a missing or
 // rejected token). Plugins that gate behavior on a particular scope
-// (projects, sponsors, traffic) can therefore call this helper without
+// (sponsors, traffic) can therefore call this helper without
 // worrying about request amplification — they Skip on the empty slice
 // regardless of whether the token was missing or merely under-scoped.
 //

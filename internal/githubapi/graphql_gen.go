@@ -642,6 +642,7 @@ func (v *RepositoryRepository) GetPullRequests() *RepositoryRepositoryPullReques
 }
 
 func (v *RepositoryRepository) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -663,12 +664,10 @@ func (v *RepositoryRepository) UnmarshalJSON(b []byte) error {
 		src := firstPass.Owner
 		if len(src) != 0 && string(src) != "null" {
 			err = __unmarshalRepositoryRepositoryOwner(
-				src, dst,
-			)
+				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal RepositoryRepository.Owner: %w", err,
-				)
+					"unable to unmarshal RepositoryRepository.Owner: %w", err)
 			}
 		}
 	}
@@ -748,12 +747,10 @@ func (v *RepositoryRepository) __premarshalJSON() (*__premarshalRepositoryReposi
 		src := v.Owner
 		var err error
 		*dst, err = __marshalRepositoryRepositoryOwner(
-			&src,
-		)
+			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal RepositoryRepository.Owner: %w", err,
-			)
+				"unable to marshal RepositoryRepository.Owner: %w", err)
 		}
 	}
 	retval.Issues = v.Issues
@@ -892,16 +889,15 @@ func __unmarshalRepositoryRepositoryOwner(b []byte, v *RepositoryRepositoryOwner
 		return json.Unmarshal(b, *v)
 	case "":
 		return fmt.Errorf(
-			"response was missing RepositoryOwner.__typename",
-		)
+			"response was missing RepositoryOwner.__typename")
 	default:
 		return fmt.Errorf(
-			`unexpected concrete type for RepositoryRepositoryOwner: "%v"`, tn.TypeName,
-		)
+			`unexpected concrete type for RepositoryRepositoryOwner: "%v"`, tn.TypeName)
 	}
 }
 
 func __marshalRepositoryRepositoryOwner(v *RepositoryRepositoryOwner) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *RepositoryRepositoryOwnerOrganization:
@@ -924,8 +920,7 @@ func __marshalRepositoryRepositoryOwner(v *RepositoryRepositoryOwner) ([]byte, e
 		return []byte("null"), nil
 	default:
 		return nil, fmt.Errorf(
-			`unexpected concrete type for RepositoryRepositoryOwner: "%T"`, v,
-		)
+			`unexpected concrete type for RepositoryRepositoryOwner: "%T"`, v)
 	}
 }
 
@@ -1276,6 +1271,7 @@ func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBr
 }
 
 func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -1298,12 +1294,10 @@ func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBr
 		if len(src) != 0 && string(src) != "null" {
 			*dst = new(UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject)
 			err = __unmarshalUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject(
-				src, *dst,
-			)
+				src, *dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef.Target: %w", err,
-				)
+					"unable to unmarshal UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef.Target: %w", err)
 			}
 		}
 	}
@@ -1332,12 +1326,10 @@ func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBr
 		if src != nil {
 			var err error
 			*dst, err = __marshalUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject(
-				src,
-			)
+				src)
 			if err != nil {
 				return nil, fmt.Errorf(
-					"unable to marshal UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef.Target: %w", err,
-				)
+					"unable to marshal UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRef.Target: %w", err)
 			}
 		}
 	}
@@ -1395,13 +1387,10 @@ type UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranch
 
 func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob) implementsGraphQLInterfaceUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
 }
-
 func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit) implementsGraphQLInterfaceUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
 }
-
 func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag) implementsGraphQLInterfaceUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
 }
-
 func (v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree) implementsGraphQLInterfaceUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
 }
 
@@ -1433,16 +1422,15 @@ func __unmarshalUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDe
 		return json.Unmarshal(b, *v)
 	case "":
 		return fmt.Errorf(
-			"response was missing GitObject.__typename",
-		)
+			"response was missing GitObject.__typename")
 	default:
 		return fmt.Errorf(
-			`unexpected concrete type for UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject: "%v"`, tn.TypeName,
-		)
+			`unexpected concrete type for UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject: "%v"`, tn.TypeName)
 	}
 }
 
 func __marshalUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject(v *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob:
@@ -1481,8 +1469,7 @@ func __marshalUserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefa
 		return []byte("null"), nil
 	default:
 		return nil, fmt.Errorf(
-			`unexpected concrete type for UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject: "%T"`, v,
-		)
+			`unexpected concrete type for UserIndepthUserRepositoriesRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject: "%T"`, v)
 	}
 }
 
@@ -1695,6 +1682,7 @@ func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConn
 }
 
 func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -1716,18 +1704,15 @@ func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConn
 		src := firstPass.Nodes
 		*dst = make(
 			[]UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems,
-			len(src),
-		)
+			len(src))
 		for i, src := range src {
 			dst := &(*dst)[i]
 			if len(src) != 0 && string(src) != "null" {
 				err = __unmarshalUserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems(
-					src, dst,
-				)
+					src, dst)
 				if err != nil {
 					return fmt.Errorf(
-						"unable to unmarshal UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection.Nodes: %w", err,
-					)
+						"unable to unmarshal UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection.Nodes: %w", err)
 				}
 			}
 		}
@@ -1759,18 +1744,15 @@ func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConn
 		src := v.Nodes
 		*dst = make(
 			[]json.RawMessage,
-			len(src),
-		)
+			len(src))
 		for i, src := range src {
 			dst := &(*dst)[i]
 			var err error
 			*dst, err = __marshalUserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems(
-				&src,
-			)
+				&src)
 			if err != nil {
 				return nil, fmt.Errorf(
-					"unable to marshal UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection.Nodes: %w", err,
-				)
+					"unable to marshal UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnection.Nodes: %w", err)
 			}
 		}
 	}
@@ -1831,16 +1813,15 @@ func __unmarshalUserListsUserListsUserListConnectionNodesUserListItemsUserListIt
 		return json.Unmarshal(b, *v)
 	case "":
 		return fmt.Errorf(
-			"response was missing UserListItems.__typename",
-		)
+			"response was missing UserListItems.__typename")
 	default:
 		return fmt.Errorf(
-			`unexpected concrete type for UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems: "%v"`, tn.TypeName,
-		)
+			`unexpected concrete type for UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems: "%v"`, tn.TypeName)
 	}
 }
 
 func __marshalUserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems(v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository:
@@ -1855,8 +1836,7 @@ func __marshalUserListsUserListsUserListConnectionNodesUserListItemsUserListItem
 		return []byte("null"), nil
 	default:
 		return nil, fmt.Errorf(
-			`unexpected concrete type for UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems: "%T"`, v,
-		)
+			`unexpected concrete type for UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesUserListItems: "%T"`, v)
 	}
 }
 
@@ -1977,6 +1957,7 @@ func (v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesReposi
 }
 
 func (v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepository) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -1998,12 +1979,10 @@ func (v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesReposi
 		src := firstPass.Owner
 		if len(src) != 0 && string(src) != "null" {
 			err = __unmarshalUserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryOwner(
-				src, dst,
-			)
+				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepository.Owner: %w", err,
-				)
+					"unable to unmarshal UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepository.Owner: %w", err)
 			}
 		}
 	}
@@ -2057,12 +2036,10 @@ func (v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesReposi
 		src := v.Owner
 		var err error
 		*dst, err = __marshalUserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryOwner(
-			&src,
-		)
+			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepository.Owner: %w", err,
-			)
+				"unable to marshal UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepository.Owner: %w", err)
 		}
 	}
 	retval.StargazerCount = v.StargazerCount
@@ -2086,6 +2063,7 @@ func (v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesReposi
 }
 
 func (v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRef) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -2108,12 +2086,10 @@ func (v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesReposi
 		if len(src) != 0 && string(src) != "null" {
 			*dst = new(UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject)
 			err = __unmarshalUserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject(
-				src, *dst,
-			)
+				src, *dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRef.Target: %w", err,
-				)
+					"unable to unmarshal UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRef.Target: %w", err)
 			}
 		}
 	}
@@ -2142,12 +2118,10 @@ func (v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesReposi
 		if src != nil {
 			var err error
 			*dst, err = __marshalUserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject(
-				src,
-			)
+				src)
 			if err != nil {
 				return nil, fmt.Errorf(
-					"unable to marshal UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRef.Target: %w", err,
-				)
+					"unable to marshal UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRef.Target: %w", err)
 			}
 		}
 	}
@@ -2205,13 +2179,10 @@ type UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepository
 
 func (v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob) implementsGraphQLInterfaceUserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
 }
-
 func (v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetCommit) implementsGraphQLInterfaceUserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
 }
-
 func (v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTag) implementsGraphQLInterfaceUserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
 }
-
 func (v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetTree) implementsGraphQLInterfaceUserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject() {
 }
 
@@ -2243,16 +2214,15 @@ func __unmarshalUserNotableUserRepositoriesContributedToRepositoryConnectionNode
 		return json.Unmarshal(b, *v)
 	case "":
 		return fmt.Errorf(
-			"response was missing GitObject.__typename",
-		)
+			"response was missing GitObject.__typename")
 	default:
 		return fmt.Errorf(
-			`unexpected concrete type for UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject: "%v"`, tn.TypeName,
-		)
+			`unexpected concrete type for UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject: "%v"`, tn.TypeName)
 	}
 }
 
 func __marshalUserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject(v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetBlob:
@@ -2291,8 +2261,7 @@ func __marshalUserNotableUserRepositoriesContributedToRepositoryConnectionNodesR
 		return []byte("null"), nil
 	default:
 		return nil, fmt.Errorf(
-			`unexpected concrete type for UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject: "%T"`, v,
-		)
+			`unexpected concrete type for UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryDefaultBranchRefTargetGitObject: "%T"`, v)
 	}
 }
 
@@ -2343,7 +2312,6 @@ type UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepository
 
 func (v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryOwnerOrganization) implementsGraphQLInterfaceUserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryOwner() {
 }
-
 func (v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryOwnerUser) implementsGraphQLInterfaceUserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryOwner() {
 }
 
@@ -2369,16 +2337,15 @@ func __unmarshalUserNotableUserRepositoriesContributedToRepositoryConnectionNode
 		return json.Unmarshal(b, *v)
 	case "":
 		return fmt.Errorf(
-			"response was missing RepositoryOwner.__typename",
-		)
+			"response was missing RepositoryOwner.__typename")
 	default:
 		return fmt.Errorf(
-			`unexpected concrete type for UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryOwner: "%v"`, tn.TypeName,
-		)
+			`unexpected concrete type for UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryOwner: "%v"`, tn.TypeName)
 	}
 }
 
 func __marshalUserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryOwner(v *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryOwner) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryOwnerOrganization:
@@ -2401,8 +2368,7 @@ func __marshalUserNotableUserRepositoriesContributedToRepositoryConnectionNodesR
 		return []byte("null"), nil
 	default:
 		return nil, fmt.Errorf(
-			`unexpected concrete type for UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryOwner: "%T"`, v,
-		)
+			`unexpected concrete type for UserNotableUserRepositoriesContributedToRepositoryConnectionNodesRepositoryOwner: "%T"`, v)
 	}
 }
 
@@ -3507,6 +3473,7 @@ func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection) GetNodes(
 }
 
 func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -3528,18 +3495,15 @@ func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection) Unmarshal
 		src := firstPass.Nodes
 		*dst = make(
 			[]ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem,
-			len(src),
-		)
+			len(src))
 		for i, src := range src {
 			dst := &(*dst)[i]
 			if len(src) != 0 && string(src) != "null" {
 				err = __unmarshalViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem(
-					src, dst,
-				)
+					src, dst)
 				if err != nil {
 					return fmt.Errorf(
-						"unable to unmarshal ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection.Nodes: %w", err,
-					)
+						"unable to unmarshal ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection.Nodes: %w", err)
 				}
 			}
 		}
@@ -3571,18 +3535,15 @@ func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection) __premars
 		src := v.Nodes
 		*dst = make(
 			[]json.RawMessage,
-			len(src),
-		)
+			len(src))
 		for i, src := range src {
 			dst := &(*dst)[i]
 			var err error
 			*dst, err = __marshalViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem(
-				&src,
-			)
+				&src)
 			if err != nil {
 				return nil, fmt.Errorf(
-					"unable to marshal ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection.Nodes: %w", err,
-				)
+					"unable to marshal ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnection.Nodes: %w", err)
 			}
 		}
 	}
@@ -3612,7 +3573,6 @@ type ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableIt
 
 func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesGist) implementsGraphQLInterfaceViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem() {
 }
-
 func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesRepository) implementsGraphQLInterfaceViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem() {
 }
 
@@ -3638,16 +3598,15 @@ func __unmarshalViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNode
 		return json.Unmarshal(b, *v)
 	case "":
 		return fmt.Errorf(
-			"response was missing PinnableItem.__typename",
-		)
+			"response was missing PinnableItem.__typename")
 	default:
 		return fmt.Errorf(
-			`unexpected concrete type for ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem: "%v"`, tn.TypeName,
-		)
+			`unexpected concrete type for ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem: "%v"`, tn.TypeName)
 	}
 }
 
 func __marshalViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem(v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesGist:
@@ -3670,8 +3629,7 @@ func __marshalViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesP
 		return []byte("null"), nil
 	default:
 		return nil, fmt.Errorf(
-			`unexpected concrete type for ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem: "%T"`, v,
-		)
+			`unexpected concrete type for ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesPinnableItem: "%T"`, v)
 	}
 }
 
@@ -3815,80 +3773,6 @@ func (v *ViewerPinnedItemsViewerUserPinnedItemsPinnableItemConnectionNodesReposi
 	return v.TotalCount
 }
 
-// ViewerProjectsResponse is returned by ViewerProjects on success.
-type ViewerProjectsResponse struct {
-	Viewer *ViewerProjectsViewerUser `json:"viewer"`
-}
-
-// GetViewer returns ViewerProjectsResponse.Viewer, and is useful for accessing the field via an interface.
-func (v *ViewerProjectsResponse) GetViewer() *ViewerProjectsViewerUser { return v.Viewer }
-
-// ViewerProjectsViewerUser includes the requested fields of the GraphQL type User.
-type ViewerProjectsViewerUser struct {
-	ProjectsV2 *ViewerProjectsViewerUserProjectsV2ProjectV2Connection `json:"projectsV2"`
-}
-
-// GetProjectsV2 returns ViewerProjectsViewerUser.ProjectsV2, and is useful for accessing the field via an interface.
-func (v *ViewerProjectsViewerUser) GetProjectsV2() *ViewerProjectsViewerUserProjectsV2ProjectV2Connection {
-	return v.ProjectsV2
-}
-
-// ViewerProjectsViewerUserProjectsV2ProjectV2Connection includes the requested fields of the GraphQL type ProjectV2Connection.
-type ViewerProjectsViewerUserProjectsV2ProjectV2Connection struct {
-	TotalCount int                                                                    `json:"totalCount"`
-	Nodes      []*ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2 `json:"nodes"`
-}
-
-// GetTotalCount returns ViewerProjectsViewerUserProjectsV2ProjectV2Connection.TotalCount, and is useful for accessing the field via an interface.
-func (v *ViewerProjectsViewerUserProjectsV2ProjectV2Connection) GetTotalCount() int {
-	return v.TotalCount
-}
-
-// GetNodes returns ViewerProjectsViewerUserProjectsV2ProjectV2Connection.Nodes, and is useful for accessing the field via an interface.
-func (v *ViewerProjectsViewerUserProjectsV2ProjectV2Connection) GetNodes() []*ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2 {
-	return v.Nodes
-}
-
-// ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2 includes the requested fields of the GraphQL type ProjectV2.
-type ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2 struct {
-	Title            string    `json:"title"`
-	ShortDescription *string   `json:"shortDescription"`
-	UpdatedAt        time.Time `json:"updatedAt"`
-	Url              string    `json:"url"`
-	Closed           bool      `json:"closed"`
-	Number           int       `json:"number"`
-}
-
-// GetTitle returns ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2.Title, and is useful for accessing the field via an interface.
-func (v *ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2) GetTitle() string {
-	return v.Title
-}
-
-// GetShortDescription returns ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2.ShortDescription, and is useful for accessing the field via an interface.
-func (v *ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2) GetShortDescription() *string {
-	return v.ShortDescription
-}
-
-// GetUpdatedAt returns ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2) GetUpdatedAt() time.Time {
-	return v.UpdatedAt
-}
-
-// GetUrl returns ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2.Url, and is useful for accessing the field via an interface.
-func (v *ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2) GetUrl() string {
-	return v.Url
-}
-
-// GetClosed returns ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2.Closed, and is useful for accessing the field via an interface.
-func (v *ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2) GetClosed() bool {
-	return v.Closed
-}
-
-// GetNumber returns ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2.Number, and is useful for accessing the field via an interface.
-func (v *ViewerProjectsViewerUserProjectsV2ProjectV2ConnectionNodesProjectV2) GetNumber() int {
-	return v.Number
-}
-
 // ViewerSponsorsResponse is returned by ViewerSponsors on success.
 type ViewerSponsorsResponse struct {
 	Viewer *ViewerSponsorsViewerUser `json:"viewer"`
@@ -3958,6 +3842,7 @@ func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship) Ge
 }
 
 func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -3980,12 +3865,10 @@ func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship) Un
 		if len(src) != 0 && string(src) != "null" {
 			*dst = new(ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor)
 			err = __unmarshalViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor(
-				src, *dst,
-			)
+				src, *dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship.SponsorEntity: %w", err,
-				)
+					"unable to unmarshal ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship.SponsorEntity: %w", err)
 			}
 		}
 	}
@@ -4020,12 +3903,10 @@ func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship) __
 		if src != nil {
 			var err error
 			*dst, err = __marshalViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor(
-				src,
-			)
+				src)
 			if err != nil {
 				return nil, fmt.Errorf(
-					"unable to marshal ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship.SponsorEntity: %w", err,
-				)
+					"unable to marshal ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorship.SponsorEntity: %w", err)
 			}
 		}
 	}
@@ -4067,7 +3948,6 @@ type ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorE
 
 func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization) implementsGraphQLInterfaceViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor() {
 }
-
 func (v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityUser) implementsGraphQLInterfaceViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor() {
 }
 
@@ -4093,16 +3973,15 @@ func __unmarshalViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsors
 		return json.Unmarshal(b, *v)
 	case "":
 		return fmt.Errorf(
-			"response was missing Sponsor.__typename",
-		)
+			"response was missing Sponsor.__typename")
 	default:
 		return fmt.Errorf(
-			`unexpected concrete type for ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor: "%v"`, tn.TypeName,
-		)
+			`unexpected concrete type for ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor: "%v"`, tn.TypeName)
 	}
 }
 
 func __marshalViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor(v *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization:
@@ -4125,8 +4004,7 @@ func __marshalViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshi
 		return []byte("null"), nil
 	default:
 		return nil, fmt.Errorf(
-			`unexpected concrete type for ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor: "%T"`, v,
-		)
+			`unexpected concrete type for ViewerSponsorsViewerUserActiveSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor: "%T"`, v)
 	}
 }
 
@@ -4189,6 +4067,7 @@ func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship) GetS
 }
 
 func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -4211,12 +4090,10 @@ func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship) Unma
 		if len(src) != 0 && string(src) != "null" {
 			*dst = new(ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor)
 			err = __unmarshalViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor(
-				src, *dst,
-			)
+				src, *dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship.SponsorEntity: %w", err,
-				)
+					"unable to unmarshal ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship.SponsorEntity: %w", err)
 			}
 		}
 	}
@@ -4251,12 +4128,10 @@ func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship) __pr
 		if src != nil {
 			var err error
 			*dst, err = __marshalViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor(
-				src,
-			)
+				src)
 			if err != nil {
 				return nil, fmt.Errorf(
-					"unable to marshal ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship.SponsorEntity: %w", err,
-				)
+					"unable to marshal ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorship.SponsorEntity: %w", err)
 			}
 		}
 	}
@@ -4298,7 +4173,6 @@ type ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEnt
 
 func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization) implementsGraphQLInterfaceViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor() {
 }
-
 func (v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityUser) implementsGraphQLInterfaceViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor() {
 }
 
@@ -4324,16 +4198,15 @@ func __unmarshalViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshi
 		return json.Unmarshal(b, *v)
 	case "":
 		return fmt.Errorf(
-			"response was missing Sponsor.__typename",
-		)
+			"response was missing Sponsor.__typename")
 	default:
 		return fmt.Errorf(
-			`unexpected concrete type for ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor: "%v"`, tn.TypeName,
-		)
+			`unexpected concrete type for ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor: "%v"`, tn.TypeName)
 	}
 }
 
 func __marshalViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor(v *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntityOrganization:
@@ -4356,8 +4229,7 @@ func __marshalViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipS
 		return []byte("null"), nil
 	default:
 		return nil, fmt.Errorf(
-			`unexpected concrete type for ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor: "%T"`, v,
-		)
+			`unexpected concrete type for ViewerSponsorsViewerUserPastSponsorshipConnectionNodesSponsorshipSponsorEntitySponsor: "%T"`, v)
 	}
 }
 
@@ -4496,6 +4368,7 @@ func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionN
 }
 
 func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship) UnmarshalJSON(b []byte) error {
+
 	if string(b) == "null" {
 		return nil
 	}
@@ -4518,12 +4391,10 @@ func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionN
 		if len(src) != 0 && string(src) != "null" {
 			*dst = new(ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable)
 			err = __unmarshalViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable(
-				src, *dst,
-			)
+				src, *dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship.Sponsorable: %w", err,
-				)
+					"unable to unmarshal ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship.Sponsorable: %w", err)
 			}
 		}
 	}
@@ -4558,12 +4429,10 @@ func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionN
 		if src != nil {
 			var err error
 			*dst, err = __marshalViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable(
-				src,
-			)
+				src)
 			if err != nil {
 				return nil, fmt.Errorf(
-					"unable to marshal ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship.Sponsorable: %w", err,
-				)
+					"unable to marshal ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorship.Sponsorable: %w", err)
 			}
 		}
 	}
@@ -4583,7 +4452,6 @@ type ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodes
 
 func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization) implementsGraphQLInterfaceViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable() {
 }
-
 func (v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableUser) implementsGraphQLInterfaceViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable() {
 }
 
@@ -4609,16 +4477,15 @@ func __unmarshalViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConn
 		return json.Unmarshal(b, *v)
 	case "":
 		return fmt.Errorf(
-			"response was missing Sponsorable.__typename",
-		)
+			"response was missing Sponsorable.__typename")
 	default:
 		return fmt.Errorf(
-			`unexpected concrete type for ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable: "%v"`, tn.TypeName,
-		)
+			`unexpected concrete type for ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable: "%v"`, tn.TypeName)
 	}
 }
 
 func __marshalViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable(v *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable) ([]byte, error) {
+
 	var typename string
 	switch v := (*v).(type) {
 	case *ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorableOrganization:
@@ -4641,8 +4508,7 @@ func __marshalViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnec
 		return []byte("null"), nil
 	default:
 		return nil, fmt.Errorf(
-			`unexpected concrete type for ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable: "%T"`, v,
-		)
+			`unexpected concrete type for ViewerSponsorshipsViewerUserSponsorshipsAsSponsorSponsorshipConnectionNodesSponsorshipSponsorable: "%T"`, v)
 	}
 }
 
@@ -4995,14 +4861,6 @@ type __ViewerPinnedItemsInput struct {
 
 // GetFirst returns __ViewerPinnedItemsInput.First, and is useful for accessing the field via an interface.
 func (v *__ViewerPinnedItemsInput) GetFirst() int { return v.First }
-
-// __ViewerProjectsInput is used internally by genqlient
-type __ViewerProjectsInput struct {
-	First int `json:"first"`
-}
-
-// GetFirst returns __ViewerProjectsInput.First, and is useful for accessing the field via an interface.
-func (v *__ViewerProjectsInput) GetFirst() int { return v.First }
 
 // __ViewerSponsorsInput is used internally by genqlient
 type __ViewerSponsorsInput struct {
@@ -6057,50 +5915,6 @@ func ViewerPinnedItems(
 	}
 
 	data_ = &ViewerPinnedItemsResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by ViewerProjects.
-const ViewerProjects_Operation = `
-query ViewerProjects ($first: Int!) {
-	viewer {
-		projectsV2(first: $first, orderBy: {field:UPDATED_AT,direction:DESC}) {
-			totalCount
-			nodes {
-				title
-				shortDescription
-				updatedAt
-				url
-				closed
-				number
-			}
-		}
-	}
-}
-`
-
-func ViewerProjects(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	first int,
-) (data_ *ViewerProjectsResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "ViewerProjects",
-		Query:  ViewerProjects_Operation,
-		Variables: &__ViewerProjectsInput{
-			First: first,
-		},
-	}
-
-	data_ = &ViewerProjectsResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

@@ -10,8 +10,9 @@
 # Adopted set (from docs/design/15-selection-answer.md):
 #   plugins: base, core, languages, activity, achievements, repositories,
 #            isocalendar, calendar, habits, stars, topics, starlists,
-#            people, notable, contributors, reactions, projects, sponsors,
+#            people, notable, contributors, reactions, sponsors,
 #            sponsorships, stargazers, traffic
+#   (projects was adopted originally but removed in #670)
 #   templates: classic, repository
 #
 # Unadopted plugins/templates are MUST NOT be copied — they violate
@@ -46,7 +47,6 @@ ADOPTED_PLUGINS=(
     notable
     contributors
     reactions
-    projects
     sponsors
     sponsorships
     stargazers
