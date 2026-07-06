@@ -493,7 +493,12 @@ echo "== repository foundational base render =="
 # Only `plugin_people=yes` produces a stand-alone delta and is
 # emitted separately above. See docs/comparison.md "repository mode
 # サンプル一覧" for the parity table.
-render_one_repo "plugin-base-repo"
+# chrome_header / chrome_metadata are explicit since v3.0 (#649 dropped
+# the default-all fallback); without them this chrome sample renders as
+# an empty card.
+render_one_repo "plugin-base-repo" \
+	--plugin "chrome_header=yes" \
+	--plugin "chrome_metadata=yes"
 
 echo
 echo "== repository template base overview =="
@@ -514,7 +519,11 @@ echo "== repository template base overview =="
 # The per-plugin repository-mode samples above (plugin-base-repo,
 # plugin-people-repo, plugin-contributors-repo-contributions,
 # plugin-people-repo-types) still cover each plugin partial individually.
-render_one_repo "metrics-repository"
+# chrome_header / chrome_metadata: same explicit opt-in as
+# plugin-base-repo above.
+render_one_repo "metrics-repository" \
+	--plugin "chrome_header=yes" \
+	--plugin "chrome_metadata=yes"
 
 echo
 echo "== Summary =="
