@@ -85,6 +85,11 @@ func dispatchOutput(
 		// Stage 5: resize / convert via the Renderer interface.
 		renderer, closeBrowser, err := obtainRenderer(deps)
 		if err != nil {
+			// Log in addition to res.Errors (#666): on the svg path the
+			// run exits 0 with an untrimmed height=99999 SVG, so without
+			// this Warn the degradation is invisible in run logs.
+			deps.Logger.Warn("engine: renderer init failed; SVG will not be resized",
+				"format", format, "err", err)
 			if res != nil {
 				res.Errors = append(res.Errors, xerrors.NewRetryableError(
 					fmt.Errorf("engine: renderer init: %w", err),
@@ -115,6 +120,10 @@ func dispatchOutput(
 			Scripts: stringSliceInput(req.Inputs, "extras.js"),
 		})
 		if err != nil {
+			// Same visibility contract as the renderer-init branch (#666)
+			// and per_plugin.go's "resize failed; using unresized SVG".
+			deps.Logger.Warn("engine: resize failed; using unresized SVG",
+				"format", format, "err", err)
 			if res != nil {
 				res.Errors = append(res.Errors, fmt.Errorf("engine: resize: %w", err))
 			}

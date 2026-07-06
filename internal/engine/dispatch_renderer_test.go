@@ -203,6 +203,78 @@ func TestDispatch_RendererError_SVG_PassthroughDecoratedSVG(t *testing.T) {
 	}
 }
 
+// TestDispatch_RendererError_SVG_LogsWarn pins the #666 fix: a Resize
+// failure on the svg path must emit a Warn log in addition to
+// res.Errors — without it the run exits 0 with an untrimmed SVG and
+// zero log evidence (this hid the bookworm chromium 150 breakage).
+func TestDispatch_RendererError_SVG_LogsWarn(t *testing.T) {
+	t.Parallel()
+
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
+	sentinel := errors.New("simulated chromedp failure")
+	deps := Deps{
+		Logger: logger,
+		Render: &render.FakeRenderer{ErrOnConvert: map[string]error{"svg": sentinel}},
+	}
+
+	res := &Result{}
+	if _, _, err := dispatchOutput(
+		context.Background(),
+		Request{Format: "svg", Template: "stub"},
+		deps,
+		stubTemplate{},
+		plugins.NewData(),
+		&templates.PartialContext{Logger: logger},
+		res,
+	); err != nil {
+		t.Fatalf("dispatchOutput: %v", err)
+	}
+	logs := logBuf.String()
+	if !strings.Contains(logs, "resize failed") {
+		t.Errorf("expected 'resize failed' Warn in logs; got:\n%s", logs)
+	}
+	if !strings.Contains(logs, "simulated chromedp failure") {
+		t.Errorf("expected underlying error in logs; got:\n%s", logs)
+	}
+}
+
+// TestDispatch_RendererInitError_SVG_LogsWarn pins the same #666
+// visibility contract for the lazy-renderer init branch: deps.Render
+// nil + a bogus METRICS_CHROME_PATH makes obtainRenderer fail, which
+// must Warn instead of degrading silently.
+func TestDispatch_RendererInitError_SVG_LogsWarn(t *testing.T) {
+	t.Setenv("METRICS_CHROME_PATH", "/nonexistent/chromium-binary")
+
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
+	deps := Deps{Logger: logger} // Render nil → lazy init path
+
+	res := &Result{}
+	out, mime, err := dispatchOutput(
+		context.Background(),
+		Request{Format: "svg", Template: "stub"},
+		deps,
+		stubTemplate{},
+		plugins.NewData(),
+		&templates.PartialContext{Logger: logger},
+		res,
+	)
+	if err != nil {
+		t.Fatalf("dispatchOutput: %v", err)
+	}
+	if mime != "image/svg+xml" || !bytes.Contains(out, []byte(`<svg id="metrics-end">`)) {
+		t.Fatalf("svg fallback expected; mime=%q out=%q", mime, string(out))
+	}
+	logs := logBuf.String()
+	if !strings.Contains(logs, "renderer init failed") {
+		t.Errorf("expected 'renderer init failed' Warn in logs; got:\n%s", logs)
+	}
+	if len(res.Errors) != 1 {
+		t.Errorf("expected 1 error in res.Errors, got %d", len(res.Errors))
+	}
+}
+
 // TestDispatch_UnknownFormat keeps the M2 contract: bogus Format
 // surfaces as *UnsupportedFormatError.
 func TestDispatch_UnknownFormat(t *testing.T) {
