@@ -171,12 +171,6 @@ func (g *GraphQL) ViewerSponsorships(ctx context.Context, first int) (*ViewerSpo
 	return ViewerSponsorships(ctx, g.client, first)
 }
 
-// ViewerProjects fetches viewer.projectsV2 (open + closed) for the
-// "projects" plugin (spec 013).
-func (g *GraphQL) ViewerProjects(ctx context.Context, first int) (*ViewerProjectsResponse, error) {
-	return ViewerProjects(ctx, g.client, first)
-}
-
 // UserNotable fetches the repositories a user contributed to on other
 // users'/organizations' accounts, ordered by stargazers, for the
 // "notable" plugin (issue #447). `types` selects the contribution kinds

@@ -8,8 +8,8 @@ package plugins
 // pipeline was removed in #623).
 //
 // Plugins call this helper from their Run() to keep the per-plugin
-// branching contract in one place. Each of the 7 reused plugins (activity, contributors,
-// languages, people, projects, sponsors, stargazers) imports plugins
+// branching contract in one place. Each of the 6 reused plugins (activity, contributors,
+// languages, people, sponsors, stargazers) imports plugins
 // already; this constant + helper costs zero extra import edges.
 const (
 	ModeUser = "user"

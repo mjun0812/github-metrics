@@ -138,7 +138,7 @@ repository はリポジトリ向けの需要があると考え採用します。
 - [ ] `code` — ランダムコード片 (M, **プライベートコード漏洩リスク注意**)
 - [ ] `introduction` — bio/description (S)
 - [x] `reactions` — リアクション集計 (M)
-- [x] `projects` — GitHub Projects (M, `read:project` scope 必要)
+- [ ] ~~`projects` — GitHub Projects (M, `read:project` scope 必要)~~ — 一度採用したが #670 で廃止 (未使用のため)
 - [x] `sponsors` — スポンサー紹介 (S, `read:user`/`read:org` 必要)
 - [x] `sponsorships` — スポンサーシップ履歴 (S)
 - [x] `stargazers` — スターチャート/世界地図 (L, 世界地図は Google API key)

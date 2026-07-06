@@ -18,7 +18,6 @@ import (
 	_ "github.com/mjun0812/github-metrics/internal/plugins/languages"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/notable"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/people"
-	_ "github.com/mjun0812/github-metrics/internal/plugins/projects"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/reactions"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/repositories"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/sponsors"

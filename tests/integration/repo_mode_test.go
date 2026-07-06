@@ -1,5 +1,5 @@
 // Package integration_test covers the M7 per-plugin Mode-tag contract.
-// We exercise the 7 reused plugins
+// We exercise the 6 reused plugins
 // via the engine pipeline in both user-mode (Account=User, no
 // Data.Repo) and repo-mode (Account=Repository, Data.Repo populated)
 // and assert the `mode` field lands on each plugin's Result.
@@ -16,8 +16,8 @@ import (
 
 // modeOf extracts the per-plugin `mode` field from the marshalled
 // engine Result. We use the JSON envelope instead of a typed result
-// per plugin so this single test scales across all 7 affected
-// plugins without 7 type assertions.
+// per plugin so this single test scales across all 6 affected
+// plugins without 6 type assertions.
 func modeOf(t *testing.T, raw []byte, slug string) string {
 	t.Helper()
 	var env struct {
@@ -35,7 +35,7 @@ func modeOf(t *testing.T, raw []byte, slug string) string {
 }
 
 // TestRepoMode_AllAffectedPlugins_TagModeRepo (M7 contract §5):
-// when Data.Repo is populated (repository template), all 7 affected
+// when Data.Repo is populated (repository template), all 6 affected
 // plugins MUST set `result.mode == "repo"` on their success-path
 // Result. Verified end-to-end through engine.Compute against the
 // canned Repository fixture from repository_test.go.
@@ -61,9 +61,9 @@ func TestRepoMode_AllAffectedPlugins_TagModeRepo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Compute: %v", err)
 	}
-	// All 7 plugins are covered. Some reach a non-Skipped success
+	// All 6 plugins are covered. Some reach a non-Skipped success
 	// path (contributors/stargazers via base.RepoRef branch);
-	// activity/languages/people/projects/sponsors return Skipped or
+	// activity/languages/people/sponsors return Skipped or
 	// empty Results that still pass through the AggregationMode tag
 	// in their success-path Result literal. We assert the field is
 	// either "" (Skipped before reaching the tag site) or "repo"
@@ -71,7 +71,7 @@ func TestRepoMode_AllAffectedPlugins_TagModeRepo(t *testing.T) {
 	// guarding against is `"user"` leaking through in repo-mode.
 	for _, slug := range []string{
 		"activity", "contributors", "languages",
-		"people", "projects", "sponsors", "stargazers",
+		"people", "sponsors", "stargazers",
 	} {
 		got := modeOf(t, res.Output, slug)
 		if got == "user" {
@@ -82,7 +82,7 @@ func TestRepoMode_AllAffectedPlugins_TagModeRepo(t *testing.T) {
 
 // TestRepoMode_AllAffectedPlugins_TagModeUser_InUserTemplate (M7
 // contract §5 inverse): under the classic template (Data.Repo nil),
-// the same 7 plugins MUST NOT tag Mode="repo". Plugins that reach
+// the same 6 plugins MUST NOT tag Mode="repo". Plugins that reach
 // their success path tag Mode="user"; plugins that Skipped early
 // leave Mode="" (also acceptable, just not "repo").
 func TestRepoMode_AllAffectedPlugins_TagModeUser_InUserTemplate(t *testing.T) {
@@ -105,7 +105,7 @@ func TestRepoMode_AllAffectedPlugins_TagModeUser_InUserTemplate(t *testing.T) {
 	}
 	for _, slug := range []string{
 		"activity", "contributors", "languages",
-		"people", "projects", "sponsors", "stargazers",
+		"people", "sponsors", "stargazers",
 	} {
 		got := modeOf(t, res.Output, slug)
 		if got == "repo" {
@@ -116,7 +116,7 @@ func TestRepoMode_AllAffectedPlugins_TagModeUser_InUserTemplate(t *testing.T) {
 
 // TestRepoMode_NilRepoFallback_NoPanic (M7 contract §5):
 // regression guard — when Account=Repository is set but Data.Repo is
-// nil (e.g., FetchRepo failed before plugin dispatch), the 7 plugins
+// nil (e.g., FetchRepo failed before plugin dispatch), the 6 plugins
 // MUST fall through to their user-mode path without panicking on
 // nil-deref of Data.Repo. We exercise this by stub-mocking
 // Repository to return a 404-shaped null payload.
@@ -146,11 +146,11 @@ func TestRepoMode_NilRepoFallback_NoPanic(t *testing.T) {
 		t.Fatalf("Compute: %v", err)
 	}
 	// Sanity: at least one plugin reached the tagged return path with
-	// mode=repo. If all 7 returned "" the test loses its signal.
+	// mode=repo. If all 6 returned "" the test loses its signal.
 	any := false
 	for _, slug := range []string{
 		"activity", "contributors", "languages",
-		"people", "projects", "sponsors", "stargazers",
+		"people", "sponsors", "stargazers",
 	} {
 		if modeOf(t, res.Output, slug) == "repo" {
 			any = true

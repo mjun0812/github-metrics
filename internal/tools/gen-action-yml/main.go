@@ -50,7 +50,6 @@ var adoptedSlugs = []string{
 	"languages",
 	"notable",
 	"people",
-	"projects",
 	"reactions",
 	"repositories",
 	"sponsors",

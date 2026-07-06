@@ -52,7 +52,6 @@ import (
 	_ "github.com/mjun0812/github-metrics/internal/plugins/languages"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/notable"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/people"
-	_ "github.com/mjun0812/github-metrics/internal/plugins/projects"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/reactions"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/repositories"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/sponsors"
@@ -96,7 +95,6 @@ func fullPluginInputs() map[string]any {
 		"plugin_notable":      true,
 		"plugin_contributors": true,
 		"plugin_reactions":    true,
-		"plugin_projects":     true,
 		"plugin_sponsors":     true,
 		"plugin_sponsorships": true,
 		"plugin_stargazers":   true,
@@ -121,7 +119,7 @@ func fullPluginInputs() map[string]any {
 // benchGraphQLFixture returns canned GraphQL bodies that satisfy the
 // base plugin + the plugins that drive their own GraphQL queries
 // (calendar / stars / people / notable / sponsors / sponsorships /
-// stargazers / reactions / projects). The shape mirrors the M2/M4
+// stargazers / reactions). The shape mirrors the M2/M4
 // integration fixtures but is collapsed into a single helper so the
 // bench file stays self-contained.
 type benchGraphQLFixture struct {
