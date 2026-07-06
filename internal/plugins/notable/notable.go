@@ -285,13 +285,9 @@ func includeSelf(in map[string]any) bool {
 // contributionTypes reads plugin_notable_types (default "commit"),
 // mapping the comma-separated slugs to the GraphQL enum.
 func contributionTypes(in map[string]any) []githubapi.RepositoryContributionType {
-	raw := stringInput(in, "plugin_notable_types")
-	if v, ok := in["plugin_notable_types"]; ok {
-		if list, ok := v.([]string); ok {
-			raw = strings.Join(list, ",")
-		}
-	}
-	raw = strings.TrimSpace(raw)
+	// ReadCSV normalizes every input shape — comma string (INPUT_* env),
+	// []string (YAML config), and []any (INPUTS JSON, #664).
+	raw := strings.Join(pluginutil.ReadCSV(in, "plugin_notable_types"), ",")
 	if raw == "" {
 		raw = "commit"
 	}
@@ -342,6 +338,11 @@ func skippedSet(in map[string]any) map[string]struct{} {
 		for _, s := range v {
 			add(s)
 		}
+	case []any:
+		// INPUTS-JSON arrays decode to []any (#664).
+		for _, s := range pluginutil.ReadCSVValue(v) {
+			add(s)
+		}
 	}
 	return set
 }
@@ -361,12 +362,12 @@ func isSkipped(nameWithOwner string, skipped map[string]struct{}) bool {
 	return ok
 }
 
-// notableLimit reads plugin_notable_limit (default 5).
+// notableLimit reads plugin_notable_limit (default 5). ReadInt handles
+// the string / float64 shapes that INPUT_* env and INPUTS JSON deliver
+// (#661) — a bare v.(int) only ever matched YAML-config values.
 func notableLimit(in map[string]any) int {
-	if v, ok := in["plugin_notable_limit"]; ok {
-		if n, ok := v.(int); ok && n > 0 {
-			return n
-		}
+	if n, ok := pluginutil.ReadInt(in, "plugin_notable_limit"); ok && n > 0 {
+		return n
 	}
 	return defaultLimit
 }

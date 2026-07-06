@@ -410,6 +410,16 @@ render_one "metrics-classic" \
 	--plugin "chrome_header=yes" \
 	--plugin "chrome_repositories=yes"
 
+# Foundational base chrome sample (mirrors the scripts/samples.json
+# `plugin-base` entry). Counted in TOTAL's `+ 1` for plugin-base; the
+# call was missing (#663), so `make docs-samples` left the committed
+# plugin-base.* stale while still reporting OK for its 2 files.
+render_one "plugin-base" \
+	--template classic \
+	--plugin "chrome_activity=yes" \
+	--plugin "chrome_community=yes" \
+	--plugin "chrome_repositories=yes"
+
 echo
 echo "== per-plugin repository-mode renders (only plugins with visible delta) =="
 # The repository template's partial order is hard-coded in
