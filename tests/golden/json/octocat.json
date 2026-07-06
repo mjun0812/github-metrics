@@ -355,12 +355,6 @@
       "skipped": true,
       "types": {}
     },
-    "projects": {
-      "limit": 0,
-      "list": [],
-      "mode": "",
-      "skipped": true
-    },
     "reactions": {
       "comments": 0,
       "days": 0,

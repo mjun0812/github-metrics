@@ -17,8 +17,8 @@
 # 2 repo-context variants (`plugin-contributors-repo-contributions`
 # adds the per-contributor adds/dels columns, `plugin-people-repo-types`
 # pins all three people types) and 1 `metrics-repository` composite
-# overview = 5 logical repo-mode samples. The 14 user-mode-only plugins
-# (achievements/activity/calendar/habits/isocalendar/notable/projects/
+# overview = 5 logical repo-mode samples. The 13 user-mode-only plugins
+# (achievements/activity/calendar/habits/isocalendar/notable/
 # reactions/repositories/sponsors/sponsorships/starlists/stars/topics)
 # and the 4 plugins whose repo-mode panel is byte-identical to
 # `plugin-base-repo` for ${REPO} (languages/contributors/stargazers/
@@ -97,7 +97,7 @@ trap 'rm -rf "$WORKDIR"' EXIT
 # render below.
 PLUGINS=(
 	achievements activity calendar habits isocalendar
-	notable people projects repositories sponsors
+	notable people repositories sponsors
 	sponsorships stargazers starlists stars topics traffic
 )
 
@@ -438,8 +438,8 @@ echo "== per-plugin repository-mode renders (only plugins with visible delta) ==
 # Two of them surface their value only via variants (people-types and
 # contributors-contributions, rendered below).
 #
-# The 14 user-mode-only plugins (achievements / activity / calendar /
-# habits / isocalendar / notable / projects / reactions / repositories /
+# The 13 user-mode-only plugins (achievements / activity / calendar /
+# habits / isocalendar / notable / reactions / repositories /
 # sponsors / sponsorships / starlists / stars / topics) additionally
 # emit a WARN log when invoked under `--template repository`; the
 # guard lives in internal/plugins/modegate.go and the per-plugin Run()

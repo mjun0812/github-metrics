@@ -567,25 +567,6 @@ inputs:
     default: 'followers, following'
     required: false
 
-  plugin_projects:
-    description: 'Enable projects plugin'
-    default: 'no'
-    required: false
-
-  plugin_projects_descriptions:
-    description: 'Projects descriptions'
-    default: 'no'
-    required: false
-
-  plugin_projects_limit:
-    description: 'Display limit'
-    default: '4'
-    required: false
-
-  plugin_projects_repositories:
-    description: 'Featured repositories projects'
-    required: false
-
   plugin_reactions:
     description: 'Enable reactions plugin'
     default: 'no'

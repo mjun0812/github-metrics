@@ -27,7 +27,7 @@ var adoptedPlugins = []string{
 	"header",
 	"languages", "activity", "achievements", "repositories",
 	"isocalendar", "calendar", "habits", "stars", "topics", "starlists",
-	"people", "notable", "contributors", "reactions", "projects",
+	"people", "notable", "contributors", "reactions",
 	"sponsors", "sponsorships", "stargazers", "traffic",
 }
 

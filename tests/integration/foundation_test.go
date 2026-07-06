@@ -233,8 +233,8 @@ func newEngineDeps(t testing.TB, gqlBody map[string]string) (engine.Deps, *graph
 // newEngineDepsWithREST extends newEngineDeps with a REST client backed
 // by a mocks.RESTMux. restSetup is called with the mux before the REST
 // client is constructed, allowing callers to register path handlers.
-// Plugins that gate behavior on OAuth scopes (projects, sponsors,
-// traffic) need the "/" path registered with an X-OAuth-Scopes header.
+// Plugins that gate behavior on OAuth scopes (sponsors, traffic)
+// need the "/" path registered with an X-OAuth-Scopes header.
 //
 // The activity plugin has no enable gate and always runs whenever a
 // REST client is wired in (see internal/plugins/activity/activity.go),

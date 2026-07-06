@@ -110,8 +110,8 @@ func (t *repositoryTemplate) Check(inputs map[string]any, account, format string
 // but uses the repository-specific partial set declared by `_.json`.
 //
 // Plugin partials are looked up in the shared partials registry; the
-// 7 M4 plugins that overlap with the repository template (languages,
-// projects, stargazers, people, activity, contributors, sponsors)
+// 6 M4 plugins that overlap with the repository template (languages,
+// stargazers, people, activity, contributors, sponsors)
 // register their plugin partials globally at import time, so this
 // template inherits them automatically once their packages are imported
 // via `cmd/metrics-action/plugins.go`.
