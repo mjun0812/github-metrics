@@ -84,12 +84,14 @@ var contracts = []contract{
 	},
 	{
 		// #469: starred repository cards must include license info.
-		// The sample's starred set includes MIT-licensed repos
-		// (spec-kit, gin), so an MIT label must surface once the
-		// license/metadata is wired through.
+		// The marker is a license label present in the currently
+		// committed sample (the 2026-07-06 regen's starred set carries
+		// "Other"-licensed repos; the original set carried MIT). When a
+		// doc-sample regen rotates the starred set, update the marker
+		// to a license label present in the new SVG.
 		example:     "plugin-stars.svg",
 		issue:       "#469",
-		mustContain: []string{"MIT"},
+		mustContain: []string{"Other"},
 	},
 	{
 		// #471: repository-mode contributors must render the real
