@@ -34,6 +34,6 @@
   {"name": "plugin-contributors-repo-contributions", "mode": "repo", "extra": "--plugin plugin_contributors=yes --plugin plugin_contributors_contributions=yes"},
   {"name": "plugin-people-repo-types",               "mode": "repo", "extra": "--plugin plugin_people=yes --plugin plugin_people_types=stargazers,watchers,contributors"},
   {"name": "plugin-languages-repo",                  "mode": "repo", "extra": "--plugin plugin_languages=yes --plugin plugin_languages_details=bytes-size,percentage"},
-  {"name": "plugin-base-repo",                       "mode": "repo", "extra": ""},
-  {"name": "metrics-repository",                     "mode": "repo", "extra": ""}
+  {"name": "plugin-base-repo",                       "mode": "repo", "extra": "--plugin chrome_header=yes --plugin chrome_metadata=yes"},
+  {"name": "metrics-repository",                     "mode": "repo", "extra": "--plugin chrome_header=yes --plugin chrome_metadata=yes"}
 ]
