@@ -22,7 +22,6 @@ import (
 	_ "github.com/mjun0812/github-metrics/internal/plugins/habits"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/notable"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/people"
-	_ "github.com/mjun0812/github-metrics/internal/plugins/projects"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/reactions"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/sponsors"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/sponsorships"
@@ -127,7 +126,7 @@ func p2Inputs() map[string]any {
 	in := p1Inputs()
 	for _, slug := range []string{
 		"calendar", "habits", "stars", "people", "notable", "contributors",
-		"reactions", "projects", "sponsors", "sponsorships", "stargazers", "traffic",
+		"reactions", "sponsors", "sponsorships", "stargazers", "traffic",
 	} {
 		in["plugin_"+slug] = true
 	}
@@ -163,7 +162,7 @@ func TestComputeJSON_P2AllPlugins(t *testing.T) {
 		"languages", "activity", "achievements", "repositories", "isocalendar",
 		// P2
 		"calendar", "habits", "stars", "people", "notable",
-		"contributors", "reactions", "projects", "sponsors", "sponsorships",
+		"contributors", "reactions", "sponsors", "sponsorships",
 		"stargazers", "traffic",
 	}
 	for _, slug := range wantSlugs {
@@ -187,7 +186,7 @@ func TestComputeSVG_P2Bundle(t *testing.T) {
 		"B_skipped_only": {
 			"notable", "contributors", "stargazers", "sponsorships",
 		},
-		"C_scope_gated": {"projects", "sponsors", "traffic"},
+		"C_scope_gated": {"sponsors", "traffic"},
 	}
 	for name, slugs := range bundles {
 		t.Run(name, func(t *testing.T) {
@@ -209,7 +208,7 @@ func TestComputeSVG_P2Bundle(t *testing.T) {
 				t.Fatalf("MIME = %q, want image/svg+xml", res.MIME)
 			}
 			// Spec 013: GraphQL plugins (sponsors / sponsorships /
-			// projects / notable / stargazers / repositories.Pinned) now
+			// notable / stargazers / repositories.Pinned) now
 			// fire viewer.* / user.* queries when their `plugin_<slug>`
 			// is true. The notable plugin fires UserNotable
 			// (user.repositoriesContributedTo) since issue #447. In

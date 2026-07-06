@@ -239,9 +239,9 @@ func TestNoRemovedSentinelComments(t *testing.T) {
 var adoptedM4Plugins = []string{
 	// P1 MVP (5)
 	"languages", "activity", "achievements", "repositories", "isocalendar",
-	// P2 GraphQL/REST (12)
+	// P2 GraphQL/REST (11)
 	"calendar", "habits", "stars", "people", "notable",
-	"contributors", "reactions", "projects", "sponsors", "sponsorships",
+	"contributors", "reactions", "sponsors", "sponsorships",
 	"stargazers", "traffic",
 	// P3 chromedp / heavy (2 with own directories; the recent/indepth
 	// sub-modes live in internal/plugins/languages/)
@@ -435,10 +435,10 @@ func TestCompliance_M9_TestInfraInvariant(t *testing.T) {
 }
 
 // TestCompliance_M7_NonAffectedPluginsAreInvariantOnRepo verifies the
-// repo-mode contract: only the 7 listed
-// plugins (activity, contributors, languages, people, projects,
+// repo-mode contract: only the 6 listed
+// plugins (activity, contributors, languages, people,
 // sponsors, stargazers) gain a Mode field in JSON output. The other
-// 14 adopted plugins MUST remain untouched. We inspect the plugin
+// adopted plugins MUST remain untouched. We inspect the plugin
 // package source rather than running them to stay hermetic.
 func TestCompliance_M7_NonAffectedPluginsAreInvariantOnRepo(t *testing.T) {
 	root := mustRepoRoot(t)
@@ -447,7 +447,6 @@ func TestCompliance_M7_NonAffectedPluginsAreInvariantOnRepo(t *testing.T) {
 		"contributors": {},
 		"languages":    {},
 		"people":       {},
-		"projects":     {},
 		"sponsors":     {},
 		"stargazers":   {},
 	}

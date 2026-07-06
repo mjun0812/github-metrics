@@ -96,7 +96,7 @@ func TestGenerate_AdoptedPluginGatesPresent(t *testing.T) {
 		"plugin_repositories", "plugin_isocalendar",
 		"plugin_calendar", "plugin_habits", "plugin_stars", "plugin_people",
 		"plugin_notable", "plugin_contributors", "plugin_reactions",
-		"plugin_projects", "plugin_sponsors", "plugin_sponsorships",
+		"plugin_sponsors", "plugin_sponsorships",
 		"plugin_stargazers", "plugin_traffic",
 		"plugin_topics", "plugin_starlists",
 	}

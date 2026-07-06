@@ -48,7 +48,6 @@ var PluginPartialOrder = []string{
 	"notable",
 	"contributors",
 	"reactions",
-	"projects",
 	"sponsors",
 	"sponsorships",
 	"stargazers",
