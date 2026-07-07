@@ -23,7 +23,7 @@
               Recently used languages
             </h3>
             <small>
-              activity from 79 repositories analysed over last 30 days
+              activity from 73 repositories analysed over last 30 days
             </small>
             <svg xmlns="http://www.w3.org/2000/svg" class="bar" width="460" height="8" role="img" aria-label="Recently used languages distribution">
               <title>
@@ -34,13 +34,13 @@
               </mask>
               <rect mask="url(#languages-bar-recent)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-recent">
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="270.59" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="270.59" y="0" width="141.79" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="412.37" y="0" width="22.83" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="435.21" y="0" width="17.07" height="8" fill="#427819" data-language="Makefile"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="452.28" y="0" width="6.96" height="8" fill="#384d54" data-language="Dockerfile"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.24" y="0" width="0.54" height="8" fill="#000080" data-language="Lua"/>
-                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.78" y="0" width="0.22" height="8" fill="#701516" data-language="Ruby"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="281.71" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="281.71" y="0" width="128.90" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="410.62" y="0" width="24.49" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="435.11" y="0" width="17.14" height="8" fill="#427819" data-language="Makefile"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="452.25" y="0" width="6.94" height="8" fill="#384d54" data-language="Dockerfile"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.18" y="0" width="0.58" height="8" fill="#000080" data-language="Lua"/>
+                <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.77" y="0" width="0.23" height="8" fill="#701516" data-language="Ruby"/>
               </g>
             </svg>
             <div class="row fill-width">
@@ -54,10 +54,10 @@
                   </div>
                   <small>
                     <div>
-                      4.9 kB
+                      4.7 kB
                     </div>
                     <div>
-                      58.8%
+                      61.2%
                     </div>
                   </small>
                 </div>
@@ -73,7 +73,7 @@
                       420 B
                     </div>
                     <div>
-                      5.0%
+                      5.3%
                     </div>
                   </small>
                 </div>
@@ -86,7 +86,7 @@
                   </div>
                   <small>
                     <div>
-                      128 B
+                      119 B
                     </div>
                     <div>
                       1.5%
@@ -105,7 +105,7 @@
                       4 B
                     </div>
                     <div>
-                      0.0%
+                      0.1%
                     </div>
                   </small>
                 </div>
@@ -120,10 +120,10 @@
                   </div>
                   <small>
                     <div>
-                      2.5 kB
+                      2.2 kB
                     </div>
                     <div>
-                      30.8%
+                      28.0%
                     </div>
                   </small>
                 </div>
@@ -136,7 +136,7 @@
                   </div>
                   <small>
                     <div>
-                      314 B
+                      294 B
                     </div>
                     <div>
                       3.7%
