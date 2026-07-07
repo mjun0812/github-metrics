@@ -26,6 +26,7 @@ package integration_test
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
@@ -249,14 +250,20 @@ var perPluginCases = []perPluginCase{
 		slug:     "traffic",
 		fixtures: map[string]string{},
 		restSetup: func(m *mocks.RESTMux) {
-			// traffic checks `repo` scope via REST.Scopes() → GET /
-			m.OnHeader("/", 200, `{}`, map[string][]string{
-				"X-OAuth-Scopes": {"repo"},
-			})
+			// traffic checks `repo` scope via REST.Scopes() → HEAD /.
+			// The header MUST be built via http.Header.Set so the key is
+			// canonicalised ("X-Oauth-Scopes"); a raw map literal with the
+			// non-canonical "X-OAuth-Scopes" key would be invisible to
+			// http.Header.Get and the plugin would (wrongly) Skip.
+			scopeHdr := http.Header{}
+			scopeHdr.Set("X-OAuth-Scopes", "repo")
+			m.OnHeader("/", 200, `{}`, scopeHdr)
 			// traffic fetches views for every repo in Computed.RepositoryList.
-			// The base fixture (user_repositories_250) has octocat/alpha and octocat/beta.
-			m.OnBody("/repos/octocat/alpha/traffic/views", 200, `{"count":0,"uniques":0}`)
-			m.OnBody("/repos/octocat/beta/traffic/views", 200, `{"count":0,"uniques":0}`)
+			// The base fixture (user_repositories_250) has octocat/alpha and
+			// octocat/beta. Distinct non-zero counts exercise the aggregate
+			// line, per-repo rows, and the descending-by-views ordering.
+			m.OnBody("/repos/octocat/alpha/traffic/views", 200, `{"count":50,"uniques":10}`)
+			m.OnBody("/repos/octocat/beta/traffic/views", 200, `{"count":1200,"uniques":40}`)
 		},
 		goldenPath: "classic/plugin-traffic.svg",
 	},
