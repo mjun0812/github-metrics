@@ -55,12 +55,24 @@ func (r *Result) IsSkipped() bool { return r != nil && r.Skipped }
 // language analysis (_languages=true), Languages holds the aggregated
 // breakdown across the list's repositories.
 type Starlist struct {
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	Count       int                    `json:"count"`
-	Languages   []plugins.LanguageStat `json:"languages,omitempty"`
-	URL         string                 `json:"-"` // internal: used by language analysis
-	Repos       []string               `json:"-"` // internal: repos extracted from detail page
+	Name         string                 `json:"name"`
+	Description  string                 `json:"description"`
+	Count        int                    `json:"count"`
+	Languages    []plugins.LanguageStat `json:"languages,omitempty"`
+	Repositories []Repository           `json:"repositories,omitempty"`
+	URL          string                 `json:"-"` // internal: used by language analysis
+	Repos        []string               `json:"-"` // internal: repos extracted from detail page
+}
+
+// Repository is one repo card rendered inside a starlist (upstream EJS
+// `<div class="repositories">` block). It carries only the fields the
+// user.lists GraphQL items already project — name + description; no
+// extra per-repo fetch is performed. IsPrivate is kept internal so the
+// repositories_skip_private filter can drop private repos before render.
+type Repository struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	IsPrivate   bool   `json:"-"`
 }
 
 // Navigator abstracts the upstream-data fetch so non-network tests can
@@ -79,8 +91,10 @@ type Navigator interface {
 const NavigatorKey = "_test_starlists_navigator"
 
 type starlistsInputs struct {
-	limit     int
-	languages bool
+	limit             int
+	limitRepositories int
+	languages         bool
+	skipPrivate       bool
 }
 
 func (p *starlistsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
@@ -152,6 +166,10 @@ func (p *starlistsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 
 	if in.limit > 0 && len(list) > in.limit {
 		list = list[:in.limit]
+	}
+
+	for i := range list {
+		list[i].Repositories = limitRepositories(list[i].Repositories, in.limitRepositories, in.skipPrivate)
 	}
 
 	if in.languages {
@@ -229,6 +247,34 @@ func analyzeLanguages(ctx context.Context, pc *plugins.PluginContext, list []Sta
 	}
 }
 
+// limitRepositories drops private repos when skipPrivate is set
+// (repositories_skip_private, #656) then truncates to limit. limit <= 0
+// means "unlimited" (see parseInputs). Returns nil when nothing
+// survives so the partial omits the `<div class="repositories">`
+// wrapper entirely.
+func limitRepositories(repos []Repository, limit int, skipPrivate bool) []Repository {
+	if len(repos) == 0 {
+		return nil
+	}
+	out := repos
+	if skipPrivate {
+		out = out[:0:0]
+		for _, r := range repos {
+			if r.IsPrivate {
+				continue
+			}
+			out = append(out, r)
+		}
+	}
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
 // pickNavigator returns the test-injected Navigator if present.
 // Otherwise it constructs a graphqlNavigator on top of pc.GraphQL;
 // nil when pc.GraphQL is unset (test harnesses without GraphQL
@@ -280,14 +326,22 @@ func resolveRepositories(ctx context.Context, pc *plugins.PluginContext) []plugi
 
 func parseInputs(in map[string]any) starlistsInputs {
 	out := starlistsInputs{
-		limit:     4,
-		languages: false,
+		limit:             4,
+		limitRepositories: 2,
+		languages:         false,
 	}
 	if v, ok := pluginutil.ReadInt(in, "plugin_starlists_limit"); ok {
 		out.limit = v
 	}
+	// plugin_starlists_limit_repositories has no "zero: disable" in
+	// metadata.yml, so 0 means "unlimited" — matching the sibling
+	// plugin_starlists_limit handling below (in.limit > 0 guard).
+	if v, ok := pluginutil.ReadInt(in, "plugin_starlists_limit_repositories"); ok {
+		out.limitRepositories = v
+	}
 	if v, ok := in["plugin_starlists_languages"]; ok {
 		out.languages = pluginutil.Truthy(v)
 	}
+	out.skipPrivate = pluginutil.Truthy(in["repositories_skip_private"])
 	return out
 }

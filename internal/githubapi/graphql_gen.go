@@ -1763,6 +1763,8 @@ func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConn
 type UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository struct {
 	Typename       *string `json:"__typename"`
 	NameWithOwner  string  `json:"nameWithOwner"`
+	Description    *string `json:"description"`
+	IsPrivate      bool    `json:"isPrivate"`
 	StargazerCount int     `json:"stargazerCount"`
 }
 
@@ -1774,6 +1776,16 @@ func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConn
 // GetNameWithOwner returns UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository.NameWithOwner, and is useful for accessing the field via an interface.
 func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository) GetNameWithOwner() string {
 	return v.NameWithOwner
+}
+
+// GetDescription returns UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository.Description, and is useful for accessing the field via an interface.
+func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository) GetDescription() *string {
+	return v.Description
+}
+
+// GetIsPrivate returns UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository.IsPrivate, and is useful for accessing the field via an interface.
+func (v *UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository) GetIsPrivate() bool {
+	return v.IsPrivate
 }
 
 // GetStargazerCount returns UserListsUserListsUserListConnectionNodesUserListItemsUserListItemsConnectionNodesRepository.StargazerCount, and is useful for accessing the field via an interface.
@@ -5517,6 +5529,8 @@ query UserLists ($login: String!, $listsFirst: Int!, $itemsFirst: Int!) {
 						__typename
 						... on Repository {
 							nameWithOwner
+							description
+							isPrivate
 							stargazerCount
 						}
 					}

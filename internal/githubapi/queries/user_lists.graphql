@@ -12,6 +12,8 @@ query UserLists($login: String!, $listsFirst: Int!, $itemsFirst: Int!) {
             __typename
             ... on Repository {
               nameWithOwner
+              description
+              isPrivate
               stargazerCount
             }
           }

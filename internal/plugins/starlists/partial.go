@@ -22,6 +22,9 @@ const listOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"
 // perListOcticon is the per-starlist header octicon (EJS line 18).
 const perListOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M2 4a1 1 0 100-2 1 1 0 000 2zm3.75-1.5a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5zm0 5a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5zm0 5a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5zM3 8a1 1 0 11-2 0 1 1 0 012 0zm-1 6a1 1 0 100-2 1 1 0 000 2z"></path></svg>`
 
+// repoOcticon is the per-repository card octicon (EJS line 61).
+const repoOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M4 5.75C4 4.784 4.784 4 5.75 4h4.5c.966 0 1.75.784 1.75 1.75v4.5A1.75 1.75 0 0110.25 12h-4.5A1.75 1.75 0 014 10.25v-4.5zm1.75-.25a.25.25 0 00-.25.25v4.5c0 .138.112.25.25.25h4.5a.25.25 0 00.25-.25v-4.5a.25.25 0 00-.25-.25h-4.5z"></path></svg>`
+
 // starlistBarWidth mirrors upstream `420 * (1 + large)` with large=false.
 const starlistBarWidth = 420
 
@@ -56,14 +59,22 @@ func pluralRepository(n int) string {
 //	              <section>...details column 2 (odd idx)...</section>
 //	            </div>
 //	          </div>
+//	        [if repositories]:
+//	          <div class="repositories">
+//	            [for each repo]:
+//	              <div class="row fill-width largeable-width-half"><section class="repository">
+//	                <div class="field"><svg/><div class="name"><span>${name}</span><span></span></div></div>
+//	                <div class="field description">${description}</div>
+//	              </section></div>
+//	          </div>
 //	      </div>
 //	  </section></div>
 //	</section>
 //
-// Repos rendering (the per-repo card block in upstream lines 56-85) is
-// omitted because the M4 data model only carries repo names (Starlist.Repos)
-// — no stargazers/forks/language details. Restoring that needs a follow-up
-// in starlists.go (per-repo enrichment via repository GraphQL fragment).
+// The repositories block carries only name + description — the upstream
+// `infos` sub-block (language / stargazers / forks) is not rendered
+// because the user.lists GraphQL items are not enriched with those
+// per-repo details (see Starlist.Repositories / issue #675).
 func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil || pc.Data == nil {
 		return "", nil
@@ -114,6 +125,9 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 			// languages plugin) don't collide on the same SVG id.
 			maskID := fmt.Sprintf("starlists-bar-%d", i)
 			writeStarlistLanguages(&b, s.Languages, s.Count, maskID)
+		}
+		if len(s.Repositories) > 0 {
+			writeStarlistRepositories(&b, s.Repositories)
 		}
 		b.WriteString(`</div>`)
 	}
@@ -203,5 +217,30 @@ func writeStarlistLanguages(b *strings.Builder, langs []plugins.LanguageStat, to
 		b.WriteString(`</section>`)
 	}
 	b.WriteString(`</div>`)
+	b.WriteString(`</div>`)
+}
+
+// writeStarlistRepositories emits the per-repo card block matching
+// upstream EJS lines 56-93. Only the octicon + name + description are
+// rendered; the trailing `infos` sub-block (language / stargazers /
+// forks) is skipped because those per-repo details aren't fetched. The
+// caller guarantees repos is non-empty, so the `<div class="repositories">`
+// wrapper is only emitted when there is at least one card.
+func writeStarlistRepositories(b *strings.Builder, repos []Repository) {
+	b.WriteString(`<div class="repositories">`)
+	for _, repo := range repos {
+		b.WriteString(`<div class="row fill-width largeable-width-half"><section class="repository">`)
+		fmt.Fprintf(
+			b,
+			`<div class="field">%s<div class="name"><span>%s</span><span></span></div></div>`,
+			repoOcticon, partials.EscapeXML(repo.Name),
+		)
+		fmt.Fprintf(
+			b,
+			`<div class="field description">%s</div>`,
+			partials.EscapeXML(repo.Description),
+		)
+		b.WriteString(`</section></div>`)
+	}
 	b.WriteString(`</div>`)
 }
