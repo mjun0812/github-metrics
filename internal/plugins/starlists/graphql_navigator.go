@@ -83,6 +83,7 @@ func (n *graphqlNavigator) load(ctx context.Context) error {
 			}
 			count := 0
 			repos := []string{}
+			var repositories []Repository
 			if node.Items != nil {
 				count = node.Items.TotalCount
 				for _, item := range node.Items.Nodes {
@@ -96,15 +97,25 @@ func (n *graphqlNavigator) load(ctx context.Context) error {
 						if repo.NameWithOwner != "" {
 							repos = append(repos, repo.NameWithOwner)
 						}
+						repoDesc := ""
+						if repo.Description != nil {
+							repoDesc = *repo.Description
+						}
+						repositories = append(repositories, Repository{
+							Name:        repo.NameWithOwner,
+							Description: repoDesc,
+							IsPrivate:   repo.IsPrivate,
+						})
 					}
 				}
 			}
 			n.byURL[url] = repos
 			out = append(out, Starlist{
-				Name:        node.Name,
-				Description: desc,
-				Count:       count,
-				URL:         url,
+				Name:         node.Name,
+				Description:  desc,
+				Count:        count,
+				Repositories: repositories,
+				URL:          url,
 			})
 		}
 		n.lists = out

@@ -177,6 +177,67 @@ func TestRun_Languages(t *testing.T) {
 	}
 }
 
+// TestRun_LimitRepositories — the per-list repositories slice is
+// populated from the navigator and capped by
+// plugin_starlists_limit_repositories. The input is fed as a STRING
+// ("1"), the shape Action mode delivers. repositories_skip_private
+// drops private repos before the cap applies.
+func TestRun_LimitRepositories(t *testing.T) {
+	t.Parallel()
+	nav := &fakeNavigator{lists: []starlists.Starlist{{
+		Name:  "AI",
+		Count: 3,
+		URL:   "/stars/octocat/lists/ai",
+		Repositories: []starlists.Repository{
+			{Name: "octocat/pub-a", Description: "first"},
+			{Name: "octocat/priv", Description: "secret", IsPrivate: true},
+			{Name: "octocat/pub-b", Description: "second"},
+		},
+	}}}
+
+	// Cap = 1, private repos kept: expect the first repo only.
+	pc := newPC(t, nav, map[string]any{
+		"plugin_starlists_limit_repositories": "1",
+	})
+	out, err := starlists.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	got := out.(*starlists.Result).List
+	if len(got) != 1 {
+		t.Fatalf("List len = %d, want 1", len(got))
+	}
+	if len(got[0].Repositories) != 1 {
+		t.Fatalf("Repositories len = %d, want 1 (capped by input)", len(got[0].Repositories))
+	}
+	if got[0].Repositories[0].Name != "octocat/pub-a" {
+		t.Errorf("Repositories[0].Name = %q, want octocat/pub-a", got[0].Repositories[0].Name)
+	}
+	if got[0].Repositories[0].Description != "first" {
+		t.Errorf("Repositories[0].Description = %q, want first", got[0].Repositories[0].Description)
+	}
+
+	// repositories_skip_private drops the private repo, so cap=2 yields
+	// the two public repos (private one excluded, not just truncated).
+	pc2 := newPC(t, nav, map[string]any{
+		"plugin_starlists_limit_repositories": "2",
+		"repositories_skip_private":           true,
+	})
+	out2, err := starlists.Plugin.Run(context.Background(), pc2)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	repos := out2.(*starlists.Result).List[0].Repositories
+	if len(repos) != 2 {
+		t.Fatalf("skip_private Repositories len = %d, want 2", len(repos))
+	}
+	for _, r := range repos {
+		if r.IsPrivate {
+			t.Errorf("private repo %q leaked past repositories_skip_private", r.Name)
+		}
+	}
+}
+
 // TestRun_TimeoutWrapped — FetchLists error wraps as *RetryableError.
 func TestRun_TimeoutWrapped(t *testing.T) {
 	t.Parallel()
@@ -271,6 +332,47 @@ func TestPartial_Starlists_EmptyListRendersHeader(t *testing.T) {
 		if strings.Contains(got, `<div class="starlist">`) {
 			t.Errorf("partial unexpectedly rendered a starlist entry for empty List:\n%s", got)
 		}
+	}
+}
+
+// TestPartial_Starlists_Repositories asserts the per-repo card block:
+// the `<div class="repositories">` wrapper plus name + description are
+// rendered when repos exist, and the wrapper is absent when the slice
+// is empty.
+func TestPartial_Starlists_Repositories(t *testing.T) {
+	t.Parallel()
+	r := &starlists.Result{
+		List: []starlists.Starlist{
+			{
+				Name:  "AI",
+				Count: 2,
+				Repositories: []starlists.Repository{
+					{Name: "octocat/repo-a", Description: "handy tool"},
+				},
+			},
+			{Name: "Empty", Count: 0}, // no repositories → no wrapper
+		},
+	}
+	data := plugins.NewData()
+	data.SetPlugin(starlists.Name, r)
+	pc := &templates.PartialContext{Data: data}
+	got, err := starlists.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	for _, marker := range []string{
+		`<div class="repositories">`,
+		`<section class="repository">`,
+		`<div class="name"><span>octocat/repo-a</span><span></span></div>`,
+		`<div class="field description">handy tool</div>`,
+	} {
+		if !strings.Contains(got, marker) {
+			t.Errorf("partial missing marker %q in:\n%s", marker, got)
+		}
+	}
+	// Exactly one wrapper — the empty starlist must not emit its own.
+	if n := strings.Count(got, `<div class="repositories">`); n != 1 {
+		t.Errorf("repositories wrapper count = %d, want 1 (empty list omits it)", n)
 	}
 }
 
