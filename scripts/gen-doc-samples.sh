@@ -274,10 +274,13 @@ echo "== 16 per-plugin single-panel renders (languages handled separately) =="
 # merges into (see docs/plugins/traffic.md).
 for slug in "${PLUGINS[@]}"; do
 	if [[ "${slug}" == "traffic" ]]; then
+		# --skip-private-repo: the #678 per-repo breakdown would otherwise
+		# publish private repository names in the committed sample.
 		render_one "plugin-${slug}" \
 			--template classic \
 			--plugin "chrome_repositories=yes" \
-			--plugin "plugin_${slug}=yes"
+			--plugin "plugin_${slug}=yes" \
+			--skip-private-repo
 	else
 		render_one "plugin-${slug}" \
 			--template classic \
