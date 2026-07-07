@@ -14,7 +14,7 @@
   {"name": "plugin-starlists",                       "mode": "user", "extra": "--template classic --plugin plugin_starlists=yes"},
   {"name": "plugin-stars",                           "mode": "user", "extra": "--template classic --plugin plugin_stars=yes"},
   {"name": "plugin-topics",                          "mode": "user", "extra": "--template classic --plugin plugin_topics=yes"},
-  {"name": "plugin-traffic",                         "mode": "user", "extra": "--template classic --plugin chrome_repositories=yes --plugin plugin_traffic=yes"},
+  {"name": "plugin-traffic",                         "mode": "user", "extra": "--template classic --plugin chrome_repositories=yes --plugin plugin_traffic=yes --skip-private-repo"},
   {"name": "plugin-languages",                       "mode": "user", "extra": "--template classic --plugin plugin_languages=yes --plugin plugin_languages_details=bytes-size,percentage"},
   {"name": "plugin-languages-recent",                "mode": "user", "extra": "--template classic --plugin plugin_languages=yes --plugin plugin_languages_sections=recently-used --plugin plugin_languages_recent_load=300 --plugin plugin_languages_recent_days=30 --plugin plugin_languages_details=bytes-size,percentage"},
   {"name": "plugin-languages-indepth",               "mode": "user", "extra": "--template classic --plugin plugin_languages=yes --plugin plugin_languages_indepth=yes --plugin plugin_languages_analysis_timeout=30 --plugin plugin_languages_details=bytes-size,percentage"},
