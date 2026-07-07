@@ -136,6 +136,8 @@ func (r *Resvg) Resize(ctx context.Context, in string, opts ResizeOpts) (ResizeR
 // SVGs the pipeline produces are self-contained (images are inlined),
 // so resvg's stdin resources-dir warning does not apply.
 func (r *Resvg) rasterizePNG(ctx context.Context, in string) ([]byte, error) {
+	// #nosec G204 -- ExecPath comes from caller config / METRICS_RESVG_PATH,
+	// both trusted in this CLI's threat model (METRICS_CHROME_PATH parity).
 	cmd := exec.CommandContext(ctx, r.opts.ExecPath, "-", "-c")
 	cmd.Stdin = bytes.NewReader([]byte(in))
 	var stdout, stderr bytes.Buffer
