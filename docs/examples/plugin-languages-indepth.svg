@@ -23,7 +23,7 @@
               Most used languages
             </h3>
             <small>
-              estimation from 171.0 MB of code in 36 analyzed repositories
+              estimation from 171.1 MB of code in 36 analyzed repositories
             </small>
             <svg xmlns="http://www.w3.org/2000/svg" class="bar" width="460" height="8" role="img" aria-label="Languages distribution">
               <title>
@@ -34,15 +34,15 @@
               </mask>
               <rect mask="url(#languages-bar-most)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
               <g class="languages-progress">
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="62.79" height="8" fill="#f34b7d" data-language="C++"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="62.79" y="0" width="58.63" height="8" fill="#00ADD8" data-language="Go"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="121.42" y="0" width="57.91" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="179.33" y="0" width="57.60" height="8" fill="#a91e50" data-language="EJS"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="236.93" y="0" width="51.74" height="8" fill="#3D6117" data-language="TeX"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="288.68" y="0" width="49.60" height="8" fill="#89e051" data-language="Shell"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="338.28" y="0" width="45.30" height="8" fill="#3572A5" data-language="Python"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="383.57" y="0" width="37.28" height="8" fill="#f1e05a" data-language="JavaScript"/>
-                <rect class="language-bar" mask="url(#languages-bar-most)" x="420.85" y="0" width="39.15" height="8" fill="#cccccc" data-language="Other"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="62.76" height="8" fill="#f34b7d" data-language="C++"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="62.76" y="0" width="58.79" height="8" fill="#00ADD8" data-language="Go"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="121.55" y="0" width="57.89" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="179.44" y="0" width="57.58" height="8" fill="#a91e50" data-language="EJS"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="237.02" y="0" width="51.72" height="8" fill="#3D6117" data-language="TeX"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="288.74" y="0" width="49.58" height="8" fill="#89e051" data-language="Shell"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="338.32" y="0" width="45.28" height="8" fill="#3572A5" data-language="Python"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="383.60" y="0" width="37.27" height="8" fill="#f1e05a" data-language="JavaScript"/>
+                <rect class="language-bar" mask="url(#languages-bar-most)" x="420.87" y="0" width="39.13" height="8" fill="#cccccc" data-language="Other"/>
               </g>
             </svg>
             <div class="row fill-width">
@@ -141,7 +141,7 @@
                       115 B
                     </div>
                     <div>
-                      12.7%
+                      12.8%
                     </div>
                   </small>
                 </div>
@@ -207,7 +207,7 @@
               <text class="indepth-language" data-language="Python" data-bytes="19913337">
                 Python
               </text>
-              <text class="indepth-language" data-language="JSON" data-bytes="17213357">
+              <text class="indepth-language" data-language="JSON" data-bytes="17213453">
                 JSON
               </text>
               <text class="indepth-language" data-language="Jest Snapshot" data-bytes="14329594">
@@ -219,7 +219,7 @@
               <text class="indepth-language" data-language="JavaScript" data-bytes="10494023">
                 JavaScript
               </text>
-              <text class="indepth-language" data-language="Markdown" data-bytes="5887094">
+              <text class="indepth-language" data-language="Markdown" data-bytes="5908134">
                 Markdown
               </text>
               <text class="indepth-language" data-language="Java" data-bytes="5386420">
@@ -228,7 +228,7 @@
               <text class="indepth-language" data-language="TypeScript" data-bytes="4981583">
                 TypeScript
               </text>
-              <text class="indepth-language" data-language="SVG" data-bytes="4307730">
+              <text class="indepth-language" data-language="SVG" data-bytes="4356063">
                 SVG
               </text>
               <text class="indepth-language" data-language="CSV" data-bytes="2716407">
