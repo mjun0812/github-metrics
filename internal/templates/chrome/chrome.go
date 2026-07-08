@@ -158,41 +158,9 @@ func CalendarLevelColor(level int) string {
 	return calendarLevelColors[level]
 }
 
-// ContributionRow renders the mini contribution calendar as a single
-// horizontal row of day cells. Returns "" when no days are present so
-// the partial can hide the block. Mirrors upstream `base.header.ejs`,
-// which lays the most recent 14 days out left-to-right.
-func ContributionRow(days []plugins.ContributionDay) string {
-	if len(days) == 0 {
-		return ""
-	}
-	width := len(days) * calendarCellPitch
-	var b strings.Builder
-	b.WriteString(`<div class="field calendar" data-block="calendar-grid">`)
-	fmt.Fprintf(
-		&b,
-		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" width="%d" height="16">`,
-		width, calendarCellSize, width,
-	)
-	b.WriteString(`<g>`)
-	for i, d := range days {
-		color := emptyCellColor
-		if d.Color != "" {
-			color = d.Color
-		}
-		fmt.Fprintf(
-			&b,
-			`<rect class="day" fill=%q x="%d" y="0" width="%d" height="%d" rx="2" ry="2"/>`,
-			color, i*calendarCellPitch, calendarCellSize, calendarCellSize,
-		)
-	}
-	b.WriteString(`</g></svg></div>`)
-	return b.String()
-}
-
 // escapeXML is a tiny local copy of classic/partials.EscapeXML so this
 // package can stay above classic/partials in the import graph (and
-// classic/partials can in turn depend on chrome for ContributionRow).
+// classic/partials can in turn depend on chrome for its primitives).
 // The set of escaped characters matches what classic/partials emits.
 func escapeXML(s string) string {
 	r := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", "\"", "&quot;", "'", "&#39;")
