@@ -187,13 +187,11 @@ func TestClassic_Run_BaseInputMetadataRendersFooter(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 	for _, marker := range []string{
-		// #419: the footer is now wrapped in a proper
-		// `<section data-section="metadata">` so the metadata block
-		// joins the other four base sections (header / activity-
-		// community / repositories / metadata) as an addressable
-		// data-section node.
-		`<section data-section="metadata">`,
-		`<footer>`,
+		// #419 / #409 Phase C: the footer is a native-SVG
+		// `<g data-section="metadata">` block (no HTML `<footer>`) so the
+		// metadata section joins the other base sections as an
+		// addressable data-section node.
+		`<g data-section="metadata">`,
 		`These metrics include private contributions`,
 		`Last updated `,
 		`timezone Asia/Tokyo`,
@@ -211,7 +209,7 @@ func TestClassic_Run_BaseInputMetadataRendersFooter(t *testing.T) {
 // TestClassic_Run_HeaderDedupBaseAndPlugin asserts that when the user
 // enables BOTH `chrome_header=yes` (static dispatcher path) and
 // `plugin_header=yes` (M4 plugin partial path), the rendered SVG
-// contains exactly one <section data-section="header"> block — the
+// contains exactly one <g data-section="header"> block — the
 // static base.header partial owns the slot and the plugin dispatcher
 // skips the duplicate.
 func TestClassic_Run_HeaderDedupBaseAndPlugin(t *testing.T) {
@@ -219,7 +217,7 @@ func TestClassic_Run_HeaderDedupBaseAndPlugin(t *testing.T) {
 	d := plugins.NewData()
 	// Publish a populated *header.Result under the "header" key so
 	// BOTH the static base.header and the M4 plugin.header paths would
-	// emit a <section data-section="header"> block if they ran. The
+	// emit a <g data-section="header"> block if they ran. The
 	// dedup logic must keep the count at one.
 	d.SetPlugin(header.Name, &header.Result{
 		Profile: &plugins.Profile{
@@ -238,7 +236,7 @@ func TestClassic_Run_HeaderDedupBaseAndPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	count := strings.Count(out, `<section data-section="header">`)
+	count := strings.Count(out, `<g data-section="header">`)
 	if count != 1 {
 		t.Fatalf("expected exactly one header section, got %d\noutput:\n%s", count, out)
 	}
@@ -266,8 +264,10 @@ func TestClassic_Run_PluginPartialWrapper(t *testing.T) {
 	// only. The registry is not goroutine-safe, so this subtest does
 	// NOT call t.Parallel().
 	prev, hadPrev := partials.Lookup("plugin." + slug)
+	// #409 Phase C: partials self-report a positive height; the template
+	// skips height-0 fragments, so the stub must report one to be stacked.
 	partials.Register("plugin."+slug, func(_ context.Context, _ *templates.PartialContext) (string, int, error) {
-		return stubFragment, 0, nil
+		return stubFragment, 20, nil
 	})
 	t.Cleanup(func() {
 		if hadPrev {
@@ -320,7 +320,11 @@ func TestClassic_Run_PluginPartialWrapper(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Run: %v", err)
 			}
-			wrapperOpen := `<div class="plugin-` + slug + `" data-plugin="` + slug + `">`
+			// #409 Phase C: the plugin dispatcher now stacks each partial
+			// in a translated `<g>` carrying the class / data-plugin hooks
+			// (the transform attr precedes them), so match on the hook
+			// attributes rather than a fixed `<div ...>` open tag.
+			wrapperOpen := `class="plugin-` + slug + `" data-plugin="` + slug + `">`
 			contains := strings.Contains(out, wrapperOpen) && strings.Contains(out, stubFragment)
 			if contains != tc.wantInOut {
 				t.Fatalf("wrapper presence = %v want %v\noutput:\n%s", contains, tc.wantInOut, out)

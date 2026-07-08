@@ -43,7 +43,7 @@ func pluralRepository(n int) string {
 const starlistIndent = 28.0
 
 // Partial renders the classic SVG fragment for the starlists plugin as
-// native SVG (#409 Phase B2): a `<section data-section="starlists">`
+// native SVG (#409 Phase B2): a `<g data-section="starlists">`
 // anchor wrapping a nested <svg> with the count header and one
 // `<g class="starlist">` block per list — per-list header, repo count,
 // description, an optional language bar + 2-column details, and an

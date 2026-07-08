@@ -100,7 +100,7 @@ func TestPartial_WrongResultType(t *testing.T) {
 }
 
 // TestPartial_UserPopulatedEscapesName verifies the user-mode header
-// emits <section data-section="header">, escapes the display name, and
+// emits <g data-section="header">, escapes the display name, and
 // inlines the avatar URL.
 func TestPartial_UserPopulatedEscapesName(t *testing.T) {
 	t.Parallel()

@@ -68,7 +68,7 @@ func itoa(v float64) string { return strconv.Itoa(int(math.Round(v))) }
 // native SVG (#409 Phase B4). Mirrors upstream
 // org_repo/source/templates/classic/partials/reactions.ejs.
 //
-// Output (native SVG): a `<section data-section="reactions">` anchor
+// Output (native SVG): a `<g data-section="reactions">` anchor
 // wrapping a nested `<svg>`. The comment-discussion section header sits
 // above a horizontal row of 8 reaction gauges (`justify-content:
 // space-around`), each a `<g data-reaction="...">` holding the 50px info

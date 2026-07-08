@@ -28,7 +28,7 @@ const heartOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16
 // source software") and the "0 users" goal text render even at zero
 // sponsorships, matching the upstream reference card (#449).
 //
-// Output (native SVG): a `<section data-section="sponsorships">` anchor
+// Output (native SVG): a `<g data-section="sponsorships">` anchor
 // wrapping a nested <svg> with a heart header and, per configured
 // section, an "amount" box (heart image + bold total-spend sentence) or
 // a "sponsorships" box (goal-text count line + sponsor avatar grid). The

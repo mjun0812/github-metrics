@@ -86,6 +86,7 @@ type SVGTextOpts struct {
 	Fill     string             // fill color; "" → svgBodyFill
 	MaxWidth float64            // >0 truncates with a trailing ellipsis to fit
 	Anchor   string             // "" (start) | "middle" | "end" → text-anchor
+	Italic   bool               // true → font-style="italic" (metadata footer)
 }
 
 func (o SVGTextOpts) size() float64 {
@@ -119,6 +120,9 @@ func SVGText(x, baseline float64, s string, o SVGTextOpts) string {
 		pos(x), pos(baseline), pos(size), o.fill())
 	if o.Weight == fontmetrics.Bold {
 		b.WriteString(` font-weight="bold"`)
+	}
+	if o.Italic {
+		b.WriteString(` font-style="italic"`)
 	}
 	if o.Anchor != "" {
 		fmt.Fprintf(&b, ` text-anchor="%s"`, o.Anchor)
@@ -217,6 +221,16 @@ func NewSVGColumn(x, width, top float64) *SVGColumn {
 	return &SVGColumn{X: x, Width: width, Top: top, y: top}
 }
 
+// Header appends an `<h2>` section header (grey icon + 16px blue label)
+// at the column's left edge and advances the cursor by
+// SectionHeaderPitch. Used by the base activity/community/repositories
+// two-column panels, whose columns each carry their own heading.
+func (c *SVGColumn) Header(iconPlaceholder, label string) {
+	m, h := svgSectionHeaderAt(c.X, c.y, c.Width, iconPlaceholder, label)
+	c.b.WriteString(m)
+	c.y += h
+}
+
 // Field appends an icon + label row and advances the cursor by
 // FieldPitch.
 func (c *SVGColumn) Field(iconPlaceholder, label string) {
@@ -242,14 +256,18 @@ func (c *SVGColumn) Height() float64 { return c.y - c.Top }
 // Empty reports whether no rows have been appended.
 func (c *SVGColumn) Empty() bool { return c.y == c.Top }
 
-// WrapSection wraps native-SVG body markup in the `<section
-// data-section>` HTML anchor (kept for the section gate / DOM diffing)
-// plus a fixed-height nested `<svg>` block. The nested svg lays out as
-// one block within the outer foreignObject flow, so a converted partial
-// coexists with the still-HTML partials around it until Phase C.
+// WrapSection wraps native-SVG body markup in a `<g data-section>`
+// anchor (kept for the section gate / DOM diffing) plus a fixed-height
+// nested `<svg>` block. Since #409 Phase C dropped the outer
+// foreignObject, this wrapper is pure SVG (`<g>`, not the former
+// `<section>` HTML element) so the classic / repository templates can
+// stack sections with `<g transform="translate(0,y)">` and the resvg
+// rasterizer renders them directly. The nested `<svg viewBox>` clips the
+// body to its self-reported height so a section cannot bleed into the
+// next.
 func WrapSection(section string, height int, body string) string {
 	return fmt.Sprintf(
-		`<section data-section=%q><svg xmlns="http://www.w3.org/2000/svg" width="100%%" height="%d" viewBox="0 0 %d %d">%s</svg></section>`,
+		`<g data-section=%q><svg xmlns="http://www.w3.org/2000/svg" width="100%%" height="%d" viewBox="0 0 %d %d">%s</svg></g>`,
 		section, height, CardWidth, height, body)
 }
 
@@ -267,23 +285,32 @@ func SVGIcon(x, y float64, fill, icon string) string {
 	return fmt.Sprintf(`<g transform="translate(%s,%s)" fill=%q>%s</g>`, pos(x), pos(y), fill, icon)
 }
 
-// SVGSectionHeader renders an `<h2 class="field">` section header — a
-// grey octicon followed by the 16px blue label — as native SVG. icon is
-// an inline octicon `<svg>` fragment (positioned at the field inset);
-// label is the header text, ellipsis-truncated to the card width.
-// Returns the markup and the height consumed (SectionHeaderPitch).
+// SVGSectionHeader renders a full-width `<h2 class="field">` section
+// header — a grey octicon followed by the 16px blue label — as native
+// SVG anchored at the card's field inset. icon is an inline octicon
+// `<svg>` fragment; label is the header text, ellipsis-truncated to the
+// card width. Returns the markup and the height consumed
+// (SectionHeaderPitch).
 func SVGSectionHeader(icon, label string) (string, float64) {
-	iconX := float64(svgSectionInset + svgIconMargin)
-	iconY := svgHeaderTop + (svgHeaderBand-svgIconSize)/2
+	return svgSectionHeaderAt(0, 0, CardWidth, icon, label)
+}
+
+// svgSectionHeaderAt renders an `<h2>` section header inside a column
+// whose left edge is x and total width is width, with the header top at
+// y=top. Callers that need a full-width header pass (0, 0, CardWidth);
+// column-scoped headers (base activity/community) pass the column box.
+func svgSectionHeaderAt(x, top, width float64, icon, label string) (string, float64) {
+	iconX := x + svgSectionInset + svgIconMargin
+	iconY := top + svgHeaderTop + (svgHeaderBand-svgIconSize)/2
 	textX := iconX + svgIconSize + svgIconMargin
-	baseline := svgHeaderTop + svgHeaderBand/2 + svgHeaderFont*baselineRatio
+	baseline := top + svgHeaderTop + svgHeaderBand/2 + svgHeaderFont*baselineRatio
 
 	var b strings.Builder
 	b.WriteString(SVGIcon(iconX, iconY, svgIconFill, icon))
 	b.WriteString(SVGText(textX, baseline, label, SVGTextOpts{
 		Size:     svgHeaderFont,
 		Fill:     svgHeaderFill,
-		MaxWidth: CardWidth - textX - svgSectionInset,
+		MaxWidth: x + width - textX - svgSectionInset,
 	}))
 	return b.String(), SectionHeaderPitch
 }

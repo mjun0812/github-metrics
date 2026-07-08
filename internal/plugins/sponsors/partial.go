@@ -30,7 +30,7 @@ func sponsorsAreFundingVerb(n int) string {
 // Partial renders the classic SVG fragment for the sponsors plugin
 // matching upstream org_repo/source/templates/classic/partials/sponsors.ejs.
 //
-// Output (native SVG): a `<section data-section="sponsors">` anchor
+// Output (native SVG): a `<g data-section="sponsors">` anchor
 // wrapping a nested <svg> with a section header and, per configured
 // section, a `<g class="sponsors goal">` box (goal description, progress
 // bar, funding-goal text, sponsor avatar grid + past block) or a

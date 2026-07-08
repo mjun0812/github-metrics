@@ -99,7 +99,7 @@ func itoa(v float64) string { return strconv.Itoa(int(math.Round(v))) }
 // native SVG (#409 Phase B7). Mirrors upstream
 // org_repo/source/templates/classic/partials/activity.ejs.
 //
-// Output: a `<section data-section="activity">` anchor wrapping a nested
+// Output: a `<g data-section="activity">` anchor wrapping a nested
 // `<svg>` with the pulse section header and one `<g class="activity">`
 // per event. Each event carries a field line (event-type octicon +
 // "${verb} in ${repo}" with the repo in link-blue), an optional PR

@@ -9,6 +9,7 @@ package chrome
 import (
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -17,6 +18,50 @@ import (
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/templates"
 )
+
+// StackedSection is one vertically-stacked template section: its
+// native-SVG markup and the pixel height it consumes, plus optional
+// extra attributes for the wrapping translate `<g>` (e.g. the plugin
+// dispatcher's `class="plugin-<slug>" data-plugin="<slug>"` hooks).
+type StackedSection struct {
+	Markup string
+	Height int
+	Attrs  string
+}
+
+// StackSections lays the sections out top-to-bottom, wrapping each in a
+// `<g transform="translate(0,y)">`, and returns the combined body markup
+// plus the total stacked height. Used by both templates now that #409
+// Phase C dropped the outer foreignObject and each partial self-reports
+// its height.
+//
+// A section with empty markup is skipped. A section that emitted markup
+// but did NOT self-report a positive height (Height <= 0) cannot be
+// placed deterministically without the old HTML flow, so it is skipped
+// with a warning rather than overlapping the next section or injecting
+// non-SVG markup. Every in-tree partial self-reports its height; this
+// fallback only guards a future external-registry partial that forgets
+// to (or a legacy HTML partial such as the repository `introduction`,
+// which stays gated off by default).
+func StackSections(sections []StackedSection, logger *slog.Logger) (string, int) {
+	var body strings.Builder
+	y := 0
+	for _, s := range sections {
+		if s.Markup == "" {
+			continue
+		}
+		if s.Height <= 0 {
+			if logger != nil {
+				logger.Warn("template: skipping partial that reported no height",
+					"attrs", strings.TrimSpace(s.Attrs))
+			}
+			continue
+		}
+		fmt.Fprintf(&body, `<g transform="translate(0,%d)"%s>%s</g>`, y, s.Attrs, s.Markup)
+		y += s.Height
+	}
+	return body.String(), y
+}
 
 // chromeSectionKeys is the canonical ordered set of `chrome_*` boolean
 // inputs that drive the section gate (#640). The order matches both
@@ -98,39 +143,63 @@ type FooterOpts struct {
 	IncludePrivateNotice bool
 }
 
-// MetadataFooter renders the metadata block when the `metadata`
-// section is in the resolved set (i.e. `chrome_metadata=yes`), or
-// when the legacy expanded `base.metadata` input is truthy. The block is
-// wrapped in `<section data-section="metadata">` so DOM diffing can
-// locate it, and the inner `<footer>` is preserved so the M3
-// render.Hash footer-stripping rule still drops the timestamp before
-// hashing.
-func MetadataFooter(pc *templates.PartialContext, sections map[string]struct{}, opts FooterOpts) string {
+// Native-SVG metadata footer geometry. Mirrors the deleted `footer` CSS
+// (`font-size:10px; font-style:italic; color:#666666; text-align:right;
+// margin-top:8px; width:440px; margin-left:auto; padding-right:6px`), so
+// the footer renders as small right-aligned grey italic text (#409 Phase
+// C: the outer foreignObject and its HTML `<footer>` are gone).
+const (
+	footerFont    = 10.0
+	footerFill    = "#666666"
+	footerTop     = 8.0           // footer margin-top
+	footerLinePad = 3.0           // extra leading per line
+	footerRightX  = CardWidth - 6 // right anchor (padding-right:6px)
+	footerLineH   = footerFont + footerLinePad
+)
+
+// MetadataFooter renders the metadata footer as native SVG when the
+// `metadata` section is in the resolved set (i.e. `chrome_metadata=yes`),
+// or when the legacy expanded `base.metadata` input is truthy. The block
+// is wrapped by WrapSection in `<g data-section="metadata">` so DOM
+// diffing can locate it AND so render.Hash can drop the whole (timestamp-
+// bearing) section before hashing, keeping data-changed detection stable
+// across renders. Returns the markup and the pixel height it consumes
+// ("" / 0 when the footer is disabled).
+func MetadataFooter(pc *templates.PartialContext, sections map[string]struct{}, opts FooterOpts) (string, int) {
 	_, enabledByBase := sections["metadata"]
 	if !enabledByBase && (pc == nil || pc.Inputs == nil || !TruthyInput(pc.Inputs, "base.metadata")) {
-		return ""
+		return "", 0
 	}
 	tz := ""
 	if pc != nil && pc.Data != nil {
 		tz = pc.Data.Config.Timezone.Name
 	}
-	var b strings.Builder
-	b.WriteString(`<section data-section="metadata">`)
-	b.WriteString(`<footer>`)
+
+	var rows []string
 	if opts.IncludePrivateNotice && pc != nil && pc.Data != nil && pc.Data.Account == plugins.AccountUser {
-		b.WriteString(`<span>These metrics include private contributions</span>`)
+		rows = append(rows, "These metrics include private contributions")
 	}
 	stamp := time.Now().UTC().Format(time.RFC3339)
 	if tz != "" && tz != "UTC" {
-		fmt.Fprintf(&b, `<span>Last updated %s (timezone %s) with mjun0812/github-metrics@%s</span>`,
-			stamp, escapeXML(tz), escapeXML(engine.Version()))
+		rows = append(rows, fmt.Sprintf("Last updated %s (timezone %s) with mjun0812/github-metrics@%s",
+			stamp, tz, engine.Version()))
 	} else {
-		fmt.Fprintf(&b, `<span>Last updated %s with mjun0812/github-metrics@%s</span>`,
-			stamp, escapeXML(engine.Version()))
+		rows = append(rows, fmt.Sprintf("Last updated %s with mjun0812/github-metrics@%s",
+			stamp, engine.Version()))
 	}
-	b.WriteString(`</footer>`)
-	b.WriteString(`</section>`)
-	return b.String()
+
+	var b strings.Builder
+	for i, ln := range rows {
+		baseline := footerTop + float64(i)*footerLineH + footerFont
+		b.WriteString(SVGText(footerRightX, baseline, ln, SVGTextOpts{
+			Size:   footerFont,
+			Fill:   footerFill,
+			Italic: true,
+			Anchor: "end",
+		}))
+	}
+	height := int(footerTop + float64(len(rows))*footerLineH)
+	return WrapSection("metadata", height, b.String()), height
 }
 
 // Contribution-calendar geometry shared between classic and
