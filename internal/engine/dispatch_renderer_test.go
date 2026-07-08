@@ -100,13 +100,20 @@ func TestDispatch_FakeRenderer_JPEG(t *testing.T) {
 	}
 }
 
-// TestDispatch_FakeRenderer_SVG_Passthrough confirms that the SVG
-// branch routes the post-decoration SVG through the renderer (which
-// the FakeRenderer passes through verbatim).
-func TestDispatch_FakeRenderer_SVG_Passthrough(t *testing.T) {
+// TestDispatch_SVG_SkipsRenderer confirms the #409 Phase C contract: the
+// SVG branch returns the post-decoration SVG verbatim WITHOUT invoking
+// the Renderer (the template already wrote a Go-computed height, so no
+// browser measurement pass is needed). A FakeRenderer wired to error on
+// "svg" would surface that error if it were called; the run staying clean
+// proves the renderer is bypassed.
+func TestDispatch_SVG_SkipsRenderer(t *testing.T) {
 	t.Parallel()
 
-	deps := Deps{Logger: slog.Default(), Render: &render.FakeRenderer{}}
+	deps := Deps{
+		Logger: slog.Default(),
+		Render: &render.FakeRenderer{ErrOnConvert: map[string]error{"svg": errors.New("renderer must not be called for svg")}},
+	}
+	res := &Result{}
 	out, mime, err := dispatchOutput(
 		context.Background(),
 		Request{Format: "svg", Template: "stub"},
@@ -114,7 +121,7 @@ func TestDispatch_FakeRenderer_SVG_Passthrough(t *testing.T) {
 		stubTemplate{},
 		plugins.NewData(),
 		&templates.PartialContext{Logger: deps.Logger},
-		&Result{},
+		res,
 	)
 	if err != nil {
 		t.Fatalf("dispatchOutput(svg): %v", err)
@@ -124,6 +131,9 @@ func TestDispatch_FakeRenderer_SVG_Passthrough(t *testing.T) {
 	}
 	if !bytes.Contains(out, []byte(`<svg id="metrics-end">`)) {
 		t.Errorf("Output should contain the stub template's SVG verbatim; got %q", string(out))
+	}
+	if len(res.Errors) != 0 {
+		t.Errorf("svg path must not touch the Renderer, but got %d error(s): %v", len(res.Errors), res.Errors)
 	}
 }
 
@@ -167,17 +177,15 @@ func TestDispatch_RendererError_PNG_NilOutput(t *testing.T) {
 	}
 }
 
-// TestDispatch_RendererError_SVG_PassthroughDecoratedSVG verifies the
-// SVG branch's softer fallback: a Renderer error still returns the
-// (decoration-pass) SVG bytes so the README badge does not break.
-func TestDispatch_RendererError_SVG_PassthroughDecoratedSVG(t *testing.T) {
-	t.Parallel()
+// TestDispatch_SVG_RendererInitIgnored pins the #409 Phase C corollary
+// of the #666 contract: because the svg path no longer constructs a
+// Renderer, a broken METRICS_CHROME_PATH can no longer degrade an SVG
+// render. The run must succeed with the decorated SVG and record no
+// error (there is nothing to fail).
+func TestDispatch_SVG_RendererInitIgnored(t *testing.T) {
+	t.Setenv("METRICS_CHROME_PATH", "/nonexistent/chromium-binary")
 
-	sentinel := errors.New("simulated chromedp failure")
-	deps := Deps{
-		Logger: slog.Default(),
-		Render: &render.FakeRenderer{ErrOnConvert: map[string]error{"svg": sentinel}},
-	}
+	deps := Deps{Logger: slog.Default()} // Render nil → would lazy-init for png/jpeg
 
 	res := &Result{}
 	out, mime, err := dispatchOutput(
@@ -190,88 +198,13 @@ func TestDispatch_RendererError_SVG_PassthroughDecoratedSVG(t *testing.T) {
 		res,
 	)
 	if err != nil {
-		t.Fatalf("dispatchOutput should not return a top-level error: %v", err)
-	}
-	if mime != "image/svg+xml" {
-		t.Errorf("MIME = %q, want image/svg+xml (SVG fallback path)", mime)
-	}
-	if !bytes.Contains(out, []byte(`<svg id="metrics-end">`)) {
-		t.Errorf("Output should contain the un-resized SVG; got %q", string(out))
-	}
-	if len(res.Errors) != 1 {
-		t.Errorf("expected 1 error in res.Errors, got %d", len(res.Errors))
-	}
-}
-
-// TestDispatch_RendererError_SVG_LogsWarn pins the #666 fix: a Resize
-// failure on the svg path must emit a Warn log in addition to
-// res.Errors — without it the run exits 0 with an untrimmed SVG and
-// zero log evidence (this hid the bookworm chromium 150 breakage).
-func TestDispatch_RendererError_SVG_LogsWarn(t *testing.T) {
-	t.Parallel()
-
-	var logBuf bytes.Buffer
-	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
-	sentinel := errors.New("simulated chromedp failure")
-	deps := Deps{
-		Logger: logger,
-		Render: &render.FakeRenderer{ErrOnConvert: map[string]error{"svg": sentinel}},
-	}
-
-	res := &Result{}
-	if _, _, err := dispatchOutput(
-		context.Background(),
-		Request{Format: "svg", Template: "stub"},
-		deps,
-		stubTemplate{},
-		plugins.NewData(),
-		&templates.PartialContext{Logger: logger},
-		res,
-	); err != nil {
-		t.Fatalf("dispatchOutput: %v", err)
-	}
-	logs := logBuf.String()
-	if !strings.Contains(logs, "resize failed") {
-		t.Errorf("expected 'resize failed' Warn in logs; got:\n%s", logs)
-	}
-	if !strings.Contains(logs, "simulated chromedp failure") {
-		t.Errorf("expected underlying error in logs; got:\n%s", logs)
-	}
-}
-
-// TestDispatch_RendererInitError_SVG_LogsWarn pins the same #666
-// visibility contract for the lazy-renderer init branch: deps.Render
-// nil + a bogus METRICS_CHROME_PATH makes obtainRenderer fail, which
-// must Warn instead of degrading silently.
-func TestDispatch_RendererInitError_SVG_LogsWarn(t *testing.T) {
-	t.Setenv("METRICS_CHROME_PATH", "/nonexistent/chromium-binary")
-
-	var logBuf bytes.Buffer
-	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
-	deps := Deps{Logger: logger} // Render nil → lazy init path
-
-	res := &Result{}
-	out, mime, err := dispatchOutput(
-		context.Background(),
-		Request{Format: "svg", Template: "stub"},
-		deps,
-		stubTemplate{},
-		plugins.NewData(),
-		&templates.PartialContext{Logger: logger},
-		res,
-	)
-	if err != nil {
 		t.Fatalf("dispatchOutput: %v", err)
 	}
 	if mime != "image/svg+xml" || !bytes.Contains(out, []byte(`<svg id="metrics-end">`)) {
-		t.Fatalf("svg fallback expected; mime=%q out=%q", mime, string(out))
+		t.Fatalf("svg output expected; mime=%q out=%q", mime, string(out))
 	}
-	logs := logBuf.String()
-	if !strings.Contains(logs, "renderer init failed") {
-		t.Errorf("expected 'renderer init failed' Warn in logs; got:\n%s", logs)
-	}
-	if len(res.Errors) != 1 {
-		t.Errorf("expected 1 error in res.Errors, got %d", len(res.Errors))
+	if len(res.Errors) != 0 {
+		t.Errorf("svg path must not init a Renderer, but got %d error(s): %v", len(res.Errors), res.Errors)
 	}
 }
 
