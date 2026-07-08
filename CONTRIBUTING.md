@@ -82,10 +82,11 @@ parallel jobs.
 
 ### resvg tests
 
-The PNG / JPEG rasterization tests shell out to the `resvg` binary.
-They skip automatically when the binary is absent, so contributors
-without resvg installed stay green; `make test-resvg` runs them for
-real once resvg is available.
+The PNG / JPEG rasterization tests and the `tests/visual` golden-SVG
+regression suite shell out to the `resvg` binary. They skip
+automatically when the binary is absent, so contributors without resvg
+installed stay green; `make test-resvg` runs them for real once resvg
+is available.
 
 ```sh
 # Install resvg (any platform with a Rust toolchain):
