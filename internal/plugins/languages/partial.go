@@ -3,12 +3,16 @@ package languages
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
+	"github.com/mjun0812/github-metrics/internal/render/fontmetrics"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -22,6 +26,37 @@ func init() {
 // as the leading glyph in the count header per upstream classic EJS line 4.
 const codeOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M1.5 2.75a.25.25 0 01.25-.25h12.5a.25.25 0 01.25.25v8.5a.25.25 0 01-.25.25h-6.5a.75.75 0 00-.53.22L4.5 14.44v-2.19a.75.75 0 00-.75-.75h-2a.25.25 0 01-.25-.25v-8.5zM1.75 1A1.75 1.75 0 000 2.75v8.5C0 12.216.784 13 1.75 13H3v1.543a1.457 1.457 0 002.487 1.03L8.061 13h6.189A1.75 1.75 0 0016 11.25v-8.5A1.75 1.75 0 0014.25 1H1.75zm5.03 3.47a.75.75 0 010 1.06L5.31 7l1.47 1.47a.75.75 0 01-1.06 1.06l-2-2a.75.75 0 010-1.06l2-2a.75.75 0 011.06 0zm2.44 0a.75.75 0 000 1.06L10.69 7 9.22 8.47a.75.75 0 001.06 1.06l2-2a.75.75 0 000-1.06l-2-2a.75.75 0 00-1.06 0z"></path></svg>`
 
+// Native-SVG languages geometry (#409 Phase B7). The centered progress
+// bar mirrors upstream's 460px `svg.bar` (the column is `align-items:
+// center`, so it sits 10px in from each 480px card edge); list / detail
+// rows mirror the `.field` box metrics.
+const (
+	langBarX      = (chrome.CardWidth - partialBarWidth) / 2 // 10
+	langBarHeight = 8.0
+	langBarTopGap = 6.0
+	langBarBotGap = 8.0
+
+	langSmallFont  = 11.0 // <small> summary / empty-state line
+	langSmallFill  = "#666666"
+	langSmallPitch = langSmallFont*1.35 + 4
+
+	langListFont    = 14.0 // per-language name (svg body)
+	langListFill    = "#777777"
+	langIconSize    = 16.0
+	langIconMargin  = 8.0 // .field svg { margin: 0 8px }
+	langListPitch   = chrome.FieldPitch
+	langListItemGap = 16.0 // .field.language { margin: 0 8px }
+	langBaseRatio   = 0.32
+
+	langDetailFont  = 11.0 // .field.language.details small
+	langDetailFill  = "#666666"
+	langDetailInset = 8.0
+)
+
+// itoa formats a layout coordinate as a rounded integer for compact,
+// stable SVG output.
+func itoa(v float64) string { return strconv.Itoa(int(math.Round(v))) }
+
 // colorDotOcticon returns a 16x16 colored-dot SVG used in per-language
 // list entries — mirrors upstream EJS line 76 (`<%- octicon "primitive-dot" %>`-style)
 // where the dot's fill is the language's color.
@@ -32,36 +67,18 @@ func colorDotOcticon(color string) string {
 	)
 }
 
-// Partial renders the classic SVG fragment for the languages plugin.
-// Returns "" when the result is missing or skipped — classic.go's
-// dispatcher then suppresses the wrapper entirely (contract §6).
+// Partial renders the classic SVG fragment for the languages plugin as
+// native SVG (#409 Phase B7). Returns "" when the result is missing or
+// skipped — classic.go's dispatcher then suppresses the wrapper entirely.
 //
-// Output structure (matches upstream org_repo/source/templates/classic/partials/languages.ejs):
-//
-//	<section data-section="languages">
-//	  <h2 class="field"><svg/>N Language(s)</h2>          ← count header (a11y title via aria-hidden octicon)
-//	  <section class="column">
-//	    <h3 class="field">Most used languages</h3>        ← section sub-header
-//	    [<small>estimation from N kb...</small>]          ← indepth summary (when indepth result present)
-//	    <svg class="bar" xmlns=... width=460 height=8>    ← progress bar wrapper (FIXES bare-<g> bug)
-//	      <title>Languages distribution</title>           ← a11y title (Q1 verbatim preservation)
-//	      <g class="languages-progress">
-//	        <rect class="language-bar" .../>...
-//	      </g>
-//	    </svg>
-//	    <div class="field center horizontal-wrap fill-width">  ← per-language dot+name list
-//	      <div class="field center no-wrap language">
-//	        <svg/>Go
-//	      </div>...
-//	    </div>
-//	    [<ul class="languages-list">...]                  ← compat shim retained per parity checklist deviation
-//	  </section>
-//	  [<section class="column"><h3>Recently used languages</h3>
-//	    <small>estimation from...</small>
-//	    <svg class="bar"><g class="languages-recent">...</g></svg>
-//	  </section>]
-//	  [<g class="languages-indepth">...]                  ← wrapped in <svg> for visibility
-//	</section>
+// Output: a `<section data-section="languages">` anchor wrapping a
+// nested `<svg>` with the code-octicon count header, then per configured
+// section (most-used / recently-used) a centered `<h3>` sub-header, an
+// optional indepth `<small>` summary, the 460px `<svg class="bar">`
+// progress bar (kept verbatim — already native SVG), and either the
+// centered color-dot name flow or the 1-2 column details rows. A hidden
+// `<g class="languages-indepth">` carries the per-language byte totals
+// for downstream JSON contract spot-checks. Reports its consumed height.
 func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
 		return "", 0, nil
@@ -92,90 +109,71 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 	// Distinct-language count for the header — mirrors upstream's
 	// `plugins.languages.unique` (count of all distinct languages
 	// across analyzed repositories, before favorites truncation).
-	// Falls back to len(bars) when Run hasn't populated Unique
-	// (older fixtures / tests).
+	// Falls back to len(bars) when Run hasn't populated Unique.
 	uniqueCount := r.Unique
 	if uniqueCount == 0 {
 		uniqueCount = len(bars)
 	}
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="languages">`)
+	var body strings.Builder
+	header, y := chrome.SVGSectionHeader(codeOcticon,
+		fmt.Sprintf("%d Language%s", uniqueCount, pluginutil.Plural(uniqueCount)))
+	body.WriteString(header)
 
-	// ── Count header (upstream EJS lines 2-7) ────────────────────
-	fmt.Fprintf(
-		&b,
-		`<section><h2 class="field">%s%d Language%s</h2></section>`,
-		codeOcticon, uniqueCount, pluginutil.Plural(uniqueCount),
-	)
-
-	// ── Per-section blocks (upstream EJS lines 8-100) ────────────
 	for _, section := range sections {
 		switch section {
 		case "most-used":
-			writeMostUsedSection(&b, pc, bars)
+			y = writeMostUsedSection(&body, pc, bars, y)
 		case "recently-used":
-			writeRecentlyUsedSection(&b, pc)
+			y = writeRecentlyUsedSection(&body, pc, y)
 		}
 	}
 
-	// ── Indepth section (wrapped in <svg> to fix bare-<g> bug) ───
-	writeIndepthSection(&b, pc)
+	// Indepth byte-totals breakdown (hidden metadata for JSON spot-checks).
+	writeIndepthSection(&body, pc)
 
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+	height := int(y)
+	return chrome.WrapSection("languages", height, body.String()), height, nil
 }
 
-// writeMostUsedSection emits the "Most used languages" column block
-// per upstream EJS lines 9-99 (most-used branch). Includes section
-// header, optional indepth summary, the progress bar wrapped in
-// <svg class="bar"> (fixes bare-<g> bug), per-language color-dot
-// list, and the legacy <ul class="languages-list"> compat shim.
-func writeMostUsedSection(b *strings.Builder, pc *templates.PartialContext, bars []plugins.LanguageStat) {
-	b.WriteString(`<section class="column">`)
-	b.WriteString(`<h3 class="field">Most used languages</h3>`)
+// writeMostUsedSection emits the "Most used languages" column: centered
+// sub-header, optional indepth summary, the progress bar, and the
+// per-language color-dot flow (or details rows). Returns the y cursor
+// after the block.
+func writeMostUsedSection(b *strings.Builder, pc *templates.PartialContext, bars []plugins.LanguageStat, top float64) float64 {
+	m, hh := chrome.SVGSubHeader(float64(chrome.CardWidth)/2, top, float64(chrome.CardWidth), "Most used languages")
+	b.WriteString(m)
+	y := top + hh
 
-	// Indepth summary (upstream EJS lines 32-39 — most-used + indepth).
 	if hasIndepth(pc) {
-		summary, ok := buildIndepthSummary(pc)
-		if ok {
-			fmt.Fprintf(b, `<small>%s</small>`, summary)
+		if summary, ok := buildIndepthSummary(pc); ok {
+			b.WriteString(chrome.SVGText(float64(chrome.CardWidth)/2, y+langSmallFont, summary,
+				chrome.SVGTextOpts{Size: langSmallFont, Fill: langSmallFill, Anchor: "middle", MaxWidth: float64(chrome.CardWidth) - 20}))
+			y += langSmallPitch
 		}
 	}
 
 	if len(bars) > 0 {
-		// Progress bar wrapped in <svg class="bar"> with <mask
-		// id="languages-bar-most"> for rounded corners per upstream EJS
-		// lines 42-50. Also fixes the v1.0.0 bare-<g> invisible-render
-		// bug. The leading `<rect fill="#d1d5da">` is a 0-width
-		// placeholder (upstream parity). Mask id is unique per section
-		// because the same partial can emit both "most-used" and
-		// "recently-used" bars in one SVG (duplicate ids would break
-		// the second bar's clip on most renderers).
-		writeLanguageBar(b, bars, "languages-bar-most", "languages-progress", "Languages distribution", "language-bar")
+		y += langBarTopGap
+		writeBar(b, bars, y, "languages-bar-most", "languages-progress", "Languages distribution", "language-bar")
+		y += langBarHeight + langBarBotGap
 
-		// Per-language render: upstream EJS lines 52-80.
-		// When `details` is non-empty (mjun0812: bytes-size, percentage
-		// after lines-strip) emit per-language detail rows split into
-		// 2 columns. Otherwise fall back to the simple color-dot list.
 		r := mustResult(pc)
 		if len(r.Details) > 0 {
-			writeDetailsRows(b, bars, r.Details, pc)
+			y = writeDetailsRows(b, bars, r.Details, pc, y)
 		} else {
-			b.WriteString(`<div class="field center horizontal-wrap fill-width">`)
-			for _, lang := range bars {
-				fmt.Fprintf(
-					b,
-					`<div class="field center no-wrap language" data-language="%s">%s%s</div>`,
-					partials.EscapeXML(lang.Name),
-					colorDotOcticon(lang.Color),
-					partials.EscapeXML(lang.Name),
-				)
-			}
-			b.WriteString(`</div>`)
+			y = writeSimpleList(b, bars, y)
 		}
 	}
-	b.WriteString(`</section>`)
+	return y
+}
+
+// writeBar positions the upstream `<svg class="bar">` block (kept
+// verbatim — already native SVG) 10px in from the card edge at y=top.
+func writeBar(b *strings.Builder, bars []plugins.LanguageStat, top float64, maskID, gClass, titleText, rectClass string) {
+	fmt.Fprintf(b, `<g transform="translate(%d,%s)">`, langBarX, itoa(top))
+	writeLanguageBar(b, bars, maskID, gClass, titleText, rectClass)
+	b.WriteString(`</g>`)
 }
 
 // writeLanguageBar emits the upstream EJS lines 42-50 `<svg class="bar">`
@@ -221,84 +219,126 @@ func writeLanguageBar(b *strings.Builder, bars []plugins.LanguageStat, maskID, g
 	b.WriteString(`</g></svg>`)
 }
 
-// writeRecentlyUsedSection emits the "Recently used languages" column
-// block per upstream EJS lines 21-31 (recently-used branch). Includes
-// section header, the "estimation from N kb..." summary or
-// "No recent push activity found" empty-state, and the progress bar
-// wrapped in <svg class="bar"> for the recent data.
-func writeRecentlyUsedSection(b *strings.Builder, pc *templates.PartialContext) {
+// writeSimpleList lays the per-language color-dot + name entries out as a
+// centered, wrapping flow (mirroring `.field.center.horizontal-wrap`),
+// starting at y=top. Each entry keeps a `data-language` hook. Returns the
+// y cursor after the block.
+func writeSimpleList(b *strings.Builder, bars []plugins.LanguageStat, top float64) float64 {
+	// itemW = [8px][dot 16][8px][name].
+	widths := make([]float64, len(bars))
+	for i, l := range bars {
+		widths[i] = langIconMargin + langIconSize + langIconMargin + fontmetrics.Width(l.Name, langListFont)
+	}
+
+	// Greedy-wrap indices into rows no wider than the card.
+	maxRowW := float64(chrome.CardWidth)
+	var rows [][]int
+	cur := make([]int, 0, len(bars))
+	curW := 0.0
+	for i := range bars {
+		add := widths[i]
+		if len(cur) > 0 {
+			add += langListItemGap
+		}
+		if len(cur) > 0 && curW+add > maxRowW {
+			rows = append(rows, cur)
+			cur, curW = nil, 0
+			add = widths[i]
+		}
+		cur = append(cur, i)
+		curW += add
+	}
+	if len(cur) > 0 {
+		rows = append(rows, cur)
+	}
+
+	b.WriteString(`<g class="languages-names">`)
+	y := top
+	for _, row := range rows {
+		rowW := 0.0
+		for j, idx := range row {
+			rowW += widths[idx]
+			if j > 0 {
+				rowW += langListItemGap
+			}
+		}
+		x := (float64(chrome.CardWidth) - rowW) / 2
+		dotY := y + (langListPitch-langIconSize)/2
+		baseline := y + langListPitch/2 + langListFont*langBaseRatio
+		for _, idx := range row {
+			l := bars[idx]
+			fmt.Fprintf(b, `<g data-language="%s">`, partials.EscapeXML(l.Name))
+			b.WriteString(chrome.SVGIcon(x+langIconMargin, dotY, "", colorDotOcticon(l.Color)))
+			nameX := x + langIconMargin + langIconSize + langIconMargin
+			b.WriteString(chrome.SVGText(nameX, baseline, l.Name, chrome.SVGTextOpts{Size: langListFont, Fill: langListFill}))
+			b.WriteString(`</g>`)
+			x += widths[idx] + langListItemGap
+		}
+		y += langListPitch
+	}
+	b.WriteString(`</g>`)
+	return y
+}
+
+// writeRecentlyUsedSection emits the "Recently used languages" column per
+// upstream EJS lines 21-31: centered sub-header, the "activity from N
+// repositories" summary or "No recent push activity found" empty state,
+// the recent progress bar, and the per-language list. Returns the y
+// cursor after the block.
+func writeRecentlyUsedSection(b *strings.Builder, pc *templates.PartialContext, top float64) float64 {
 	if pc == nil || pc.Data == nil {
-		return
+		return top
 	}
 	raw, ok := pc.Data.GetPlugin(RecentName)
 	if !ok || raw == nil {
-		return
+		return top
 	}
 	r, ok := raw.(*RecentResult)
 	if !ok || r == nil || r.Skipped {
-		return
+		return top
 	}
 	bars := append([]plugins.LanguageStat(nil), r.Favorites...)
 	if r.Other.Size > 0 {
 		bars = append(bars, r.Other)
 	}
 
-	b.WriteString(`<section class="column">`)
-	b.WriteString(`<h3 class="field">Recently used languages</h3>`)
+	m, hh := chrome.SVGSubHeader(float64(chrome.CardWidth)/2, top, float64(chrome.CardWidth), "Recently used languages")
+	b.WriteString(m)
+	y := top + hh
 
+	center := float64(chrome.CardWidth) / 2
 	if len(bars) == 0 {
 		// Upstream EJS lines 26-29: "No recent push activity found"
 		// with an optional "over last D day(s)" suffix.
+		text := "No recent push activity found"
 		if r.Days > 0 {
-			fmt.Fprintf(
-				b,
-				`<small>No recent push activity found over last %d day%s</small>`,
-				r.Days, pluginutil.Plural(r.Days),
-			)
-		} else {
-			b.WriteString(`<small>No recent push activity found</small>`)
+			text = fmt.Sprintf("No recent push activity found over last %d day%s", r.Days, pluginutil.Plural(r.Days))
 		}
-		b.WriteString(`</section>`)
-		return
+		b.WriteString(chrome.SVGText(center, y+langSmallFont, text,
+			chrome.SVGTextOpts{Size: langSmallFont, Fill: langSmallFill, Anchor: "middle", MaxWidth: float64(chrome.CardWidth) - 20}))
+		return y + langSmallPitch
 	}
 
-	// Recent activity summary (upstream EJS lines 23-25). Without
-	// upstream's `stats.recent.total / files / commits` fields wired
-	// through, we emit a simplified "active over last N days" line.
+	// Recent activity summary (upstream EJS lines 23-25).
 	if r.Days > 0 {
-		fmt.Fprintf(
-			b,
-			`<small>activity from %d repositor%s analysed over last %d day%s</small>`,
-			r.Load, pluralRepository(r.Load), r.Days, pluginutil.Plural(r.Days),
-		)
+		summary := fmt.Sprintf("activity from %d repositor%s analysed over last %d day%s",
+			r.Load, pluralRepository(r.Load), r.Days, pluginutil.Plural(r.Days))
+		b.WriteString(chrome.SVGText(center, y+langSmallFont, summary,
+			chrome.SVGTextOpts{Size: langSmallFont, Fill: langSmallFill, Anchor: "middle", MaxWidth: float64(chrome.CardWidth) - 20}))
+		y += langSmallPitch
 	}
 
-	// Progress bar — shared mask helper (upstream EJS lines 42-50).
-	// Mask id is distinct from the most-used section so both bars can
-	// coexist in the same SVG without id collisions.
-	writeLanguageBar(b, bars, "languages-bar-recent", "languages-recent", "Recently used languages distribution", "language-bar-recent")
+	y += langBarTopGap
+	writeBar(b, bars, y, "languages-bar-recent", "languages-recent", "Recently used languages distribution", "language-bar-recent")
+	y += langBarHeight + langBarBotGap
 
-	// Per-language render: prefer the details/2-column block when the
-	// parent languages plugin requested details columns (upstream EJS
-	// reuses the same block across both sections).
 	parent := mustResult(pc)
 	if len(parent.Details) > 0 {
-		writeDetailsRows(b, bars, parent.Details, pc)
+		y = writeDetailsRows(b, bars, parent.Details, pc, y)
 	} else {
-		b.WriteString(`<div class="field center horizontal-wrap fill-width">`)
-		for _, lang := range bars {
-			fmt.Fprintf(
-				b,
-				`<div class="field center no-wrap language" data-language="%s">%s%s</div>`,
-				partials.EscapeXML(lang.Name),
-				colorDotOcticon(lang.Color),
-				partials.EscapeXML(lang.Name),
-			)
-		}
-		b.WriteString(`</div>`)
+		y = writeSimpleList(b, bars, y)
 	}
-
-	b.WriteString(`</section>`)
+	return y
 }
 
 // pluralRepository returns "y" / "ies" suffix for the "repository" word.
@@ -324,10 +364,8 @@ func hasIndepth(pc *templates.PartialContext) bool {
 }
 
 // buildIndepthSummary returns the "estimation from N kb of code in M
-// edited files across K commits" string when indepth data is present.
-// Returns ("", false) when no indepth data. Without upstream's
-// `plugins.languages.files / commits` fields, we emit a simplified
-// "estimation from N kb of code in M analyzed repositor(y/ies)" line.
+// analyzed repositor(y/ies)" string when indepth data is present.
+// Returns ("", false) when no indepth data.
 func buildIndepthSummary(pc *templates.PartialContext) (string, bool) {
 	if pc == nil || pc.Data == nil {
 		return "", false
@@ -393,11 +431,14 @@ func hasRecentSection(pc *templates.PartialContext) bool {
 	return false
 }
 
-// writeIndepthSection emits the indepth byte-totals breakdown wrapped
-// in an <svg> so the inner <g class="languages-indepth"> renders inside
-// foreignObject (fixes the v1.0.0 bare-<g> invisible-render bug). The
-// inner content is the same per-language <text> set as v1.0.0 to
-// preserve downstream JSON contract spot-checks.
+// writeIndepthSection emits the indepth byte-totals breakdown as a hidden
+// `<g class="languages-indepth">` (upstream renders it metadata-only —
+// no visual bar — so it stays invisible while preserving the per-language
+// `<text>` nodes downstream JSON contract spot-checks read). Now that the
+// partial is a nested `<svg>` rather than foreignObject HTML, the bare
+// `<g>` renders fine, so the v1.0.0 `<svg width="0" height="0">` wrapper
+// hack is gone — visibility:hidden keeps the nodes in the DOM but off the
+// canvas.
 func writeIndepthSection(b *strings.Builder, pc *templates.PartialContext) {
 	if !hasIndepth(pc) {
 		return
@@ -420,11 +461,7 @@ func writeIndepthSection(b *strings.Builder, pc *templates.PartialContext) {
 		return entries[i].name < entries[j].name
 	})
 
-	// Wrap in <svg> per FR-002 — <g> alone in foreignObject silently
-	// drops. The svg has zero rendered dimensions because the indepth
-	// section is metadata-only (no visual bar) but the wrap is still
-	// required to keep the inner <text> + <g> nodes valid SVG.
-	b.WriteString(`<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" class="languages-indepth-wrapper" aria-hidden="true"><g class="languages-indepth">`)
+	b.WriteString(`<g visibility="hidden" aria-hidden="true"><g class="languages-indepth">`)
 	for _, e := range entries {
 		fmt.Fprintf(
 			b,
@@ -432,7 +469,7 @@ func writeIndepthSection(b *strings.Builder, pc *templates.PartialContext) {
 			partials.EscapeXML(e.name), e.bytes, partials.EscapeXML(e.name),
 		)
 	}
-	b.WriteString(`</g></svg>`)
+	b.WriteString(`</g></g>`)
 }
 
 func colorOrDefault(c string) string {
@@ -477,67 +514,79 @@ func formatPercent(value float64) string {
 	return fmt.Sprintf("%.1f%%", value*100)
 }
 
-// writeDetailsRows emits the upstream-equivalent per-language detail
-// blocks (EJS lines 52-71): each language as `<div class="field
-// language details">` containing the color-dot + name + a `<small>`
-// with the requested detail columns (lines, bytes-size, percentage).
-//
-// Upstream computes `rows` by:
+// writeDetailsRows emits the upstream per-language detail blocks (EJS
+// lines 52-71) as native SVG: each language is a `<g class="language
+// details" data-language>` with the color-dot + name on the left and the
+// requested detail columns (lines / bytes-size / percentage) right-aligned
+// grey. Languages split into 1-2 columns, mirroring upstream's `rows`:
 //
 //	const rows = large ? [0, 1, 2, 3]
 //	  : (plugins.languages.details.length > 2) ? [0]
 //	  : [0, 1]
 //
-// We render `large=false` (Action default), so rows = [0] when details
-// has > 2 entries (single column), else [0, 1] (two columns).
-func writeDetailsRows(b *strings.Builder, bars []plugins.LanguageStat, details []string, pc *templates.PartialContext) {
-	rows := []int{0, 1}
+// We render `large=false`, so numCols = 1 when details has > 2 entries,
+// else 2. The `:not(:last-child)` inter-column spacing the HTML relied on
+// is replaced by explicit writer positioning. Returns the y cursor after
+// the block.
+func writeDetailsRows(b *strings.Builder, bars []plugins.LanguageStat, details []string, pc *templates.PartialContext, top float64) float64 {
+	numCols := 2
 	if len(details) > 2 {
-		rows = []int{0}
+		numCols = 1
 	}
+	colW := float64(chrome.CardWidth) / float64(numCols)
 	showLines := detailIncludes(details, "lines")
 	showBytes := detailIncludes(details, "bytes-size")
 	showPct := detailIncludes(details, "percentage")
 
 	// Lookup table from language name → indepth bytes (best estimate of
-	// "size" upstream uses). Falls back to bars[i].Size (the in-favorites
-	// byte count) when indepth isn't wired.
+	// "size" upstream uses). Falls back to bars[i].Size when indepth
+	// isn't wired.
 	indepthBytes := indepthBytesByLanguage(pc)
 	indepthLines := indepthLinesByLanguage(pc)
 
-	b.WriteString(`<div class="row fill-width">`)
-	for _, row := range rows {
-		b.WriteString(`<section>`)
+	maxY := top
+	for col := 0; col < numCols; col++ {
+		x := float64(col) * colW
+		y := top
 		for i, lang := range bars {
-			if i%len(rows) != row {
+			if i%numCols != col {
 				continue
 			}
 			size := int64(lang.Size)
 			if v, ok := indepthBytes[lang.Name]; ok && v > 0 {
 				size = v
 			}
-			fmt.Fprintf(b, `<div class="field language details" data-language="%s">`, partials.EscapeXML(lang.Name))
-			fmt.Fprintf(
-				b, `<div class="field">%s%s</div>`,
-				colorDotOcticon(lang.Color),
-				partials.EscapeXML(lang.Name),
-			)
-			b.WriteString(`<small>`)
+
+			dotY := y + (langListPitch-langIconSize)/2
+			nameBaseline := y + langListPitch/2 + langListFont*langBaseRatio
+			valBaseline := y + langListPitch/2 + langDetailFont*langBaseRatio
+
+			fmt.Fprintf(b, `<g class="language details" data-language="%s">`, partials.EscapeXML(lang.Name))
+			b.WriteString(chrome.SVGIcon(x+langIconMargin, dotY, "", colorDotOcticon(lang.Color)))
+			nameX := x + langIconMargin + langIconSize + langIconMargin
+			b.WriteString(chrome.SVGText(nameX, nameBaseline, lang.Name, chrome.SVGTextOpts{Size: langListFont, Fill: langListFill}))
+
+			parts := make([]string, 0, 3)
 			if showLines {
-				fmt.Fprintf(b, `<div>%s lines</div>`, partials.FormatCount(indepthLines[lang.Name]))
+				parts = append(parts, fmt.Sprintf("%s lines", partials.FormatCount(indepthLines[lang.Name])))
 			}
 			if showBytes {
-				fmt.Fprintf(b, `<div>%s</div>`, formatBytes(size))
+				parts = append(parts, formatBytes(size))
 			}
 			if showPct {
-				fmt.Fprintf(b, `<div>%s</div>`, formatPercent(lang.Value))
+				parts = append(parts, formatPercent(lang.Value))
 			}
-			b.WriteString(`</small>`)
-			b.WriteString(`</div>`)
+			b.WriteString(chrome.SVGText(x+colW-langDetailInset, valBaseline, strings.Join(parts, "  "),
+				chrome.SVGTextOpts{Size: langDetailFont, Fill: langDetailFill, Anchor: "end"}))
+			b.WriteString(`</g>`)
+
+			y += langListPitch
 		}
-		b.WriteString(`</section>`)
+		if y > maxY {
+			maxY = y
+		}
 	}
-	b.WriteString(`</div>`)
+	return maxY
 }
 
 // indepthBytesByLanguage extracts the per-language total bytes from

@@ -249,8 +249,10 @@ func TestWriteIndepthSection(t *testing.T) {
 		})
 		writeIndepthSection(&b, pc)
 		out := b.String()
-		if !strings.Contains(out, `class="languages-indepth-wrapper"`) {
-			t.Errorf("missing wrapper svg class: %q", out)
+		// #409 Phase B7: the v1.0.0 <svg width="0" height="0"> wrapper hack
+		// is gone; the breakdown is now a plain hidden <g>.
+		if !strings.Contains(out, `visibility="hidden"`) {
+			t.Errorf("missing hidden wrapper: %q", out)
 		}
 		if !strings.Contains(out, `<g class="languages-indepth">`) {
 			t.Errorf("missing inner g class: %q", out)
@@ -283,11 +285,13 @@ func TestWriteDetailsRows(t *testing.T) {
 		t.Parallel()
 		var b strings.Builder
 		pc := &templates.PartialContext{Data: plugins.NewData()}
-		writeDetailsRows(&b, bars, []string{"bytes-size", "percentage"}, pc)
+		writeDetailsRows(&b, bars, []string{"bytes-size", "percentage"}, pc, 0)
 		out := b.String()
-		// Two-column layout emits two <section> wrappers.
-		if strings.Count(out, "<section>") != 2 {
-			t.Errorf("expected 2 sections (two-col layout), got %d in: %s", strings.Count(out, "<section>"), out)
+		// #409 Phase B7: two-column layout places the second language
+		// (Python, index 1) in the right column, so its color-dot icon is
+		// translated to x=248 (240 + 8px field inset).
+		if !strings.Contains(out, `transform="translate(248,`) {
+			t.Errorf("expected second column (translate x=248) in two-col layout: %s", out)
 		}
 		if !strings.Contains(out, `data-language="Go"`) || !strings.Contains(out, `data-language="Python"`) {
 			t.Errorf("missing language rows: %s", out)
@@ -307,10 +311,12 @@ func TestWriteDetailsRows(t *testing.T) {
 		t.Parallel()
 		var b strings.Builder
 		pc := &templates.PartialContext{Data: plugins.NewData()}
-		writeDetailsRows(&b, bars, []string{"lines", "bytes-size", "percentage"}, pc)
+		writeDetailsRows(&b, bars, []string{"lines", "bytes-size", "percentage"}, pc, 0)
 		out := b.String()
-		if strings.Count(out, "<section>") != 1 {
-			t.Errorf("expected 1 section (single-col layout), got %d in: %s", strings.Count(out, "<section>"), out)
+		// Single-column layout keeps every language in column 0, so no
+		// row is translated to the right column (x=248).
+		if strings.Contains(out, `transform="translate(248,`) {
+			t.Errorf("expected single-col layout (no x=248 column): %s", out)
 		}
 	})
 
@@ -326,7 +332,7 @@ func TestWriteDetailsRows(t *testing.T) {
 				Lines: map[string]int64{"Go": 200},
 			},
 		})
-		writeDetailsRows(&b, bars, []string{"lines", "bytes-size"}, pc)
+		writeDetailsRows(&b, bars, []string{"lines", "bytes-size"}, pc, 0)
 		out := b.String()
 		if !strings.Contains(out, "5.0 MB") {
 			t.Errorf("expected indepth-derived bytes-size 5.0 MB, got: %s", out)
