@@ -324,7 +324,7 @@ func TestPartial_Achievements_Golden(t *testing.T) {
 	data := plugins.NewData()
 	data.SetPlugin(achievements.Name, r)
 	pc := &templates.PartialContext{Data: data}
-	got, err := achievements.Partial(context.Background(), pc)
+	got, _, err := achievements.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -370,7 +370,7 @@ func TestPartial_AchievementsCompact_Golden(t *testing.T) {
 	data := plugins.NewData()
 	data.SetPlugin(achievements.Name, r)
 	pc := &templates.PartialContext{Data: data}
-	got, err := achievements.Partial(context.Background(), pc)
+	got, _, err := achievements.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -423,7 +423,7 @@ func TestPartial_IconResolution(t *testing.T) {
 	data := plugins.NewData()
 	data.SetPlugin(achievements.Name, r)
 	pc := &templates.PartialContext{Data: data}
-	got, err := achievements.Partial(context.Background(), pc)
+	got, _, err := achievements.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -467,7 +467,7 @@ func TestPartial_RankPrefixLabels(t *testing.T) {
 		data := plugins.NewData()
 		data.SetPlugin(achievements.Name, r)
 		pc := &templates.PartialContext{Data: data}
-		got, err := achievements.Partial(context.Background(), pc)
+		got, _, err := achievements.Partial(context.Background(), pc)
 		if err != nil {
 			t.Fatalf("rank %s Partial: %v", tc.rank, err)
 		}
@@ -499,7 +499,7 @@ func TestPartial_UnknownIDFallsBackToTrophy(t *testing.T) {
 	data := plugins.NewData()
 	data.SetPlugin(achievements.Name, r)
 	pc := &templates.PartialContext{Data: data}
-	got, err := achievements.Partial(context.Background(), pc)
+	got, _, err := achievements.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

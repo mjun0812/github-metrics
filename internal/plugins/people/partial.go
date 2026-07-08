@@ -77,24 +77,24 @@ func labelForType(t string, n int) string {
 // The wrapping `<section data-section="people">` is our addition for
 // downstream CSS/JS selectors; the inner per-type `<section>` blocks
 // preserve upstream's flat structure.
-func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	raw, ok := pc.Data.GetPlugin(Name)
 	if !ok || raw == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := raw.(*Result)
 	if !ok || r == nil || r.Skipped {
-		return "", nil
+		return "", 0, nil
 	}
 	total := 0
 	for _, list := range r.Types {
 		total += len(list)
 	}
 	if total == 0 {
-		return "", nil
+		return "", 0, nil
 	}
 	// Stable type ordering for deterministic SVG output. Upstream
 	// iterates `plugins.people.types` (the requested list); we have
@@ -148,5 +148,5 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		b.WriteString(`</section>`)
 	}
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }

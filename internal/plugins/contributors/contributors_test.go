@@ -418,7 +418,7 @@ func TestPartial_ContributionsDisplayMode(t *testing.T) {
 		}},
 		Sections: []string{"contributors"},
 	})
-	got, err := contributors.Partial(context.Background(), &templates.PartialContext{Data: d})
+	got, _, err := contributors.Partial(context.Background(), &templates.PartialContext{Data: d})
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -462,7 +462,7 @@ func TestPartial_LoginWithDigitsHasExplicitDelimiter(t *testing.T) {
 		}},
 		Sections: []string{"contributors"},
 	})
-	got, err := contributors.Partial(context.Background(), &templates.PartialContext{Data: d})
+	got, _, err := contributors.Partial(context.Background(), &templates.PartialContext{Data: d})
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -491,7 +491,7 @@ func TestPartial_StatsPendingOmitsDiffSpan(t *testing.T) {
 		}},
 		Sections: []string{"contributors"},
 	})
-	got, err := contributors.Partial(context.Background(), &templates.PartialContext{Data: d})
+	got, _, err := contributors.Partial(context.Background(), &templates.PartialContext{Data: d})
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -526,7 +526,7 @@ func TestPartial_DefaultDisplayHidesContributionNumbers(t *testing.T) {
 		}},
 		Sections: []string{"contributors"},
 	})
-	got, err := contributors.Partial(context.Background(), &templates.PartialContext{Data: d})
+	got, _, err := contributors.Partial(context.Background(), &templates.PartialContext{Data: d})
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

@@ -137,16 +137,16 @@ func repositoriesEnabled(pc *templates.PartialContext) bool {
 // ActivityPartial renders the activity + community two-column summary.
 // Mirrors the deleted upstream base.activity+community.ejs (account ===
 // "user" branch). Renders nothing for organization profiles.
-func ActivityPartial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func ActivityPartial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if !activityEnabled(pc) {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := resolveResult(pc)
 	if !ok {
-		return "", nil
+		return "", 0, nil
 	}
 	if r.Profile == nil || r.Profile.Kind != plugins.ProfileKindUser || r.Profile.User == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	u := r.Profile.User
 
@@ -183,21 +183,21 @@ func ActivityPartial(_ context.Context, pc *templates.PartialContext) (string, e
 
 	b.WriteString(`</div>`)
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 // RepositoriesPartial renders the repositories summary panel. Mirrors
 // the deleted upstream base.repositories.ejs.
-func RepositoriesPartial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func RepositoriesPartial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if !repositoriesEnabled(pc) {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := resolveResult(pc)
 	if !ok {
-		return "", nil
+		return "", 0, nil
 	}
 	if r.Profile == nil || r.Profile.Kind != plugins.ProfileKindUser || r.Profile.User == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	summary := r.RepositorySummary
 	if summary == nil {
@@ -252,7 +252,7 @@ func RepositoriesPartial(_ context.Context, pc *templates.PartialContext) (strin
 	b.WriteString(`</section>`)
 	b.WriteString(`</div>`)
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 // writeCountRow emits a `<div class="field">` row of the shape

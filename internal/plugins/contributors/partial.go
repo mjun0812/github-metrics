@@ -52,17 +52,17 @@ const commitsOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 
 // adds/dels stay in a `<span class="label-right">` because upstream's
 // contributors_contributions toggle is not adopted yet; surfacing them as
 // a separate badge keeps the upstream `.contributions` badge unchanged.
-func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	raw, ok := pc.Data.GetPlugin(Name)
 	if !ok || raw == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := raw.(*Result)
 	if !ok || r == nil || r.Skipped || len(r.List) == 0 {
-		return "", nil
+		return "", 0, nil
 	}
 
 	const avatarSize = 22 // upstream contributors.ejs hard-codes 22x22
@@ -106,5 +106,5 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	}
 	b.WriteString(`</section></div>`)
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }

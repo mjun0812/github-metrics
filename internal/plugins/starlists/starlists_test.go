@@ -267,7 +267,7 @@ func TestPartial_Starlists_Golden(t *testing.T) {
 	data := plugins.NewData()
 	data.SetPlugin(starlists.Name, r)
 	pc := &templates.PartialContext{Data: data}
-	got, err := starlists.Partial(context.Background(), pc)
+	got, _, err := starlists.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -313,7 +313,7 @@ func TestPartial_Starlists_EmptyListRendersHeader(t *testing.T) {
 		data := plugins.NewData()
 		data.SetPlugin(starlists.Name, r)
 		pc := &templates.PartialContext{Data: data}
-		got, err := starlists.Partial(context.Background(), pc)
+		got, _, err := starlists.Partial(context.Background(), pc)
 		if err != nil {
 			t.Fatalf("Partial: %v", err)
 		}
@@ -356,7 +356,7 @@ func TestPartial_Starlists_Repositories(t *testing.T) {
 	data := plugins.NewData()
 	data.SetPlugin(starlists.Name, r)
 	pc := &templates.PartialContext{Data: data}
-	got, err := starlists.Partial(context.Background(), pc)
+	got, _, err := starlists.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -403,7 +403,7 @@ func TestPartial_Starlists_NoDuplicateMaskID(t *testing.T) {
 	data := plugins.NewData()
 	data.SetPlugin(starlists.Name, r)
 	pc := &templates.PartialContext{Data: data}
-	got, err := starlists.Partial(context.Background(), pc)
+	got, _, err := starlists.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

@@ -266,8 +266,8 @@ func TestClassic_Run_PluginPartialWrapper(t *testing.T) {
 	// only. The registry is not goroutine-safe, so this subtest does
 	// NOT call t.Parallel().
 	prev, hadPrev := partials.Lookup("plugin." + slug)
-	partials.Register("plugin."+slug, func(_ context.Context, _ *templates.PartialContext) (string, error) {
-		return stubFragment, nil
+	partials.Register("plugin."+slug, func(_ context.Context, _ *templates.PartialContext) (string, int, error) {
+		return stubFragment, 0, nil
 	})
 	t.Cleanup(func() {
 		if hadPrev {
@@ -277,8 +277,8 @@ func TestClassic_Run_PluginPartialWrapper(t *testing.T) {
 			// would only matter if another test in the same binary
 			// expected its absence. Reset by registering a no-op so
 			// future Lookups return non-nil but emit "".
-			partials.Register("plugin."+slug, func(_ context.Context, _ *templates.PartialContext) (string, error) {
-				return "", nil
+			partials.Register("plugin."+slug, func(_ context.Context, _ *templates.PartialContext) (string, int, error) {
+				return "", 0, nil
 			})
 		}
 	})

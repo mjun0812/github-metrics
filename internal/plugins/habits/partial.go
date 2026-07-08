@@ -93,20 +93,20 @@ func bgLevel(p float64) int {
 //
 // The chart-bars block emits plain HTML inside foreignObject (no bare
 // SVG primitives), fixing the v1.0.0 bare-`<g>` invisibility bug.
-func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	raw, ok := pc.Data.GetPlugin(Name)
 	if !ok || raw == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := raw.(*Result)
 	if !ok || r == nil || r.Skipped {
-		return "", nil
+		return "", 0, nil
 	}
 	if !r.FactsEnabled && !r.ChartsEnabled {
-		return "", nil
+		return "", 0, nil
 	}
 
 	hourIdx := dominantHourIdx(r.Charts.Hours)
@@ -118,7 +118,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 		dayName != ""
 	chartsHasContent := hourIdx >= 0 || dayName != "" || langAvailable
 	if (!r.FactsEnabled || !factsHasContent) && (!r.ChartsEnabled || !chartsHasContent) {
-		return "", nil
+		return "", 0, nil
 	}
 
 	var b strings.Builder
@@ -182,7 +182,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	}
 
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 // writeHourChart emits the hour-of-day chart-bars block (EJS lines 51-72).

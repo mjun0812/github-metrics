@@ -49,7 +49,7 @@ func TestRecordedFollowersCount(t *testing.T) {
 
 	data := plugins.NewData()
 	data.SetPlugin(people.Name, out)
-	rendered, err := people.Partial(context.Background(), &templates.PartialContext{Data: data})
+	rendered, _, err := people.Partial(context.Background(), &templates.PartialContext{Data: data})
 	if err != nil {
 		t.Fatalf("people.Partial: %v", err)
 	}

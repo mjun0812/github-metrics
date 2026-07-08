@@ -274,7 +274,7 @@ func renderPartial(t *testing.T, r *habits.Result) string {
 	t.Helper()
 	data := plugins.NewData()
 	data.SetPlugin(habits.Name, r)
-	got, err := habits.Partial(context.Background(), &templates.PartialContext{Data: data})
+	got, _, err := habits.Partial(context.Background(), &templates.PartialContext{Data: data})
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

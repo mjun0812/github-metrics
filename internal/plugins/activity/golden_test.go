@@ -61,7 +61,7 @@ func TestPartial_Activity_Golden(t *testing.T) {
 	data := plugins.NewData()
 	data.SetPlugin(activity.Name, r)
 	pc := &templates.PartialContext{Data: data}
-	got, err := activity.Partial(context.Background(), pc)
+	got, _, err := activity.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

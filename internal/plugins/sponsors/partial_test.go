@@ -20,7 +20,7 @@ func renderPartial(t *testing.T, r *sponsors.Result) string {
 		Data:   data,
 		Inputs: map[string]any{"plugin_sponsors": true},
 	}
-	frag, err := sponsors.Partial(context.Background(), pc)
+	frag, _, err := sponsors.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

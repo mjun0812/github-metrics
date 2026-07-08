@@ -62,17 +62,17 @@ func sponsorsAreFundingVerb(n int) string {
 //
 // Settings: mjun0812 uses plugin_sponsors_sections: goal, about, list +
 // plugin_sponsors_past: yes.
-func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	raw, ok := pc.Data.GetPlugin(Name)
 	if !ok || raw == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := raw.(*Result)
 	if !ok || r == nil || r.Skipped {
-		return "", nil
+		return "", 0, nil
 	}
 
 	title := r.Title
@@ -213,5 +213,5 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 
 	b.WriteString(`</section>`)
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }

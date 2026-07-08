@@ -101,17 +101,17 @@ func rankClass(rank string) string {
 // Until the achievements package ships the per-rank SVG paths, the
 // `<div class="icon">` block holds the trophy octicon as a placeholder
 // (still renders, no bare elements).
-func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	raw, ok := pc.Data.GetPlugin(Name)
 	if !ok || raw == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := raw.(*Result)
 	if !ok || r == nil || r.Skipped || len(r.List) == 0 {
-		return "", nil
+		return "", 0, nil
 	}
 
 	var b strings.Builder
@@ -129,7 +129,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	b.WriteString(`</section>`)
 	b.WriteString(`</div>`)
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 func writeAchievement(b *strings.Builder, a Achievement, compact bool) {
