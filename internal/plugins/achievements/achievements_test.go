@@ -392,15 +392,24 @@ func TestPartial_AchievementsCompact_Golden(t *testing.T) {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
 	for _, marker := range []string{
-		`class="achievements compact largeable-flex-wrap"`,
-		`class="value-wrapper"`,
+		`<section data-section="achievements">`,
+		`class="achievement s"`,
+		`data-rank="S"`,
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("missing marker %q in:\n%s", marker, got)
 		}
 	}
-	if strings.Contains(got, `class="text"`) {
+	// Compact hides descriptions; the detailed-only "Published 120 public
+	// repositories" text must not appear.
+	if strings.Contains(got, "Published 120 public repositories") {
 		t.Errorf("compact output should not render descriptions:\n%s", got)
+	}
+	// Native SVG: no foreignObject HTML wrappers survive.
+	for _, html := range []string{`<div`, `<h2`, `class="row"`, `class="value-wrapper"`} {
+		if strings.Contains(got, html) {
+			t.Errorf("native SVG output should not contain HTML %q in:\n%s", html, got)
+		}
 	}
 }
 
@@ -442,19 +451,19 @@ func TestPartial_IconResolution(t *testing.T) {
 	}
 }
 
-// TestPartial_RankPrefixLabels — the prefix span carries the
-// "Master/Super/Great" label (rank S/A/B), and is omitted for
-// rank C entries.
+// TestPartial_RankPrefixLabels — the detailed title carries the
+// "Master/Super/Great" prefix (rank S/A/B) prepended to a lowercased
+// title, and renders the title verbatim (no prefix) for rank C entries.
 func TestPartial_RankPrefixLabels(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		rank       string
-		wantPrefix string // empty → expect no <span class="prefix">
+		rank      string
+		wantTitle string
 	}{
-		{"S", "Master"},
-		{"A", "Super"},
-		{"B", "Great"},
-		{"C", ""},
+		{"S", "Master developer"},
+		{"A", "Super developer"},
+		{"B", "Great developer"},
+		{"C", "Developer"},
 	}
 	for _, tc := range cases {
 		r := &achievements.Result{
@@ -471,15 +480,9 @@ func TestPartial_RankPrefixLabels(t *testing.T) {
 		if err != nil {
 			t.Fatalf("rank %s Partial: %v", tc.rank, err)
 		}
-		if tc.wantPrefix == "" {
-			if strings.Contains(got, `<span class="prefix">`) {
-				t.Errorf("rank %s should omit prefix span; got:\n%s", tc.rank, got)
-			}
-		} else {
-			marker := `<span class="prefix">` + tc.wantPrefix + `</span>`
-			if !strings.Contains(got, marker) {
-				t.Errorf("rank %s missing %q in:\n%s", tc.rank, marker, got)
-			}
+		marker := `>` + tc.wantTitle + `</text>`
+		if !strings.Contains(got, marker) {
+			t.Errorf("rank %s missing title %q in:\n%s", tc.rank, marker, got)
 		}
 	}
 }
