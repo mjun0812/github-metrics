@@ -316,9 +316,14 @@ const (
 	svgChipHeight  = 22.0
 	svgChipPadX    = 10.0
 	svgChipMarginX = 5.0
+	svgChipMarginY = 2.0
 	svgChipBG      = "#58A6FF"
 	svgChipBGOpac  = "0.19" // 0x30 / 255
 	svgChipFill    = "#0366D6"
+
+	// svgChipRowPitch is the vertical space one row of pills consumes:
+	// chip height (22) + top & bottom margin (2 each).
+	svgChipRowPitch = svgChipHeight + 2*svgChipMarginY
 )
 
 // SVGLabelChip renders one `.label` pill (a translucent blue rounded
@@ -335,6 +340,29 @@ func SVGLabelChip(x, top float64, text string) (string, float64) {
 		svgChipBG, svgChipBGOpac)
 	b.WriteString(SVGText(x+svgChipPadX, baseline, text, SVGTextOpts{Size: svgChipFont, Fill: svgChipFill}))
 	return b.String(), chipW + svgChipMarginX
+}
+
+// SVGChipFlow lays `.label` pills out left to right starting at (x, top),
+// wrapping to a new row whenever the next chip would exceed maxRight
+// (mirroring the `.topics { flex-wrap: wrap }` flow). Returns the markup
+// and the total height consumed.
+func SVGChipFlow(x, top, maxRight float64, texts []string) (string, float64) {
+	if len(texts) == 0 {
+		return "", 0
+	}
+	var b strings.Builder
+	cx, rowTop, rows := x, top, 1
+	for _, t := range texts {
+		chipW := fontmetrics.Width(t, svgChipFont) + 2*svgChipPadX
+		if cx+chipW > maxRight && cx > x {
+			cx, rowTop = x, rowTop+svgChipRowPitch
+			rows++
+		}
+		m, adv := SVGLabelChip(cx, rowTop+svgChipMarginY, t)
+		b.WriteString(m)
+		cx += adv
+	}
+	return b.String(), float64(rows) * svgChipRowPitch
 }
 
 // SVGAvatar renders a profile avatar as a clipped `<image>` of the given
