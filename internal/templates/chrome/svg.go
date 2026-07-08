@@ -526,3 +526,118 @@ func SVGAvatarGrid(x, top, availWidth, size, gap float64, clipPrefix string, ava
 	}
 	return b.String(), float64(rows)*(size+gap) - gap
 }
+
+const (
+	// h3 sub-header style (`h3 { font-size: 14px; color: #0366d6; margin:
+	// 8px 0 2px }`). The chart columns center their h3 (`.column {
+	// align-items: center }`), so SVGSubHeader anchors on the column
+	// center.
+	svgSubHeaderTop  = 8.0
+	svgSubHeaderBand = 16.0
+
+	// SubHeaderPitch is the vertical space one `<h3>` consumes:
+	// margin-top(8) + band(16) + margin-bottom(2).
+	SubHeaderPitch = svgSubHeaderTop + svgSubHeaderBand + 2
+)
+
+// SVGSubHeader renders an `<h3>` chart sub-title as native SVG: 14px
+// blue text centered on centerX with its block top at y=top,
+// ellipsis-truncated to maxWidth. Returns the markup and the height
+// consumed (SubHeaderPitch).
+func SVGSubHeader(centerX, top, maxWidth float64, label string) (string, float64) {
+	baseline := top + svgSubHeaderTop + svgSubHeaderBand/2 + svgBodyFont*baselineRatio
+	m := SVGText(centerX, baseline, label, SVGTextOpts{
+		Size:     svgBodyFont,
+		Fill:     svgHeaderFill,
+		Anchor:   "middle",
+		MaxWidth: maxWidth,
+	})
+	return m, SubHeaderPitch
+}
+
+const (
+	// `.chart-bars` bar geometry: 7px-wide rounded bars whose height maps
+	// a 0..1 share onto svgBarMaxHeight (upstream `.bar { width: 7px;
+	// border-radius: 5px }` with the height set inline). The tiny value
+	// label above each bar is 6px (`.value { font-size: 6px }`); the
+	// x-axis label below is 10px grey (`.entry { font-size: 10px; color:
+	// #666666 }`).
+	svgBarWidth     = 7.0
+	svgBarMaxHeight = 50.0
+	svgBarRadius    = 3.0
+	svgBarValueFont = 6.0
+	svgBarValueGap  = 2.0
+	svgBarLabelFont = 10.0
+	svgBarLabelGap  = 2.0
+	svgBarTopGap    = 8.0 // `.chart-bars { margin-top: 8px }`
+	svgBarLabelFill = "#666666"
+)
+
+// VBar is one bar of a vertical chart-bars column. Value is the small
+// label above the bar ("" hides it); Label is the x-axis tick below it;
+// Caption is an optional second line under the tick (the month boundary
+// caption); Share (0..1) sets the bar height; Level (1..4) picks the
+// contribution-graph color.
+type VBar struct {
+	Value   string
+	Label   string
+	Caption string
+	Share   float64
+	Level   int
+}
+
+// SVGVBars renders a vertical `.chart-bars` block: bars flow left to
+// right, evenly spaced across [x, x+width], bottoms aligned, with the
+// block top at y=top. Bar fills use the literal contribution-graph ramp
+// (resvg does not resolve the CSS variables). Returns the markup and the
+// height the block consumes. A caption row is reserved only when some bar
+// carries one.
+func SVGVBars(x, top, width float64, bars []VBar) (string, float64) {
+	if len(bars) == 0 {
+		return "", 0
+	}
+	valueRoom := svgBarValueFont + svgBarValueGap
+	barsTop := top + svgBarTopGap
+	baseline := barsTop + valueRoom + svgBarMaxHeight
+	labelBaseline := baseline + svgBarLabelGap + svgBarLabelFont
+	captionBaseline := labelBaseline + svgBarLabelFont
+
+	span := width / float64(len(bars))
+	hasCaption := false
+
+	var b strings.Builder
+	b.WriteString(`<g data-block="chart-bars">`)
+	for i, bar := range bars {
+		center := x + span*(float64(i)+0.5)
+		barH := bar.Share * svgBarMaxHeight
+		if barH < 0 {
+			barH = 0
+		}
+		barTop := baseline - barH
+		if bar.Value != "" {
+			b.WriteString(SVGText(center, barTop-svgBarValueGap, bar.Value, SVGTextOpts{
+				Size: svgBarValueFont, Fill: svgBarLabelFill, Anchor: "middle",
+			}))
+		}
+		fmt.Fprintf(&b,
+			`<rect x="%s" y="%s" width="%d" height="%s" rx="%d" ry="%d" fill=%q/>`,
+			pos(center-svgBarWidth/2), pos(barTop), int(svgBarWidth), pos(barH),
+			int(svgBarRadius), int(svgBarRadius), CalendarLevelColor(bar.Level))
+		b.WriteString(SVGText(center, labelBaseline, bar.Label, SVGTextOpts{
+			Size: svgBarLabelFont, Fill: svgBarLabelFill, Anchor: "middle",
+		}))
+		if bar.Caption != "" {
+			hasCaption = true
+			b.WriteString(SVGText(center, captionBaseline, bar.Caption, SVGTextOpts{
+				Size: svgBarLabelFont, Fill: svgBarLabelFill, Anchor: "middle",
+			}))
+		}
+	}
+	b.WriteString(`</g>`)
+
+	height := svgBarTopGap + valueRoom + svgBarMaxHeight + svgBarLabelGap + svgBarLabelFont
+	if hasCaption {
+		height += svgBarLabelFont
+	}
+	return b.String(), height
+}
