@@ -95,24 +95,19 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 
 	// Stats panel — the right-hand flex column (`<div class="row"><section/>
 	// <section>…`). Rendered as native SVG in the right half of the card.
-	statsX, statsW := float64(chrome.CardWidth)/2, float64(chrome.CardWidth)/2
 	y := hh
-	y += writeStatHeader(&body, statsX, y, streaksOcticon, "Commits streaks")
+	y += writeStatHeader(&body, y, streaksOcticon, "Commits streaks")
 	if r.Streak.Current > 0 {
-		_, fh := writeStatField(&body, statsX, y, statsW, flameOcticon,
+		y += writeStatField(&body, y, flameOcticon,
 			fmt.Sprintf("Current streak %d day%s", r.Streak.Current, pluginutil.Plural(r.Streak.Current)))
-		y += fh
 	}
-	_, fh := writeStatField(&body, statsX, y, statsW, plusXOcticon,
+	y += writeStatField(&body, y, plusXOcticon,
 		fmt.Sprintf("Best streak %d day%s", r.Streak.Max, pluginutil.Plural(r.Streak.Max)))
-	y += fh
-	y += writeStatHeader(&body, statsX, y, commitsPerDayOcticon, "Commits per day")
-	_, fh = writeStatField(&body, statsX, y, statsW, upArrowOcticon,
+	y += writeStatHeader(&body, y, commitsPerDayOcticon, "Commits per day")
+	y += writeStatField(&body, y, upArrowOcticon,
 		fmt.Sprintf("Highest in a day at %d", r.Max))
-	y += fh
-	_, fh = writeStatField(&body, statsX, y, statsW, arrowsOcticon,
+	y += writeStatField(&body, y, arrowsOcticon,
 		fmt.Sprintf("Average per day at ~%.2f", r.Average))
-	y += fh
 
 	// The block height spans whichever of the grid / stats column reaches
 	// lower (the grid is the taller element for both durations).
@@ -148,10 +143,11 @@ const (
 )
 
 // writeStatHeader renders an `<h3 class="field">` stats sub-header (grey
-// 16px octicon + 14px blue label) at the given column. Returns the
-// height consumed (margin-top 8 + band 18 + margin-bottom 2).
-func writeStatHeader(b *strings.Builder, colX, top float64, icon, label string) float64 {
-	iconX := colX + statInset + statIconGap
+// 16px octicon + 14px blue label) in the right-hand stats column (fixed
+// at half the card width). Returns the height consumed (margin-top 8 +
+// band 18 + margin-bottom 2).
+func writeStatHeader(b *strings.Builder, top float64, icon, label string) float64 {
+	iconX := float64(chrome.CardWidth)/2 + statInset + statIconGap
 	iconY := top + statH3Top + (statH3Band-statIconSize)/2
 	textX := iconX + statIconSize + statIconGap
 	baseline := top + statH3Top + statH3Band/2 + statH3Font*baselineFrac
@@ -161,11 +157,13 @@ func writeStatHeader(b *strings.Builder, colX, top float64, icon, label string) 
 }
 
 // writeStatField renders one `<div class="field">` stats row (grey 16px
-// octicon + 14px grey label) via chrome.SVGField at the given column.
-func writeStatField(b *strings.Builder, colX, top, colWidth float64, icon, label string) (string, float64) {
-	m, h := chrome.SVGField(colX, top, colWidth, icon, label)
+// octicon + 14px grey label) via chrome.SVGField in the right-hand
+// stats column (fixed at half the card width).
+func writeStatField(b *strings.Builder, top float64, icon, label string) float64 {
+	half := float64(chrome.CardWidth) / 2
+	m, h := chrome.SVGField(half, top, half, icon, label)
 	b.WriteString(m)
-	return m, h
+	return h
 }
 
 // buildIsometricSVG renders the 3D isometric contribution heatmap as
