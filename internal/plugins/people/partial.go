@@ -8,6 +8,7 @@ import (
 
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -56,27 +57,31 @@ func labelForType(t string, n int) string {
 	return fmt.Sprintf("%d %s", n, t)
 }
 
+// peopleGridInset mirrors `.people { padding: 0 10px }` — the avatar
+// grid's left inset within the card. peopleAvGap mirrors the 2px
+// horizontal margin `.people .avatar { margin: 0 2px }` puts on each
+// side, so neighbouring avatars sit 4px apart.
+const (
+	peopleGridInset = 10.0
+	peopleAvGap     = 4.0
+	// peopleSectionGap is the vertical breathing space between one
+	// per-type block and the next, standing in for the inter-`<section>`
+	// margins the HTML flow gave them.
+	peopleSectionGap = 4.0
+)
+
 // Partial renders the classic SVG fragment for the people plugin.
 // Mirrors upstream org_repo/source/templates/classic/partials/people.ejs.
 //
-// Output structure (per-type):
+// Output (native SVG): a `<section data-section="people">` anchor
+// wrapping a nested `<svg>`. Each requested type with a non-empty list
+// becomes a `<g data-type="...">` group stacked vertically — a section
+// header (people octicon + "N follower(s)" style label) above a wrapping
+// avatar grid of clipped `<image>` circles. The partial reports the
+// pixel height it consumes (#409 Phase B3).
 //
-//	<section data-section="people">
-//	  [for each type with non-empty list]:
-//	    <section>
-//	      <h2 class="field"><svg octicon/>${label}</h2>
-//	      <div class="row">
-//	        <section class="people">
-//	          <img class="avatar" src="..." width="${size}" height="${size}" alt="" />
-//	          ...
-//	        </section>
-//	      </div>
-//	    </section>
-//	</section>
-//
-// The wrapping `<section data-section="people">` is our addition for
-// downstream CSS/JS selectors; the inner per-type `<section>` blocks
-// preserve upstream's flat structure.
+// The wrapping `<section data-section="people">` and per-type
+// `data-type` hooks are our addition for downstream CSS/JS selectors.
 func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
 		return "", 0, nil
@@ -113,8 +118,10 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		avatarSize = defaultPeopleSize
 	}
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="people">`)
+	gridWidth := float64(chrome.CardWidth) - 2*peopleGridInset
+
+	var body strings.Builder
+	y := 0.0
 	for _, k := range keys {
 		list := r.Types[k]
 		if len(list) == 0 {
@@ -128,25 +135,26 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		if c, ok := r.Counts[k]; ok {
 			count = c
 		}
-		b.WriteString(`<section>`)
-		fmt.Fprintf(
-			&b, `<h2 class="field">%s%s</h2>`,
-			peopleOcticon,
-			partials.EscapeXML(labelForType(k, count)),
-		)
-		b.WriteString(`<div class="row">`)
-		fmt.Fprintf(&b, `<section class="people" data-type="%s">`, partials.EscapeXML(k))
+
+		// Each type block lays out at a local origin; the enclosing
+		// `<g transform>` translates it to the running y cursor so the
+		// blocks stack. data-type keeps the per-type DOM hook.
+		header, hh := chrome.SVGSectionHeader(peopleOcticon, labelForType(k, count))
+
+		specs := make([]chrome.SVGAvatarSpec, 0, len(list))
 		for _, p := range list {
-			fmt.Fprintf(
-				&b,
-				`<img class="avatar" src="%s" width="%d" height="%d" alt=""/>`,
-				partials.EscapeXML(p.AvatarURL), avatarSize, avatarSize,
-			)
+			specs = append(specs, chrome.SVGAvatarSpec{URL: p.AvatarURL})
 		}
-		b.WriteString(`</section>`)
-		b.WriteString(`</div>`)
-		b.WriteString(`</section>`)
+		grid, gh := chrome.SVGAvatarGrid(
+			peopleGridInset, hh, gridWidth, float64(avatarSize), peopleAvGap,
+			"people-"+k, specs,
+		)
+
+		fmt.Fprintf(&body, `<g data-type="%s" transform="translate(0,%d)">%s%s</g>`,
+			partials.EscapeXML(k), int(y), header, grid)
+		y += hh + gh + peopleSectionGap
 	}
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+
+	height := int(y)
+	return chrome.WrapSection("people", height, body.String()), height, nil
 }

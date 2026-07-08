@@ -34,10 +34,11 @@ const inlineFetchTimeout = 10 * time.Second
 
 // imgSrcRe captures the URL inside either an HTML `<img ... src="URL">`
 // or a native-SVG `<image ... href="URL">` / `<image ... xlink:href="URL">`
-// element. The header avatar migrated from `<img>` to `<image href>`
-// with the native-SVG conversion (#409 Phase B1) while other partials
-// (people / contributors / sponsors) still emit `<img src>`, so both
-// spellings must inline. The URL value is XML-escaped in the rendered
+// element. Avatars migrated from `<img>` to `<image href>` with the
+// native-SVG conversions (#409 Phase B1-B3: header, then topics /
+// sponsors / sponsorships, then people / contributors) while the still
+// unconverted partials (notable) emit `<img src>`, so both spellings
+// must inline. The URL value is XML-escaped in the rendered
 // SVG (EscapeXML turns `&` into `&amp;`), so the captured text may carry
 // entities that must be unescaped before the URL is fetched. Group 1 is
 // the tag up to and including the opening quote, group 2 is the URL,
@@ -52,8 +53,9 @@ var imgSrcRe = regexp.MustCompile(`(<(?:img\b[^>]*?\bsrc|image\b[^>]*?\b(?:xlink
 // Why this exists: GitHub renders embedded SVGs through its camo image
 // proxy, which does not resolve external resources referenced from
 // inside the SVG — the avatar / icon tags the partials emit (the
-// native-SVG base.header `<image>` avatar plus the people, contributors,
-// sponsors, sponsorships, topics `<img>` tags). An SVG that keeps
+// native-SVG base.header / people / contributors / sponsors /
+// sponsorships / topics `<image>` avatars plus the notable `<img>`
+// tags). An SVG that keeps
 // `src="https://avatars.githubusercontent.com/..."` therefore shows
 // broken icons on GitHub and anywhere the file is opened offline.
 // Inlining each image as base64 makes the SVG self-contained.

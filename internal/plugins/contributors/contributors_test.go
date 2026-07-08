@@ -422,15 +422,15 @@ func TestPartial_ContributionsDisplayMode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
-	// Upstream parity (#540): chips are <div class="label">, login is
-	// raw text, and the commit count rides on a <div class="contributions">
-	// badge with an inline commits octicon — matching
-	// org_repo/source/templates/repository/partials/contributors.ejs.
-	// Adds/dels stay in <span class="label-right"> as a Go-specific
+	// #409 Phase B3: chips render as native SVG — a <g data-login> group,
+	// the login as a <text>, and the commit count on a <g
+	// class="contributions"> badge with an inline commits octicon. Adds/
+	// dels stay in a <g class="label-right"> badge as a Go-specific
 	// extension while contributors_contributions is unadopted upstream.
 	for _, want := range []string{
-		`<div class="label" data-login="octocat">`,
-		`<div class="contributions">2 <svg`,
+		`<g data-login="octocat"`,
+		`class="contributions"`,
+		`>2</text>`,
 		"++15 --5",
 	} {
 		if !strings.Contains(got, want) {
@@ -466,13 +466,13 @@ func TestPartial_LoginWithDigitsHasExplicitDelimiter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
-	if !strings.Contains(got, `<div class="contributions">67 <svg`) {
+	if !strings.Contains(got, `class="contributions"`) || !strings.Contains(got, `>67</text>`) {
 		t.Fatalf("expected separate count badge; got %q", got)
 	}
 	if strings.Contains(got, "mjun081267") {
 		t.Fatalf("regression: login and commit count fused into %q", "mjun081267")
 	}
-	for _, want := range []string{`<div class="contributions">67 <svg`, "++1234 --56"} {
+	for _, want := range []string{`class="contributions"`, `>67</text>`, "++1234 --56"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("expected %q in %q", want, got)
 		}
@@ -507,8 +507,8 @@ func TestPartial_StatsPendingOmitsDiffSpan(t *testing.T) {
 		t.Fatalf("StatsPending must omit the add/del diff span; got %q", got)
 	}
 	// The commit count still carries the contribution signal via the
-	// upstream <div class="contributions"> badge (#540).
-	if !strings.Contains(got, `<div class="contributions">3 <svg`) {
+	// <g class="contributions"> badge.
+	if !strings.Contains(got, `class="contributions"`) || !strings.Contains(got, `>3</text>`) {
 		t.Fatalf("commit count from minimal stub should still render; got %q", got)
 	}
 }
