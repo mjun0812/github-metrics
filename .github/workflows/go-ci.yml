@@ -126,6 +126,17 @@ jobs:
           mkdir -p "$HOME/.local/bin"
           install -m 0755 resvg "$HOME/.local/bin/resvg"
           echo "METRICS_RESVG_PATH=$HOME/.local/bin/resvg" >> "$GITHUB_ENV"
+      # The ARC runner pod ships no fonts, so resvg would skip every
+      # <text> and tests/visual's non-transparent-ratio floor trips.
+      # Reuse the Liberation Sans files already embedded for Go-side
+      # measurement (internal/render/fontmetrics) — resvg scans
+      # ~/.local/share/fonts, and using the identical TTFs keeps the
+      # raster deterministic against the measurement font.
+      - name: install fonts for resvg
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/share/fonts"
+          cp internal/render/fontmetrics/fonts/LiberationSans-*.ttf "$HOME/.local/share/fonts/"
       # Run only the rasterizer-dependent tests here; the default `test`
       # job already covers the rest of the suite (where they skip).
       - name: go test (resvg)
