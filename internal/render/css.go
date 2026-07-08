@@ -43,16 +43,13 @@ func OptimizeCSS(in string) (string, error) {
 
 	// Parse a READ-ONLY copy of the document for the selector-purge
 	// analysis only (keepSelector needs to know which selectors match a
-	// node in the body). The actual replacement happens via regex on
-	// the original string below so the SVG body — in particular the
-	// foreignObject XHTML — is preserved byte-for-byte. Upstream's
-	// optimize.css does the same: it regex-extracts the style blocks and
-	// never DOM-round-trips the rendered SVG (utils.mjs). The previous
-	// goquery round-trip here re-serialized the whole document as HTML,
-	// which stripped foreignObject `xmlns`, injected an <html>/<body>
-	// wrapper, and left content that the downstream FormatXML pass then
-	// mis-parsed — collapsing chart/list rows into nested, malformed
-	// elements (see issue: habits/isocalendar layout collapse).
+	// node in the body). The actual replacement happens via regex on the
+	// original string below so the SVG body is preserved byte-for-byte,
+	// matching upstream's optimize.css, which regex-extracts the style
+	// blocks and never DOM-round-trips the rendered SVG (utils.mjs). A
+	// goquery round-trip here would re-serialize the document as HTML —
+	// injecting an <html>/<body> wrapper and dropping the SVG `xmlns` —
+	// which the downstream FormatXML pass then mis-parses.
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(in))
 	if err != nil {
 		return in, fmt.Errorf("render: OptimizeCSS parse: %w", err)
