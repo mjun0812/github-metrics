@@ -93,16 +93,18 @@ func (t *classicTemplate) Check(_ map[string]any, account, format string) error 
 	return templates.CheckFormat(t.meta, format)
 }
 
-// Run renders the classic SVG envelope. The pipeline is:
+// Run renders the classic SVG envelope. Since #409 Phase C the outer
+// foreignObject is gone: every partial emits native SVG and self-reports
+// the pixel height it consumes, so the template stacks sections with
+// `<g transform="translate(0,y)">`, sums the heights, and writes the
+// root `<svg height>` directly (no more `height="99999"` placeholder or
+// `#metrics-end` measurement anchor). The pipeline is:
 //
-//  1. Open <svg width="480" height="99999" class="">
-//  2. <defs><style><!-- fonts.css --></style></defs>
-//  3. <style data-optimizable="true"><!-- style.css --></style>
-//  4. <style><!-- extras placeholder --></style>
-//  5. Open <foreignObject> + <div class="items-wrapper">
-//  6. Concatenate partials in the declared order
-//  7. Optional metadata <footer> when the metadata base section is enabled
-//  8. Close the wrapper, <div id="metrics-end" />, foreignObject, svg
+//  1. Collect enabled base + plugin partials + the metadata footer,
+//     each as (markup, height).
+//  2. Stack them top-to-bottom, accumulating y.
+//  3. Open <svg width="480" height="<sum>" viewBox="0 0 480 <sum>">
+//     with the fonts / style blocks, then the translated sections.
 func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext) (string, error) {
 	if pc == nil {
 		return "", fmt.Errorf("classic: nil PartialContext")
@@ -110,19 +112,14 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 	if err := t.styles.Load(t.fsys); err != nil {
 		return "", err
 	}
-	var b strings.Builder
-	b.WriteString(`<svg xmlns="http://www.w3.org/2000/svg" width="480" height="99999" class="">`)
-	fmt.Fprintf(&b, `<defs><style>%s</style></defs>`, t.styles.Fonts)
-	fmt.Fprintf(&b, `<style data-optimizable="true">%s</style>`, t.styles.Style)
-	b.WriteString(`<style></style>`)
-	b.WriteString(`<foreignObject x="0" y="0" width="100%" height="100%">`)
-	b.WriteString(`<div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper">`)
 
 	// Resolve which base.* partials are enabled from the six
 	// `chrome_<section>` boolean inputs (#640). v3.0 (#649) dropped
 	// the legacy `base`=CSV translator and the default-all fallback —
 	// callers must opt into each section explicitly.
 	baseSections := chrome.ResolveBaseSections(pc.Inputs)
+
+	var sections []chrome.StackedSection
 
 	for _, name := range t.partials {
 		if !partialEnabledByBase(name, baseSections) {
@@ -136,23 +133,19 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 			// the mismatch loudly.
 			return "", fmt.Errorf("classic: partial %q listed in _.json but not implemented", name)
 		}
-		// Phase B0 (#409): partials now report the height they consume as
-		// the middle return value. It is ignored for now — the outer
-		// foreignObject still lays partials out by HTML flow; Phase C will
-		// sum these to size the root <svg>.
-		frag, _, err := fn(ctx, pc)
+		frag, h, err := fn(ctx, pc)
 		if err != nil {
 			return "", fmt.Errorf("classic: partial %q: %w", name, err)
 		}
-		b.WriteString(frag)
+		sections = append(sections, chrome.StackedSection{Markup: frag, Height: h})
 	}
 
 	// M4 plugin partial dispatcher
 	//
 	// Walks partials.PluginPartialOrder, applying the truthy gate, the
 	// Skipped check, and the Lookup miss tolerance. Each non-empty
-	// fragment is wrapped in
-	//   <div class="plugin-<slug>" data-plugin="<slug>">...</div>
+	// fragment is stacked in a
+	//   <g class="plugin-<slug>" data-plugin="<slug>" transform=...>...</g>
 	// so downstream DOM diffing (data-changed mode, M6) can locate each
 	// plugin's output unambiguously.
 	for _, slug := range partials.PluginPartialOrder {
@@ -163,8 +156,7 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 		// the legacy `base=header`) and `plugin_header=yes`, the static
 		// base.header partial above has already emitted the identity
 		// card. Skipping the plugin entry here keeps the SVG to a
-		// single <section data-section="header"> instead of
-		// duplicating it.
+		// single data-section="header" group instead of duplicating it.
 		if slug == "header" {
 			if _, headerEnabledByBase := baseSections["header"]; headerEnabledByBase {
 				continue
@@ -191,11 +183,7 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 			// the wrapper.
 			continue
 		}
-		// Phase B0 (#409): partials now report the height they consume as
-		// the middle return value. It is ignored for now — the outer
-		// foreignObject still lays partials out by HTML flow; Phase C will
-		// sum these to size the root <svg>.
-		frag, _, err := fn(ctx, pc)
+		frag, h, err := fn(ctx, pc)
 		if err != nil {
 			return "", fmt.Errorf("classic: plugin partial %q: %w", slug, err)
 		}
@@ -204,22 +192,28 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 			// nothing (e.g. empty result list) emits no wrapper.
 			continue
 		}
-		fmt.Fprintf(&b, `<div class="plugin-%s" data-plugin="%s">`,
-			partials.EscapeXML(slug), partials.EscapeXML(slug))
-		b.WriteString(frag)
-		b.WriteString(`</div>`)
+		sections = append(sections, chrome.StackedSection{
+			Markup: frag,
+			Height: h,
+			Attrs: fmt.Sprintf(` class="plugin-%s" data-plugin="%s"`,
+				partials.EscapeXML(slug), partials.EscapeXML(slug)),
+		})
 	}
 
-	if footer := chrome.MetadataFooter(pc, baseSections, chrome.FooterOpts{IncludePrivateNotice: true}); footer != "" {
-		b.WriteString(footer)
+	if footer, h := chrome.MetadataFooter(pc, baseSections, chrome.FooterOpts{IncludePrivateNotice: true}); footer != "" {
+		sections = append(sections, chrome.StackedSection{Markup: footer, Height: h})
 	}
-	// #metrics-end sits at the very end of the foreignObject so the
-	// chromedp trim measures the height *including* the footer. The
-	// earlier placement (before the footer) clipped the metadata span
-	// because the trim stopped above the section.
-	b.WriteString(`<div id="metrics-end"></div>`)
 
-	b.WriteString(`</div></foreignObject></svg>`)
+	body, total := chrome.StackSections(sections, pc.Logger)
+
+	var b strings.Builder
+	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="%d" viewBox="0 0 480 %d" class="">`,
+		total, total)
+	fmt.Fprintf(&b, `<defs><style>%s</style></defs>`, t.styles.Fonts)
+	fmt.Fprintf(&b, `<style data-optimizable="true">%s</style>`, t.styles.Style)
+	b.WriteString(`<style></style>`)
+	b.WriteString(body)
+	b.WriteString(`</svg>`)
 	return b.String(), nil
 }
 

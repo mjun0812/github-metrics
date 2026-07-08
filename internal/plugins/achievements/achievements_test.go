@@ -392,7 +392,7 @@ func TestPartial_AchievementsCompact_Golden(t *testing.T) {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
 	for _, marker := range []string{
-		`<section data-section="achievements">`,
+		`<g data-section="achievements">`,
 		`class="achievement s"`,
 		`data-rank="S"`,
 	} {

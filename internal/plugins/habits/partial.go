@@ -128,7 +128,7 @@ func bgLevel(p float64) int {
 // native SVG (#409 Phase B5). Mirrors upstream
 // org_repo/source/templates/classic/partials/habits.ejs.
 //
-// Output: a `<section data-section="habits">` anchor wrapping a nested
+// Output: a `<g data-section="habits">` anchor wrapping a nested
 // `<svg>` with two stacked blocks:
 //
 //  1. facts — the light-bulb section header + a list of `<text>` facts

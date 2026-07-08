@@ -314,7 +314,7 @@ func TestPartial_Isocalendar_Golden(t *testing.T) {
 	// <svg>, no foreignObject HTML). The stats panel + isometric wrapper
 	// markers survive; the h2/h3/field HTML wrappers are gone.
 	for _, marker := range []string{
-		`<section data-section="isocalendar" data-duration="half-year">`,
+		`<g data-section="isocalendar" data-duration="half-year">`,
 		`Contributions calendar`,
 		`class="isocalendar-grid"`,
 		`<filter id="brightness1">`,

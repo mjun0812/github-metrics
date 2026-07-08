@@ -116,9 +116,9 @@ func TestChromeSectionInputKey(t *testing.T) {
 
 func TestMetadataFooter(t *testing.T) {
 	t.Run("not enabled", func(t *testing.T) {
-		got := chrome.MetadataFooter(&templates.PartialContext{Inputs: map[string]any{}}, nil, chrome.FooterOpts{})
-		if got != "" {
-			t.Errorf("expected empty, got %q", got)
+		got, h := chrome.MetadataFooter(&templates.PartialContext{Inputs: map[string]any{}}, nil, chrome.FooterOpts{})
+		if got != "" || h != 0 {
+			t.Errorf("expected empty/0, got %q, %d", got, h)
 		}
 	})
 
@@ -127,15 +127,23 @@ func TestMetadataFooter(t *testing.T) {
 			Inputs: map[string]any{},
 			Data:   plugins.NewData(),
 		}
-		got := chrome.MetadataFooter(pc, map[string]struct{}{"metadata": {}}, chrome.FooterOpts{})
+		got, h := chrome.MetadataFooter(pc, map[string]struct{}{"metadata": {}}, chrome.FooterOpts{})
 		if !strings.Contains(got, `data-section="metadata"`) {
 			t.Errorf("missing section attr: %q", got)
 		}
 		if !strings.Contains(got, "mjun0812/github-metrics@") {
 			t.Errorf("missing version: %q", got)
 		}
-		if !strings.Contains(got, "<footer>") || !strings.Contains(got, "</footer>") {
-			t.Errorf("missing footer tags: %q", got)
+		// #409 Phase C: the footer is native SVG (`<text>`), not an HTML
+		// `<footer>` element, and self-reports a positive height.
+		if !strings.Contains(got, "<text") {
+			t.Errorf("footer should render as native SVG <text>: %q", got)
+		}
+		if strings.Contains(got, "<footer>") {
+			t.Errorf("footer must no longer emit an HTML <footer> element: %q", got)
+		}
+		if h <= 0 {
+			t.Errorf("footer height should be positive, got %d", h)
 		}
 	})
 
@@ -143,7 +151,7 @@ func TestMetadataFooter(t *testing.T) {
 		data := plugins.NewData()
 		data.Account = plugins.AccountUser
 		pc := &templates.PartialContext{Inputs: map[string]any{}, Data: data}
-		got := chrome.MetadataFooter(pc, map[string]struct{}{"metadata": {}}, chrome.FooterOpts{IncludePrivateNotice: true})
+		got, _ := chrome.MetadataFooter(pc, map[string]struct{}{"metadata": {}}, chrome.FooterOpts{IncludePrivateNotice: true})
 		if !strings.Contains(got, "include private contributions") {
 			t.Errorf("missing private notice: %q", got)
 		}
@@ -153,7 +161,7 @@ func TestMetadataFooter(t *testing.T) {
 		data := plugins.NewData()
 		data.Account = plugins.AccountUser
 		pc := &templates.PartialContext{Inputs: map[string]any{}, Data: data}
-		got := chrome.MetadataFooter(pc, map[string]struct{}{"metadata": {}}, chrome.FooterOpts{})
+		got, _ := chrome.MetadataFooter(pc, map[string]struct{}{"metadata": {}}, chrome.FooterOpts{})
 		if strings.Contains(got, "include private contributions") {
 			t.Errorf("unexpected private notice: %q", got)
 		}
@@ -164,7 +172,7 @@ func TestMetadataFooter(t *testing.T) {
 			Inputs: map[string]any{"base.metadata": "yes"},
 			Data:   plugins.NewData(),
 		}
-		got := chrome.MetadataFooter(pc, nil, chrome.FooterOpts{})
+		got, _ := chrome.MetadataFooter(pc, nil, chrome.FooterOpts{})
 		if !strings.Contains(got, `data-section="metadata"`) {
 			t.Errorf("legacy input should enable: %q", got)
 		}

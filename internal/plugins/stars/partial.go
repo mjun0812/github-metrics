@@ -85,7 +85,7 @@ func langDotOcticon(color string) string {
 // Partial renders the classic SVG fragment for the stars plugin.
 // Mirrors upstream org_repo/source/templates/classic/partials/stars.ejs.
 //
-// Output (native SVG): a `<section data-section="stars">` anchor
+// Output (native SVG): a `<g data-section="stars">` anchor
 // wrapping a nested `<svg>` with a section header and one repository
 // card per starred repo — the repo/fork octicon + blue name + "starred
 // <date>" row, the wrapped description, and the info row (language

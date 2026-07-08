@@ -116,7 +116,9 @@ func TestIntroduction_PrimaryLanguageBadge(t *testing.T) {
 	got, _, _ := Introduction(context.Background(), newPC(&plugins.Repo{
 		PrimaryLanguage: "Go", PrimaryLanguageColor: "#00ADD8", LicenseName: "MIT", DefaultBranch: "main",
 	}))
-	for _, s := range []string{`badge language`, "Go", "#00ADD8", "MIT", "main"} {
+	// #409 Phase C: native-SVG badges — the language dot is a `<circle>`
+	// with the literal `--lang-color` fill; each badge label is a `<text>`.
+	for _, s := range []string{`data-section="introduction"`, "Go", `fill="#00ADD8"`, "MIT", "main"} {
 		if !strings.Contains(got, s) {
 			t.Errorf("expected %q in %q", s, got)
 		}

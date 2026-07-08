@@ -3,7 +3,6 @@ package base
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/format"
 	"github.com/mjun0812/github-metrics/internal/plugins"
@@ -134,9 +133,12 @@ func repositoriesEnabled(pc *templates.PartialContext) bool {
 	return false
 }
 
-// ActivityPartial renders the activity + community two-column summary.
-// Mirrors the deleted upstream base.activity+community.ejs (account ===
-// "user" branch). Renders nothing for organization profiles.
+// ActivityPartial renders the activity + community two-column summary as
+// native SVG (#409 Phase C: the outer foreignObject is gone, so the
+// panel lays itself out and reports its own pixel height). Mirrors the
+// deleted upstream base.activity+community.ejs (account === "user"
+// branch). Renders nothing for organization profiles. Each column
+// carries its own `<h2>` heading; the taller column sets the height.
 func ActivityPartial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if !activityEnabled(pc) {
 		return "", 0, nil
@@ -150,40 +152,34 @@ func ActivityPartial(_ context.Context, pc *templates.PartialContext) (string, i
 	}
 	u := r.Profile.User
 
-	var b strings.Builder
-	b.WriteString(`<section class="largeable largeable-inline-flex">`)
-	b.WriteString(`<div class="row">`)
-
 	// Activity column. Counters render unconditionally to mirror the
 	// upstream EJS (which has no zero guard on these rows).
-	b.WriteString(`<section>`)
-	b.WriteString(`<h2 class="field">` + octChart + `Activity</h2>`)
-	writeCountRow(&b, octCommit, u.Commits, "Commit", "Commits")
-	writeCountRow(&b, octPRReview, u.PullRequestsReviewed,
-		"Pull request reviewed", "Pull requests reviewed")
-	writeCountRow(&b, octPullRequest, u.PullRequestsOpened,
-		"Pull request opened", "Pull requests opened")
-	writeCountRow(&b, octIssue, u.IssuesOpened,
-		"Issue opened", "Issues opened")
-	writeCountRow(&b, octComment, u.IssueComments,
-		"issue comment", "issue comments")
-	b.WriteString(`</section>`)
+	left := chrome.NewSVGColumn(0, chrome.CardWidth/2, 0)
+	left.Header(octChart, "Activity")
+	left.Field(octCommit, countLabel(u.Commits, "Commit", "Commits"))
+	left.Field(octPRReview, countLabel(u.PullRequestsReviewed,
+		"Pull request reviewed", "Pull requests reviewed"))
+	left.Field(octPullRequest, countLabel(u.PullRequestsOpened,
+		"Pull request opened", "Pull requests opened"))
+	left.Field(octIssue, countLabel(u.IssuesOpened,
+		"Issue opened", "Issues opened"))
+	left.Field(octComment, countLabel(u.IssueComments,
+		"issue comment", "issue comments"))
 
 	// Community column. Renders all rows unconditionally (matches
 	// upstream which has no zero guards; empty accounts will see e.g.
 	// "Member of 0 organizations" — same as the legacy behaviour).
-	b.WriteString(`<section>`)
-	b.WriteString(`<h2 class="field">` + octCommunity + `Community stats</h2>`)
-	writeOfRow(&b, octOrgs, "Member of", u.Organizations, "organization", "organizations")
-	writeOfRow(&b, octFollowing, "Following", u.Following, "user", "users")
-	writeOfRow(&b, octSponsoring, "Sponsoring", u.Sponsoring, "repository", "repositories")
-	writeOfRow(&b, octStar, "Starred", u.Starred, "repository", "repositories")
-	writeOfRow(&b, octEye, "Watching", u.Watching, "repository", "repositories")
-	b.WriteString(`</section>`)
+	right := chrome.NewSVGColumn(chrome.CardWidth/2, chrome.CardWidth/2, 0)
+	right.Header(octCommunity, "Community stats")
+	right.Field(octOrgs, ofLabel("Member of", u.Organizations, "organization", "organizations"))
+	right.Field(octFollowing, ofLabel("Following", u.Following, "user", "users"))
+	right.Field(octSponsoring, ofLabel("Sponsoring", u.Sponsoring, "repository", "repositories"))
+	right.Field(octStar, ofLabel("Starred", u.Starred, "repository", "repositories"))
+	right.Field(octEye, ofLabel("Watching", u.Watching, "repository", "repositories"))
 
-	b.WriteString(`</div>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+	height := int(maxF(left.Height(), right.Height()))
+	return chrome.WrapSection("activity-community", height,
+		left.Markup()+right.Markup()), height, nil
 }
 
 // RepositoriesPartial renders the repositories summary panel. Mirrors
@@ -204,35 +200,28 @@ func RepositoriesPartial(_ context.Context, pc *templates.PartialContext) (strin
 		summary = &plugins.ComputedRepositories{}
 	}
 
-	var b strings.Builder
-	b.WriteString(`<section class="largeable largeable-inline-flex">`)
-	b.WriteString(`<div class="row">`)
-	b.WriteString(`<section>`)
+	// Heading: "<N> Repositor[y/ies]", full-width. The upstream
+	// parenthesised "(including <F> forks)" suffix was dropped
+	// intentionally — the fork count is already surfaced in the Forkers
+	// row below, and the duplicate phrasing crowded the heading on dense
+	// profiles.
+	head, headH := chrome.SVGSectionHeader(octRepo, repositoriesHeading(summary))
+	colTop := headH
 
-	// Heading: "<N> Repositor[y/ies]". The upstream parenthesised
-	// "(including <F> forks)" suffix was dropped intentionally — the
-	// fork count is already surfaced in the Forkers row below, and the
-	// duplicate phrasing crowded the heading on dense profiles.
-	heading := repositoriesHeading(summary)
-	b.WriteString(`<h2 class="field">` + octRepo + heading + `</h2>`)
-	b.WriteString(`<div class="row">`)
+	// Left column: license / releases / packages / disk usage.
+	left := chrome.NewSVGColumn(0, chrome.CardWidth/2, colTop)
+	left.Field(octLicense, licensePreference(summary))
+	left.Field(octRelease, countLabel(summary.Releases, "Release", "Releases"))
+	left.Field(octPackage, countLabel(summary.Packages, "Package", "Packages"))
+	left.Field(octDatabase, format.FormatDiskKB(summary.DiskUsage)+" used")
 
-	// Left column.
-	b.WriteString(`<section>`)
-	b.WriteString(`<div class="field">` + octLicense + licensePreference(summary) + `</div>`)
-	writeCountRow(&b, octRelease, summary.Releases, "Release", "Releases")
-	writeCountRow(&b, octPackage, summary.Packages, "Package", "Packages")
-	b.WriteString(`<div class="field">` + octDatabase +
-		partials.EscapeXML(format.FormatDiskKB(summary.DiskUsage)) + ` used</div>`)
-	b.WriteString(`</section>`)
-
-	// Right column.
-	b.WriteString(`<section>`)
-	writeCountRow(&b, octHeartSponsor, r.Profile.User.SponsorshipsAsMaintainer,
-		"Sponsor", "Sponsors")
-	writeCountRow(&b, octStar, summary.Stargazers, "Stargazer", "Stargazers")
-	writeCountRow(&b, octForker, summary.Forks, "Forker", "Forkers")
-	writeCountRow(&b, octEye, summary.Watchers, "Watcher", "Watchers")
+	// Right column: sponsors / stargazers / forkers / watchers / views.
+	right := chrome.NewSVGColumn(chrome.CardWidth/2, chrome.CardWidth/2, colTop)
+	right.Field(octHeartSponsor, countLabel(r.Profile.User.SponsorshipsAsMaintainer,
+		"Sponsor", "Sponsors"))
+	right.Field(octStar, countLabel(summary.Stargazers, "Stargazer", "Stargazers"))
+	right.Field(octForker, countLabel(summary.Forks, "Forker", "Forkers"))
+	right.Field(octEye, countLabel(summary.Watchers, "Watcher", "Watchers"))
 	// Traffic views are surfaced inline at the bottom of the right
 	// column to mirror upstream's base.repositories.ejs behaviour
 	// (`<%= plugins.traffic.views.count %> view[s] in last two weeks`).
@@ -242,64 +231,59 @@ func RepositoriesPartial(_ context.Context, pc *templates.PartialContext) (strin
 	if rawTraffic, ok := pc.Data.GetPlugin("traffic"); ok && rawTraffic != nil {
 		if tr, ok := rawTraffic.(interface{ TotalViews() int }); ok {
 			if views := tr.TotalViews(); views > 0 {
-				writeTrafficViewsRow(&b, octViews, views)
+				right.Field(octViews, viewsLabel(views))
 			}
 		}
 	}
-	b.WriteString(`</section>`)
 
-	b.WriteString(`</div>`) // close inner row
-	b.WriteString(`</section>`)
-	b.WriteString(`</div>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+	height := int(colTop + maxF(left.Height(), right.Height()))
+	return chrome.WrapSection("repositories", height,
+		head+left.Markup()+right.Markup()), height, nil
 }
 
-// writeCountRow emits a `<div class="field">` row of the shape
-// "<icon><count> <noun>" where `noun` is `singular` when count == 1 and
-// `plural` otherwise. The count is rendered with the project's k/m/b
-// short form via partials.FormatCount; nouns flow through EscapeXML so
-// any HTML-significant character in future labels stays safe.
-func writeCountRow(b *strings.Builder, icon string, count int, singular, plural string) {
+// countLabel returns the "<count> <noun>" field label where `noun` is
+// `singular` when count == 1 and `plural` otherwise. The count is
+// rendered with the project's k/m/b short form via partials.FormatCount.
+// The result is plain text handed to chrome.SVGText, which XML-escapes
+// it, so no pre-escaping happens here.
+func countLabel(count int, singular, plural string) string {
 	noun := plural
 	if count == 1 {
 		noun = singular
 	}
-	b.WriteString(`<div class="field">`)
-	b.WriteString(icon)
-	fmt.Fprintf(b, "%s %s", partials.FormatCount(int64(count)), partials.EscapeXML(noun))
-	b.WriteString(`</div>`)
+	return fmt.Sprintf("%s %s", partials.FormatCount(int64(count)), noun)
 }
 
-// writeTrafficViewsRow emits the "<icon><count> view[s] in last two
-// weeks" field rendered inside RepositoriesPartial's right column when
-// the traffic plugin published a non-zero TotalViews. The pluralisation
-// follows upstream's `s()` helper convention: "view" for count == 1,
-// "views" otherwise.
-func writeTrafficViewsRow(b *strings.Builder, icon string, count int) {
+// viewsLabel returns the "<count> view[s] in last two weeks" field label
+// surfaced in RepositoriesPartial's right column when the traffic plugin
+// published a non-zero TotalViews. The pluralisation follows upstream's
+// `s()` helper convention: "view" for count == 1, "views" otherwise.
+func viewsLabel(count int) string {
 	noun := "views"
 	if count == 1 {
 		noun = "view"
 	}
-	b.WriteString(`<div class="field">`)
-	b.WriteString(icon)
-	fmt.Fprintf(b, "%s %s in last two weeks", partials.FormatCount(int64(count)), partials.EscapeXML(noun))
-	b.WriteString(`</div>`)
+	return fmt.Sprintf("%s %s in last two weeks", partials.FormatCount(int64(count)), noun)
 }
 
-// writeOfRow emits a `<div class="field">` row of the shape
-// "<icon><prefix> <count> <noun>" (e.g. "Member of 3 organizations").
-// Used by the community column where the upstream EJS phrasing leads
-// with the verb and inserts the count mid-sentence.
-func writeOfRow(b *strings.Builder, icon, prefix string, count int, singular, plural string) {
+// ofLabel returns the "<prefix> <count> <noun>" field label (e.g.
+// "Member of 3 organizations") used by the community column, where the
+// upstream EJS phrasing leads with the verb and inserts the count
+// mid-sentence.
+func ofLabel(prefix string, count int, singular, plural string) string {
 	noun := plural
 	if count == 1 {
 		noun = singular
 	}
-	b.WriteString(`<div class="field">`)
-	b.WriteString(icon)
-	fmt.Fprintf(b, "%s %s %s", partials.EscapeXML(prefix), partials.FormatCount(int64(count)), partials.EscapeXML(noun))
-	b.WriteString(`</div>`)
+	return fmt.Sprintf("%s %s %s", prefix, partials.FormatCount(int64(count)), noun)
+}
+
+// maxF returns the larger of two float64 column heights.
+func maxF(a, b float64) float64 {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 // repositoriesHeading returns "<N> Repositor[y/ies]" with Repository /
@@ -330,5 +314,7 @@ func licensePreference(s *plugins.ComputedRepositories) string {
 	if top.Name == "" {
 		return "No license preference"
 	}
-	return "Prefers " + partials.EscapeXML(top.Name) + " license"
+	// Plain text: chrome.SVGText XML-escapes the label at render time, so
+	// no pre-escaping here (that would double-encode `<` / `&`).
+	return "Prefers " + top.Name + " license"
 }

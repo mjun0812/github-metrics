@@ -112,21 +112,39 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, int, e
 	return wrapRepoHeaderSVG(body.String(), height), height, nil
 }
 
-// wrapRepoHeaderSVG wraps the repository header body in the
-// `<section data-section="header" data-template="repository">` HTML
-// anchor (kept for the section gate / DOM diffing) plus the fixed-height
-// nested `<svg>` block the outer foreignObject flow lays out. Mirrors
+// wrapRepoHeaderSVG wraps the repository header body in a
+// `<g data-section="header" data-template="repository">` anchor (kept
+// for the section gate / DOM diffing) plus a fixed-height nested `<svg>`.
+// Pure SVG since #409 Phase C dropped the outer foreignObject; mirrors
 // the classic header's wrapHeaderSVG but carries the repository
 // `data-template` hook.
 func wrapRepoHeaderSVG(body string, height int) string {
 	return fmt.Sprintf(
-		`<section data-section="header" data-template="repository"><svg xmlns="http://www.w3.org/2000/svg" width="100%%" height="%d" viewBox="0 0 %d %d">%s</svg></section>`,
+		`<g data-section="header" data-template="repository"><svg xmlns="http://www.w3.org/2000/svg" width="100%%" height="%d" viewBox="0 0 %d %d">%s</svg></g>`,
 		height, chrome.CardWidth, height, body,
 	)
 }
 
-// Introduction surfaces the repo's about text + primary language /
-// license badges. Returns "" when data.Repo is nil.
+// Native-SVG introduction-badges geometry. Mirrors `.repo-badges .badge`
+// (14px inherited body text on a row, 14px inter-badge margin) with the
+// language badge carrying a 10px `--lang-color` dot (#409 Phase C: the
+// dot color is inlined as a literal fill since resvg does not resolve CSS
+// variables).
+const (
+	introInset    = 5.0               // left inset (matches other rows)
+	introTop      = 2.0               // small top margin above the badge row
+	introRowH     = chrome.FieldPitch // one field-row worth of height
+	introFont     = 14.0              // inherited body font-size
+	introFill     = "#777777"         // inherited body color
+	introBadgeGap = 14.0              // `.badge { margin-right: 14px }`
+	introDotR     = 5.0               // 10px `::before` dot radius
+	introDotGap   = 5.0               // dot `margin-right: 5px`
+	introDotFill  = "#959da5"         // `--lang-color` fallback
+)
+
+// Introduction surfaces the repo's primary language / license / default
+// branch badges as a native-SVG row (#409 Phase C). Returns "" / 0 when
+// data.Repo is nil or no badge field is set.
 func Introduction(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil || pc.Data.Repo == nil {
 		return "", 0, nil
@@ -135,29 +153,36 @@ func Introduction(_ context.Context, pc *templates.PartialContext) (string, int,
 	if r.PrimaryLanguage == "" && r.LicenseName == "" && r.DefaultBranch == "" {
 		return "", 0, nil
 	}
+
+	rowCenter := introTop + introRowH/2
+	baseline := rowCenter + introFont*0.32
+
 	var b strings.Builder
-	b.WriteString(`<section data-section="introduction">`)
-	b.WriteString(`<div class="row repo-badges">`)
+	cx := introInset
 	if r.PrimaryLanguage != "" {
-		colorAttr := ""
+		dotFill := introDotFill
 		if r.PrimaryLanguageColor != "" {
-			colorAttr = fmt.Sprintf(` style="--lang-color:%s"`,
-				classicpart.EscapeXML(r.PrimaryLanguageColor))
+			dotFill = r.PrimaryLanguageColor
 		}
-		fmt.Fprintf(&b, `<span class="badge language"%s>%s</span>`,
-			colorAttr, classicpart.EscapeXML(r.PrimaryLanguage))
+		fmt.Fprintf(&b, `<circle cx="%d" cy="%d" r="%d" fill=%q/>`,
+			int(cx+introDotR), int(rowCenter), int(introDotR), dotFill)
+		cx += 2*introDotR + introDotGap
+		b.WriteString(chrome.SVGText(cx, baseline, r.PrimaryLanguage,
+			chrome.SVGTextOpts{Size: introFont, Fill: introFill}))
+		cx += fontmetrics.Width(r.PrimaryLanguage, introFont) + introBadgeGap
 	}
 	if r.LicenseName != "" {
-		fmt.Fprintf(&b, `<span class="badge license">%s</span>`,
-			classicpart.EscapeXML(r.LicenseName))
+		b.WriteString(chrome.SVGText(cx, baseline, r.LicenseName,
+			chrome.SVGTextOpts{Size: introFont, Fill: introFill}))
+		cx += fontmetrics.Width(r.LicenseName, introFont) + introBadgeGap
 	}
 	if r.DefaultBranch != "" {
-		fmt.Fprintf(&b, `<span class="badge branch">%s</span>`,
-			classicpart.EscapeXML(r.DefaultBranch))
+		b.WriteString(chrome.SVGText(cx, baseline, r.DefaultBranch,
+			chrome.SVGTextOpts{Size: introFont, Fill: introFill}))
 	}
-	b.WriteString(`</div>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+
+	height := int(introTop + introRowH)
+	return chrome.WrapSection("introduction", height, b.String()), height, nil
 }
 
 // BaseCommunity renders contributors / stargazers / forks counts.
@@ -172,7 +197,7 @@ func BaseCommunity(_ context.Context, pc *templates.PartialContext) (string, int
 		return "", 0, nil
 	}
 	var b strings.Builder
-	b.WriteString(`<section data-section="community">`)
+	b.WriteString(`<g data-section="community">`)
 	b.WriteString(`<div class="row community-stats">`)
 	fmt.Fprintf(&b, `<span class="stat stargazers">%s stars</span>`,
 		classicpart.FormatCount(int64(maxNonNegative(r.Stargazers))))
@@ -197,7 +222,7 @@ func BaseActivity(_ context.Context, pc *templates.PartialContext) (string, int,
 		return "", 0, nil
 	}
 	var b strings.Builder
-	b.WriteString(`<section data-section="activity">`)
+	b.WriteString(`<g data-section="activity">`)
 	b.WriteString(`<div class="row activity-stats">`)
 	fmt.Fprintf(&b, `<span class="stat commits">%s commits (30d)</span>`,
 		classicpart.FormatCount(int64(maxNonNegative(a.RecentCommits))))

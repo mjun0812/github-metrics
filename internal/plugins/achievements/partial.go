@@ -139,7 +139,7 @@ func achTitle(a Achievement) string {
 // as native SVG (#409 Phase B6). Mirrors upstream
 // org_repo/source/templates/classic/partials/achievements.ejs.
 //
-// Output (native SVG): a `<section data-section="achievements">` anchor
+// Output (native SVG): a `<g data-section="achievements">` anchor
 // wrapping a nested `<svg>` with the trophy section header above the
 // achievement badges. Two layouts:
 //

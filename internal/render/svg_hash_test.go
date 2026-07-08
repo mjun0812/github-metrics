@@ -64,6 +64,27 @@ func TestHash_FooterRemoved(t *testing.T) {
 	}
 }
 
+// TestHash_MetadataSectionRemoved is the #409 Phase C anchor: the footer
+// is now a native-SVG `<g data-section="metadata">` block (no HTML
+// `<footer>`), so two SVGs whose only difference is the timestamp-bearing
+// metadata group MUST still hash identically (data-changed detection).
+func TestHash_MetadataSectionRemoved(t *testing.T) {
+	t.Parallel()
+	a := `<svg xmlns="http://www.w3.org/2000/svg"><g data-section="header"><text>x</text></g><g data-section="metadata"><svg height="21"><text>Last updated 2026-01-01T00:00:00Z with x@v1</text></svg></g></svg>`
+	b := `<svg xmlns="http://www.w3.org/2000/svg"><g data-section="header"><text>x</text></g><g data-section="metadata"><svg height="21"><text>Last updated 2026-05-15T12:34:56Z with x@v1</text></svg></g></svg>`
+	ha, err := Hash(a)
+	if err != nil {
+		t.Fatalf("Hash(a): %v", err)
+	}
+	hb, err := Hash(b)
+	if err != nil {
+		t.Fatalf("Hash(b): %v", err)
+	}
+	if ha != hb {
+		t.Errorf("Hash(a)=%q != Hash(b)=%q (only metadata timestamp differs)", ha, hb)
+	}
+}
+
 // TestHash_DOMDifference asserts non-footer DOM changes produce
 // different hashes (the prior test would be meaningless without this
 // complement).

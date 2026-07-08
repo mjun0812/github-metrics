@@ -71,7 +71,7 @@ func colorDotOcticon(color string) string {
 // native SVG (#409 Phase B7). Returns "" when the result is missing or
 // skipped — classic.go's dispatcher then suppresses the wrapper entirely.
 //
-// Output: a `<section data-section="languages">` anchor wrapping a
+// Output: a `<g data-section="languages">` anchor wrapping a
 // nested `<svg>` with the code-octicon count header, then per configured
 // section (most-used / recently-used) a centered `<h3>` sub-header, an
 // optional indepth `<small>` summary, the 460px `<svg class="bar">`

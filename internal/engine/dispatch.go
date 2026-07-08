@@ -82,21 +82,29 @@ func dispatchOutput(
 			}
 		}
 
-		// Stage 5: resize / convert via the Renderer interface.
+		// #409 Phase C: the SVG height is now computed in Go — the
+		// template sums each native-SVG partial's self-reported height
+		// and writes the root `<svg height>` directly. The browser
+		// measurement pass (svg_resize.go, which needed the now-removed
+		// `#metrics-end` anchor) is therefore unnecessary for SVG output,
+		// so the svg path skips the Renderer entirely and returns the
+		// decorated SVG verbatim. This also removes Chromium from the
+		// critical path for the common `--output svg` case (the whole
+		// point of #409). PNG/JPEG still rasterize through the Renderer
+		// until Phase D (#694) swaps chromedp for resvg.
+		if format == "svg" {
+			return []byte(decorated), "image/svg+xml", nil
+		}
+
+		// Stage 5 (PNG/JPEG only): rasterize via the Renderer interface.
 		renderer, closeBrowser, err := obtainRenderer(deps)
 		if err != nil {
-			// Log in addition to res.Errors (#666): on the svg path the
-			// run exits 0 with an untrimmed height=99999 SVG, so without
-			// this Warn the degradation is invisible in run logs.
-			deps.Logger.Warn("engine: renderer init failed; SVG will not be resized",
+			deps.Logger.Warn("engine: renderer init failed; cannot rasterize",
 				"format", format, "err", err)
 			if res != nil {
 				res.Errors = append(res.Errors, xerrors.NewRetryableError(
 					fmt.Errorf("engine: renderer init: %w", err),
 				))
-			}
-			if format == "svg" {
-				return []byte(decorated), "image/svg+xml", nil
 			}
 			return nil, "", nil
 		}
@@ -106,9 +114,7 @@ func dispatchOutput(
 
 		// Apply upstream's `config_padding` default ("0, 8 + 11%") when
 		// the caller did not override — width:0 absolute (no padding),
-		// height:8 absolute + 11% relative (absorbs minor measurement
-		// errors from foreignObject layout so the bottom of plugin
-		// content does not clip).
+		// height:8 absolute + 11% relative.
 		// org_repo/source/plugins/core/metadata.yml line 347.
 		padding := stringSliceInput(req.Inputs, "config.padding")
 		if len(padding) == 0 {
@@ -120,15 +126,10 @@ func dispatchOutput(
 			Scripts: stringSliceInput(req.Inputs, "extras.js"),
 		})
 		if err != nil {
-			// Same visibility contract as the renderer-init branch (#666)
-			// and per_plugin.go's "resize failed; using unresized SVG".
-			deps.Logger.Warn("engine: resize failed; using unresized SVG",
+			deps.Logger.Warn("engine: rasterize failed",
 				"format", format, "err", err)
 			if res != nil {
 				res.Errors = append(res.Errors, fmt.Errorf("engine: resize: %w", err))
-			}
-			if format == "svg" {
-				return []byte(decorated), "image/svg+xml", nil
 			}
 			return nil, "", nil
 		}

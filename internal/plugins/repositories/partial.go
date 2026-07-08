@@ -60,7 +60,7 @@ func langDotOcticon(color string) string {
 // Partial renders the classic SVG fragment for the repositories plugin.
 // Mirrors upstream org_repo/source/templates/classic/partials/repositories.ejs.
 //
-// Output (native SVG): a `<section data-section="repositories">` anchor
+// Output (native SVG): a `<g data-section="repositories">` anchor
 // wrapping a nested <svg> with a section header and one repository card
 // per featured/pinned repo — the repo/fork octicon + linked blue name +
 // "created <date>" row, the wrapped description, and the info row
