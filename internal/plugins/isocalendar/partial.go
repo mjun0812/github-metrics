@@ -99,18 +99,18 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 	y := hh
 	y += writeStatHeader(&body, statsX, y, streaksOcticon, "Commits streaks")
 	if r.Streak.Current > 0 {
-		_, fh := writeStatField(&body, statsX, y, statsW, flameOcticon,
+		_, fh := writeStatField(&body, y, statsW, flameOcticon,
 			fmt.Sprintf("Current streak %d day%s", r.Streak.Current, pluginutil.Plural(r.Streak.Current)))
 		y += fh
 	}
-	_, fh := writeStatField(&body, statsX, y, statsW, plusXOcticon,
+	_, fh := writeStatField(&body, y, statsW, plusXOcticon,
 		fmt.Sprintf("Best streak %d day%s", r.Streak.Max, pluginutil.Plural(r.Streak.Max)))
 	y += fh
 	y += writeStatHeader(&body, statsX, y, commitsPerDayOcticon, "Commits per day")
-	_, fh = writeStatField(&body, statsX, y, statsW, upArrowOcticon,
+	_, fh = writeStatField(&body, y, statsW, upArrowOcticon,
 		fmt.Sprintf("Highest in a day at %d", r.Max))
 	y += fh
-	_, fh = writeStatField(&body, statsX, y, statsW, arrowsOcticon,
+	_, fh = writeStatField(&body, y, statsW, arrowsOcticon,
 		fmt.Sprintf("Average per day at ~%.2f", r.Average))
 	y += fh
 
@@ -161,9 +161,10 @@ func writeStatHeader(b *strings.Builder, colX, top float64, icon, label string) 
 }
 
 // writeStatField renders one `<div class="field">` stats row (grey 16px
-// octicon + 14px grey label) via chrome.SVGField at the given column.
-func writeStatField(b *strings.Builder, colX, top, colWidth float64, icon, label string) (string, float64) {
-	m, h := chrome.SVGField(colX, top, colWidth, icon, label)
+// octicon + 14px grey label) via chrome.SVGField in the right-hand
+// stats column (fixed at half the card width).
+func writeStatField(b *strings.Builder, top, colWidth float64, icon, label string) (string, float64) {
+	m, h := chrome.SVGField(float64(chrome.CardWidth)/2, top, colWidth, icon, label)
 	b.WriteString(m)
 	return m, h
 }
