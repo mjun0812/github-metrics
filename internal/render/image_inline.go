@@ -32,22 +32,28 @@ const inlineWorkers = 8
 // (internal/plugins/repositories, internal/plugins/languages/indepth).
 const inlineFetchTimeout = 10 * time.Second
 
-// imgSrcRe captures the URL inside `<img ... src="URL" ...>`. The src
-// value is XML-escaped in the rendered SVG (EscapeXML turns `&` into
-// `&amp;`), so the captured text may carry entities that must be
-// unescaped before the URL is fetched. Group 1 is `<img...src="`,
-// group 2 is the URL, group 3 is the closing quote.
-var imgSrcRe = regexp.MustCompile(`(<img\b[^>]*?\bsrc=")([^"]+)(")`)
+// imgSrcRe captures the URL inside either an HTML `<img ... src="URL">`
+// or a native-SVG `<image ... href="URL">` / `<image ... xlink:href="URL">`
+// element. The header avatar migrated from `<img>` to `<image href>`
+// with the native-SVG conversion (#409 Phase B1) while other partials
+// (people / contributors / sponsors) still emit `<img src>`, so both
+// spellings must inline. The URL value is XML-escaped in the rendered
+// SVG (EscapeXML turns `&` into `&amp;`), so the captured text may carry
+// entities that must be unescaped before the URL is fetched. Group 1 is
+// the tag up to and including the opening quote, group 2 is the URL,
+// group 3 is the closing quote.
+var imgSrcRe = regexp.MustCompile(`(<(?:img\b[^>]*?\bsrc|image\b[^>]*?\b(?:xlink:)?href)=")([^"]+)(")`)
 
 // InlineImagesStage returns a decoration stage that rewrites every
-// remote `<img src="http(s)://...">` in the SVG into a self-contained
+// remote `<img src="http(s)://...">` (and native-SVG
+// `<image href="http(s)://...">`) in the SVG into a self-contained
 // `data:` URI by fetching the resource through fetcher.
 //
 // Why this exists: GitHub renders embedded SVGs through its camo image
 // proxy, which does not resolve external resources referenced from
-// inside the SVG — the `<img>` tags the avatar / icon partials emit
-// (base.header avatar, people, contributors, sponsors, sponsorships,
-// topics). An SVG that keeps
+// inside the SVG — the avatar / icon tags the partials emit (the
+// native-SVG base.header `<image>` avatar plus the people, contributors,
+// sponsors, sponsorships, topics `<img>` tags). An SVG that keeps
 // `src="https://avatars.githubusercontent.com/..."` therefore shows
 // broken icons on GitHub and anywhere the file is opened offline.
 // Inlining each image as base64 makes the SVG self-contained.
