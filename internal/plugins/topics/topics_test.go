@@ -258,8 +258,8 @@ func TestPartial_MasteredRendersIcons(t *testing.T) {
 	if !strings.Contains(got, "Mastered technologies and topics") {
 		t.Errorf("missing mastered heading in:\n%s", got)
 	}
-	if !strings.Contains(got, "<img src=") {
-		t.Errorf("mastered mode should render icons (<img>); got:\n%s", got)
+	if !strings.Contains(got, "<image href=") {
+		t.Errorf("mastered mode should render icons (<image>); got:\n%s", got)
 	}
 	if strings.Contains(got, `class="label"`) {
 		t.Errorf("mastered mode must not render text labels; got:\n%s", got)
@@ -321,11 +321,10 @@ func TestPartial_Topics_Golden(t *testing.T) {
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
-	// 011 v2: upstream-equivalent emission. Topics partial now mirrors
-	// upstream EJS — h2 header + per-mode rendering (img tags for icons,
-	// div.label for labels). The legacy <g class="topic"> + <text> shape
-	// is replaced.
-	for _, marker := range []string{`<h2 class="field">`, `Starred topics`, `<div class="topics fill-width">`, `<img src="https://github.githubassets.com/topics/go.png"`} {
+	// #409 Phase B2: topics renders as native SVG — a section anchor, the
+	// header <text>, and per-mode flow (rounded <image> icons for icons
+	// mode, `.label` pills for labels mode).
+	for _, marker := range []string{`data-section="topics"`, `>Starred topics</text>`, `<image href="https://github.githubassets.com/topics/go.png"`} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("partial missing marker %q in:\n%s", marker, got)
 		}
