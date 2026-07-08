@@ -73,7 +73,7 @@ func TestBaseHeader_UpstreamFields(t *testing.T) {
 		"Deployed 127 times",
 		"used",
 		"2 Environments",
-		`class="field calendar"`,
+		`data-block="calendar-grid"`,
 		`fill="#9be9a8"`,
 	} {
 		if !strings.Contains(got, s) {

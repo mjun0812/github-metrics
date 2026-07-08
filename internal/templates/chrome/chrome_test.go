@@ -170,23 +170,3 @@ func TestMetadataFooter(t *testing.T) {
 		}
 	})
 }
-
-func TestContributionRow(t *testing.T) {
-	if got := chrome.ContributionRow(nil); got != "" {
-		t.Errorf("empty days should render nothing: %q", got)
-	}
-	days := []plugins.ContributionDay{
-		{Color: "#216e39"},
-		{Color: ""}, // falls back to empty-cell color
-	}
-	got := chrome.ContributionRow(days)
-	if !strings.Contains(got, "#216e39") {
-		t.Errorf("missing day color: %q", got)
-	}
-	if !strings.Contains(got, "#ebedf0") {
-		t.Errorf("missing empty fallback color: %q", got)
-	}
-	if !strings.Contains(got, `data-block="calendar-grid"`) {
-		t.Errorf("missing data-block: %q", got)
-	}
-}
