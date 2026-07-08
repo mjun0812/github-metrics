@@ -24,9 +24,10 @@
 
 ### 2.1 Plugin (21)
 
-ほとんどの plugin は GitHub の API トークンだけで動作します。
-`topics` / `starlists` のみ chromedp (Headless Chromium) が必要で、
-本プロジェクトの Docker image / GitHub Action はこれを同梱しています。
+すべての plugin は GitHub の API トークンと通常の HTTP 取得だけで
+動作します。`topics` / `starlists` は upstream では Headless Chromium で
+ページをスクレイプしますが、本移植では goquery による HTML パースに
+置き換えているためブラウザは不要です。
 
 | 名前              | upstream slug    | 注記                                |
 | ----------------- | ---------------- | ----------------------------------- |
@@ -49,8 +50,8 @@
 | sponsorships      | sponsorships     | (`read:user` / `read:org` 必要)     |
 | stargazers        | stargazers       | 累積 star チャート                  |
 | traffic           | traffic          | 閲覧数 (`repo` 必要)                |
-| topics            | topics           | chromedp scrape                     |
-| starlists         | starlists        | chromedp scrape                     |
+| topics            | topics           | HTML スクレイプ (goquery)           |
+| starlists         | starlists        | HTML スクレイプ (goquery)           |
 
 ### 2.2 Template (2)
 
@@ -65,8 +66,17 @@
 | ---- | --------------- | ----------------------------- |
 | SVG  | `--output svg`  | デフォルト                    |
 | JSON | `--output json` | upstream とバイト互換         |
-| PNG  | `--output png`  | chromedp で `<svg>` をスクリーンショット |
-| JPEG | `--output jpeg` | 同上                          |
+| PNG  | `--output png`  | resvg でネイティブ SVG をラスタライズ |
+| JPEG | `--output jpeg` | resvg PNG を Go で JPEG 再エンコード |
+
+> **レンダリングにブラウザは不要です。**
+> upstream は最終 SVG の高さ計測と PNG/JPEG 出力に Headless Chromium
+> (puppeteer) を使いますが、本移植では高さを Go 側のフォントメトリクスで
+> 計算し、PNG/JPEG は [resvg](https://github.com/linebender/resvg) で
+> ラスタライズします。この結果 chromium を Docker image から外し、
+> distro のパッケージ更新でブラウザが起動しなくなる障害クラスを
+> 構造的に排除しました (経緯は
+> [#409](https://github.com/mjun0812/github-metrics/issues/409))。
 
 ## 3. 未対応機能一覧
 
@@ -135,7 +145,7 @@
 
 | 名前     | 不採用理由                                          |
 | -------- | --------------------------------------------------- |
-| pdf      | upstream は Puppeteer 経由 — chromedp 移植が複雑    |
+| pdf      | upstream は Puppeteer でブラウザ描画 — ブラウザ非依存の本移植では対象外 |
 | markdown | community template と一体のため                    |
 
 ## 4. 入力互換性
