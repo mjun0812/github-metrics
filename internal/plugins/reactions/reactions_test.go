@@ -333,7 +333,7 @@ func TestPartial_Reactions_Golden(t *testing.T) {
 	}
 	for _, marker := range []string{
 		`from last 200 comments`,
-		`<text x="60" y="60" dominant-baseline="central">❤️</text>`,
+		`<text x="60" y="60" dominant-baseline="central" text-anchor="middle" font-size="40" fill="#58A6FF">❤️</text>`,
 		`stroke-dasharray="`, // HEART has score>0 so an arc is present
 		`class="title nowrap"`,
 	} {
