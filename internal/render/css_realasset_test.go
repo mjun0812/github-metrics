@@ -36,9 +36,14 @@ func TestOptimizeCSS_RealClassicStyleSheet(t *testing.T) {
 
 	// Keyframes must reconstruct with braces and not leak their last
 	// declaration into the following rule.
+	//
+	// animation-rainbow (.cakeday) was removed from the real stylesheet
+	// by #684 (Phase A3 dead-CSS purge) — the cakeday selector had no
+	// matching Go-emitted element, so it no longer exercises this
+	// reconstruction path. animation-gauge remains and still covers the
+	// mechanism end-to-end against the real file.
 	for _, want := range []string{
 		"@keyframes animation-gauge{from{stroke-dasharray:0 329}}",
-		"@keyframes animation-rainbow{",
 		":root{--color-calendar-graph-day-bg:#ebedf0",
 	} {
 		if !strings.Contains(out, want) {
@@ -46,8 +51,6 @@ func TestOptimizeCSS_RealClassicStyleSheet(t *testing.T) {
 		}
 	}
 	for _, bad := range []string{
-		"#FF0000:root", "#ff0000:root",
-		"@keyframes animation-rainbow0%",
 		"@keyframes animation-gauge;",
 		";};",
 	} {
