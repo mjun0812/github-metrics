@@ -8,6 +8,7 @@ import (
 
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -29,36 +30,12 @@ func sponsorsAreFundingVerb(n int) string {
 // Partial renders the classic SVG fragment for the sponsors plugin
 // matching upstream org_repo/source/templates/classic/partials/sponsors.ejs.
 //
-// Output structure:
-//
-//	<section data-section="sponsors">
-//	  <section>
-//	    <h2 class="field"><svg heart/>${title}</h2>
-//	    [for each section in sections — skip "list" when "goal" also present]
-//	      [section === "goal" || "list"]:
-//	        <div class="fill-width">
-//	          <section class="sponsors goal">
-//	            [if section === "goal" && goal exists]:
-//	              <div class="markdown">${goal.description}</div>
-//	              <svg class="bar"><mask>...<rect fill="#ec6cb9"/></svg>
-//	            <div class="goal-text">
-//	              <span>${count.active.total} sponsor(s) are funding ${user}'s work</span>
-//	              [if section === "goal" && goal]:
-//	                <span>${goal.title}</span>
-//	            </div>
-//	            [if section === "list" || sections.includes("list")]:
-//	              <div class="row"><img class="avatar" ...></div>
-//	              [if past && count.past.total]:
-//	                <div class="past-text">${count.past.total} sponsor(s) helped ${user} in the past</div>
-//	                <div class="row"><img class="avatar past" ...></div>
-//	          </section>
-//	        </div>
-//	      [section === "about"]:
-//	        <div class="row fill-width">
-//	          <section class="sponsors"><div class="markdown">${about}</div></section>
-//	        </div>
-//	  </section>
-//	</section>
+// Output (native SVG): a `<section data-section="sponsors">` anchor
+// wrapping a nested <svg> with a section header and, per configured
+// section, a `<g class="sponsors goal">` box (goal description, progress
+// bar, funding-goal text, sponsor avatar grid + past block) or a
+// `<g class="sponsors">` About block (header + markdown bio). The
+// partial reports its consumed pixel height (#409 Phase B2).
 //
 // Settings: mjun0812 uses plugin_sponsors_sections: goal, about, list +
 // plugin_sponsors_past: yes.
@@ -88,14 +65,6 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		size = 24
 	}
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="sponsors">`)
-	b.WriteString(`<section>`)
-	fmt.Fprintf(&b, `<h2 class="field">%s%s</h2>`, heartOcticon, partials.EscapeXML(title))
-
-	// Upstream loops over sections; if both "goal" and "list" are
-	// present, the "list" iteration is skipped because "goal" emits the
-	// list inline (EJS line 17).
 	sections := r.Sections
 	if len(sections) == 0 {
 		sections = []string{"goal", "list", "about"}
@@ -103,115 +72,149 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 	hasGoal := slices.Contains(sections, "goal")
 	hasList := slices.Contains(sections, "list")
 
+	var body strings.Builder
+	header, y := chrome.SVGSectionHeader(heartOcticon, title)
+	body.WriteString(header)
+
 	for _, section := range sections {
+		// Upstream skips the standalone "list" iteration when "goal" is
+		// also present because "goal" emits the list inline (EJS line 17).
 		if hasGoal && hasList && section == "list" {
 			continue
 		}
 		switch section {
 		case "goal", "list":
-			b.WriteString(`<div class="fill-width">`)
-			b.WriteString(`<section class="sponsors goal">`)
-			// Goal description + progress bar (when configured).
-			if section == "goal" && r.Goal != nil {
-				if r.Goal.Description != "" {
-					fmt.Fprintf(&b, `<div class="markdown">%s</div>`, partials.EscapeXML(r.Goal.Description))
-				}
-				const width = 440
-				progress := r.Goal.Progress
-				if progress < 0 {
-					progress = 0
-				}
-				if progress > 100 {
-					progress = 100
-				}
-				filled := float64(progress) / 100.0 * float64(width)
-				empty := float64(100-progress) / 100.0 * float64(width)
-				fmt.Fprintf(&b, `<div class="center horizontal-wrap "><svg class="bar" xmlns="http://www.w3.org/2000/svg" width="%d" height="8" role="img" aria-label="Sponsorship goal progress"><title>Sponsorship goal progress</title><mask id="project-bar"><rect x="0" y="0" width="%d" height="8" fill="white" rx="5"/></mask><rect mask="url(#project-bar)" x="0" y="0" width="%.2f" height="8" fill="#ec6cb9"/><rect mask="url(#project-bar)" x="%.2f" y="0" width="%.2f" height="8" fill="#d1d5da"/></svg></div>`,
-					width, width, filled, filled, empty)
-			}
-			// "N sponsors are funding ${user}'s work" line + goal title.
-			// Upstream (sponsors.ejs) only emits the text when
-			// count.active.total is truthy; with zero active sponsors the
-			// span is left empty (matching docs/reference_examples).
-			b.WriteString(`<div class="goal-text">`)
-			b.WriteString(`<span>`)
-			if r.Count.Active.Total > 0 {
-				fmt.Fprintf(
-					&b,
-					`%d sponsor%s funding %s's work`,
-					r.Count.Active.Total,
-					sponsorsAreFundingVerb(r.Count.Active.Total),
-					partials.EscapeXML(user),
-				)
-			}
-			b.WriteString(`</span>`)
-			if section == "goal" && r.Goal != nil && r.Goal.Title != "" {
-				fmt.Fprintf(&b, `<span>%s</span>`, partials.EscapeXML(r.Goal.Title))
-			}
-			b.WriteString(`</div>`)
-			// List section content: avatar grid + past block.
-			if section == "list" || hasList {
-				b.WriteString(`<div class="row">`)
-				for _, s := range r.Sponsors {
-					orgClass := ""
-					if s.Type == "organization" {
-						orgClass = "organization"
-					}
-					fmt.Fprintf(
-						&b,
-						`<img class="avatar %s" src="%s" width="%d" height="%d" alt=""/>`,
-						partials.EscapeXML(orgClass),
-						partials.EscapeXML(s.Avatar),
-						size, size,
-					)
-				}
-				b.WriteString(`</div>`)
-				if r.PastIncluded && r.Count.Past.Total > 0 {
-					fmt.Fprintf(
-						&b,
-						`<div class="past-text"><span>%d sponsor%s helped %s in the past</span></div>`,
-						r.Count.Past.Total, pluginutil.Plural(r.Count.Past.Total),
-						partials.EscapeXML(user),
-					)
-					b.WriteString(`<div class="row">`)
-					for _, s := range r.Past {
-						orgClass := ""
-						if s.Type == "organization" {
-							orgClass = "organization"
-						}
-						pastSize := int(float64(size) * 0.8)
-						fmt.Fprintf(
-							&b,
-							`<img class="avatar past %s" src="%s" width="%d" height="%d" alt=""/>`,
-							partials.EscapeXML(orgClass),
-							partials.EscapeXML(s.Avatar),
-							pastSize, pastSize,
-						)
-					}
-					b.WriteString(`</div>`)
-				}
-			}
-			b.WriteString(`</section>`)
-			b.WriteString(`</div>`)
+			m, h := renderGoalSection(r, section, user, size, hasList, y)
+			body.WriteString(m)
+			y += h
 		case "about":
-			b.WriteString(`<div class="row fill-width">`)
-			b.WriteString(`<section class="sponsors">`)
-			b.WriteString(`<h2 class="field">About Me</h2>`)
-			if r.About != "" {
-				// Upstream emits the bio unescaped (`<%- %>` in
-				// sponsors.ejs) after running it through `imports.markdown`.
-				// renderMarkdown reproduces that markup (paragraphs, links,
-				// images, emphasis) while escaping the text nodes.
-				fmt.Fprintf(&b, `<div class="markdown">%s</div>`, renderMarkdown(r.About))
-			} else {
-				b.WriteString(`<div class="markdown"></div>`)
-			}
-			b.WriteString(`</section>`)
-			b.WriteString(`</div>`)
+			m, h := renderAboutSection(r, y)
+			body.WriteString(m)
+			y += h
 		}
 	}
 
-	b.WriteString(`</section>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+	height := int(y)
+	return chrome.WrapSection("sponsors", height, body.String()), height, nil
+}
+
+// Native-SVG sponsors geometry. `.sponsors` is inset 13px each side;
+// `.sponsors.goal` adds an 8px horizontal / 6px vertical pad and a light
+// grey rounded background.
+const (
+	sponsorInset  = 13.0
+	sponsorBoxW   = chrome.CardWidth - 2*sponsorInset
+	sponsorPadX   = 8.0
+	sponsorPadY   = 6.0
+	sponsorContX  = sponsorInset + sponsorPadX
+	sponsorContW  = sponsorBoxW - 2*sponsorPadX
+	sponsorGoalBG = "#777777" // .sponsors.goal background (12% opacity)
+	sponsorText   = "#777777"
+	sponsorAvGap  = 2.0 // .sponsors .avatar { margin: 2px }
+)
+
+// renderGoalSection renders the "goal"/"list" box: an optional goal
+// description + progress bar, the funding-goal text line, and (when the
+// list is configured) the sponsor avatar grid plus past block. Returns
+// the markup and the height consumed.
+func renderGoalSection(r *Result, section, user string, size int, hasList bool, top float64) (string, float64) {
+	boxTop := top + 4
+	innerY := boxTop + sponsorPadY
+
+	var inner strings.Builder
+	if section == "goal" && r.Goal != nil {
+		if r.Goal.Description != "" {
+			m, dh := renderMarkdownSVG(r.Goal.Description, sponsorContX, innerY, sponsorContW)
+			inner.WriteString(m)
+			innerY += dh + 2
+		}
+		progress := r.Goal.Progress
+		if progress < 0 {
+			progress = 0
+		}
+		if progress > 100 {
+			progress = 100
+		}
+		inner.WriteString(progressBar(sponsorContX, innerY+4, sponsorContW, progress))
+		innerY += 16
+	}
+
+	// Funding-goal text: left "N sponsors are funding user's work" (only
+	// when there are active sponsors, per upstream) + right goal title.
+	baseline := innerY + 12
+	if r.Count.Active.Total > 0 {
+		inner.WriteString(chrome.SVGText(sponsorContX, baseline,
+			fmt.Sprintf("%d sponsor%s funding %s's work",
+				r.Count.Active.Total, sponsorsAreFundingVerb(r.Count.Active.Total), user),
+			chrome.SVGTextOpts{Size: 12, Fill: sponsorText, MaxWidth: sponsorContW * 0.65}))
+	}
+	if section == "goal" && r.Goal != nil && r.Goal.Title != "" {
+		inner.WriteString(chrome.SVGText(sponsorContX+sponsorContW, baseline, r.Goal.Title,
+			chrome.SVGTextOpts{Size: 12, Fill: sponsorText, Anchor: "end", MaxWidth: sponsorContW * 0.4}))
+	}
+	innerY += 18
+
+	if section == "list" || hasList {
+		specs := make([]chrome.SVGAvatarSpec, 0, len(r.Sponsors))
+		for _, s := range r.Sponsors {
+			specs = append(specs, chrome.SVGAvatarSpec{URL: s.Avatar, IsOrg: s.Type == "organization"})
+		}
+		m, ah := chrome.SVGAvatarGrid(sponsorContX, innerY, sponsorContW, float64(size), sponsorAvGap, "sponsor-av", specs)
+		inner.WriteString(m)
+		innerY += ah
+		if r.PastIncluded && r.Count.Past.Total > 0 {
+			innerY += 8
+			inner.WriteString(chrome.SVGText(sponsorContX, innerY+12,
+				fmt.Sprintf("%d sponsor%s helped %s in the past",
+					r.Count.Past.Total, pluginutil.Plural(r.Count.Past.Total), user),
+				chrome.SVGTextOpts{Size: 12, Fill: sponsorText, MaxWidth: sponsorContW}))
+			innerY += 18
+			pastSize := float64(size) * 0.8
+			pspecs := make([]chrome.SVGAvatarSpec, 0, len(r.Past))
+			for _, s := range r.Past {
+				pspecs = append(pspecs, chrome.SVGAvatarSpec{URL: s.Avatar, IsOrg: s.Type == "organization"})
+			}
+			m2, ah2 := chrome.SVGAvatarGrid(sponsorContX, innerY, sponsorContW, pastSize, sponsorAvGap, "sponsor-pav", pspecs)
+			inner.WriteString(m2)
+			innerY += ah2
+		}
+	}
+
+	innerY += sponsorPadY
+	boxH := innerY - boxTop
+	out := fmt.Sprintf(
+		`<g class="sponsors goal"><rect x="%d" y="%d" width="%d" height="%d" rx="5" ry="5" fill=%q fill-opacity="0.12"/>%s</g>`,
+		int(sponsorInset), int(boxTop), int(sponsorBoxW), int(boxH), sponsorGoalBG, inner.String())
+	return out, (innerY - top) + 2
+}
+
+// progressBar renders the sponsorship goal bar (filled #ec6cb9 over a
+// #d1d5da track) as a positioned nested `<svg>` masked to rounded ends.
+func progressBar(x, y, w float64, progress int) string {
+	filled := float64(progress) / 100.0 * w
+	return fmt.Sprintf(
+		`<svg class="bar" x="%d" y="%d" width="%d" height="8" role="img" aria-label="Sponsorship goal progress"><title>Sponsorship goal progress</title><mask id="sponsors-goal-bar"><rect x="0" y="0" width="%d" height="8" fill="white" rx="5"/></mask><rect mask="url(#sponsors-goal-bar)" x="0" y="0" width="%d" height="8" fill="#d1d5da"/><rect mask="url(#sponsors-goal-bar)" x="0" y="0" width="%.2f" height="8" fill="#ec6cb9"/></svg>`,
+		int(x), int(y), int(w), int(w), int(w), filled)
+}
+
+// renderAboutSection renders the "about" bio: an "About Me" sub-header
+// and the markdown body. Returns the markup and the height consumed.
+func renderAboutSection(r *Result, top float64) (string, float64) {
+	contentW := float64(chrome.CardWidth) - 2*sponsorInset
+	y := top + 4
+	var inner strings.Builder
+	// "About Me" sub-header (h2, no octicon).
+	inner.WriteString(chrome.SVGText(sponsorInset, y+18, "About Me",
+		chrome.SVGTextOpts{Size: 16, Fill: "#0366d6"}))
+	y += 26
+	if r.About != "" {
+		inner.WriteString(`<g class="markdown">`)
+		m, dh := renderMarkdownSVG(r.About, sponsorInset, y, contentW)
+		inner.WriteString(m)
+		inner.WriteString(`</g>`)
+		y += dh
+	} else {
+		inner.WriteString(`<g class="markdown"></g>`)
+	}
+	return fmt.Sprintf(`<g class="sponsors">%s</g>`, inner.String()), (y - top) + 2
 }

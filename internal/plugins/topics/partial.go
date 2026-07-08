@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -43,25 +44,23 @@ func renderType(mode string) string {
 	}
 }
 
+// topics icon-mode geometry: 24px images on a 4px margin, 5px corner
+// radius (`.topics img { border-radius: 5px; margin: 4px }`).
+const (
+	topicInset     = 5.0
+	topicIconSize  = 24.0
+	topicIconGap   = 4.0
+	topicIconRadiu = 5.0
+	topicIconPitch = topicIconSize + 2*topicIconGap
+)
+
 // Partial renders the classic SVG fragment for the topics plugin.
 // Returns "" when the result is missing or skipped.
 //
-// Output structure (mirrors upstream
-// org_repo/source/templates/classic/partials/topics.ejs):
-//
-//	<section data-section="topics">
-//	  <section>
-//	    <h2 class="field"><svg pin/>Starred topics</h2>
-//	    <div class="row">
-//	      <section>
-//	        <div class="topics fill-width">
-//	          [labels mode]: <div class="label" title="desc">name</div>...
-//	          [icons mode]:  <img src="icon" width="24" height="24" alt="name" title="name"/>...
-//	        </div>
-//	      </section>
-//	    </div>
-//	  </section>
-//	</section>
+// Output (native SVG): a `<section data-section="topics">` anchor
+// wrapping a nested `<svg>` with a section header and a wrapping flow of
+// either `.label` pills (labels mode) or 24px icon images (icons mode),
+// reporting the pixel height it consumes (#409 Phase B2).
 //
 // Settings: mjun0812 uses plugin_topics: yes, plugin_topics_limit: 15,
 // plugin_topics_mode: starred (default) and a variant with mode: icons.
@@ -84,49 +83,59 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 	}
 	typ := renderType(mode)
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="topics">`)
-	b.WriteString(`<section>`)
+	var body strings.Builder
+	header, y := chrome.SVGSectionHeader(pinOcticon, headerLabel(mode))
+	body.WriteString(header)
 
-	// Header: <h2 class="field"><svg pin/>${label}</h2>
-	fmt.Fprintf(&b, `<h2 class="field">%s%s</h2>`, pinOcticon, partials.EscapeXML(headerLabel(mode)))
-
-	b.WriteString(`<div class="row">`)
-	b.WriteString(`<section>`)
-	b.WriteString(`<div class="topics fill-width">`)
-
-	// Body content per mode (matches EJS lines 18-28).
+	maxRight := float64(chrome.CardWidth) - topicInset
 	if len(r.List) > 0 {
 		switch typ {
 		case "icons":
-			for _, t := range r.List {
-				if t.Icon == "" {
-					continue
-				}
-				fmt.Fprintf(
-					&b,
-					`<img src="%s" width="24" height="24" alt="%s" title="%s"/>`,
-					partials.EscapeXML(t.Icon),
-					partials.EscapeXML(t.Name),
-					partials.EscapeXML(t.Name),
-				)
-			}
+			m, h := iconFlow(r.List, topicInset, y, maxRight)
+			body.WriteString(m)
+			y += h
 		default: // "labels"
+			texts := make([]string, 0, len(r.List))
 			for _, t := range r.List {
-				fmt.Fprintf(
-					&b,
-					`<div class="label" title="%s">%s</div>`,
-					partials.EscapeXML(t.Description),
-					partials.EscapeXML(strings.ToLower(t.Name)),
-				)
+				texts = append(texts, strings.ToLower(t.Name))
 			}
+			m, h := chrome.SVGChipFlow(topicInset, y, maxRight, texts)
+			body.WriteString(m)
+			y += h
 		}
 	}
 
-	b.WriteString(`</div>`)
-	b.WriteString(`</section>`)
-	b.WriteString(`</div>`)
-	b.WriteString(`</section>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+	height := int(y)
+	return chrome.WrapSection("topics", height, body.String()), height, nil
+}
+
+// iconFlow lays the topic icon images out left-to-right, wrapping to a
+// new row when the next 24px image would exceed maxRight. Each image is
+// a rounded-corner `<image>` the render pipeline's image-inline stage
+// folds into a data URI. Returns the markup and consumed height.
+func iconFlow(list []Topic, x, top, maxRight float64) (string, float64) {
+	var b strings.Builder
+	cx, rowTop, rows := x, top, 1
+	idx := 0
+	for _, t := range list {
+		if t.Icon == "" {
+			continue
+		}
+		if cx+topicIconSize > maxRight && cx > x {
+			cx, rowTop = x, rowTop+topicIconPitch
+			rows++
+		}
+		ix, iy := int(cx+topicIconGap), int(rowTop+topicIconGap)
+		clip := fmt.Sprintf("topic-icon-%d", idx)
+		fmt.Fprintf(
+			&b,
+			`<defs><clipPath id=%q><rect x="%d" y="%d" width="%d" height="%d" rx="%d" ry="%d"/></clipPath></defs>`+
+				`<image href="%s" x="%d" y="%d" width="%d" height="%d" clip-path="url(#%s)"/>`,
+			clip, ix, iy, int(topicIconSize), int(topicIconSize), int(topicIconRadiu), int(topicIconRadiu),
+			partials.EscapeXML(t.Icon), ix, iy, int(topicIconSize), int(topicIconSize), clip,
+		)
+		cx += topicIconPitch
+		idx++
+	}
+	return b.String(), float64(rows) * topicIconPitch
 }

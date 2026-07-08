@@ -14,6 +14,7 @@ package chrome
 import (
 	"fmt"
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -50,6 +51,24 @@ const (
 	// deliberately coarse (measurement, not typesetting) — enough to
 	// vertically center a label against its icon.
 	baselineRatio = 0.32
+
+	// svgHeaderFont / svgHeaderFill are the `<h2>` section-header text
+	// style (`h2 { font-size: 16px; color: #0366d6; font-weight: normal }`).
+	svgHeaderFont = 16.0
+	svgHeaderFill = "#0366d6"
+	// svgHeaderTop mirrors `h1,h2,h3 { margin: 8px 0 2px }` — the header's
+	// top margin — and svgHeaderBand the content band that holds the 16px
+	// icon and label.
+	svgHeaderTop  = 8.0
+	svgHeaderBand = 18.0
+
+	// SectionHeaderPitch is the vertical space one `<h2 class="field">`
+	// section header consumes: margin-top(8) + band(18) + margin-bottom(2).
+	SectionHeaderPitch = svgHeaderTop + svgHeaderBand + 2
+
+	// svgLineHeightRatio is the line pitch of wrapped body text as a
+	// fraction of the font size.
+	svgLineHeightRatio = 1.35
 )
 
 // ellipsis is the single-rune terminator TruncateToWidth appends.
@@ -223,6 +242,234 @@ func (c *SVGColumn) Height() float64 { return c.y - c.Top }
 // Empty reports whether no rows have been appended.
 func (c *SVGColumn) Empty() bool { return c.y == c.Top }
 
+// WrapSection wraps native-SVG body markup in the `<section
+// data-section>` HTML anchor (kept for the section gate / DOM diffing)
+// plus a fixed-height nested `<svg>` block. The nested svg lays out as
+// one block within the outer foreignObject flow, so a converted partial
+// coexists with the still-HTML partials around it until Phase C.
+func WrapSection(section string, height int, body string) string {
+	return fmt.Sprintf(
+		`<section data-section=%q><svg xmlns="http://www.w3.org/2000/svg" width="100%%" height="%d" viewBox="0 0 %d %d">%s</svg></section>`,
+		section, height, CardWidth, height, body)
+}
+
+// SVGIcon positions an inline octicon `<svg>` fragment at (x, y) inside
+// a `<g>` carrying the given fill (the octicon paths inherit it). Pass
+// fill="" to leave the fragment's own colors untouched (e.g. a language
+// dot that already sets its path fill).
+func SVGIcon(x, y float64, fill, icon string) string {
+	if icon == "" {
+		return ""
+	}
+	if fill == "" {
+		return fmt.Sprintf(`<g transform="translate(%s,%s)">%s</g>`, pos(x), pos(y), icon)
+	}
+	return fmt.Sprintf(`<g transform="translate(%s,%s)" fill=%q>%s</g>`, pos(x), pos(y), fill, icon)
+}
+
+// SVGSectionHeader renders an `<h2 class="field">` section header — a
+// grey octicon followed by the 16px blue label — as native SVG. icon is
+// an inline octicon `<svg>` fragment (positioned at the field inset);
+// label is the header text, ellipsis-truncated to the card width.
+// Returns the markup and the height consumed (SectionHeaderPitch).
+func SVGSectionHeader(icon, label string) (string, float64) {
+	iconX := float64(svgSectionInset + svgIconMargin)
+	iconY := svgHeaderTop + (svgHeaderBand-svgIconSize)/2
+	textX := iconX + svgIconSize + svgIconMargin
+	baseline := svgHeaderTop + svgHeaderBand/2 + svgHeaderFont*baselineRatio
+
+	var b strings.Builder
+	b.WriteString(SVGIcon(iconX, iconY, svgIconFill, icon))
+	b.WriteString(SVGText(textX, baseline, label, SVGTextOpts{
+		Size:     svgHeaderFont,
+		Fill:     svgHeaderFill,
+		MaxWidth: CardWidth - textX - svgSectionInset,
+	}))
+	return b.String(), SectionHeaderPitch
+}
+
+// SVGParagraph renders word-wrapped body text as one `<text>` line per
+// wrapped line, left-anchored at x with the block's top at y=top. size
+// is the font size, fill the text color. Returns the markup and the
+// total height the wrapped block consumes.
+func SVGParagraph(x, top, maxWidth, size float64, fill, text string) (string, float64) {
+	if text == "" {
+		return "", 0
+	}
+	wrapped := fontmetrics.Wrap(text, size, maxWidth)
+	if len(wrapped) == 0 {
+		return "", 0
+	}
+	lineH := size * svgLineHeightRatio
+	var b strings.Builder
+	for i, ln := range wrapped {
+		baseline := top + float64(i)*lineH + size
+		b.WriteString(SVGText(x, baseline, ln, SVGTextOpts{Size: size, Fill: fill}))
+	}
+	return b.String(), lineH * float64(len(wrapped))
+}
+
+const (
+	// `.label` pill geometry / colors: 12px medium text on a translucent
+	// blue fully-rounded chip (`.label { background:#58A6FF30; color:#0366D6;
+	// padding:0 10px; line-height:22px; border-radius:32px; font-size:12px }`).
+	svgChipFont    = 12.0
+	svgChipHeight  = 22.0
+	svgChipPadX    = 10.0
+	svgChipMarginX = 5.0
+	svgChipMarginY = 2.0
+	svgChipBG      = "#58A6FF"
+	svgChipBGOpac  = "0.19" // 0x30 / 255
+	svgChipFill    = "#0366D6"
+
+	// svgChipRowPitch is the vertical space one row of pills consumes:
+	// chip height (22) + top & bottom margin (2 each).
+	svgChipRowPitch = svgChipHeight + 2*svgChipMarginY
+)
+
+// SVGLabelChip renders one `.label` pill (a translucent blue rounded
+// chip) whose top-left is (x, top). Returns the markup and the total
+// horizontal advance (chip width + right margin) so callers can flow
+// chips left to right and wrap.
+func SVGLabelChip(x, top float64, text string) (string, float64) {
+	chipW := fontmetrics.Width(text, svgChipFont) + 2*svgChipPadX
+	baseline := top + svgChipHeight/2 + svgChipFont*baselineRatio
+	var b strings.Builder
+	fmt.Fprintf(&b,
+		`<rect x="%s" y="%s" width="%s" height="%d" rx="%d" ry="%d" fill=%q fill-opacity=%q/>`,
+		pos(x), pos(top), pos(chipW), int(svgChipHeight), int(svgChipHeight/2), int(svgChipHeight/2),
+		svgChipBG, svgChipBGOpac)
+	b.WriteString(SVGText(x+svgChipPadX, baseline, text, SVGTextOpts{Size: svgChipFont, Fill: svgChipFill}))
+	return b.String(), chipW + svgChipMarginX
+}
+
+// SVGChipFlow lays `.label` pills out left to right starting at (x, top),
+// wrapping to a new row whenever the next chip would exceed maxRight
+// (mirroring the `.topics { flex-wrap: wrap }` flow). Returns the markup
+// and the total height consumed.
+func SVGChipFlow(x, top, maxRight float64, texts []string) (string, float64) {
+	if len(texts) == 0 {
+		return "", 0
+	}
+	var b strings.Builder
+	cx, rowTop, rows := x, top, 1
+	for _, t := range texts {
+		chipW := fontmetrics.Width(t, svgChipFont) + 2*svgChipPadX
+		if cx+chipW > maxRight && cx > x {
+			cx, rowTop = x, rowTop+svgChipRowPitch
+			rows++
+		}
+		m, adv := SVGLabelChip(cx, rowTop+svgChipMarginY, t)
+		b.WriteString(m)
+		cx += adv
+	}
+	return b.String(), float64(rows) * svgChipRowPitch
+}
+
+const (
+	// Repository-card colors: the name is GitHub link-blue and the
+	// trailing date grey 10px (`.repository .name span:first-child {
+	// color:#58a6ff }`, `span:last-child { color:#666666; font-size:10px;
+	// max-width:150px }`).
+	svgRepoNameFill = "#58a6ff"
+	svgRepoDateFill = "#666666"
+	svgRepoDateFont = 10.0
+	svgRepoDateMax  = 150.0
+	svgRepoNameGap  = 8.0 // `.repository .name { gap: 8px }`
+)
+
+// SVGRepoName renders a repository card's name row: the repo/fork
+// octicon at the card's field inset, the blue repository name
+// (ellipsis-truncated), and an optional right-aligned grey date label
+// (ellipsis-truncated to 150px). cardX is the card's left edge and
+// nameWidth the name area width (the `.repository .name` box). When url
+// is non-empty the name is wrapped in an `<a>` so SVG viewers keep the
+// link. Returns the markup and the height consumed (FieldPitch).
+func SVGRepoName(cardX, top, nameWidth, nameFont float64, icon, name, url, date string) (string, float64) {
+	iconX := cardX + svgSectionInset + svgIconMargin
+	iconY := top + (FieldPitch-svgIconSize)/2
+	nameX := iconX + svgIconSize + svgIconMargin
+	rightEdge := nameX + nameWidth
+
+	var b strings.Builder
+	b.WriteString(SVGIcon(iconX, iconY, svgIconFill, icon))
+
+	dateW := 0.0
+	if date != "" {
+		date = TruncateToWidth(date, svgRepoDateFont, fontmetrics.Regular, svgRepoDateMax)
+		dateW = fontmetrics.Width(date, svgRepoDateFont)
+		dbase := top + FieldPitch/2 + svgRepoDateFont*baselineRatio
+		b.WriteString(SVGText(rightEdge, dbase, date, SVGTextOpts{
+			Size: svgRepoDateFont, Fill: svgRepoDateFill, Anchor: "end",
+		}))
+	}
+
+	baseline := top + FieldPitch/2 + nameFont*baselineRatio
+	nameMax := rightEdge - nameX - svgRepoNameGap - dateW
+	nameSVG := SVGText(nameX, baseline, name, SVGTextOpts{Size: nameFont, Fill: svgRepoNameFill, MaxWidth: nameMax})
+	if url != "" {
+		fmt.Fprintf(&b, `<a href=%q>%s</a>`, escapeXML(url), nameSVG)
+	} else {
+		b.WriteString(nameSVG)
+	}
+	return b.String(), FieldPitch
+}
+
+const (
+	// `.repository .infos` row: 13px grey text with small icons
+	// (`margin-left:38px; color:#666666; font-size:13px`; icons
+	// `margin-right:4px`; segments `margin-right:16px`).
+	svgInfoFont    = 13.0
+	svgInfoFill    = "#666666"
+	svgInfoRowH    = 18.0
+	svgInfoIconGap = 4.0
+	svgInfoSegGap  = 16.0
+)
+
+// iconWidthRe extracts an octicon fragment's declared pixel width so a
+// row can vertically center icons of mixed sizes (16px vs 11px).
+var iconWidthRe = regexp.MustCompile(`width="(\d+)"`)
+
+// SVGInfoSegment is one icon + label pair in an info row. Class, when
+// set, wraps the segment in a `<g class="...">` (e.g. "language") so the
+// section keeps its DOM hook.
+type SVGInfoSegment struct {
+	Icon  string
+	Text  string
+	Class string
+}
+
+// SVGInfoRow lays the repository info segments (language / license /
+// stars / forks / issues / PRs) out left-to-right starting at (x, top).
+// Each segment's octicon keeps the grey icon fill (a language dot's own
+// path color is preserved); the label is 13px grey. Returns the markup
+// and the row height.
+func SVGInfoRow(x, top float64, segs []SVGInfoSegment) (string, float64) {
+	baseline := top + svgInfoRowH/2 + svgInfoFont*baselineRatio
+	var b strings.Builder
+	cx := x
+	for _, s := range segs {
+		iconW := 16.0
+		if m := iconWidthRe.FindStringSubmatch(s.Icon); m != nil {
+			if n, err := strconv.Atoi(m[1]); err == nil {
+				iconW = float64(n)
+			}
+		}
+		iconY := top + (svgInfoRowH-iconW)/2
+		var seg strings.Builder
+		seg.WriteString(SVGIcon(cx, iconY, svgIconFill, s.Icon))
+		tx := cx + iconW + svgInfoIconGap
+		seg.WriteString(SVGText(tx, baseline, s.Text, SVGTextOpts{Size: svgInfoFont, Fill: svgInfoFill}))
+		if s.Class != "" {
+			fmt.Fprintf(&b, `<g class=%q>%s</g>`, s.Class, seg.String())
+		} else {
+			b.WriteString(seg.String())
+		}
+		cx = tx + fontmetrics.Width(s.Text, svgInfoFont) + svgInfoSegGap
+	}
+	return b.String(), svgInfoRowH
+}
+
 // SVGAvatar renders a profile avatar as a clipped `<image>` of the given
 // square size at (x, y). The image URL is emitted as an `href` (left for
 // the image-inline stage to fold into a data URI). rounded=true clips to
@@ -242,4 +489,40 @@ func SVGAvatar(x, y, size float64, url, clipID string, rounded bool) string {
 	return fmt.Sprintf(
 		`<defs>%s</defs><image class="avatar" href=%q x="%s" y="%s" width="%s" height="%s" clip-path="url(#%s)"/>`,
 		clip, escapeXML(url), pos(x), pos(y), pos(size), pos(size), clipID)
+}
+
+// SVGAvatarSpec describes one avatar in a grid. IsOrg selects the
+// rounded-square clip (organization) over the default circle (user).
+type SVGAvatarSpec struct {
+	URL   string
+	IsOrg bool
+}
+
+// SVGAvatarGrid lays a list of avatars out left-to-right within availWidth,
+// wrapping to a new row when the next avatar would overflow. size is the
+// avatar edge length and gap the spacing between avatars; the grid's
+// top-left is (x, top). clipPrefix seeds unique clipPath ids. Returns the
+// markup and the height consumed (0 for an empty list).
+func SVGAvatarGrid(x, top, availWidth, size, gap float64, clipPrefix string, avatars []SVGAvatarSpec) (string, float64) {
+	if len(avatars) == 0 {
+		return "", 0
+	}
+	perRow := int((availWidth + gap) / (size + gap))
+	if perRow < 1 {
+		perRow = 1
+	}
+	var b strings.Builder
+	col, rows := 0, 1
+	cx, cy := x, top
+	for i, a := range avatars {
+		if col == perRow {
+			col, cx = 0, x
+			cy += size + gap
+			rows++
+		}
+		b.WriteString(SVGAvatar(cx, cy, size, a.URL, fmt.Sprintf("%s-%d", clipPrefix, i), !a.IsOrg))
+		cx += size + gap
+		col++
+	}
+	return b.String(), float64(rows)*(size+gap) - gap
 }
