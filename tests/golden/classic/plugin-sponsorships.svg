@@ -5,53 +5,6 @@
     color: #777777;
   }
 
-/* Large SVG context */
-  svg.large .largeable {
-    width: 474px;
-  }
-  svg.large .largeable > .row {
-    width: 100%;
-  }
-  svg.large .largeable-align-start {
-    align-items: flex-start;
-  }
-  svg.large .column.largeable, svg.large .row.largeable, svg.large .largeable-inline-flex {
-    display: inline-flex;
-  }
-  svg.large .largeable-flex-wrap, svg.large .largeable-column-fields {
-    display: flex;
-    flex-wrap: wrap;
-  }
-  svg.large .largeable-column-fields > .field {
-    width: 230px;
-  }
-  svg.large .chart.largeable {
-    width: 458px;
-  }
-  svg.large .largeable-width-auto {
-    width: auto;
-  }
-  svg.large .largeable-width-half {
-    width: 50%;
-  }
-
-/* Columns display */
-  svg.columns .items-wrapper{
-    column-count: 2;
-    column-gap: 10px;
-  }
-  svg.columns .items-wrapper>*{
-    -webkit-column-break-inside: avoid;
-    page-break-inside: avoid;
-    break-inside: avoid-column;
-  }
-
-  @media (max-width: 850px){
-    svg.columns .items-wrapper{
-      column-count: 1;
-    }
-  }
-
 /* Headers */
   h1, h2, h3 {
     margin: 8px 0 2px;
@@ -106,18 +59,6 @@
   .octicon {
     width: 16px;
     height: 16px;
-  }
-  .field.error {
-    color: #cb2431;
-  }
-  .field.error svg {
-    fill: #cb2431;
-  }
-  .field.warning {
-    color: #D79533;
-  }
-  .field.warning svg {
-    fill: #D79533;
   }
 
 /* Displays */
@@ -179,13 +120,6 @@
   }
   .margin-bottom {
     margin-bottom: 16px;
-  }
-  .no-margin-top {
-    margin-top: 0px;
-  }
-  .margin-lr-auto {
-    margin-left: auto;
-    margin-right: auto;
   }
 
 /* User avatar */
@@ -299,10 +233,6 @@
   }
 
 /* Commit calendar */
-  .calendar.field {
-    margin: 4px 0;
-    margin-left: 7px;
-  }
   .calendar .day {
     outline: 1px solid rgba(27,31,35,.04);
     outline-offset: -1px;
@@ -336,43 +266,6 @@
   }
   .field.language.details small > *:not(:last-child) {
     margin-right: 6px;
-  }
-
-  .footnote {
-    width: 100%;
-    justify-content: flex-end;
-    font-size: 12px;
-  }
-  .footnote.warning {
-    color: #D79533;
-  }
-  .footnote.warning svg {
-    fill: #D79533;
-  }
-
-/* Follow-up */
-  .followup.legend {
-    font-size: 12px;
-    flex-wrap: wrap;
-  }
-  .followup.legend .field {
-    width: 46%;
-    justify-content: flex-start;
-    margin-left: 8px;
-  }
-  .followup.legend svg {
-    margin: 0 3px;
-    width: 14px;
-    height: 14px;
-  }
-  .followup.legend svg:first-child {
-    margin-left: 0;
-  }
-  .followup.legend svg:last-child {
-    margin-right: 0;
-  }
-  .followup-title{
-    white-space: initial;
   }
 
 /* Labels */
@@ -504,137 +397,6 @@
       stroke-dasharray: 0 329;
     }
   }
-  .audits {
-    margin-top: 8px;
-  }
-  .audit.text {
-    min-width: 42px;
-  }
-  .audit svg {
-    margin: 0;
-  }
-  .audit.high {
-    fill: #18b663;
-  }
-  .audit.average {
-    fill: #fb8c00;
-  }
-  .audit.low {
-    fill: #e53935;
-  }
-
-  .screenshot {
-    width: 452px;
-    height: 315px;
-    margin: 8px 14px 4px;
-    border-radius: 5px;
-  }
-  .screenshot-content {
-    margin-left: 12px;
-  }
-
-  svg.large .audits {
-    display: inline-flex;
-    width: 474px;
-  }
-  svg.large .audits section:last-child > .field {
-    justify-content: right;
-  }
-  svg.large .screenshot {
-    width: 904px;
-    height: 630px;
-  }
-
-/* Music plugin */
-  .tracklist {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    margin-left: 28px;
-    margin-top: 4px;
-    width: 100%;
-  }
-  .track {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 4px;
-  }
-  .track img {
-    margin: 0 10px;
-    border-radius: 7px;
-    flex-shrink: 0;
-  }
-  .track .name {
-    font-size: 14px;
-    line-height: 14px;
-    height: 14px;
-    font-weight: 600;
-  }
-  .track .name, .track .artist {
-    width: 387px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .track .artist, .track .played-at {
-    font-size: 12px;
-    color: #666666;
-  }
-  .track .infos {
-    flex-grow: 1;
-  }
-  svg.large .tracklist {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-/* Posts plugin */
-  .post {
-    align-items: flex-start;
-  }
-  .post .infos {
-    display: flex;
-    margin-bottom: 4px;
-  }
-  .post .infos .left {
-    flex-shrink: 0;
-    font-size: 12px;
-    color: #666666;
-    width: 72px;
-    padding-top: 1px;
-    text-align: center;
-  }
-  .post .infos .cover {
-    width: 100%;
-    height: 56px;
-    background-position: center;
-    background-size: cover;
-    border-radius: 6px;
-    overflow: hidden;
-  }
-  .post .infos .right {
-    width: 376px;
-    padding-left: 4px;
-  }
-  .post .infos .title, .post .infos .description {
-    font-size: 14px;
-    white-space: normal;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-height: 38px;
-    /* May not work in all browsers */
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-  }
-  .post .infos .description {
-    margin-top: 3px;
-    font-size: 12px;
-    max-height: 48px;
-    color: #666666;
-    -webkit-line-clamp: 3;
-  }
 
 /* Topics */
   .topics {
@@ -645,70 +407,6 @@
   .topics img {
     border-radius: 5px;
     margin: 4px;
-  }
-
-/* Tweets */
-  .tweet {
-    font-size: 13px;
-    margin-top: 6px;
-    margin-bottom: 16px;
-    margin-left: 18px;
-    border-left: 3px solid #777777B2;
-    padding-left: 6px;
-  }
-
-  .tweet .mention, .tweet .link, .tweet .hashtag {
-    color: #0366d6;
-  }
-
-  .tweet .date {
-    margin: 6px 0;
-    font-size: 12px;
-    color: #666666;
-  }
-
-  .tweet .attachments {
-    display: flex;
-    width: 450px;
-    margin-top: 8px;
-  }
-
-  .tweet .attachments > div {
-    flex: 1 1 0;
-    width: 0;
-    border-radius: 6px;
-    background-position: center;
-    background-size: cover;
-    height: 200px;
-    margin: 2px;
-    box-shadow: 0px 0px 1px #777777A0;
-    overflow: hidden;
-    display: flex;
-    align-items: flex-end;
-  }
-
-  .tweet .attachments .infos {
-    background-color: #000000D0;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    padding-bottom: 4px;
-  }
-
-  .tweet .attachments .infos > div {
-    margin: 4px 8px 0;
-  }
-
-  .tweet .attachments .infos .title {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .tweet .attachments .infos .description {
-    font-size: 11px;
-    color: #666666;
   }
 
 /* Charts and graphs */
@@ -927,10 +625,6 @@
     -webkit-box-orient: vertical;
   }
 
-  svg.large .activity .field {
-    max-width: 900px;
-  }
-
 /* Calendar */
   svg.calendar {
     margin-left: 13px;
@@ -942,47 +636,6 @@
     fill: currentColor;
   }
 
-/* Diff stats */
-  .diff-handle {
-    color: #58a6ff;
-    max-width: 200px;
-    text-overflow: ellipsis;
-    overflow: hidden;
-  }
-  .large .diff-handle {
-    max-width: 400px;
-  }
-  .diff-box {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    margin-left: 1px;
-    background-color: rgba(110, 118, 129, 0.4);
-    border: 1px solid rgba(246, 240, 251, 0.1);
-  }
-  .diff-box:first-child {
-    margin-left: 9px;
-  }
-  .diff-box.added {
-    background-color: rgb(63, 185, 80);
-  }
-  .diff-box.deleted {
-    background-color: rgb(218, 54, 51);
-  }
-  .diff-stats {
-    margin-left: 4px;
-    font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;
-    font-weight: bold;
-    font-size: 12px;
-    white-space: nowrap;
-  }
-  .added {
-    color: rgb(63, 185, 80);
-  }
-  .deleted {
-    color: rgb(218, 54, 51);
-  }
-
 /* People */
   .people {
     padding: 0 10px;
@@ -990,33 +643,6 @@
 
   .people .avatar {
     margin: 0 2px;
-  }
-
-/* Projects */
-  .project .description {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: block;
-    width: 420px;
-    margin-left: 37px;
-    max-height: 38px;
-    font-size: 12px;
-    white-space: normal;
-    /* May not work in all browsers */
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-  }
-  .project .items, .project-items {
-    padding-left: 11px;
-  }
-  .project .items .text, .project-items .text {
-    text-overflow: ellipsis;
-    overflow: hidden;
-    width: 426px;
-  }
-  .large .project .items .text, .large .project-items .text {
-    width: 916px;
   }
 
 /* Star lists */
@@ -1052,210 +678,6 @@
     margin-left: 18px;
   }
 
-/* Anilist */
-  .anilist {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    margin-left: 28px;
-    margin-top: 4px;
-  }
-
-  .anilist .media {
-    display: flex;
-    margin-bottom: 4px;
-    width: 450px;
-  }
-  .anilist .media img {
-    margin: 0 10px;
-    border-radius: 7px;
-  }
-
-  .anilist .media .about {
-    flex-grow: 1;
-  }
-  .anilist .media .name {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 14px;
-    line-height: 14px;
-    color: #58a6ff;
-  }
-  .anilist .media .infos {
-    font-size: 12px;
-    color: #666666;
-  }
-  .anilist .media .infos > div {
-    display: inline-flex;
-    align-items: center;
-    margin-right: 16px;
-  }
-  .anilist .media .infos svg {
-    fill: currentColor;
-    height: 12px;
-    width: 12px;
-    margin: 0;
-    margin-right: 4px;
-  }
-
-  .anilist .media .description {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: block;
-    width: 380px;
-    max-height: 38px;
-    font-size: 12px;
-    white-space: normal;
-    /* May not work in all browsers */
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-  }
-
-  .anilist .characters {
-    display: flex;
-    flex-wrap: wrap;
-  }
-
-  .anilist .characters img {
-    margin: 2px;
-    border-radius: 7px;
-  }
-
-/* Steam */
-  .steam .games {
-    margin-left: 28px;
-  }
-  .steam .media {
-    display: flex;
-    margin-bottom: 4px;
-    width: 450px;
-  }
-  .steam .media img {
-    margin: 0 10px;
-    border-radius: 7px;
-  }
-  .steam .media > img {
-    height: 32px;
-    width: 32px;
-  }
-  .steam .media .about {
-    flex-grow: 1;
-  }
-  .steam .media .name {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 14px;
-    line-height: 14px;
-    color: #58a6ff;
-  }
-  .steam .media .infos {
-    font-size: 12px;
-    color: #666666;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .steam .media .infos > div {
-    display: inline-flex;
-    align-items: center;
-    margin-right: 16px;
-  }
-  .steam .media .infos svg {
-    fill: currentColor;
-    height: 12px;
-    width: 12px;
-    margin: 0;
-    margin-right: 4px;
-  }
-  .steam .media .achievement img {
-    height: 22px;
-    width: 22px;
-    margin-right: 6px;
-  }
-  .steam .media .achievement .name {
-    display: flex;
-    justify-content: space-between;
-  }
-  .steam .media .achievement .name > div:first-child {
-    max-width: 280px;
-  }
-  .steam .media .achievement .description {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: block;
-    width: 344px;
-    max-height: 38px;
-    font-size: 12px;
-    white-space: normal;
-    /* May not work in all browsers */
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-  }
-  .steam .media .achievement .unlocked {
-    font-size: 12px;
-    color: #666666;
-    font-style: italic;
-    flex-shrink: 0;
-  }
-  .steam .media .achievement .ellipsis {
-    margin-left: 18px;
-  }
-
-/* Licenses */
-  .licenses {
-    display: flex;
-  }
-  .licenses .column {
-    align-items: flex-start;
-    font-size: 12px;
-    color: #666666;
-    flex-shrink: 0;
-  }
-  .licenses-details {
-    margin-top: 8px;
-  }
-  .field.license.details {
-    display: flex;
-    justify-content: space-between;
-  }
-  .field.license.details small {
-    display: flex;
-    justify-content: space-between;
-    color: #666666;
-    text-align: right;
-  }
-  .licenses .column:nth-child(1) {
-    margin-left: 13px;
-    width: 25%;
-  }
-  .licenses .column:nth-child(2) {
-    width: 25%;
-  }
-  .licenses .column:nth-child(3) {
-    width: 50%;
-  }
-  .licenses .column svg {
-    height: 12px;
-    width: 12px;
-  }
-  .licenses .column .title {
-    font-weight: 600;
-    margin-left: 15px;
-  }
-  .licenses .column .permission svg {
-    fill: #56d364;
-  }
-  .licenses .column .limitation svg {
-    fill: #f85149;
-  }
-  .licenses .column .condition svg {
-    fill: #58a6ff;
-  }
-
 /* Contributors */
   .contributors {
     display: flex;
@@ -1287,15 +709,9 @@
     width: .8rem;
     height: .8rem;
   }
-  .field.contributors-category {
-    margin-left: 12px;
-  }
-  .contributors-categories img {
-    margin-right: 0;
-  }
 
-/* Introduction and sponsors */
-  .introduction, .sponsors {
+/* Sponsors */
+  .sponsors {
     white-space: normal;
     margin: 0 13px 2px;
   }
@@ -1327,48 +743,6 @@
   .sponsorships.goal img {
     width: 38px;
     margin-right: 8px;
-  }
-
-/* Stackoverflow */
-  .stackoverflow {
-    margin-left: 38px;
-  }
-  .stackoverflow .entry {
-    margin: 4px 0 12px;
-  }
-  .stackoverflow .title {
-    color: #58a6ff;
-    white-space: normal;
-    align-items: flex-start;
-  }
-  .stackoverflow .body, .stackoverflow .infos {
-    color: #666666;
-    font-size: 13px;
-    margin-left: 32px;
-  }
-  .stackoverflow .infos {
-    display: flex;
-    align-items: center;
-  }
-  .stackoverflow .infos > div {
-    display: inline-flex;
-    align-items: center;
-    margin-right: 16px;
-  }
-  .stackoverflow .infos svg {
-    fill: currentColor;
-    height: 12px;
-    width: 12px;
-    margin: 0;
-    margin-right: 4px;
-    flex-shrink: 0;
-  }
-  .stackoverflow .body {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    border-left: 3px solid #777777B2;
-    padding-left: 6px;
-    width: 400px;
   }
 
 /* Achievements */
@@ -1492,97 +866,13 @@
     display: none;
   }
 
-/* RSS feed */
-  .rss {
-    align-items: flex-start;
-  }
-  .rss .infos {
-    margin-bottom: 3px;
-  }
-  .rss .infos .date {
-    font-size: 10px;
-    color: #666666;
-  }
-
-/* Skyline */
-  .skyline-animation {
-    margin: 2px 13px 6px;
-    border-radius: 10px;
-    background-color: #030D21;
-    overflow: hidden;
-  }
-
-/* LeetCode */
-  .leetcode.subsection {
-    padding-left: 28px;
-  }
-  .leetcode .topics {
-    margin-left: 20px;
-  }
-  .leetcode .count {
-    font-size: 10px;
-    color: #666666;
-  }
-  .leetcode .fundamental .dot, .leetcode .easy.gauge .gauge-arc {
-    color: #2CBB5D;
-  }
-  .leetcode .intermediate .dot, .leetcode .medium.gauge .gauge-arc {
-    color: #FFC01E;
-  }
-  .leetcode .advanced .dot, .leetcode .hard.gauge .gauge-arc {
-    color: #EF4743;
-  }
-  .leetcode .all.gauge .gauge-arc {
-    color: rgb(255, 161, 22);
-  }
-  .leetcode {
-    align-items: flex-start;
-  }
-  .leetcode .infos {
-    margin-bottom: 3px;
-  }
-  .leetcode .infos .date {
-    font-size: 10px;
-    color: #666666;
-  }
-
-/* Code snippet */
-  .snippet .body {
-    padding-left: 12px;
-  }
-  .snippet .language-diff {
-    font-size: 77%;
-  }
-  .snippet.additions {
-    color: #336543;
-  }
-  .snippet.deletions {
-    color: #9A5256;
-  }
-  .snippet .token.prefix.unchanged {
-    visibility: hidden;
-  }
-
 /* Markdown and syntax highlighting */
-  .markdown b, .markdown i {
-    display: inline-block;
-    width: 97%;
-  }
   .markdown p {
     margin: 8px 0;
-  }
-  .markdown ul {
-    padding-left: 24px;
   }
   .markdown a {
     color: #58a6ff;
     text-decoration: none;
-  }
-  .markdown blockquote {
-    border-left: 4px solid #7777771F;
-    color: #777777;
-    margin: 0;
-    padding-left: 16px;
   }
   code {
     background-color: #7777771F;
@@ -1593,11 +883,6 @@
     font-size: 80%;
     font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;
   }
-  code[class^=language-] {
-    white-space: pre-wrap;
-    width: 97%;
-    margin-top: 4px;
-  }
   span.code {
     background-color: #7777771F;
     padding: 1px 5px;
@@ -1606,85 +891,6 @@
     color: #777777;
     font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;
     margin: 0 4px -3px;
-  }
-  .token.comment {
-    color: #669900;
-  }
-  .token.punctuation {
-    color: #8a93a8;
-  }
-  .token.namespace, .token.constant, .token.symbol, .token.keyword {
-    color: #b44418;
-  }
-  .token.regex, .token.string, .token.char, .token.number, .token.boolean {
-    color: #2777AA;
-  }
-  .token.property, .token.tag {
-    color: #48428a;
-  }
-  .token.builtin, .token.operator {
-    color: #106cbc;
-  }
-  .token.trimmed {
-    font-style: italic;
-    color: #77777760;
-  }
-  .token.coord {
-    color: #D2A8FF;
-    font-weight: bold;
-  }
-  .token.inserted:not(.prefix) {
-    color: #AAD0B4DC;
-    background-color: #336543DC;
-  }
-  .token.deleted:not(.prefix) {
-    color: #EED2D0DC;
-    background-color: #9A5256DC;
-  }
-
-/* Typography */
-  .space {
-    margin-left: 7px;
-  }
-  .blue {
-    color: #58a6ff;
-  }
-
-/* Charts */
-  .ct-chart {
-    display: flex;
-    margin-left: -12px;
-  }
-  .ct-chart-pie .ct-label {
-    fill: rgba(255, 255, 255, 0.8) !important;
-    color: rgba(255, 255, 255, 0.8) !important;
-  }
-  .ct-line {
-    stroke-width: 2px !important;
-    stroke: #58A6FF !important;
-  }
-  .ct-point {
-    stroke: #106cbc !important;
-    stroke-width: 2px !important;
-  }
-  .ct-area {
-    fill: #58A6FF !important;
-  }
-  .ct-label {
-    fill: rgba(127, 127, 127, 0.8) !important;
-    color: rgba(127, 127, 127, 0.8) !important;
-  }
-  .ct-label.ct-horizontal {
-    text-anchor: middle !important;
-  }
-  .ct-grid {
-    stroke: rgba(127, 127, 127, 0.4) !important;
-  }
-
-/* Autosize */
-  .autosize {
-    width: auto;
-    height: auto;
   }
 
 /* Twemoji and GitHub emoji */
@@ -1695,24 +901,6 @@
   }
   .label-flex .gemoji {
     margin-right: .25rem;
-  }
-
-/* Cake day */
-  .cakeday, .cakeday svg {
-    animation: animation-rainbow 1.2s;
-    animation-iteration-count: infinite;
-    animation-timing-function: steps(1);
-  }
-
-/* Rainbow animation */
-  @keyframes animation-rainbow {
-    0%, 100%{ color: #7F00FF; fill: #7F00FF; }
-    14% { color: #A933FF; fill: #A933FF; }
-    29%{ color: #007FFF; fill: #007FFF; }
-    43%{ color: #00FF7F; fill: #00FF7F; }
-		57%{ color: #FFFF00; fill: #FFFF00; }
-		71%{ color: #FF7F00; fill: #FF7F00; }
-		86%{ color: #FF0000; fill: #FF0000; }
   }
 
 /* Calendar */
@@ -1750,4 +938,4 @@
     animation-play-state: paused !important;
     caret-color: transparent !important;
   }
-</style><style></style><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper"><div class="plugin-sponsorships" data-plugin="sponsorships"><section data-section="sponsorships"><h2 class="field"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.586 1C12.268 1 13.5 2.37 13.5 4.25c0 1.745-.996 3.359-2.622 4.831-.166.15-.336.297-.509.438l1.116 5.584a.75.75 0 0 1-.991.852l-2.409-.876a.25.25 0 0 0-.17 0l-2.409.876a.75.75 0 0 1-.991-.852L5.63 9.519a13.78 13.78 0 0 1-.51-.438C3.497 7.609 2.5 5.995 2.5 4.25 2.5 2.37 3.732 1 5.414 1c.963 0 1.843.403 2.474 1.073L8 2.198l.112-.125a3.385 3.385 0 0 1 2.283-1.068L10.586 1Zm-3.621 9.495-.718 3.594 1.155-.42a1.75 1.75 0 0 1 1.028-.051l.168.051 1.154.42-.718-3.592c-.199.13-.37.235-.505.314l-.169.097a.75.75 0 0 1-.72 0 9.54 9.54 0 0 1-.515-.308l-.16-.105ZM10.586 2.5c-.863 0-1.611.58-1.866 1.459-.209.721-1.231.721-1.44 0C7.025 3.08 6.277 2.5 5.414 2.5 4.598 2.5 4 3.165 4 4.25c0 1.23.786 2.504 2.128 3.719.49.443 1.018.846 1.546 1.198l.325.21.076-.047.251-.163a13.341 13.341 0 0 0 1.546-1.198C11.214 6.754 12 5.479 12 4.25c0-1.085-.598-1.75-1.414-1.75Z"></path></svg>Sponsorships</h2><div class="row fill-width"><section class="sponsorships sponsors goal"><img src="https://github.githubassets.com/images/icons/emoji/hearts_around.png" alt="" /><div><span class="bold">octocat</span> has given a total of <span class="bold">$0.00</span> to open source software.</div></section></div><div class="row fill-width"><section class="sponsors goal"><div class="goal-text"><span>octocat helped funding the work of 0 users and organizations.</span></div><div class="row"></div></section></div></section></div><section data-section="metadata"><footer><span>These metrics include private contributions</span><span>Last updated 2026-06-24T23:11:08Z with mjun0812/github-metrics@test-version</span></footer></section><div id="metrics-end"></div></div></foreignObject></svg>
+</style><style></style><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper"><div class="plugin-sponsorships" data-plugin="sponsorships"><section data-section="sponsorships"><h2 class="field"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.586 1C12.268 1 13.5 2.37 13.5 4.25c0 1.745-.996 3.359-2.622 4.831-.166.15-.336.297-.509.438l1.116 5.584a.75.75 0 0 1-.991.852l-2.409-.876a.25.25 0 0 0-.17 0l-2.409.876a.75.75 0 0 1-.991-.852L5.63 9.519a13.78 13.78 0 0 1-.51-.438C3.497 7.609 2.5 5.995 2.5 4.25 2.5 2.37 3.732 1 5.414 1c.963 0 1.843.403 2.474 1.073L8 2.198l.112-.125a3.385 3.385 0 0 1 2.283-1.068L10.586 1Zm-3.621 9.495-.718 3.594 1.155-.42a1.75 1.75 0 0 1 1.028-.051l.168.051 1.154.42-.718-3.592c-.199.13-.37.235-.505.314l-.169.097a.75.75 0 0 1-.72 0 9.54 9.54 0 0 1-.515-.308l-.16-.105ZM10.586 2.5c-.863 0-1.611.58-1.866 1.459-.209.721-1.231.721-1.44 0C7.025 3.08 6.277 2.5 5.414 2.5 4.598 2.5 4 3.165 4 4.25c0 1.23.786 2.504 2.128 3.719.49.443 1.018.846 1.546 1.198l.325.21.076-.047.251-.163a13.341 13.341 0 0 0 1.546-1.198C11.214 6.754 12 5.479 12 4.25c0-1.085-.598-1.75-1.414-1.75Z"></path></svg>Sponsorships</h2><div class="row fill-width"><section class="sponsorships sponsors goal"><img src="https://github.githubassets.com/images/icons/emoji/hearts_around.png" alt="" /><div><span class="bold">octocat</span> has given a total of <span class="bold">$0.00</span> to open source software.</div></section></div><div class="row fill-width"><section class="sponsors goal"><div class="goal-text"><span>octocat helped funding the work of 0 users and organizations.</span></div><div class="row"></div></section></div></section></div><section data-section="metadata"><footer><span>These metrics include private contributions</span><span>Last updated 2026-07-07T23:58:39Z with mjun0812/github-metrics@dev</span></footer></section><div id="metrics-end"></div></div></foreignObject></svg>
