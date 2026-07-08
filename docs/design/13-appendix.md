@@ -650,6 +650,12 @@ ANSI カラー (`\x1b[36m...\x1b[0m`) を含む行はパディングを 9 文字
 
 ## G. svg.Resize の chromedp 評価スクリプト
 
+> **注記**: この chromedp / Headless Chromium ベースの計測は resvg パイプラインに
+> 置換済み ([#409](https://github.com/mjun0812/github-metrics/issues/409))。
+> 現行の高さ算出は Go 側のフォントメトリクスで行い、ラスタライズは resvg が担う
+> ([04-rendering.md §3](./04-rendering.md#3-svg-ラスタライズ-resvg))。以下は
+> 歴史的参照として残す。
+
 `<svg>` のレンダリング後の高さを計測し、属性を書き換える。chromedp の `Evaluate` に渡す JS 本体は次の通り (Node 版が puppeteer に渡す関数と同等):
 
 ```javascript
