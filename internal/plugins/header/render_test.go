@@ -122,7 +122,7 @@ func TestPartial_UserPopulatedEscapesName(t *testing.T) {
 	for _, want := range []string{
 		`data-section="header"`,
 		"&lt;Octo &amp; cat&gt;",
-		`src="https://example/x.png"`,
+		`href="https://example/x.png"`,
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in output: %s", want, got)
@@ -279,7 +279,7 @@ func TestPartial_OrgRenders(t *testing.T) {
 	for _, want := range []string{
 		`data-section="header"`,
 		"&lt;Octo &amp; Labs&gt;",
-		`src="https://example/org.png"`,
+		`href="https://example/org.png"`,
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in org output: %s", want, got)
@@ -419,8 +419,8 @@ func TestBasePartial_UsesPluginResult(t *testing.T) {
 	}
 	for _, want := range []string{
 		`data-section="header"`,
-		`<span>Octo</span>`,
-		`src="https://example/x.png"`,
+		`>Octo</text>`,
+		`href="https://example/x.png"`,
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in output: %s", want, got)
@@ -464,7 +464,7 @@ func TestBasePartial_LazyFetchSuccess(t *testing.T) {
 	}
 	for _, want := range []string{
 		`data-section="header"`,
-		`<span>Octo</span>`,
+		`>Octo</text>`,
 		`Joined GitHub 18 years ago`,
 		`data-block="calendar-grid"`,
 	} {

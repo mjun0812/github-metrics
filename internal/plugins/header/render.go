@@ -9,6 +9,7 @@ import (
 
 	"github.com/mjun0812/github-metrics/internal/format"
 	"github.com/mjun0812/github-metrics/internal/plugins"
+	"github.com/mjun0812/github-metrics/internal/render/fontmetrics"
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
@@ -59,8 +60,7 @@ func init() {
 
 // Partial renders the classic SVG fragment for the header plugin.
 // It reads the Result published by Run under data.Plugins["header"]
-// and produces an output byte-equivalent to the legacy BaseHeader
-// partial.
+// and produces a native-SVG identity card (avatar / name / counters).
 func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
 		return "", 0, nil
@@ -73,8 +73,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 	if !ok || r == nil || r.Profile == nil {
 		return "", 0, nil
 	}
-	markup, err := renderResult(r)
-	return markup, 0, err
+	return renderResult(r)
 }
 
 // basePartialEnabled is the explicit input-level gate for BasePartial.
@@ -130,8 +129,7 @@ func BasePartial(ctx context.Context, pc *templates.PartialContext) (string, int
 	if pc.Data != nil {
 		if raw, ok := pc.Data.GetPlugin(Name); ok && raw != nil {
 			if r, ok := raw.(*Result); ok && r != nil && r.Profile != nil {
-				markup, err := renderResult(r)
-				return markup, 0, err
+				return renderResult(r)
 			}
 		}
 	}
@@ -151,14 +149,34 @@ func BasePartial(ctx context.Context, pc *templates.PartialContext) (string, int
 	if cal, cErr := pc.Provider.CommitCalendar(ctx); cErr == nil {
 		r.CommitCalendar = cal
 	}
-	markup, err := renderResult(r)
-	return markup, 0, err
+	return renderResult(r)
 }
+
+// Native-SVG header geometry. The title band holds the 20px avatar and
+// the 20px bold display name; counters begin below it. The values mirror
+// the flex/CSS metrics the HTML `.field` / h1 / `.avatar` rows used so
+// the card lines up with the still-HTML partials it coexists with (#409
+// Phase B1).
+const (
+	hdrTitleTop      = 8                              // h1 margin-top
+	hdrAvatarSize    = 20                             // .avatar width/height
+	hdrAvatarInset   = 11                             // section inset (5) + .avatar margin (6)
+	hdrTitleBand     = 24                             // title content band (avatar / 20px name)
+	hdrTitleBottom   = hdrTitleTop + hdrTitleBand + 2 // + h1 margin-bottom
+	hdrNameX         = 37                             // inset(5)+avatar(6+20+6); aligns with the field text column
+	hdrNameNoAvatarX = 5                              // section inset when no avatar precedes the name
+	hdrNameFont      = 20                             // h1 font-size
+	hdrNameFill      = "#0366d6"
+	// hdrAvatarClipID is the clipPath id for the single header avatar.
+	// There is exactly one header per card, so a fixed id is safe.
+	hdrAvatarClipID = "header-avatar"
+)
 
 // renderResult is the shared rendering core used by Partial (plugin
 // dispatch path) and BasePartial (static dispatch path). r is assumed
-// non-nil with a populated Profile; callers handle the empty cases.
-func renderResult(r *Result) (string, error) {
+// non-nil with a populated Profile; callers handle the empty cases. It
+// returns the native-SVG markup and the pixel height it consumes.
+func renderResult(r *Result) (string, int, error) {
 	prof := r.Profile
 	// header partial only renders for user accounts.
 	if prof.Kind != plugins.ProfileKindUser || prof.User == nil {
@@ -167,109 +185,116 @@ func renderResult(r *Result) (string, error) {
 
 	u := prof.User
 	if u.Login == "" && u.Name == "" {
-		return "", nil
+		return "", 0, nil
 	}
 	display := u.Name
 	if display == "" {
 		display = u.Login
 	}
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="header">`)
-	b.WriteString(`<h1 class="field">`)
-	if u.AvatarURL != "" {
-		fmt.Fprintf(&b, `<img class="avatar" src=%q width="20" height="20" />`,
-			partials.EscapeXML(u.AvatarURL))
-	}
-	fmt.Fprintf(&b, `<span>%s</span>`, partials.EscapeXML(display))
-	b.WriteString(`</h1>`)
-
-	// Two-column layout mirroring upstream base.header.ejs.
+	// Two-column counters layout mirroring upstream base.header.ejs.
 	// Left column: Joined / Followed by / Following.
-	var leftRows []string
+	left := chrome.NewSVGColumn(0, chrome.CardWidth/2, hdrTitleBottom)
 	if age := format.RelativeAge(u.CreatedAt, currentNow()); age != "" {
-		leftRows = append(leftRows, fmt.Sprintf(
-			`<div class="field">:octicon-clock:Joined GitHub %s</div>`, age,
-		))
+		left.Field(":octicon-clock:", "Joined GitHub "+age)
 	}
 	if u.Followers > 0 {
-		leftRows = append(leftRows, fmt.Sprintf(
-			`<div class="field">:octicon-people:Followed by %s %s</div>`,
-			partials.FormatCount(int64(u.Followers)), pluralLabel("user", u.Followers),
-		))
+		left.Field(":octicon-people:", fmt.Sprintf("Followed by %s %s",
+			partials.FormatCount(int64(u.Followers)), pluralLabel("user", u.Followers)))
 	}
 	if u.Following > 0 {
-		leftRows = append(leftRows, fmt.Sprintf(
-			`<div class="field">:octicon-people:Following %s %s</div>`,
-			partials.FormatCount(int64(u.Following)), pluralLabel("user", u.Following),
-		))
+		left.Field(":octicon-people:", fmt.Sprintf("Following %s %s",
+			partials.FormatCount(int64(u.Following)), pluralLabel("user", u.Following)))
 	}
 
 	// Right column: contribution mini calendar + contributed-to count.
-	var rightRows []string
-	recent := recentDays(r.CommitCalendar, headerCalendarDays)
-	if row := chrome.ContributionRow(recent); row != "" {
-		rightRows = append(rightRows, row)
-	}
+	right := chrome.NewSVGColumn(chrome.CardWidth/2, chrome.CardWidth/2, hdrTitleBottom)
+	right.Calendar(recentDays(r.CommitCalendar, headerCalendarDays))
 	if u.ContributedTo > 0 {
 		noun := "repositories"
 		if u.ContributedTo == 1 {
 			noun = "repository"
 		}
-		rightRows = append(rightRows, fmt.Sprintf(
-			`<div class="field">:octicon-repo-push:Contributed to %s %s</div>`,
-			partials.FormatCount(int64(u.ContributedTo)), noun,
-		))
+		right.Field(":octicon-repo-push:", fmt.Sprintf("Contributed to %s %s",
+			partials.FormatCount(int64(u.ContributedTo)), noun))
 	}
 
-	if len(leftRows) > 0 || len(rightRows) > 0 {
-		b.WriteString(`<div class="row" data-block="header-counters">`)
-		if len(leftRows) > 0 {
-			b.WriteString(`<section>`)
-			for _, row := range leftRows {
-				b.WriteString(row)
-			}
-			b.WriteString(`</section>`)
-		}
-		if len(rightRows) > 0 {
-			b.WriteString(`<section>`)
-			for _, row := range rightRows {
-				b.WriteString(row)
-			}
-			b.WriteString(`</section>`)
-		}
-		b.WriteString(`</div>`)
+	countersHeight := left.Height()
+	if right.Height() > countersHeight {
+		countersHeight = right.Height()
 	}
+	height := hdrTitleBottom + int(countersHeight)
 
-	b.WriteString(`</section>`)
-	return b.String(), nil
+	var body strings.Builder
+	body.WriteString(avatarMarkup(u.AvatarURL, true))
+	body.WriteString(nameMarkup(display, u.AvatarURL != ""))
+	if !left.Empty() || !right.Empty() {
+		body.WriteString(`<g data-block="header-counters">`)
+		body.WriteString(left.Markup())
+		body.WriteString(right.Markup())
+		body.WriteString(`</g>`)
+	}
+	return wrapHeaderSVG(body.String(), height), height, nil
 }
 
-// orgPartial renders the organization account header card.
-func orgPartial(r *Result) (string, error) {
+// orgPartial renders the organization account header card (title only —
+// no counters).
+func orgPartial(r *Result) (string, int, error) {
 	if r.Profile == nil || r.Profile.Organization == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	org := r.Profile.Organization
 	if org.Login == "" && org.Name == "" {
-		return "", nil
+		return "", 0, nil
 	}
 	display := org.Name
 	if display == "" {
 		display = org.Login
 	}
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="header">`)
-	b.WriteString(`<h1 class="field">`)
-	if org.AvatarURL != "" {
-		fmt.Fprintf(&b, `<img class="avatar" src=%q width="20" height="20" />`,
-			partials.EscapeXML(org.AvatarURL))
+	height := hdrTitleBottom
+	var body strings.Builder
+	// Organization avatars clip to a 15%-radius rounded square, not a
+	// circle (`.organization.avatar { border-radius: 15% }`).
+	body.WriteString(avatarMarkup(org.AvatarURL, false))
+	body.WriteString(nameMarkup(display, org.AvatarURL != ""))
+	return wrapHeaderSVG(body.String(), height), height, nil
+}
+
+// avatarMarkup renders the header avatar or "" when no URL is set.
+// rounded selects a circular (user) vs rounded-square (org) clip.
+func avatarMarkup(url string, rounded bool) string {
+	if url == "" {
+		return ""
 	}
-	fmt.Fprintf(&b, `<span>%s</span>`, partials.EscapeXML(display))
-	b.WriteString(`</h1>`)
-	b.WriteString(`</section>`)
-	return b.String(), nil
+	return chrome.SVGAvatar(hdrAvatarInset, hdrTitleTop+(hdrTitleBand-hdrAvatarSize)/2,
+		hdrAvatarSize, url, hdrAvatarClipID, rounded)
+}
+
+// nameMarkup renders the h1 display name as bold blue text, shifted
+// right past the avatar when one precedes it.
+func nameMarkup(display string, hasAvatar bool) string {
+	x := float64(hdrNameNoAvatarX)
+	if hasAvatar {
+		x = hdrNameX
+	}
+	baseline := float64(hdrTitleTop) + hdrTitleBand/2 + hdrNameFont*0.32
+	return chrome.SVGText(x, baseline, display, chrome.SVGTextOpts{
+		Size:     hdrNameFont,
+		Weight:   fontmetrics.Bold,
+		Fill:     hdrNameFill,
+		MaxWidth: chrome.CardWidth - x - hdrNameNoAvatarX,
+	})
+}
+
+// wrapHeaderSVG wraps the header body in the `<section>` HTML anchor
+// (kept for DOM diffing / the section gate) plus the nested `<svg>` the
+// browser lays out as a fixed-height block within the outer
+// foreignObject flow.
+func wrapHeaderSVG(body string, height int) string {
+	return fmt.Sprintf(
+		`<section data-section="header"><svg xmlns="http://www.w3.org/2000/svg" width="100%%" height="%d" viewBox="0 0 %d %d">%s</svg></section>`,
+		height, chrome.CardWidth, height, body)
 }
 
 // recentDays flattens CommitCalendar weeks into a chronological day

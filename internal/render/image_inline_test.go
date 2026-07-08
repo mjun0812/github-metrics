@@ -88,7 +88,7 @@ func TestInlineImages_DedupesFetches(t *testing.T) {
 func TestInlineImages_PassThrough(t *testing.T) {
 	t.Parallel()
 	f := newFakeFetcher()
-	in := `<img src="data:image/png;base64,ZZZZ"/><svg><image href="https://x/y.png"/></svg>`
+	in := `<img src="data:image/png;base64,ZZZZ"/><image href="data:image/png;base64,YYYY"/>`
 	got, err := InlineImagesStage(context.Background(), f).Run(in)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -98,6 +98,26 @@ func TestInlineImages_PassThrough(t *testing.T) {
 	}
 	if len(f.calls) != 0 {
 		t.Errorf("expected no fetches; calls=%v", f.calls)
+	}
+}
+
+// TestInlineImages_ReplacesSVGImageHref asserts a native-SVG
+// `<image href="http…">` (the header avatar after the #409 Phase B1
+// conversion) and its `xlink:href` spelling are inlined like `<img src>`.
+func TestInlineImages_ReplacesSVGImageHref(t *testing.T) {
+	t.Parallel()
+	f := newFakeFetcher()
+	in := `<image class="avatar" href="https://avatars.githubusercontent.com/u/1?v=4" width="20" height="20"/>` +
+		`<image xlink:href="https://avatars.githubusercontent.com/u/2?v=4"/>`
+	got, err := InlineImagesStage(context.Background(), f).Run(in)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if strings.Contains(got, "https://avatars.githubusercontent.com") {
+		t.Errorf("remote URL should be gone; got %q", got)
+	}
+	if c := strings.Count(got, `="data:image/png;base64,AAAA"`); c != 2 {
+		t.Errorf("want 2 inlined hrefs, got %d (%q)", c, got)
 	}
 }
 
