@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -21,7 +23,9 @@ const commentDiscussionOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBo
 
 // reactionEmojis mirrors upstream's category-to-emoji map (EJS line 17).
 // Order is upstream-preserved; iteration uses the slice below so we keep
-// the same display order.
+// the same display order. The emoji stay literal Unicode: resvg 0.47
+// renders Noto Color Emoji (CBDT) correctly via the Liberation → Noto
+// fallback in the production bookworm image (verified 2026-07-08, #689).
 var reactionEmojis = []struct {
 	key   string
 	emoji string
@@ -36,14 +40,42 @@ var reactionEmojis = []struct {
 	{"HOORAY", "🎉"},
 }
 
-// Partial renders the classic SVG fragment for the reactions plugin.
-// Mirrors upstream org_repo/source/templates/classic/partials/reactions.ejs.
+// Reactions gauge / layout geometry. The gauge stays a nested 120-unit
+// viewBox `<svg>` (scaled to 50px) so its inline `stroke-dasharray` final
+// value and `animation-gauge` class are preserved verbatim — resvg paints
+// the static final arc, browsers still animate (#409 decision log).
+const (
+	reactGaugeSize   = 50.0
+	reactCatMargin   = 4.0 // `.categories { margin-top: 4px }`
+	reactGaugeColor  = "#58A6FF"
+	reactGaugeStroke = 10.0
+	reactEmojiFont   = 40.0
+
+	// Detail (`.title nowrap`) text: base svg 14px #777777 with a smaller
+	// (`<small>`-like) 11px run for the "%" / parenthesised segment.
+	reactTitleFont  = 14.0
+	reactTitleSmall = 11.0
+	reactTitleFill  = "#777777"
+	reactTitleGap   = 4.0
+	reactTitleBand  = 18.0
+)
+
+// itoa formats a layout coordinate as a rounded integer for compact,
+// stable SVG output.
+func itoa(v float64) string { return strconv.Itoa(int(math.Round(v))) }
+
+// Partial renders the classic SVG fragment for the reactions plugin as
+// native SVG (#409 Phase B4). Mirrors upstream
+// org_repo/source/templates/classic/partials/reactions.ejs.
 //
-// It always renders the 8-category emoji gauge panel: one
-// `<div class="category column">` per reaction with a `<svg class="gauge
-// info">` circle (plus a `gauge-arc` when score > 0), the emoji as a
-// `<text>` inside the gauge, and an optional `title nowrap` detail span
-// driven by plugin_reactions_details.
+// Output (native SVG): a `<section data-section="reactions">` anchor
+// wrapping a nested `<svg>`. The comment-discussion section header sits
+// above a horizontal row of 8 reaction gauges (`justify-content:
+// space-around`), each a `<g data-reaction="...">` holding the 50px info
+// gauge (base circle, an arc when score > 0, the emoji as centered
+// `<text>`) and an optional centered `title nowrap` detail line driven by
+// plugin_reactions_details. Returns the markup and the pixel height it
+// consumes.
 func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
 		return "", 0, nil
@@ -57,62 +89,91 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		return "", 0, nil
 	}
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="reactions">`)
-	// Header — "Overall users reactions from last N comments".
-	fmt.Fprintf(
-		&b,
-		`<h2 class="field">%sOverall users reactions from last %d comment%s</h2>`,
-		commentDiscussionOcticon, r.Comments, pluginutil.Plural(r.Comments),
+	header, hh := chrome.SVGSectionHeader(
+		commentDiscussionOcticon,
+		fmt.Sprintf("Overall users reactions from last %d comment%s", r.Comments, pluginutil.Plural(r.Comments)),
 	)
-	b.WriteString(`<div class="row"><section>`)
-	b.WriteString(`<div class="row fill-width"><section class="categories">`)
-	for _, entry := range reactionEmojis {
-		writeReactionCategory(&b, entry.key, entry.emoji, r.List[entry.key], r.Details)
+
+	gaugeTop := hh + reactCatMargin
+	gaugeBottom := gaugeTop + reactGaugeSize
+	hasDetails := len(r.Details) > 0
+	titleBaseline := gaugeBottom + reactTitleGap + reactTitleFont
+
+	n := len(reactionEmojis)
+	colW := float64(chrome.CardWidth) / float64(n)
+
+	var body strings.Builder
+	body.WriteString(header)
+	for i, entry := range reactionEmojis {
+		center := colW*float64(i) + colW/2
+		writeReactionCategory(&body, center, gaugeTop, titleBaseline, entry.key, entry.emoji, r.List[entry.key], r.Details)
 	}
-	b.WriteString(`</section></div>`)
-	b.WriteString(`</section></div>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+
+	height := int(gaugeBottom + reactCatMargin)
+	if hasDetails {
+		height = int(gaugeBottom + reactTitleGap + reactTitleBand)
+	}
+	return chrome.WrapSection("reactions", height, body.String()), height, nil
 }
 
-// writeReactionCategory emits one `<div class="category column">` gauge
-// for a single reaction content, mirroring EJS lines 18-54.
-func writeReactionCategory(b *strings.Builder, key, emoji string, react Reaction, details []string) {
-	fmt.Fprintf(b, `<div class="category column" data-reaction="%s">`, partials.EscapeXML(key))
-	b.WriteString(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="50" height="50" class="gauge info">`)
-	b.WriteString(`<circle class="gauge-base" r="53" cx="60" cy="60"></circle>`)
+// writeReactionCategory emits one `<g data-reaction>` gauge column
+// centered on centerX, mirroring EJS lines 18-54. The gauge keeps its
+// class names for the browser stylesheet/animation and carries literal
+// stroke/fill presentation attributes so resvg (which does not resolve
+// the CSS `currentColor` class chain) renders the same blue arc.
+func writeReactionCategory(b *strings.Builder, centerX, gaugeTop, titleBaseline float64, key, emoji string, react Reaction, details []string) {
+	gx := centerX - reactGaugeSize/2
+	fmt.Fprintf(b, `<g data-reaction="%s">`, partials.EscapeXML(key))
+	fmt.Fprintf(
+		b,
+		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="50" height="50" x="%s" y="%s" class="gauge info">`,
+		itoa(gx), itoa(gaugeTop),
+	)
+	fmt.Fprintf(
+		b,
+		`<circle class="gauge-base" r="53" cx="60" cy="60" fill="none" stroke="%s" stroke-width="%d" stroke-opacity="0.2" stroke-linecap="round"></circle>`,
+		reactGaugeColor, int(reactGaugeStroke),
+	)
 	if react.Score > 0 {
 		fmt.Fprintf(
 			b,
-			`<circle class="gauge-arc" transform="rotate(-90 60 60)" r="53" cx="60" cy="60" stroke-dasharray="%s 329"></circle>`,
-			formatDash(react.Score*329),
+			`<circle class="gauge-arc" transform="rotate(-90 60 60)" r="53" cx="60" cy="60" fill="none" stroke="%s" stroke-width="%d" stroke-linecap="round" stroke-dasharray="%s 329"></circle>`,
+			reactGaugeColor, int(reactGaugeStroke), formatDash(react.Score*329),
 		)
 	}
-	fmt.Fprintf(b, `<text x="60" y="60" dominant-baseline="central">%s</text>`, emoji)
+	fmt.Fprintf(
+		b,
+		`<text x="60" y="60" dominant-baseline="central" text-anchor="middle" font-size="%d" fill="%s">%s</text>`,
+		int(reactEmojiFont), reactGaugeColor, emoji,
+	)
 	b.WriteString(`</svg>`)
 
 	if len(details) > 0 {
-		b.WriteString(`<span class="title nowrap">`)
+		fmt.Fprintf(
+			b,
+			`<text x="%s" y="%s" text-anchor="middle" font-size="%d" fill="%s" class="title nowrap">`,
+			itoa(centerX), itoa(titleBaseline), int(reactTitleFont), reactTitleFill,
+		)
 		writeDetail(b, details[0], react)
 		if len(details) > 1 {
-			b.WriteString(`<small>(`)
+			b.WriteString(`<tspan font-size="11">(`)
 			writeDetail(b, details[1], react)
-			b.WriteString(`)</small>`)
+			b.WriteString(`)</tspan>`)
 		}
-		b.WriteString(`</span>`)
+		b.WriteString(`</text>`)
 	}
-	b.WriteString(`</div>`)
+	b.WriteString(`</g>`)
 }
 
 // writeDetail renders a single detail field (count or percentage)
-// mirroring EJS lines 38-49.
+// mirroring EJS lines 38-49. The "%" is a smaller `<tspan>`, standing in
+// for the HTML `<small>`.
 func writeDetail(b *strings.Builder, kind string, react Reaction) {
 	switch kind {
 	case "count":
 		fmt.Fprintf(b, `%d`, react.Value)
 	case "percentage":
-		fmt.Fprintf(b, `%d<small>%%</small>`, int(math.Round(react.Score*100)))
+		fmt.Fprintf(b, `%d<tspan font-size="11">%%</tspan>`, int(math.Round(react.Score*100)))
 	}
 }
 

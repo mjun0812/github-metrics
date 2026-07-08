@@ -3,10 +3,13 @@ package notable
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
+	"github.com/mjun0812/github-metrics/internal/render/fontmetrics"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -27,6 +30,85 @@ const (
 	pullsIcon   = `<svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z"></path></svg>`
 )
 
+// Chip geometry. Each chip is a rounded-border box laid out as native SVG
+// (mirroring `.contribution.organization`: 1px border, 6px radius, 2px/6px
+// padding with padding-left:0, 2px margin, 12px font). Elements are
+// vertically centered on the chip (`align-items: center`).
+const (
+	chipBorder      = 1.0
+	chipAvMargin    = 4.0 // `.organization.avatar { margin: 0 4px }`
+	chipAvSize      = 16.0
+	chipNameFont    = 12.0
+	chipGaugeMargin = 4.0 // `.contribution .gauge { margin: 0 4px }`
+	chipGaugeSize   = 16.0
+	chipIconMargin  = 2.0  // `.contribution .icon { margin-left: 2px }`
+	chipIconSize    = 10.0 // `.contribution .icon { width/height: 10px }`
+	chipIconScale   = "0.625"
+	chipPadRight    = 6.0
+	chipHeight      = 22.0 // content 16 + padding 2*2 + border 1*2
+	chipMarginX     = 2.0
+	chipMarginY     = 2.0
+	chipRowPitch    = chipHeight + 2*chipMarginY
+
+	// chipStatAdvance is the horizontal space one indepth stat (gauge +
+	// its type icon) consumes: gauge margins (4+4) + gauge (16) + icon
+	// margin (2) + icon (10).
+	chipStatAdvance = 2*chipGaugeMargin + chipGaugeSize + chipIconMargin + chipIconSize
+
+	// contribInset mirrors `.organization.contributions { margin: 0 8px }`.
+	contribInset = 8.0
+
+	// baselineRatio approximates the center-to-baseline offset for the
+	// chip label, matching the chrome.SVG* primitives.
+	baselineRatio = 0.32
+)
+
+// itoa formats a layout coordinate as a rounded integer for compact,
+// stable SVG output.
+func itoa(v float64) string { return strconv.Itoa(int(math.Round(v))) }
+
+// chipStyle holds the literal colors one contribution-level chip resolves
+// to. Upstream leans on `currentColor`/CSS class chains for these; resvg
+// does not resolve that, so the writer emits literal fills (#409 Phase B).
+type chipStyle struct {
+	text, bg, bgOpacity, border string
+}
+
+// chipColors mirrors the per-level `.contribution.organization.{s,a,b,c}`
+// rules (text color, background at ~15%/12.5% alpha, border color). The
+// default (no level) is the neutral grey box the base rule sets.
+func chipColors(level string) chipStyle {
+	switch level {
+	case "s":
+		return chipStyle{"#EB355E", "#EB355E", "0.149", "#EB355E"}
+	case "a":
+		return chipStyle{"#D79533", "#E7BD69", "0.149", "#E7BD69"}
+	case "b":
+		return chipStyle{"#9D8FFF", "#9E91FF", "0.149", "#9E91FF"}
+	case "c":
+		return chipStyle{"#58A6FF", "#58A6FF", "0.149", "#58A6FF"}
+	default:
+		return chipStyle{"#777777", "#959DA5", "0.125", "#959DA5"}
+	}
+}
+
+// darken halves each RGB channel, standing in for the `.contribution .icon
+// { filter: brightness(.5) }` the type icons carry (resvg does not apply
+// CSS filters).
+func darken(hex string) string {
+	if len(hex) != 7 || hex[0] != '#' {
+		return hex
+	}
+	v, err := strconv.ParseUint(hex[1:], 16, 32)
+	if err != nil {
+		return hex
+	}
+	r := (v >> 16) & 0xFF
+	g := (v >> 8) & 0xFF
+	b := v & 0xFF
+	return fmt.Sprintf("#%02X%02X%02X", r/2, g/2, b/2)
+}
+
 // contributionLevel mirrors the upstream class suffix on each chip
 // (notable.ejs): maintainer="s", then percentage tiers a/b/c, else "".
 func contributionLevel(c NotableContrib) string {
@@ -44,38 +126,50 @@ func contributionLevel(c NotableContrib) string {
 	}
 }
 
-// gauge renders a single upstream `.gauge` arc + value + icon. The arc
-// fills `fraction` of the 329-unit circumference.
-func gauge(b *strings.Builder, fraction float64, value, icon string) {
-	fmt.Fprintf(
-		b,
-		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" width="16" height="16" class="gauge"><circle class="gauge-base" r="12.5" cx="15" cy="15"></circle><circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" stroke-dasharray="%s 329"></circle><text x="15" y="15" dominant-baseline="central">%s</text></svg>`,
-		formatFraction(fraction*329), partials.EscapeXML(value),
-	)
-	b.WriteString(icon)
+// chipStat is one indepth gauge (commits / stars / issues / pulls).
+type chipStat struct {
+	fraction float64
+	value    string
+	icon     string
 }
 
-// formatFraction trims a float to a compact, deterministic form so the
-// stroke-dasharray matches upstream's numeric output without trailing
-// zeros.
-func formatFraction(v float64) string {
-	s := strconv.FormatFloat(v, 'f', -1, 64)
-	return s
+// chipStats collects the indepth gauge stack for a chip, each stat guarded
+// on a non-zero counter (mirroring upstream's `<% if (commits) %>` guards).
+// Returns nil in basic mode.
+func chipStats(c NotableContrib, totalStars int, list []NotableContrib) []chipStat {
+	if !c.Indepth {
+		return nil
+	}
+	stats := make([]chipStat, 0, 4)
+	if c.Commits > 0 {
+		stats = append(stats, chipStat{c.Percentage, strconv.Itoa(c.Commits), commitsIcon})
+	}
+	if c.StargazerCount > 0 {
+		stats = append(stats, chipStat{float64(c.StargazerCount) / float64(max(totalStars, 1)), partials.FormatCount(int64(c.StargazerCount)), starsIcon})
+	}
+	if c.Issues > 0 {
+		stats = append(stats, chipStat{float64(c.Issues) / float64(max(totalIssues(list), 1)), strconv.Itoa(c.Issues), issuesIcon})
+	}
+	if c.Pulls > 0 {
+		stats = append(stats, chipStat{float64(c.Pulls) / float64(max(totalPulls(list), 1)), strconv.Itoa(c.Pulls), pullsIcon})
+	}
+	return stats
 }
 
-// maxBasicChipNameLen caps the basic-mode chip label so the 480 px card
-// width still wraps deterministically. The chip font-size is 12 px,
-// so a 36-character ceiling keeps even the widest chip narrower than
-// the full card width while still fitting the common
-// "kebab-case-multi-word-repo-name" style verbatim (the chip flex row
-// wraps, so a single overflowing chip can take a row of its own).
-// Names longer than this are truncated with an ellipsis (issue #422).
+// chipWidth is the total pixel width a chip occupies given its measured
+// label width and stat count.
+func chipWidth(nameW float64, nStats int) float64 {
+	return 2*chipBorder + 2*chipAvMargin + chipAvSize + nameW + float64(nStats)*chipStatAdvance + chipPadRight
+}
+
+// maxBasicChipNameLen caps the chip label so the 480 px card width still
+// wraps deterministically (issue #422). The chip font-size is 12 px, so a
+// 36-character ceiling keeps even the widest chip narrower than the card.
 const maxBasicChipNameLen = 36
 
-// truncateName ellipsizes a chip label once it exceeds the per-chip
-// budget defined by maxBasicChipNameLen. The trim happens on rune
-// boundaries so multi-byte names (e.g. CJK characters) are not split
-// in the middle.
+// truncateName ellipsizes a chip label once it exceeds the per-chip budget
+// defined by maxBasicChipNameLen, on rune boundaries so multi-byte names
+// are not split mid-character.
 func truncateName(name string, limit int) string {
 	if limit <= 0 {
 		return name
@@ -90,34 +184,22 @@ func truncateName(name string, limit int) string {
 	return string(runes[:limit-1]) + "…"
 }
 
-// Partial renders the classic SVG fragment for the notable plugin,
-// mirroring upstream source/templates/classic/partials/notable.ejs
-// (issue #447). The chip label is the aggregation key chosen by Run:
-// the owner segment ("@huggingface") by default, or the full
-// "@owner/repo" handle when plugin_notable_repositories is enabled.
+// Partial renders the classic SVG fragment for the notable plugin as
+// native SVG (#409 Phase B4), mirroring upstream
+// source/templates/classic/partials/notable.ejs (issue #447).
 //
-// Basic mode renders only the avatar + owner chip — no star count is
-// drawn (the previous "★ N" badge from #422 was a regression).
-// Indepth mode additionally renders the upstream gauge stack
-// (commits / stars / issues / pulls), each gauge guarded on a non-zero
-// counter.
+// Output: a `<section data-section="notable">` anchor wrapping a nested
+// `<svg>`. The rocket-octicon header sits above a `<g class="row
+// organization contributions">` of flow-wrapped chips. Each chip is a
+// `<g class="organization contribution <level> ">` with a rounded-border
+// background, the owner avatar, the "@owner" (or "@owner/repo") label, and
+// — in indepth mode — the upstream gauge stack (commits / stars / issues /
+// pulls), each gauge guarded on a non-zero counter. Returns the markup and
+// the pixel height it consumes.
 //
-// Returns "" when there is no data (Skipped or empty List). When data
-// arrives it emits the rocket-octicon header followed by a flex row of
-// contribution chips.
-//
-// Output structure (basic mode):
-//
-//	<section data-section="notable">
-//	  <h2 class="field"><svg/>Notable contributions</h2>
-//	  <div class="row organization contributions">
-//	    [for each contrib]:
-//	      <div class="organization contribution {s|a|b|c} ">
-//	        <img class="[organization] avatar" src="..." width="16" height="16" />
-//	        <span class="name">@${owner}</span>
-//	      </div>
-//	  </div>
-//	</section>
+// Basic mode renders only the avatar + owner chip (no star badge — the
+// stray "★ N" badge from #422 was a regression). The chip width is
+// content-driven, matching upstream's natural flex sizing (#557).
 func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
 		return "", 0, nil
@@ -137,63 +219,99 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		totalStars += c.StargazerCount
 	}
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="notable">`)
-	fmt.Fprintf(
-		&b,
-		`<h2 class="field">%sNotable contributions</h2>`,
-		notableOcticon,
-	)
-	b.WriteString(`<div class="row organization contributions">`)
-	for _, c := range r.List {
-		// Upstream `partials/notable.ejs` emits the same chip class for
-		// basic and indepth modes — only the gauge SVGs below differ.
-		// Adding an `indepth` marker here let our CSS force a 204 px
-		// fixed-width box (#545) that diverged from upstream's natural
-		// flex sizing and made the gauge stack collide (#557). Mirror
-		// upstream verbatim so the chip width is content-driven.
-		fmt.Fprintf(&b, `<div class="organization contribution %s ">`, contributionLevel(c))
-		avatarClass := "avatar"
-		if c.Organization {
-			avatarClass = "organization avatar"
+	header, hh := chrome.SVGSectionHeader(notableOcticon, "Notable contributions")
+
+	var body strings.Builder
+	body.WriteString(header)
+	body.WriteString(`<g class="row organization contributions">`)
+
+	x := contribInset
+	rowTop := 0.0
+	rows := 1
+	maxRight := float64(chrome.CardWidth) - contribInset
+	for i, c := range r.List {
+		level := contributionLevel(c)
+		label := "@" + truncateName(c.Name, maxBasicChipNameLen)
+		nameW := fontmetrics.Width(label, chipNameFont)
+		stats := chipStats(c, totalStars, r.List)
+		w := chipWidth(nameW, len(stats))
+
+		if x+w > maxRight && x > contribInset {
+			x = contribInset
+			rowTop += chipRowPitch
+			rows++
 		}
-		fmt.Fprintf(
-			&b,
-			`<img class="%s" src="%s" width="16" height="16" />`,
-			avatarClass, partials.EscapeXML(c.AvatarURL),
-		)
-		// The chip label is the aggregation key produced by Run: the
-		// owner segment ("@huggingface") by default, or the full
-		// "@owner/repo" handle when plugin_notable_repositories is
-		// enabled (issue #447). It is overflow-truncated so a single
-		// long handle cannot blow out the 480 px card width.
-		fmt.Fprintf(&b, `<span class="name">@%s</span>`, partials.EscapeXML(truncateName(c.Name, maxBasicChipNameLen)))
-		if c.Indepth {
-			// Indepth mode adds the upstream gauge stack (commits /
-			// stars / issues / pulls). Each gauge only renders when its
-			// counter is populated, mirroring upstream's
-			// `<% if (commits) %>` guards.
-			if c.Commits > 0 {
-				gauge(&b, c.Percentage, strconv.Itoa(c.Commits), commitsIcon)
-			}
-			if c.StargazerCount > 0 {
-				gauge(&b, float64(c.StargazerCount)/float64(max(totalStars, 1)), partials.FormatCount(int64(c.StargazerCount)), starsIcon)
-			}
-			if c.Issues > 0 {
-				gauge(&b, float64(c.Issues)/float64(max(totalIssues(r.List), 1)), strconv.Itoa(c.Issues), issuesIcon)
-			}
-			if c.Pulls > 0 {
-				gauge(&b, float64(c.Pulls)/float64(max(totalPulls(r.List), 1)), strconv.Itoa(c.Pulls), pullsIcon)
-			}
-		}
-		// Basic mode renders the avatar + owner chip only. Upstream
-		// notable.ejs does not draw star counts in basic mode (issue
-		// #447 — the stray "★ N" badge was a #422 regression).
-		b.WriteString(`</div>`)
+		chipY := hh + rowTop + chipMarginY
+		writeChip(&body, x, chipY, i, c, level, label, nameW, stats)
+		x += w + chipMarginX
 	}
-	b.WriteString(`</div>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+
+	body.WriteString(`</g>`)
+	height := int(hh + float64(rows)*chipRowPitch)
+	return chrome.WrapSection("notable", height, body.String()), height, nil
+}
+
+// writeChip emits one contribution chip anchored at (chipX, chipY): a
+// rounded-border background box, the owner avatar, the label, and the
+// indepth gauge stack. The `organization contribution <level>` class
+// (with upstream's trailing space) is preserved for the DOM hook.
+func writeChip(b *strings.Builder, chipX, chipY float64, idx int, c NotableContrib, level, label string, nameW float64, stats []chipStat) {
+	style := chipColors(level)
+	w := chipWidth(nameW, len(stats))
+	centerY := chipHeight / 2
+
+	fmt.Fprintf(b, `<g class="organization contribution %s " transform="translate(%s,%s)">`,
+		level, itoa(chipX), itoa(chipY))
+	fmt.Fprintf(b,
+		`<rect x="0" y="0" width="%s" height="%d" rx="6" ry="6" fill="%s" fill-opacity="%s" stroke="%s" stroke-width="1"/>`,
+		itoa(w), int(chipHeight), style.bg, style.bgOpacity, style.border)
+
+	// Avatar: organization → 15%-rounded square, user → circle.
+	avX := chipBorder + chipAvMargin
+	avY := centerY - chipAvSize/2
+	b.WriteString(chrome.SVGAvatar(avX, avY, chipAvSize, c.AvatarURL, fmt.Sprintf("notable-%d", idx), !c.Organization))
+
+	// Label ("@owner" or "@owner/repo"), vertically centered.
+	nameX := chipBorder + 2*chipAvMargin + chipAvSize
+	nameBaseline := centerY + chipNameFont*baselineRatio
+	b.WriteString(chrome.SVGText(nameX, nameBaseline, label, chrome.SVGTextOpts{Size: chipNameFont, Fill: style.text}))
+
+	// Indepth gauge stack (gauge + type icon per stat).
+	iconColor := darken(style.text)
+	cx := nameX + nameW
+	for _, s := range stats {
+		gx := cx + chipGaugeMargin
+		gy := centerY - chipGaugeSize/2
+		writeChipGauge(b, gx, gy, s.fraction, s.value, style.text)
+		ix := gx + chipGaugeSize + chipGaugeMargin + chipIconMargin
+		iy := centerY - chipIconSize/2
+		fmt.Fprintf(b, `<g transform="translate(%s,%s) scale(%s)" fill="%s">%s</g>`,
+			itoa(ix), itoa(iy), chipIconScale, iconColor, s.icon)
+		cx = ix + chipIconSize
+	}
+	b.WriteString(`</g>`)
+}
+
+// writeChipGauge renders one indepth gauge as a nested 30-unit viewBox
+// `<svg class="gauge">` scaled to 16px. It keeps the class names for the
+// browser animation and carries literal stroke/fill attributes (the
+// chip's resolved level color) so resvg renders the arc without the CSS
+// `currentColor` chain. The inline `stroke-dasharray` final value is
+// preserved.
+func writeChipGauge(b *strings.Builder, gx, gy, fraction float64, value, color string) {
+	fmt.Fprintf(b,
+		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" width="16" height="16" x="%s" y="%s" class="gauge">`,
+		itoa(gx), itoa(gy))
+	fmt.Fprintf(b,
+		`<circle class="gauge-base" r="12.5" cx="15" cy="15" fill="none" stroke="%s" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"></circle>`,
+		color)
+	fmt.Fprintf(b,
+		`<circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="%s" stroke-width="4" stroke-linecap="round" stroke-dasharray="%s 329"></circle>`,
+		color, formatFraction(fraction*329))
+	fmt.Fprintf(b,
+		`<text x="15" y="15" dominant-baseline="central" text-anchor="middle" font-size="11" fill="%s">%s</text>`,
+		color, partials.EscapeXML(value))
+	b.WriteString(`</svg>`)
 }
 
 func totalIssues(list []NotableContrib) int {
@@ -210,4 +328,11 @@ func totalPulls(list []NotableContrib) int {
 		total += c.Pulls
 	}
 	return total
+}
+
+// formatFraction trims a float to a compact, deterministic form so the
+// stroke-dasharray matches upstream's numeric output without trailing
+// zeros.
+func formatFraction(v float64) string {
+	return strconv.FormatFloat(v, 'f', -1, 64)
 }
