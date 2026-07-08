@@ -32,8 +32,8 @@ guide and unported-feature list.
 - **Cross-compiled binaries** — Linux / macOS × amd64 / arm64 attached to
   every release with `SHA256SUMS` and per-artifact cosign sign-blob
   bundles.
-- **Hardened runtime** — non-root user (uid 10001), chromium + Noto fonts
-  bundled, no Node toolchain.
+- **Hardened runtime** — non-root user (uid 10001), the resvg rasterizer
+  + Noto fonts bundled, no Node toolchain, no headless browser.
 
 ## Profile README
 
@@ -206,8 +206,8 @@ pipeline and runs automatically.
 
 The `languages` plugin ships `recent` and `indepth` sub-modes via
 `plugin_languages_sections`. `topics` and `starlists` require the
-Action / Docker runtime (Chromium is bundled there) — the standalone
-Go binary skips them with a warning.
+Action / Docker runtime — the standalone Go binary skips them with a
+warning.
 
 Every input is documented in [`action.yml`](action.yml) and is identical
 to the corresponding upstream input. Inputs gating unported plugins
@@ -218,8 +218,8 @@ ignored — no migration of existing workflows is required.
 
 | Format         | MIME               | Rendering pipeline                |
 | -------------- | ------------------ | --------------------------------- |
-| `svg`          | `image/svg+xml`    | Go templates → chromedp `Resize`  |
-| `png` / `jpeg` | `image/png/jpeg`   | + chromedp `CaptureScreenshot`    |
+| `svg`          | `image/svg+xml`    | Go templates (height computed in Go) |
+| `png` / `jpeg` | `image/png/jpeg`   | SVG → resvg rasterizer (jpeg re-encoded in Go) |
 | `json`         | `application/json` | Upstream byte-compatible envelope |
 
 JSON output is **byte-compatible** with upstream `lowlighter/metrics` for
