@@ -134,8 +134,8 @@ func dispatchOutput(
 
 // obtainRenderer returns the configured Renderer when deps.Render is
 // non-nil. When nil, a fresh *render.Resvg is constructed. resvg holds
-// no long-lived resources (it shells out per call), so unlike the
-// removed browser renderer there is nothing for the caller to close.
+// no long-lived resources (it shells out per call), so there is
+// nothing for the caller to close.
 func obtainRenderer(deps Deps) (render.Renderer, error) {
 	if deps.Render != nil {
 		return deps.Render, nil
