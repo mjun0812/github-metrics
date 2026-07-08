@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -20,12 +22,20 @@ const starOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"
 
 // upstreamMonths mirrors `plugins.stargazers.months` in
 // `source/plugins/stargazers/index.mjs:64`. Indexed 1..12 (slot 0 unused)
-// so the month names rendered in `<div class="bottom">` match upstream
+// so the month captions rendered under the chart bars match upstream
 // byte-for-byte (`Apr.` not `Apr`, `May` not `May.`, full `June`/`July`).
 var upstreamMonths = [13]string{"", "Jan.", "Feb.", "Mar.", "Apr.", "May", "June", "July", "Aug.", "Sep.", "Oct.", "Nov.", "Dec."}
 
-// bgLevel maps a 0..1 share to the upstream
-// `var(--color-calendar-graph-day-L{1..4}-bg)` ramp via Math.ceil(p/0.25).
+// Native-SVG layout metrics for the classic two-column / graph section.
+const (
+	chartColumns      = 2
+	chartColumnPad    = 8.0  // `.chart { padding: 0 8px }`
+	chartMarginBottom = 16.0 // `.margin-bottom { margin-bottom: 16px }`
+	graphHeight       = 180.0
+)
+
+// bgLevel maps a 0..1 share to the contribution-graph L{1..4} ramp via
+// Math.ceil(p/0.25) (matching upstream's per-bar color).
 func bgLevel(p float64) int {
 	if p <= 0 {
 		return 1
@@ -40,29 +50,20 @@ func bgLevel(p float64) int {
 	return lvl
 }
 
-// Partial renders the classic SVG fragment for the stargazers plugin.
-// Mirrors upstream org_repo/source/templates/classic/partials/stargazers.ejs.
+// Partial renders the classic SVG fragment for the stargazers plugin as
+// native SVG (#409 Phase B5). Mirrors upstream
+// org_repo/source/templates/classic/partials/stargazers.ejs.
 //
-// Returns "" until stargazers.go's Run is wired with chart data (current
-// M4 path stays Skipped). When data arrives, emits the upstream two
-// chart-bars columns ("Total stargazers" + "New stargazers") for the
-// classic chart type, or the single line plot for the graph type.
+// Output: a `<section data-section="stargazers">` anchor wrapping a
+// nested `<svg>`. The star-octicon section header sits above either:
 //
-// Output structure (classic):
+//   - classic: two side-by-side `.chart-bars` columns rendered as native
+//     `<rect>` bars ("Total stargazers" cumulative + "New stargazers per
+//     day" increments), each bar carrying the day-of-month tick and, on
+//     month boundaries, a month caption; or
+//   - graph: two stacked native line/area charts (`stargazers-graph`).
 //
-//	<section data-section="stargazers">
-//	  <h2 class="field"><svg star/>Stargazers</h2>
-//	  <div class="row margin-bottom">
-//	    <section class="column chart">
-//	      <h3>Total stargazers</h3>
-//	      <div class="chart-bars">…cumulative…</div>
-//	    </section>
-//	    <section class="column chart">
-//	      <h3>New stargazers per month</h3>
-//	      <div class="chart-bars">…per-bucket increments…</div>
-//	    </section>
-//	  </div>
-//	</section>
+// Returns the markup and the pixel height it consumes.
 func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
 		return "", 0, nil
@@ -80,43 +81,29 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		return "", 0, nil
 	}
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="stargazers">`)
-	fmt.Fprintf(&b, `<h2 class="field">%sStargazers</h2>`, starOcticon)
+	header, hh := chrome.SVGSectionHeader(starOcticon, "Stargazers")
 
+	var body strings.Builder
+	body.WriteString(header)
+
+	height := int(hh)
 	if len(series) > 0 {
-		b.WriteString(`<div class="row margin-bottom">`)
 		if r.Charts.Type == chartsTypeGraph {
-			totals, news := chartValues(series)
-			b.WriteString(`<section class="column chart fill-width">`)
-			b.WriteString(`<h3>Total stargazers</h3>`)
-			writeGraphChart(&b, series, totals, "Total stargazers graph")
-			b.WriteString(`<h3>New stargazers per day</h3>`)
-			writeGraphChart(&b, series, news, "New stargazers per day graph")
-			b.WriteString(`</section>`)
+			height = int(writeGraphSection(&body, series, hh))
 		} else {
-			// The classic chart mirrors upstream's two side-by-side
-			// chart-bars columns (cumulative + per-bucket new stars).
-			writeClassicCharts(&b, series)
+			height = int(writeClassicSection(&body, series, hh))
 		}
-		b.WriteString(`</div>`)
 	}
-
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+	return chrome.WrapSection("stargazers", height, body.String()), height, nil
 }
 
-// writeClassicCharts renders the two upstream chart-bars columns over
-// the 14-day window from buildSeriesAt (#508). Per-bar `<span class="value">`
-// text differs between columns to match upstream
-// `org_repo/source/templates/classic/partials/stargazers.ejs:25-46`:
-//
-//   - Total column shows the current cumulative count only when it
-//     changed since the previous bar, so flat days render empty (no
-//     noisy repeated labels).
-//   - Increments column shows a signed "+N" only when N != 0.
-func writeClassicCharts(b *strings.Builder, series []ChartPoint) {
+// writeClassicSection lays the two chart-bars columns out side by side
+// starting at y=top and returns the total section height (including the
+// bottom margin). Column values are normalised independently, matching
+// upstream's `(value-min)/(max-min)` ramp.
+func writeClassicSection(b *strings.Builder, series []ChartPoint, top float64) float64 {
 	totals, news := chartValues(series)
+
 	prevTotal := 0
 	totalLabel := func(_, cur int) string {
 		if cur == prevTotal {
@@ -131,35 +118,34 @@ func writeClassicCharts(b *strings.Builder, series []ChartPoint) {
 		}
 		return "+" + partials.FormatCount(int64(cur))
 	}
-	writeChartColumn(b, "Total stargazers", series, totals, totalLabel)
-	writeChartColumn(b, "New stargazers per day", series, news, incLabel)
-}
 
-func chartValues(series []ChartPoint) ([]int, []int) {
-	totals := make([]int, len(series))
-	news := make([]int, len(series))
-	for i, pt := range series {
-		totals[i] = pt.Count
-		news[i] = pt.New
+	colW := float64(chrome.CardWidth) / chartColumns
+	innerW := colW - 2*chartColumnPad
+
+	subMk0, subH := chrome.SVGSubHeader(colW*0.5, top, innerW, "Total stargazers")
+	subMk1, _ := chrome.SVGSubHeader(colW*1.5, top, innerW, "New stargazers per day")
+	b.WriteString(subMk0)
+	b.WriteString(subMk1)
+
+	barsTop := top + subH
+	bars0, h0 := chrome.SVGVBars(chartColumnPad, barsTop, innerW, buildColumnBars(series, totals, totalLabel))
+	bars1, h1 := chrome.SVGVBars(colW+chartColumnPad, barsTop, innerW, buildColumnBars(series, news, incLabel))
+	b.WriteString(bars0)
+	b.WriteString(bars1)
+
+	barsH := h0
+	if h1 > barsH {
+		barsH = h1
 	}
-	return totals, news
+	return top + subH + barsH + chartMarginBottom
 }
 
-// writeChartColumn emits one `<section class="column chart">` containing
-// a chart-bars block whose bar heights are normalised within `values`
-// (matching upstream's `(value-min)/(max-min)` ramp). Every bar carries
-// the day-of-month as bare text — NOT inside `<span class="label">`,
-// which is the unrelated blue pill-badge class that previously turned
-// each x-axis tick into a wide rounded chip and overflowed the column —
-// and the first bar plus every month boundary (day == 1) adds a
-// `<div class="bottom">{month}</div>` caption, mirroring upstream
-// `stargazers.ejs:32-35`. valueFn picks the per-bar `.value` text so
-// the Total and Increments columns can use different display rules
-// without forking the loop.
-func writeChartColumn(b *strings.Builder, title string, series []ChartPoint, values []int, valueFn func(i, cur int) string) {
-	b.WriteString(`<section class="column chart">`)
-	fmt.Fprintf(b, `<h3>%s</h3>`, title)
-
+// buildColumnBars converts a value series into vertical bars, normalising
+// heights within [min,max] (upstream's per-column ramp) and captioning
+// the first bar plus every month boundary (day == 1) with the month name.
+// valueFn picks the per-bar label text so the Total and Increments
+// columns can use different display rules without forking the loop.
+func buildColumnBars(series []ChartPoint, values []int, valueFn func(i, cur int) string) []chrome.VBar {
 	minV, maxV := values[0], values[0]
 	for _, v := range values[1:] {
 		if v < minV {
@@ -174,29 +160,67 @@ func writeChartColumn(b *strings.Builder, title string, series []ChartPoint, val
 		denom = 1
 	}
 
-	b.WriteString(`<div class="chart-bars">`)
+	bars := make([]chrome.VBar, len(series))
 	for i, pt := range series {
 		v := values[i]
 		share := 0.05 + 0.95*float64(v-minV)/float64(denom)
 		day := pt.Date.UTC().Day()
-		bottom := ""
+		caption := ""
 		if i == 0 || day == 1 {
-			bottom = fmt.Sprintf(`<div class="bottom">%s</div>`, upstreamMonths[int(pt.Date.UTC().Month())])
+			caption = upstreamMonths[int(pt.Date.UTC().Month())]
 		}
-		fmt.Fprintf(
-			b,
-			`<div class="entry"><span class="value">%s</span><div class="bar" style="height: %.0fpx; background-color: var(--color-calendar-graph-day-L%d-bg)"></div>%d%s</div>`,
-			valueFn(i, v), share*50, bgLevel(share), day, bottom,
-		)
+		bars[i] = chrome.VBar{
+			Value:   valueFn(i, v),
+			Label:   strconv.Itoa(day),
+			Caption: caption,
+			Share:   share,
+			Level:   bgLevel(share),
+		}
 	}
-	b.WriteString(`</div>`)
-	b.WriteString(`</section>`)
+	return bars
 }
 
-func writeGraphChart(b *strings.Builder, series []ChartPoint, values []int, label string) {
+func chartValues(series []ChartPoint) ([]int, []int) {
+	totals := make([]int, len(series))
+	news := make([]int, len(series))
+	for i, pt := range series {
+		totals[i] = pt.Count
+		news[i] = pt.New
+	}
+	return totals, news
+}
+
+// writeGraphSection stacks the two native line/area charts (each with its
+// centered `<h3>` sub-title) starting at y=top and returns the total
+// section height (including the bottom margin).
+func writeGraphSection(b *strings.Builder, series []ChartPoint, top float64) float64 {
+	totals, news := chartValues(series)
+	center := float64(chrome.CardWidth) / 2
+	maxW := float64(chrome.CardWidth) - 2*chartColumnPad
+
+	y := top
+	m, subH := chrome.SVGSubHeader(center, y, maxW, "Total stargazers")
+	b.WriteString(m)
+	y += subH
+	writeGraphChart(b, series, totals, "Total stargazers graph", y)
+	y += graphHeight
+
+	m2, _ := chrome.SVGSubHeader(center, y, maxW, "New stargazers per day")
+	b.WriteString(m2)
+	y += subH
+	writeGraphChart(b, series, news, "New stargazers per day graph", y)
+	y += graphHeight
+
+	return y + chartMarginBottom
+}
+
+// writeGraphChart renders one native line/area chart as a positioned
+// nested `<svg>` at y=yOffset. The 480x180 viewBox is unchanged; only the
+// vertical placement inside the section is set by yOffset.
+func writeGraphChart(b *strings.Builder, series []ChartPoint, values []int, label string, yOffset float64) {
 	const (
 		width  = 480.0
-		height = 180.0
+		height = graphHeight
 		left   = 32.0
 		top    = 12.0
 		right  = 14.0
@@ -240,7 +264,7 @@ func writeGraphChart(b *strings.Builder, series []ChartPoint, values []int, labe
 		return i == 0 || i == len(series)-1 || i%stride == 0
 	}
 
-	fmt.Fprintf(b, `<svg class="stargazers-graph" xmlns="http://www.w3.org/2000/svg" width="480" height="180" viewBox="0 0 480 180" role="img" aria-label="%s">`, partials.EscapeXML(label))
+	fmt.Fprintf(b, `<svg class="stargazers-graph" xmlns="http://www.w3.org/2000/svg" width="480" height="180" viewBox="0 0 480 180" x="0" y="%.0f" role="img" aria-label="%s">`, yOffset, partials.EscapeXML(label))
 	// Vertical Y axis (left dashed) + bottom solid baseline, matching
 	// upstream's faint grey rgba(127,127,127) axis colors.
 	fmt.Fprintf(b, `<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"></line>`, left, top, left, top+plotH)
