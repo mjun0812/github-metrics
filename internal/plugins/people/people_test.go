@@ -427,14 +427,13 @@ func TestPartial_RepositoryGolden(t *testing.T) {
 	// DOM contract spot-checks mirroring upstream people.repository.svg:
 	for _, marker := range []string{
 		`data-section="people"`,
-		`<h2 class="field">`,
 		`data-type="contributors"`,
 		`data-type="stargazers"`,
 		`data-type="watchers"`,
-		`2 contributors`,
-		`1 stargazer`,
-		`1 watcher`,
-		`https://avatars.example/alice.png`,
+		`>2 contributors</text>`,
+		`>1 stargazer</text>`,
+		`>1 watcher</text>`,
+		`href="https://avatars.example/alice.png"`,
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("partial missing marker %q in:\n%s", marker, got)
@@ -464,10 +463,10 @@ func TestPartial_HeadingPrefersCountsOverFetchedLen(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
-	if !strings.Contains(got, ">42 contributors</h2>") {
+	if !strings.Contains(got, ">42 contributors</text>") {
 		t.Fatalf("heading must show true total '42 contributors'; got:\n%s", got)
 	}
-	if strings.Contains(got, ">2 contributors</h2>") {
+	if strings.Contains(got, ">2 contributors</text>") {
 		t.Fatalf("heading must not fall back to fetched len '2 contributors'; got:\n%s", got)
 	}
 }
