@@ -138,7 +138,7 @@ func TestPartial_UserCountersAndAge(t *testing.T) {
 	})
 	defer restore()
 
-	// Build a 14-day calendar so ContributionRow emits a non-empty row.
+	// Build a 14-day calendar so the mini calendar emits a non-empty row.
 	week := plugins.ContributionWeek{
 		Days: []plugins.ContributionDay{
 			{Date: "2026-01-01", ContributionCount: 1, Color: "#196127"},
