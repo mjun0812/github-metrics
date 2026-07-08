@@ -80,21 +80,19 @@ Default `make test` deliberately keeps three categories optional so a
 clean checkout passes on a stock Go toolchain. CI runs all of them in
 parallel jobs.
 
-### chromedp tests
+### resvg tests
 
-The chromedp-backed render tests and the `topics` / `starlists` plugin
-scrape tests are gated behind `//go:build chromedp` so contributors
-without a chromium binary stay green. The plugin runtimes themselves
-still compile and register on every build — they return `Skipped=true`
-at runtime when `pc.Render` is not a real `*render.Browser`.
+The PNG / JPEG rasterization tests shell out to the `resvg` binary.
+They skip automatically when the binary is absent, so contributors
+without resvg installed stay green; `make test-resvg` runs them for
+real once resvg is available.
 
 ```sh
-# macOS — point at the system Chrome (or `brew install chromium`).
-METRICS_CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-    make test-chromedp
+# Install resvg (any platform with a Rust toolchain):
+cargo install resvg --version 0.47.0 --locked
 
-# Linux — system chromium or chromedp/headless-shell container.
-METRICS_CHROME_PATH=/usr/bin/chromium make test-chromedp
+# Then point the tests at it (or add it to PATH):
+METRICS_RESVG_PATH="$HOME/.cargo/bin/resvg" make test-resvg
 ```
 
 ### heavy tests
@@ -179,8 +177,8 @@ gracefully when the fixture is absent, so a fresh checkout without
 `docs/plugins/*.md` and the README's plugins-gallery block are
 auto-generated from `assets/plugins/<slug>/metadata.yml`. Example SVGs
 under `docs/examples/` ship as placeholders in the repo; a maintainer
-with a token + headless Chromium overwrites them with real rendered
-output for release.
+with a token overwrites them with real rendered output (rasterized by
+resvg inside the docker image) for release.
 
 **Prerequisites**
 
@@ -188,9 +186,9 @@ output for release.
   `read:user` / `read:org` / `read:project` if the corresponding
   plugin is enabled for the sample render — see the per-plugin doc
   pages for scope notes).
-- `METRICS_CHROME_PATH` pointing at a chromium / Google Chrome binary
-  (macOS: `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`,
-  Linux: `/usr/bin/chromium`).
+- No local rasterizer needed: the docker image bundles the `resvg`
+  binary (and its `METRICS_RESVG_PATH`), so sample rendering rasterizes
+  inside the container.
 - Docker image `github-metrics:local` built from this checkout:
   ```sh
   docker build -t github-metrics:local .
@@ -207,7 +205,7 @@ updates the README plugins-gallery AUTOGEN block. Human-authored
 zones between `<!-- AUTOGEN_START: ... -->` markers are preserved
 byte-identically across re-runs.
 
-**Sample SVGs (needs token + Chromium + docker)**
+**Sample SVGs (needs token + docker)**
 
 ```sh
 make docs-samples
