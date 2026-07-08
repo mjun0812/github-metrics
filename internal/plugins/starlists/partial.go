@@ -8,6 +8,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -36,40 +37,19 @@ func pluralRepository(n int) string {
 	return "ies"
 }
 
-// Partial renders the classic SVG fragment for the starlists plugin.
-// Mirrors upstream org_repo/source/templates/classic/partials/starlists.ejs.
-//
-// Output structure (top-level):
-//
-//	<section data-section="starlists">
-//	  <h2 class="field"><svg/>N Star list(s)</h2>
-//	  <div class="row"><section>
-//	    [for each starlist]:
-//	      <div class="starlist">
-//	        <h2 class="field"><svg/>${name}</h2>
-//	        <div class="count">${count} repositor(y|ies)</div>
-//	        <div class="description">${description}</div>
-//	        [if languages]:
-//	          <div class="languages">
-//	            <div class="row">
-//	              <svg class="bar"><mask>...</mask><rect.../></svg>
-//	            </div>
-//	            <div class="row">
-//	              <section>...details column 1 (even idx)...</section>
-//	              <section>...details column 2 (odd idx)...</section>
-//	            </div>
-//	          </div>
-//	        [if repositories]:
-//	          <div class="repositories">
-//	            [for each repo]:
-//	              <div class="row fill-width largeable-width-half"><section class="repository">
-//	                <div class="field"><svg/><div class="name"><span>${name}</span><span></span></div></div>
-//	                <div class="field description">${description}</div>
-//	              </section></div>
-//	          </div>
-//	      </div>
-//	  </section></div>
-//	</section>
+// starlistIndent mirrors `.starlist { padding-left: 28px }`: each list's
+// content is laid out in a local coordinate system translated right by
+// this amount.
+const starlistIndent = 28.0
+
+// Partial renders the classic SVG fragment for the starlists plugin as
+// native SVG (#409 Phase B2): a `<section data-section="starlists">`
+// anchor wrapping a nested <svg> with the count header and one
+// `<g class="starlist">` block per list — per-list header, repo count,
+// description, an optional language bar + 2-column details, and an
+// optional repositories card block. Each list is translated right by
+// starlistIndent and laid out top-down; the partial reports its total
+// consumed height.
 //
 // The repositories block carries only name + description — the upstream
 // `infos` sub-block (language / stargazers / forks) is not rendered
@@ -90,87 +70,97 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 	// Note: an empty List is NOT a skip condition. Upstream renders the
 	// section header ("0 Star lists") even when the account has no star
 	// lists; the for-loop below simply does not run, so only the header
-	// (and an empty <section>) is emitted. See issue #474.
+	// is emitted. See issue #474.
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="starlists">`)
-	fmt.Fprintf(
-		&b,
-		`<h2 class="field">%s%d Star list%s</h2>`,
-		listOcticon, len(r.List), pluginutil.Plural(len(r.List)),
-	)
-	b.WriteString(`<div class="row"><section>`)
+	var body strings.Builder
+	header, y := chrome.SVGSectionHeader(listOcticon,
+		fmt.Sprintf("%d Star list%s", len(r.List), pluginutil.Plural(len(r.List))))
+	body.WriteString(header)
+
 	for i, s := range r.List {
-		b.WriteString(`<div class="starlist">`)
-		// Per-list header.
-		fmt.Fprintf(
-			&b,
-			`<h2 class="field">%s%s</h2>`,
-			perListOcticon, partials.EscapeXML(s.Name),
-		)
-		fmt.Fprintf(
-			&b,
-			`<div class="count">%d repositor%s</div>`,
-			s.Count, pluralRepository(s.Count),
-		)
-		if s.Description != "" {
-			fmt.Fprintf(
-				&b,
-				`<div class="description">%s</div>`,
-				partials.EscapeXML(s.Description),
-			)
-		}
-		if len(s.Languages) > 0 {
-			// Per-list mask id so concurrent starlists (and the
-			// languages plugin) don't collide on the same SVG id.
-			maskID := fmt.Sprintf("starlists-bar-%d", i)
-			writeStarlistLanguages(&b, s.Languages, s.Count, maskID)
-		}
-		if len(s.Repositories) > 0 {
-			writeStarlistRepositories(&b, s.Repositories)
-		}
-		b.WriteString(`</div>`)
+		m, h := renderStarlist(s, i)
+		fmt.Fprintf(&body, `<g class="starlist" transform="translate(%d,%d)">%s</g>`,
+			int(starlistIndent), int(y), m)
+		y += h
 	}
-	b.WriteString(`</section></div>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+
+	height := int(y)
+	return chrome.WrapSection("starlists", height, body.String()), height, nil
 }
 
-// writeStarlistLanguages emits the per-list language bar + 2-column
-// details block matching upstream EJS lines 30-54. total is the
-// starlist's repository count (passed through so the per-language
-// `value/count` percentage is computed against the list size, not the
-// total bytes). maskID must be unique within the SVG document — each
-// starlist gets its own bar so the id is suffixed with the list index
-// to prevent collisions with sibling starlists and with the languages
-// plugin's own mask.
-func writeStarlistLanguages(b *strings.Builder, langs []plugins.LanguageStat, total int, maskID string) {
+// renderStarlist lays one star list out in a local coordinate system
+// (x=0 is the list's indented left edge). Returns the markup and the
+// height it consumes.
+func renderStarlist(s Starlist, index int) (string, float64) {
+	const (
+		countLeft = 32.0 // .starlist > .count { margin-left: 32px }
+		descLeft  = 32.0 // .starlist > .description { margin-left: 32px }
+		descWidth = 460.0 - descLeft
+	)
+	var b strings.Builder
+
+	hdr, y := chrome.SVGSectionHeader(perListOcticon, s.Name)
+	b.WriteString(hdr)
+
+	// Repo count (12px grey).
+	countText := fmt.Sprintf("%d repositor%s", s.Count, pluralRepository(s.Count))
+	fmt.Fprintf(&b, `<g class="count">%s</g>`,
+		chrome.SVGText(countLeft, y+14, countText, chrome.SVGTextOpts{Size: 12, Fill: "#666666"}))
+	y += 18
+
+	if s.Description != "" {
+		m, dh := chrome.SVGParagraph(descLeft, y, descWidth, 14, "#777777", s.Description)
+		b.WriteString(m)
+		y += dh
+	}
+
+	if len(s.Languages) > 0 {
+		// Per-list mask id so sibling starlists (and the languages plugin)
+		// don't collide on the same SVG id.
+		maskID := fmt.Sprintf("starlists-bar-%d", index)
+		m, lh := renderStarlistLanguages(s.Languages, s.Count, maskID, y)
+		b.WriteString(m)
+		y += lh
+	}
+
+	if len(s.Repositories) > 0 {
+		m, rh := renderStarlistRepositories(s.Repositories, y)
+		b.WriteString(m)
+		y += rh
+	}
+
+	return b.String(), y + 6
+}
+
+// renderStarlistLanguages emits the per-list language bar plus a
+// 2-column details block, starting at y=top. total is the starlist's
+// repository count (the per-language percentage is computed against the
+// list size). maskID must be unique within the document.
+func renderStarlistLanguages(langs []plugins.LanguageStat, total int, maskID string, top float64) (string, float64) {
 	if total <= 0 {
 		total = 1
 	}
+	const (
+		barX    = 31.0 // padding-left 13 + svg.bar margin-left 18
+		barH    = 8.0
+		detailW = 217.0
+		rowH    = 18.0
+	)
 	maskRef := partials.EscapeXML(maskID)
-	b.WriteString(`<div class="languages">`)
-	// Bar with mask.
-	b.WriteString(`<div class="row">`)
-	fmt.Fprintf(
-		b,
-		`<svg class="bar" xmlns="http://www.w3.org/2000/svg" width="%d" height="8" role="img" aria-label="Starlist language distribution"><title>Starlist language distribution</title>`,
-		starlistBarWidth,
-	)
-	fmt.Fprintf(
-		b,
-		`<mask id="%s"><rect x="0" y="0" width="%d" height="8" fill="white" rx="5"/></mask>`,
-		maskRef, starlistBarWidth,
-	)
-	fmt.Fprintf(
-		b,
-		`<rect mask="url(#%s)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>`,
-		maskRef,
-	)
+	barY := top + 4 // svg.bar { margin: 4px 0 }
+
+	var b strings.Builder
+	b.WriteString(`<g class="languages">`)
+	// Positioned nested bar svg with mask.
+	fmt.Fprintf(&b,
+		`<svg class="bar" x="%d" y="%d" width="%d" height="%d" role="img" aria-label="Starlist language distribution"><title>Starlist language distribution</title>`,
+		int(barX), int(barY), starlistBarWidth, int(barH))
+	fmt.Fprintf(&b, `<mask id="%s"><rect x="0" y="0" width="%d" height="%d" fill="white" rx="5"/></mask>`,
+		maskRef, starlistBarWidth, int(barH))
+	fmt.Fprintf(&b, `<rect mask="url(#%s)" x="0" y="0" width="0" height="%d" fill="#d1d5da"/>`, maskRef, int(barH))
 	offset := 0.0
 	for _, l := range langs {
-		p := float64(l.Size) / float64(total) // share of list-size
-		width := p * float64(starlistBarWidth)
+		width := float64(l.Size) / float64(total) * float64(starlistBarWidth)
 		if width <= 0 {
 			continue
 		}
@@ -178,22 +168,21 @@ func writeStarlistLanguages(b *strings.Builder, langs []plugins.LanguageStat, to
 		if color == "" {
 			color = "#959DA5"
 		}
-		fmt.Fprintf(
-			b,
-			`<rect mask="url(#%s)" x="%.2f" y="0" width="%.2f" height="8" fill="%s" data-language="%s"></rect>`,
-			maskRef, offset, width, partials.EscapeXML(color), partials.EscapeXML(l.Name),
-		)
+		fmt.Fprintf(&b,
+			`<rect mask="url(#%s)" x="%.2f" y="0" width="%.2f" height="%d" fill="%s" data-language="%s"></rect>`,
+			maskRef, offset, width, int(barH), partials.EscapeXML(color), partials.EscapeXML(l.Name))
 		offset += width
 	}
 	b.WriteString(`</svg>`)
-	b.WriteString(`</div>`)
 
-	// 2-column details — upstream EJS line 39: `rows = [0, 1]` (small).
-	b.WriteString(`<div class="row">`)
-	for row := 0; row < 2; row++ {
-		b.WriteString(`<section>`)
+	// 2-column details: even indices in column 0, odd in column 1.
+	detailsTop := barY + barH + 6
+	maxRows := 0.0
+	for col := 0; col < 2; col++ {
+		colX := barX + float64(col)*(detailW+6)
+		ry := detailsTop
 		for i, l := range langs {
-			if i%2 != row {
+			if i%2 != col {
 				continue
 			}
 			color := l.Color
@@ -201,46 +190,55 @@ func writeStarlistLanguages(b *strings.Builder, langs []plugins.LanguageStat, to
 				color = "#959DA5"
 			}
 			pct := float64(l.Size) / float64(total) * 100
-			fmt.Fprintf(b, `<div class="field language details" data-language="%s">`, partials.EscapeXML(l.Name))
-			fmt.Fprintf(
-				b,
-				`<div class="field"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="%s" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"></path></svg>%s</div>`,
-				partials.EscapeXML(color), partials.EscapeXML(l.Name),
-			)
-			fmt.Fprintf(
-				b,
-				`<small><div>%.1f%%</div><div>%d★</div></small>`,
-				pct, l.Size,
-			)
-			b.WriteString(`</div>`)
+			dot := fmt.Sprintf(
+				`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="%s" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"></path></svg>`,
+				partials.EscapeXML(color))
+			baseline := ry + rowH/2 + 12*0.32
+			fmt.Fprintf(&b, `<g class="language details" data-language="%s">`, partials.EscapeXML(l.Name))
+			b.WriteString(chrome.SVGIcon(colX, ry+(rowH-16)/2, "", dot))
+			b.WriteString(chrome.SVGText(colX+20, baseline, l.Name,
+				chrome.SVGTextOpts{Size: 12, Fill: "#666666", MaxWidth: detailW - 90}))
+			b.WriteString(chrome.SVGText(colX+detailW, baseline,
+				fmt.Sprintf("%.1f%%  %d★", pct, l.Size),
+				chrome.SVGTextOpts{Size: 11, Fill: "#666666", Anchor: "end"}))
+			b.WriteString(`</g>`)
+			ry += rowH
 		}
-		b.WriteString(`</section>`)
+		if ry-detailsTop > maxRows {
+			maxRows = ry - detailsTop
+		}
 	}
-	b.WriteString(`</div>`)
-	b.WriteString(`</div>`)
+	b.WriteString(`</g>`)
+	return b.String(), (detailsTop - top) + maxRows
 }
 
-// writeStarlistRepositories emits the per-repo card block matching
-// upstream EJS lines 56-93. Only the octicon + name + description are
-// rendered; the trailing `infos` sub-block (language / stargazers /
-// forks) is skipped because those per-repo details aren't fetched. The
-// caller guarantees repos is non-empty, so the `<div class="repositories">`
-// wrapper is only emitted when there is at least one card.
-func writeStarlistRepositories(b *strings.Builder, repos []Repository) {
-	b.WriteString(`<div class="repositories">`)
+// renderStarlistRepositories emits the per-repo card block starting at
+// y=top. Only the octicon + name + description are rendered; the
+// upstream `infos` sub-block is skipped because those per-repo details
+// aren't fetched. The caller guarantees repos is non-empty.
+func renderStarlistRepositories(repos []Repository, top float64) (string, float64) {
+	const (
+		cardMargin = 6.0
+		nameWidth  = 420.0
+		descLeft   = 33.0 // card inset(-5) + description margin-left(38)
+		descWidth  = 400.0
+	)
+	var b strings.Builder
+	b.WriteString(`<g class="repositories">`)
+	y := top
 	for _, repo := range repos {
-		b.WriteString(`<div class="row fill-width largeable-width-half"><section class="repository">`)
-		fmt.Fprintf(
-			b,
-			`<div class="field">%s<div class="name"><span>%s</span><span></span></div></div>`,
-			repoOcticon, partials.EscapeXML(repo.Name),
-		)
-		fmt.Fprintf(
-			b,
-			`<div class="field description">%s</div>`,
-			partials.EscapeXML(repo.Description),
-		)
-		b.WriteString(`</section></div>`)
+		y += cardMargin
+		var card strings.Builder
+		nameRow, h := chrome.SVGRepoName(-5, y, nameWidth, 14, repoOcticon, repo.Name, "", "")
+		card.WriteString(nameRow)
+		y += h
+		if repo.Description != "" {
+			m, dh := chrome.SVGParagraph(descLeft, y, descWidth, 11, "#666666", repo.Description)
+			card.WriteString(m)
+			y += dh
+		}
+		fmt.Fprintf(&b, `<g class="repository">%s</g>`, card.String())
 	}
-	b.WriteString(`</div>`)
+	b.WriteString(`</g>`)
+	return b.String(), y - top
 }

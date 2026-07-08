@@ -8,6 +8,7 @@ import (
 
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -28,16 +29,9 @@ const graphOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16
 // header + aggregate counts + per-repo breakdown so downstream consumers
 // can see the data the plugin actually collects.
 //
-// Output structure:
-//
-//	<section data-section="traffic">
-//	  <h2 class="field"><svg/>Traffic</h2>
-//	  <div class="row"><section>
-//	    <div class="field"><span class="label">N views (M unique)</span></div>
-//	    [for each repo with views]:
-//	      <div class="field"><span class="repo">${name}</span>: ${views} views (${uniques} unique)</div>
-//	  </section></div>
-//	</section>
+// Output (native SVG): a `<section data-section="traffic">` anchor
+// wrapping a nested `<svg>` with a section header, the aggregate views
+// pill, and one text row per repository (#409 Phase B2).
 //
 // The aggregate line always renders for a non-Skipped result — even when
 // the (possibly filtered) Views map is empty it shows "0 views (0
@@ -81,21 +75,31 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		return rows[i].name < rows[j].name
 	})
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="traffic">`)
-	fmt.Fprintf(&b, `<h2 class="field">%sTraffic</h2>`, graphOcticon)
-	b.WriteString(`<div class="row"><section>`)
-	fmt.Fprintf(&b, `<div class="field"><span class="label">%s</span></div>`, viewsText(r.Total.Count, r.Total.Uniques))
+	const (
+		inset   = 5.0                   // section > .field { margin-left: 5px }
+		chipRow = chrome.FieldPitch + 8 // .label pill row (22px chip + margins)
+		textMax = chrome.CardWidth - 2*inset
+	)
+
+	var body strings.Builder
+	header, y := chrome.SVGSectionHeader(graphOcticon, "Traffic")
+	body.WriteString(header)
+
+	// Aggregate views rendered as the `.label` pill.
+	chip, _ := chrome.SVGLabelChip(inset, y+2, viewsText(r.Total.Count, r.Total.Uniques))
+	body.WriteString(chip)
+	y += chipRow
+
+	// Per-repo rows: "${name}: N views (M unique)" as plain body text.
 	for _, row := range rows {
-		fmt.Fprintf(
-			&b,
-			`<div class="field"><span class="repo">%s</span>: %s</div>`,
-			partials.EscapeXML(row.name), viewsText(row.view.Count, row.view.Uniques),
-		)
+		line := fmt.Sprintf("%s: %s", row.name, viewsText(row.view.Count, row.view.Uniques))
+		baseline := y + chrome.FieldPitch/2 + 14*0.32
+		body.WriteString(chrome.SVGText(inset, baseline, line, chrome.SVGTextOpts{MaxWidth: textMax}))
+		y += chrome.FieldPitch
 	}
-	b.WriteString(`</section></div>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+
+	height := int(y)
+	return chrome.WrapSection("traffic", height, body.String()), height, nil
 }
 
 // viewsText formats the shared "<N> view[s] (<M> unique)" phrase used by

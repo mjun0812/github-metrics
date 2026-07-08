@@ -6,7 +6,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mjun0812/github-metrics/internal/render/fontmetrics"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -26,27 +28,11 @@ const heartOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16
 // source software") and the "0 users" goal text render even at zero
 // sponsorships, matching the upstream reference card (#449).
 //
-// Output structure:
-//
-//	<section data-section="sponsorships">
-//	  <h2 class="field"><svg heart/>Sponsorships</h2>
-//	  [amount]:
-//	  <div class="row fill-width">
-//	    <section class="sponsorships sponsors goal">
-//	      <img src="<heart>" alt="" />
-//	      <div><span class="bold">${user}</span> has given a total of
-//	           <span class="bold">$X.XX</span> to open source software
-//	           [since <span class="bold">${date}</span>].</div>
-//	    </section>
-//	  </div>
-//	  [sponsorships]:
-//	  <div class="row fill-width">
-//	    <section class="sponsors goal">
-//	      <div class="goal-text"><span>${user} helped funding the work of N users and organizations.</span></div>
-//	      <div class="row"><img class="avatar ..." .../>...</div>
-//	    </section>
-//	  </div>
-//	</section>
+// Output (native SVG): a `<section data-section="sponsorships">` anchor
+// wrapping a nested <svg> with a heart header and, per configured
+// section, an "amount" box (heart image + bold total-spend sentence) or
+// a "sponsorships" box (goal-text count line + sponsor avatar grid). The
+// partial reports its consumed pixel height (#409 Phase B2).
 func Partial(ctx context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
 		return "", 0, nil
@@ -66,84 +52,216 @@ func Partial(ctx context.Context, pc *templates.PartialContext) (string, int, er
 
 	user := userLogin(ctx, pc)
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="sponsorships">`)
-	fmt.Fprintf(&b, `<h2 class="field">%sSponsorships</h2>`, heartOcticon)
+	var body strings.Builder
+	header, y := chrome.SVGSectionHeader(heartOcticon, "Sponsorships")
+	body.WriteString(header)
 
 	for _, section := range sections {
 		switch section {
 		case sectionAmount:
-			writeAmountSection(&b, r, user)
+			m, h := renderAmountSection(r, user, y)
+			body.WriteString(m)
+			y += h
 		case sectionSponsorships:
-			writeSponsorshipsSection(&b, r, user)
+			m, h := renderSponsorshipsSection(r, user, y)
+			body.WriteString(m)
+			y += h
 		}
 	}
 
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+	height := int(y)
+	return chrome.WrapSection("sponsorships", height, body.String()), height, nil
 }
 
-// writeAmountSection renders the upstream "amount" branch: the heart
-// image plus the total-spend line. The image URL is inlined as base64 by
-// the render pipeline's image-inline stage.
-func writeAmountSection(b *strings.Builder, r *Result, user string) {
+// Native-SVG sponsorships geometry, mirroring the `.sponsors.goal` grey
+// rounded box (inset 13px, pad 8/6px).
+const (
+	shipInset = 13.0
+	shipBoxW  = chrome.CardWidth - 2*shipInset
+	shipPadX  = 8.0
+	shipPadY  = 6.0
+	shipContX = shipInset + shipPadX
+	shipContW = shipBoxW - 2*shipPadX
+	shipBG    = "#777777"
+	shipText  = "#777777"
+	shipFont  = 14.0
+	shipLineH = shipFont * 1.35
+)
+
+// renderAmountSection renders the "amount" branch: a heart image and the
+// bold total-spend sentence flowed to its right, inside a grey box.
+func renderAmountSection(r *Result, user string, top float64) (string, float64) {
 	image := r.Image
 	if image == "" {
 		image = amountImageURL
 	}
-	b.WriteString(`<div class="row fill-width">`)
-	b.WriteString(`<section class="sponsorships sponsors goal">`)
-	fmt.Fprintf(b, `<img src="%s" alt="" />`, partials.EscapeXML(image))
-	fmt.Fprintf(
-		b,
-		`<div><span class="bold">%s</span> has given a total of <span class="bold">%s</span> to open source software`,
-		partials.EscapeXML(user), formatUSD(r.Amount),
-	)
+	const imgSize = 40.0
+	boxTop := top + 4
+	textX := shipContX + imgSize + 8
+	textW := shipInset + shipBoxW - shipPadX - textX
+
+	date := ""
 	if r.Started != nil {
-		fmt.Fprintf(b, ` since <span class="bold">%s</span>`, partials.EscapeXML(r.Started.Format("January 2, 2006")))
+		date = r.Started.Format("January 2, 2006")
 	}
-	b.WriteString(`.</div>`)
-	b.WriteString(`</section>`)
-	b.WriteString(`</div>`)
+	words := amountWords(user, formatUSD(r.Amount), date)
+	flow, flowH := flowRich(words, textX, boxTop+shipPadY, textW)
+
+	innerH := imgSize
+	if flowH > innerH {
+		innerH = flowH
+	}
+	boxH := innerH + 2*shipPadY
+
+	imgY := boxTop + (boxH-imgSize)/2
+	var b strings.Builder
+	fmt.Fprintf(&b, `<g class="sponsorships sponsors goal"><rect x="%d" y="%d" width="%d" height="%d" rx="5" ry="5" fill=%q fill-opacity="0.12"/>`,
+		int(shipInset), int(boxTop), int(shipBoxW), int(boxH), shipBG)
+	fmt.Fprintf(&b, `<image href=%q x="%d" y="%d" width="%d" height="%d"/>`,
+		partials.EscapeXML(image), int(shipContX), int(imgY), int(imgSize), int(imgSize))
+	b.WriteString(flow)
+	b.WriteString(`</g>`)
+	return b.String(), boxH + 4
 }
 
-// writeSponsorshipsSection renders the upstream "sponsorships" branch:
-// the goal-text count line followed by the avatar grid. Renders the
-// "0 users" zero-state when both lists are empty.
-func writeSponsorshipsSection(b *strings.Builder, r *Result, user string) {
+// renderSponsorshipsSection renders the "sponsorships" branch: the
+// goal-text count line and the sponsor avatar grid (active 64px, past
+// 51px), inside a grey box. Renders the "0 users" zero-state when both
+// lists are empty.
+func renderSponsorshipsSection(r *Result, user string, top float64) (string, float64) {
 	const (
-		size     = 64 // upstream `plugins.sponsorships.size` default
-		pastSize = 51 // 0.8 * size, per upstream EJS
+		size     = 64.0 // upstream `plugins.sponsorships.size` default
+		pastSize = 51.0 // 0.8 * size
+		avGap    = 2.0
 	)
-	b.WriteString(`<div class="row fill-width">`)
-	b.WriteString(`<section class="sponsors goal">`)
+	boxTop := top + 4
+	y := boxTop + shipPadY
 
+	var inner strings.Builder
 	totalFunded := len(r.Active) + len(r.Past)
-	fmt.Fprintf(
-		b,
-		`<div class="goal-text"><span>%s helped funding the work of %d user%s and organizations.</span></div>`,
-		partials.EscapeXML(user), totalFunded, plural(totalFunded),
-	)
+	inner.WriteString(chrome.SVGText(shipContX, y+12,
+		fmt.Sprintf("%s helped funding the work of %d user%s and organizations.",
+			user, totalFunded, plural(totalFunded)),
+		chrome.SVGTextOpts{Size: 12, Fill: shipText}))
+	y += 20
 
-	b.WriteString(`<div class="row">`)
+	specs := make([]chrome.SVGAvatarSpec, 0, len(r.Active)+len(r.Past))
 	for _, s := range r.Active {
-		fmt.Fprintf(
-			b,
-			`<img class="avatar" src="%s" width="%d" height="%d" alt=""/>`,
-			partials.EscapeXML(avatarURL(s.Login)), size, size,
-		)
+		specs = append(specs, chrome.SVGAvatarSpec{URL: avatarURL(s.Login), IsOrg: s.Type == "organization"})
 	}
-	for _, s := range r.Past {
-		fmt.Fprintf(
-			b,
-			`<img class="avatar past" src="%s" width="%d" height="%d" alt=""/>`,
-			partials.EscapeXML(avatarURL(s.Login)), pastSize, pastSize,
-		)
+	m, ah := chrome.SVGAvatarGrid(shipContX, y, shipContW, size, avGap, "ship-av", specs)
+	inner.WriteString(m)
+	y += ah
+	if len(r.Past) > 0 {
+		pspecs := make([]chrome.SVGAvatarSpec, 0, len(r.Past))
+		for _, s := range r.Past {
+			pspecs = append(pspecs, chrome.SVGAvatarSpec{URL: avatarURL(s.Login), IsOrg: s.Type == "organization"})
+		}
+		if len(r.Active) > 0 {
+			y += avGap
+		}
+		m2, ah2 := chrome.SVGAvatarGrid(shipContX, y, shipContW, pastSize, avGap, "ship-pav", pspecs)
+		inner.WriteString(m2)
+		y += ah2
 	}
-	b.WriteString(`</div>`)
 
-	b.WriteString(`</section>`)
-	b.WriteString(`</div>`)
+	y += shipPadY
+	boxH := y - boxTop
+	out := fmt.Sprintf(`<g class="sponsors goal"><rect x="%d" y="%d" width="%d" height="%d" rx="5" ry="5" fill=%q fill-opacity="0.12"/>%s</g>`,
+		int(shipInset), int(boxTop), int(shipBoxW), int(boxH), shipBG, inner.String())
+	return out, boxH + 4
+}
+
+// rword is one word of the amount sentence, tagged bold for the
+// `<span class="bold">` runs (user / amount / date).
+type rword struct {
+	text string
+	bold bool
+}
+
+// amountWords builds the total-spend sentence as bold/plain words:
+// "<user> has given a total of <amount> to open source software[ since
+// <date>]." with user, amount and date bold.
+func amountWords(user, amount, date string) []rword {
+	var ws []rword
+	add := func(s string, bold bool) {
+		for _, w := range strings.Fields(s) {
+			ws = append(ws, rword{text: w, bold: bold})
+		}
+	}
+	add(user, true)
+	add("has given a total of", false)
+	add(amount, true)
+	add("to open source software", false)
+	if date != "" {
+		add("since", false)
+		add(date, true)
+	}
+	if len(ws) > 0 {
+		ws[len(ws)-1].text += "."
+	}
+	return ws
+}
+
+// flowRich word-wraps the bold/plain words to maxWidth px and renders
+// each line as a single `<text>` whose bold words are `<tspan
+// font-weight="bold">`. Emitting whole lines (with `<tspan>` for weight
+// changes) lets the rasterizer handle intra-line spacing, so words never
+// collide when the render font is wider than the metrics font. Returns
+// the markup and the consumed height.
+func flowRich(words []rword, x, top, maxWidth float64) (string, float64) {
+	spaceW := fontmetrics.Width(" ", shipFont)
+	wordW := func(w rword) float64 {
+		return fontmetrics.WidthWeight(w.text, shipFont, weightOf(w.bold))
+	}
+	// Greedy wrap into rows.
+	var rows [][]rword
+	cur := make([]rword, 0, len(words))
+	curW := 0.0
+	for _, w := range words {
+		add := wordW(w)
+		if len(cur) > 0 {
+			add += spaceW
+		}
+		if len(cur) > 0 && curW+add > maxWidth {
+			rows = append(rows, cur)
+			cur, curW = nil, 0
+			add = wordW(w)
+		}
+		cur = append(cur, w)
+		curW += add
+	}
+	if len(cur) > 0 {
+		rows = append(rows, cur)
+	}
+
+	var b strings.Builder
+	y := top
+	for _, row := range rows {
+		baseline := y + shipFont
+		fmt.Fprintf(&b, `<text x="%d" y="%d" font-size="%d" fill=%q>`,
+			int(x), int(baseline), int(shipFont), shipText)
+		for i, w := range row {
+			if i > 0 {
+				b.WriteString(" ")
+			}
+			if w.bold {
+				fmt.Fprintf(&b, `<tspan font-weight="bold">%s</tspan>`, partials.EscapeXML(w.text))
+			} else {
+				b.WriteString(partials.EscapeXML(w.text))
+			}
+		}
+		b.WriteString(`</text>`)
+		y += shipLineH
+	}
+	return b.String(), y - top
+}
+
+func weightOf(bold bool) fontmetrics.Weight {
+	if bold {
+		return fontmetrics.Bold
+	}
+	return fontmetrics.Regular
 }
 
 // formatUSD mirrors Intl.NumberFormat("en", {style:"currency",

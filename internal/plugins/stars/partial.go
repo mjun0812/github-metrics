@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -84,37 +85,13 @@ func langDotOcticon(color string) string {
 // Partial renders the classic SVG fragment for the stars plugin.
 // Mirrors upstream org_repo/source/templates/classic/partials/stars.ejs.
 //
-// Output structure:
-//
-//	<section data-section="stars">
-//	  <h2 class="field"><svg star/>Recently starred repositories</h2>
-//	  <div class="row">
-//	    <section class="largeable-flex-wrap">
-//	      [for each repo]:
-//	        <div class="row fill-width largeable-width-half">
-//	          <section class="repository">
-//	            <div class="field"><svg repo/><div class="name">
-//	              <span>${nameWithOwner}</span>
-//	              <span>starred ${date}</span>
-//	            </div></div>
-//	            <div class="field description">${description}</div>
-//	            <div class="field infos">
-//	              [if language]: <div class="language"><svg dot/>${name}</div>
-//	              [if license]:  <div><svg law/>${license}</div>
-//	              <div><svg star/>${stars}</div>
-//	              <div><svg fork/>${forks}</div>
-//	              <div><svg issue/>${issues}</div>
-//	              <div><svg pr/>${pullRequests}</div>
-//	            </div>
-//	          </section>
-//	        </div>
-//	    </section>
-//	  </div>
-//	</section>
-//
-// The full info row (language color, license, forks, open issues, PRs)
-// mirrors upstream EJS lines 32-61 — the data now comes from the
-// extended UserStarredRepositories GraphQL query (#469).
+// Output (native SVG): a `<section data-section="stars">` anchor
+// wrapping a nested `<svg>` with a section header and one repository
+// card per starred repo — the repo/fork octicon + blue name + "starred
+// <date>" row, the wrapped description, and the info row (language
+// color, license, stars, forks, open issues, PRs). Each card keeps its
+// `class="repository"` / `data-stars` / `data-forks` DOM hooks and the
+// partial reports its consumed pixel height (#409 Phase B2).
 func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
 		return "", 0, nil
@@ -128,66 +105,65 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		return "", 0, nil
 	}
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="stars">`)
-	fmt.Fprintf(
-		&b,
-		`<h2 class="field">%sRecently starred repositories</h2>`,
-		starOcticon,
+	const (
+		cardMargin = 6.0   // .repository { margin: 6px 0 }
+		nameWidth  = 440.0 // .repository .name { width: 440px }
+		infoLeft   = 38.0  // .repository .infos / .description { margin-left: 38px }
+		descWidth  = 440.0
+		descFont   = 13.0
 	)
-	b.WriteString(`<div class="row"><section class="largeable-flex-wrap">`)
+
+	var body strings.Builder
+	header, y := chrome.SVGSectionHeader(starOcticon, "Recently starred repositories")
+	body.WriteString(header)
+
 	for _, s := range r.List {
+		y += cardMargin
+		var card strings.Builder
+
 		date := ""
 		if !s.StarredAt.IsZero() {
-			date = formatStarredAt(s.StarredAt, currentNow())
+			date = "starred " + formatStarredAt(s.StarredAt, currentNow())
 		}
-		b.WriteString(`<div class="row fill-width largeable-width-half">`)
 		icon := repoOcticon
 		if s.IsFork {
 			icon = forkOcticon
 		}
-		fmt.Fprintf(
-			&b,
-			`<section class="repository" data-stars="%d" data-forks="%d"><div class="field">%s<div class="name"><span>%s</span>`,
-			s.Stars, s.Forks, icon, partials.EscapeXML(s.NameWithOwner),
-		)
-		if date != "" {
-			fmt.Fprintf(&b, `<span>starred %s</span>`, partials.EscapeXML(date))
-		}
-		b.WriteString(`</div></div>`)
+		nameRow, h := chrome.SVGRepoName(0, y, nameWidth, 14, icon, s.NameWithOwner, "", date)
+		card.WriteString(nameRow)
+		y += h
+
 		if s.Description != "" {
-			fmt.Fprintf(
-				&b,
-				`<div class="field description">%s</div>`,
-				partials.EscapeXML(s.Description),
-			)
+			m, dh := chrome.SVGParagraph(infoLeft, y, descWidth, descFont, "#666666", s.Description)
+			card.WriteString(m)
+			y += dh
 		}
-		b.WriteString(`<div class="field infos">`)
+
+		segs := make([]chrome.SVGInfoSegment, 0, 6)
 		if s.Language != nil && s.Language.Name != "" {
-			fmt.Fprintf(
-				&b,
-				`<div class="language">%s%s</div>`,
-				langDotOcticon(s.Language.Color),
-				partials.EscapeXML(s.Language.Name),
-			)
+			segs = append(segs, chrome.SVGInfoSegment{
+				Icon: langDotOcticon(s.Language.Color), Text: s.Language.Name, Class: "language",
+			})
 		}
 		if s.License != "" {
-			fmt.Fprintf(
-				&b,
-				`<div>%s%s</div>`,
-				licenseOcticon, partials.EscapeXML(s.License),
-			)
+			segs = append(segs, chrome.SVGInfoSegment{Icon: licenseOcticon, Text: s.License})
 		}
-		fmt.Fprintf(&b, `<div>%s%s</div>`, rowStarOcticon, partials.FormatCount(int64(s.Stars)))
-		fmt.Fprintf(&b, `<div>%s%s</div>`, forkOcticon, partials.FormatCount(int64(s.Forks)))
-		fmt.Fprintf(&b, `<div>%s%s</div>`, issueOcticon, partials.FormatCount(int64(s.Issues)))
-		fmt.Fprintf(&b, `<div>%s%s</div>`, pullRequestOcticon, partials.FormatCount(int64(s.PullRequests)))
-		b.WriteString(`</div>`)
-		b.WriteString(`</section></div>`)
+		segs = append(segs,
+			chrome.SVGInfoSegment{Icon: rowStarOcticon, Text: partials.FormatCount(int64(s.Stars))},
+			chrome.SVGInfoSegment{Icon: forkOcticon, Text: partials.FormatCount(int64(s.Forks))},
+			chrome.SVGInfoSegment{Icon: issueOcticon, Text: partials.FormatCount(int64(s.Issues))},
+			chrome.SVGInfoSegment{Icon: pullRequestOcticon, Text: partials.FormatCount(int64(s.PullRequests))},
+		)
+		infoRow, ih := chrome.SVGInfoRow(infoLeft, y, segs)
+		card.WriteString(infoRow)
+		y += ih + cardMargin
+
+		fmt.Fprintf(&body, `<g class="repository" data-stars="%d" data-forks="%d">%s</g>`,
+			s.Stars, s.Forks, card.String())
 	}
-	b.WriteString(`</section></div>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+
+	height := int(y)
+	return chrome.WrapSection("stars", height, body.String()), height, nil
 }
 
 func formatStarredAt(t, now time.Time) string {

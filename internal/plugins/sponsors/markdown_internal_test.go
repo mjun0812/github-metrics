@@ -5,38 +5,36 @@ import (
 	"testing"
 )
 
-// TestRenderMarkdown_Reference mirrors the markup the upstream reference
-// card (docs/reference_examples/metrics.plugin.sponsors.svg) emits for
-// the GitHub Sponsors bio: paragraphs, links and images.
-func TestRenderMarkdown_Reference(t *testing.T) {
+// TestRenderMarkdownSVG_Reference checks the native-SVG bio flow (#409
+// Phase B2): the paragraph text renders as escaped `<text>` and the
+// inline markdown link renders as an `<a href>` in link color.
+func TestRenderMarkdownSVG_Reference(t *testing.T) {
 	t.Parallel()
 	src := "Hi! I'm Junya Morioka.\nIf I have been of any help, I would be happy if you could sponsor me!\n\n" +
-		"[📝 About Me](https://mjunya.com/about/)\n\n" +
-		"![metrics](https://example.com/metrics_base.svg)"
-	got := renderMarkdown(src)
+		"[📝 About Me](https://mjunya.com/about/)"
+	got, _ := renderMarkdownSVG(src, 0, 0, 400)
 
 	for _, want := range []string{
-		"<p>Hi! I&#39;m Junya Morioka.\nIf I have been of any help, I would be happy if you could sponsor me!</p>",
-		`<p><a href="https://mjunya.com/about/">📝 About Me</a></p>`,
-		`<p><img src="https://example.com/metrics_base.svg" alt="metrics" /></p>`,
+		`Hi! I&#39;m Junya Morioka.`,           // escaped bio text node
+		`<a href="https://mjunya.com/about/">`, // rendered markdown link
+		`fill="#58a6ff"`,                       // link color
 	} {
 		if !strings.Contains(got, want) {
-			t.Errorf("renderMarkdown missing %q\n got: %s", want, got)
+			t.Errorf("renderMarkdownSVG missing %q\n got: %s", want, got)
 		}
 	}
 }
 
-// TestRenderMarkdown_EscapesText ensures literal HTML/script in the bio
-// is escaped (the bio is emitted unescaped into the SVG, so the renderer
-// itself must escape text nodes).
-func TestRenderMarkdown_EscapesText(t *testing.T) {
+// TestRenderMarkdownSVG_EscapesText ensures literal HTML/script in the
+// bio is escaped when flowed into `<text>` nodes.
+func TestRenderMarkdownSVG_EscapesText(t *testing.T) {
 	t.Parallel()
-	got := renderMarkdown("<script>alert(1)</script> & <b>x</b>")
+	got, _ := renderMarkdownSVG("<script>alert(1)</script> & <b>x</b>", 0, 0, 400)
 	if strings.Contains(got, "<script>") || strings.Contains(got, "<b>x</b>") {
-		t.Errorf("renderMarkdown must escape raw HTML; got: %s", got)
+		t.Errorf("renderMarkdownSVG must escape raw HTML; got: %s", got)
 	}
 	if !strings.Contains(got, "&lt;script&gt;") || !strings.Contains(got, "&amp;") {
-		t.Errorf("renderMarkdown should escape entities; got: %s", got)
+		t.Errorf("renderMarkdownSVG should escape entities; got: %s", got)
 	}
 }
 

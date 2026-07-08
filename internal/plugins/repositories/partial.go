@@ -9,6 +9,7 @@ import (
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -59,31 +60,13 @@ func langDotOcticon(color string) string {
 // Partial renders the classic SVG fragment for the repositories plugin.
 // Mirrors upstream org_repo/source/templates/classic/partials/repositories.ejs.
 //
-// Output structure:
-//
-//	<section data-section="repositories">
-//	  <h2 class="field"><svg/>Featured repositories</h2>
-//	  <div class="row"><section class="largeable-flex-wrap">
-//	    [for each repo]:
-//	      <div class="row fill-width largeable-width-half">
-//	        <section class="repository">
-//	          <div class="field"><svg repo|fork/><div class="name">
-//	            <span>${nameWithOwner}</span>
-//	            [if createdAt]: <span>created ${created}</span>
-//	          </div></div>
-//	          [if description]: <div class="field description">${description}</div>
-//	          <div class="field infos">
-//	            [if language]: <div class="language"><svg dot/>${name}</div>
-//	            [if license]:  <div><svg law/>${license}</div>
-//	            <div><svg star/>${stars}</div>
-//	            <div><svg fork/>${forks}</div>
-//	            <div><svg issue/>${issues}</div>
-//	            <div><svg pr/>${pullRequests}</div>
-//	          </div>
-//	        </section>
-//	      </div>
-//	  </section></div>
-//	</section>
+// Output (native SVG): a `<section data-section="repositories">` anchor
+// wrapping a nested <svg> with a section header and one repository card
+// per featured/pinned repo — the repo/fork octicon + linked blue name +
+// "created <date>" row, the wrapped description, and the info row
+// (language color, license, stars, forks, issues, PRs). Each card keeps
+// its `class="repository"` / `data-stars` / `data-forks` DOM hooks and
+// the partial reports its consumed pixel height (#409 Phase B2).
 //
 // #466: the per-card "created <date>" label plus the license / issue /
 // pull-request counters mirror upstream repositories.ejs. The license
@@ -103,14 +86,14 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		return "", 0, nil
 	}
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="repositories">`)
-	fmt.Fprintf(&b, `<h2 class="field">%sFeatured repositories</h2>`, reposHeaderOcticon)
-	b.WriteString(`<div class="row"><section class="largeable-flex-wrap">`)
+	var body strings.Builder
+	header, y := chrome.SVGSectionHeader(reposHeaderOcticon, "Featured repositories")
+	body.WriteString(header)
+
 	seen := make(map[string]struct{}, len(r.Featured)+len(r.Pinned))
 	for _, repo := range r.Featured {
 		seen[repo.NameWithOwner] = struct{}{}
-		writeRepoCard(&b, repo)
+		y += writeRepoCard(&body, repo, y)
 	}
 	// #555: when `plugin_repositories_pinned` is enabled, append the
 	// pinned items after Featured, deduping by NameWithOwner. Mirrors
@@ -124,72 +107,68 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 			continue
 		}
 		seen[repo.NameWithOwner] = struct{}{}
-		writeRepoCard(&b, repo)
+		y += writeRepoCard(&body, repo, y)
 	}
-	b.WriteString(`</section></div>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+
+	height := int(y)
+	return chrome.WrapSection("repositories", height, body.String()), height, nil
 }
 
-// writeRepoCard emits one upstream-equivalent `<section class="repository">`
-// card for a single repo. Reused for both the Featured + Pinned + Starred
-// + Random sections when Run wires those up.
-func writeRepoCard(b *strings.Builder, repo plugins.Repository) {
-	b.WriteString(`<div class="row fill-width largeable-width-half">`)
-	fmt.Fprintf(
-		b,
-		`<section class="repository" data-stars="%d" data-forks="%d">`,
-		repo.Stars, repo.Forks,
+// writeRepoCard emits one native-SVG `<g class="repository">` card for a
+// single repo starting at y=top, returning the height it consumes
+// (including the 6px top/bottom card margins). Reused for the Featured +
+// Pinned sections.
+func writeRepoCard(body *strings.Builder, repo plugins.Repository, top float64) float64 {
+	const (
+		cardMargin = 6.0
+		nameWidth  = 440.0
+		infoLeft   = 38.0
+		descWidth  = 440.0
+		descFont   = 13.0
 	)
+	y := top + cardMargin
+	var card strings.Builder
+
 	icon := repoNonForkOcticon
 	if repo.IsFork {
 		icon = repoForkOcticon
 	}
-	fmt.Fprintf(
-		b,
-		`<div class="field">%s<div class="name"><span>`,
-		icon,
-	)
-	if repo.URL != "" {
-		fmt.Fprintf(
-			b,
-			`<a href="%s">%s</a>`,
-			partials.EscapeXML(repo.URL),
-			partials.EscapeXML(repo.NameWithOwner),
-		)
-	} else {
-		b.WriteString(partials.EscapeXML(repo.NameWithOwner))
-	}
-	b.WriteString(`</span>`)
+	date := ""
 	if created := formatCreated(repo.CreatedAt, time.Now()); created != "" {
-		fmt.Fprintf(b, `<span>created %s</span>`, partials.EscapeXML(created))
+		date = "created " + created
 	}
-	b.WriteString(`</div></div>`)
+	nameRow, h := chrome.SVGRepoName(0, y, nameWidth, 14, icon, repo.NameWithOwner, repo.URL, date)
+	card.WriteString(nameRow)
+	y += h
+
 	if repo.Description != "" {
-		fmt.Fprintf(
-			b,
-			`<div class="field description">%s</div>`,
-			partials.EscapeXML(repo.Description),
-		)
+		m, dh := chrome.SVGParagraph(infoLeft, y, descWidth, descFont, "#666666", repo.Description)
+		card.WriteString(m)
+		y += dh
 	}
-	b.WriteString(`<div class="field infos">`)
+
+	segs := make([]chrome.SVGInfoSegment, 0, 6)
 	if repo.Language != nil && repo.Language.Name != "" {
-		fmt.Fprintf(
-			b,
-			`<div class="language">%s%s</div>`,
-			langDotOcticon(repo.Language.Color),
-			partials.EscapeXML(repo.Language.Name),
-		)
+		segs = append(segs, chrome.SVGInfoSegment{
+			Icon: langDotOcticon(repo.Language.Color), Text: repo.Language.Name, Class: "language",
+		})
 	}
 	if label := repo.License.Label(); label != "" {
-		fmt.Fprintf(b, `<div>%s%s</div>`, rowLicenseOcticon11, partials.EscapeXML(label))
+		segs = append(segs, chrome.SVGInfoSegment{Icon: rowLicenseOcticon11, Text: label})
 	}
-	fmt.Fprintf(b, `<div>%s%d</div>`, rowStarOcticon11, repo.Stars)
-	fmt.Fprintf(b, `<div>%s%d</div>`, rowForkOcticon11, repo.Forks)
-	fmt.Fprintf(b, `<div>%s%d</div>`, rowIssueOcticon11, repo.Issues)
-	fmt.Fprintf(b, `<div>%s%d</div>`, rowPullRequestOcticon11, repo.PullRequests)
-	b.WriteString(`</div>`)
-	b.WriteString(`</section></div>`)
+	segs = append(segs,
+		chrome.SVGInfoSegment{Icon: rowStarOcticon11, Text: fmt.Sprintf("%d", repo.Stars)},
+		chrome.SVGInfoSegment{Icon: rowForkOcticon11, Text: fmt.Sprintf("%d", repo.Forks)},
+		chrome.SVGInfoSegment{Icon: rowIssueOcticon11, Text: fmt.Sprintf("%d", repo.Issues)},
+		chrome.SVGInfoSegment{Icon: rowPullRequestOcticon11, Text: fmt.Sprintf("%d", repo.PullRequests)},
+	)
+	infoRow, ih := chrome.SVGInfoRow(infoLeft, y, segs)
+	card.WriteString(infoRow)
+	y += ih + cardMargin
+
+	fmt.Fprintf(body, `<g class="repository" data-stars="%d" data-forks="%d">%s</g>`,
+		repo.Stars, repo.Forks, card.String())
+	return y - top
 }
 
 // formatCreated mirrors upstream repositories/index.mjs `format()` date
