@@ -47,17 +47,17 @@ const graphOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16
 // When `plugin_traffic_hide_empty` is true (default), repositories with
 // Count == 0 are filtered before sorting/rendering so the per-repo
 // breakdown only shows repos that actually received traffic.
-func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	raw, ok := pc.Data.GetPlugin(Name)
 	if !ok || raw == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := raw.(*Result)
 	if !ok || r == nil || r.Skipped {
-		return "", nil
+		return "", 0, nil
 	}
 
 	// Collect the per-repo rows, dropping zero-view repos when HideEmpty.
@@ -95,7 +95,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	}
 	b.WriteString(`</section></div>`)
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 // viewsText formats the shared "<N> view[s] (<M> unique)" phrase used by

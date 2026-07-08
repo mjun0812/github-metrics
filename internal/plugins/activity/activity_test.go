@@ -476,7 +476,7 @@ func TestPartial_PullRequestStats(t *testing.T) {
 		},
 		Days: 14,
 	})
-	got, err := activity.Partial(context.Background(), &templates.PartialContext{Data: data})
+	got, _, err := activity.Partial(context.Background(), &templates.PartialContext{Data: data})
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

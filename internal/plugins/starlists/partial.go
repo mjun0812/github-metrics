@@ -75,17 +75,17 @@ func pluralRepository(n int) string {
 // `infos` sub-block (language / stargazers / forks) is not rendered
 // because the user.lists GraphQL items are not enriched with those
 // per-repo details (see Starlist.Repositories / issue #675).
-func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	raw, ok := pc.Data.GetPlugin(Name)
 	if !ok || raw == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := raw.(*Result)
 	if !ok || r == nil || r.Skipped {
-		return "", nil
+		return "", 0, nil
 	}
 	// Note: an empty List is NOT a skip condition. Upstream renders the
 	// section header ("0 Star lists") even when the account has no star
@@ -133,7 +133,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	}
 	b.WriteString(`</section></div>`)
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 // writeStarlistLanguages emits the per-list language bar + 2-column

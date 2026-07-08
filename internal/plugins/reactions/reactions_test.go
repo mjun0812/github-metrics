@@ -308,7 +308,7 @@ func TestPartial_Reactions_Golden(t *testing.T) {
 	data := plugins.NewData()
 	data.SetPlugin(reactions.Name, r)
 	pc := &templates.PartialContext{Data: data}
-	got, err := reactions.Partial(context.Background(), pc)
+	got, _, err := reactions.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

@@ -44,17 +44,17 @@ var reactionEmojis = []struct {
 // info">` circle (plus a `gauge-arc` when score > 0), the emoji as a
 // `<text>` inside the gauge, and an optional `title nowrap` detail span
 // driven by plugin_reactions_details.
-func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	raw, ok := pc.Data.GetPlugin(Name)
 	if !ok || raw == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := raw.(*Result)
 	if !ok || r == nil || r.Skipped {
-		return "", nil
+		return "", 0, nil
 	}
 
 	var b strings.Builder
@@ -73,7 +73,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	b.WriteString(`</section></div>`)
 	b.WriteString(`</section></div>`)
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 // writeReactionCategory emits one `<div class="category column">` gauge

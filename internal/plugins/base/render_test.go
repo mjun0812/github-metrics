@@ -76,7 +76,7 @@ func activitySample() *base.Result {
 
 func TestActivityPartial_NilContextNoGate(t *testing.T) {
 	t.Parallel()
-	got, err := base.ActivityPartial(context.Background(), nil)
+	got, _, err := base.ActivityPartial(context.Background(), nil)
 	if err != nil || got != "" {
 		t.Fatalf("ActivityPartial(nil) = %q, %v; want \"\", nil", got, err)
 	}
@@ -109,7 +109,7 @@ func TestActivityPartial_GatedOff(t *testing.T) {
 	for i, in := range cases {
 		d := plugins.NewData()
 		putResult(d, activitySample())
-		got, err := base.ActivityPartial(context.Background(), newPC(d, in))
+		got, _, err := base.ActivityPartial(context.Background(), newPC(d, in))
 		if err != nil || got != "" {
 			t.Errorf("case %d: ActivityPartial = %q, %v; want \"\", nil", i, got, err)
 		}
@@ -123,7 +123,7 @@ func TestActivityPartial_ChromeActivityAlone(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	putResult(d, activitySample())
-	got, err := base.ActivityPartial(context.Background(),
+	got, _, err := base.ActivityPartial(context.Background(),
 		newPC(d, map[string]any{"chrome_activity": "yes"}))
 	if err != nil {
 		t.Fatalf("ActivityPartial: %v", err)
@@ -140,7 +140,7 @@ func TestActivityPartial_LegacyPluginBaseEnables(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	putResult(d, activitySample())
-	got, err := base.ActivityPartial(context.Background(),
+	got, _, err := base.ActivityPartial(context.Background(),
 		newPC(d, map[string]any{"plugin_base": "yes"}))
 	if err != nil {
 		t.Fatalf("ActivityPartial: %v", err)
@@ -152,7 +152,7 @@ func TestActivityPartial_LegacyPluginBaseEnables(t *testing.T) {
 
 func TestActivityPartial_MissingPluginEntry(t *testing.T) {
 	t.Parallel()
-	got, err := base.ActivityPartial(context.Background(), newPC(plugins.NewData(), gates()))
+	got, _, err := base.ActivityPartial(context.Background(), newPC(plugins.NewData(), gates()))
 	if err != nil || got != "" {
 		t.Fatalf("ActivityPartial(no plugin entry) = %q, %v; want \"\", nil", got, err)
 	}
@@ -162,7 +162,7 @@ func TestActivityPartial_WrongResultType(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	d.SetPlugin(base.Name, "not a *Result")
-	got, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
 	if err != nil || got != "" {
 		t.Fatalf("ActivityPartial(wrong type) = %q, %v; want \"\", nil", got, err)
 	}
@@ -177,7 +177,7 @@ func TestActivityPartial_OrgProfileEmits(t *testing.T) {
 			Organization: &plugins.Organization{Login: "octolabs"},
 		},
 	})
-	got, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
 	if err != nil || got != "" {
 		t.Fatalf("ActivityPartial(org profile) must be empty; got %q, %v", got, err)
 	}
@@ -187,7 +187,7 @@ func TestActivityPartial_RendersAllRows(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	putResult(d, activitySample())
-	got, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
 	if err != nil {
 		t.Fatalf("ActivityPartial: %v", err)
 	}
@@ -233,7 +233,7 @@ func TestActivityPartial_SingularGrammar(t *testing.T) {
 			},
 		},
 	})
-	got, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
 	if err != nil {
 		t.Fatalf("ActivityPartial: %v", err)
 	}
@@ -267,7 +267,7 @@ func TestActivityPartial_ZeroRowsStillEmit(t *testing.T) {
 			User: &plugins.User{Login: "freshie"},
 		},
 	})
-	got, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
 	if err != nil {
 		t.Fatalf("ActivityPartial: %v", err)
 	}
@@ -289,7 +289,7 @@ func TestActivityPartial_ResultWithErrorStillRenders(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	putResult(d, &base.Result{Error: context.DeadlineExceeded})
-	got, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
 	if err != nil || got != "" {
 		t.Fatalf("ActivityPartial(error result, nil Profile) = %q, %v; want \"\", nil", got, err)
 	}
@@ -301,7 +301,7 @@ func TestActivityPartial_ResultWithErrorStillRenders(t *testing.T) {
 
 func TestRepositoriesPartial_NilContextNoGate(t *testing.T) {
 	t.Parallel()
-	got, err := base.RepositoriesPartial(context.Background(), nil)
+	got, _, err := base.RepositoriesPartial(context.Background(), nil)
 	if err != nil || got != "" {
 		t.Fatalf("RepositoriesPartial(nil) = %q, %v; want \"\", nil", got, err)
 	}
@@ -325,7 +325,7 @@ func TestRepositoriesPartial_GatedOff(t *testing.T) {
 		{"base": ""},
 		{"base": "repositories"},
 	} {
-		got, err := base.RepositoriesPartial(context.Background(), newPC(d, in))
+		got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, in))
 		if err != nil || got != "" {
 			t.Errorf("case %d: RepositoriesPartial = %q, %v; want \"\", nil", i, got, err)
 		}
@@ -338,7 +338,7 @@ func TestRepositoriesPartial_ChromeRepositoriesAlone(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	putResult(d, activitySample())
-	got, err := base.RepositoriesPartial(context.Background(),
+	got, _, err := base.RepositoriesPartial(context.Background(),
 		newPC(d, map[string]any{"chrome_repositories": "yes"}))
 	if err != nil {
 		t.Fatalf("RepositoriesPartial: %v", err)
@@ -355,7 +355,7 @@ func TestRepositoriesPartial_LegacyPluginBaseEnables(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	putResult(d, activitySample())
-	got, err := base.RepositoriesPartial(context.Background(),
+	got, _, err := base.RepositoriesPartial(context.Background(),
 		newPC(d, map[string]any{"plugin_base": "yes"}))
 	if err != nil {
 		t.Fatalf("RepositoriesPartial: %v", err)
@@ -375,7 +375,7 @@ func TestRepositoriesPartial_OrgProfileEmpty(t *testing.T) {
 		},
 		RepositorySummary: &plugins.ComputedRepositories{Count: 1},
 	})
-	got, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
 	if err != nil || got != "" {
 		t.Fatalf("RepositoriesPartial(org) = %q, %v; want \"\", nil", got, err)
 	}
@@ -385,7 +385,7 @@ func TestRepositoriesPartial_RendersHeadingAndRows(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	putResult(d, activitySample())
-	got, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
 	if err != nil {
 		t.Fatalf("RepositoriesPartial: %v", err)
 	}
@@ -421,7 +421,7 @@ func TestRepositoriesPartial_NilSummaryFallback(t *testing.T) {
 			User: &plugins.User{Login: "freshie"},
 		},
 	})
-	got, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
 	if err != nil {
 		t.Fatalf("RepositoriesPartial: %v", err)
 	}
@@ -450,7 +450,7 @@ func TestRepositoriesPartial_SingularHeading(t *testing.T) {
 		},
 		RepositorySummary: &plugins.ComputedRepositories{Count: 1, Forked: 1},
 	})
-	got, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
 	if err != nil {
 		t.Fatalf("RepositoriesPartial: %v", err)
 	}
@@ -478,7 +478,7 @@ func TestRepositoriesPartial_EscapesLicenseName(t *testing.T) {
 			},
 		},
 	})
-	got, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
 	if err != nil {
 		t.Fatalf("RepositoriesPartial: %v", err)
 	}
@@ -503,7 +503,7 @@ func TestRepositoriesPartial_TrafficInline(t *testing.T) {
 	d := plugins.NewData()
 	putResult(d, activitySample())
 	d.SetPlugin("traffic", &trafficStub{total: 2345})
-	got, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
 	if err != nil {
 		t.Fatalf("RepositoriesPartial: %v", err)
 	}
@@ -519,7 +519,7 @@ func TestRepositoriesPartial_TrafficSingularNoun(t *testing.T) {
 	d := plugins.NewData()
 	putResult(d, activitySample())
 	d.SetPlugin("traffic", &trafficStub{total: 1})
-	got, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
 	if err != nil {
 		t.Fatalf("RepositoriesPartial: %v", err)
 	}
@@ -536,7 +536,7 @@ func TestRepositoriesPartial_TrafficZeroSkipped(t *testing.T) {
 	d := plugins.NewData()
 	putResult(d, activitySample())
 	d.SetPlugin("traffic", &trafficStub{total: 0})
-	got, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
 	if err != nil {
 		t.Fatalf("RepositoriesPartial: %v", err)
 	}
@@ -553,7 +553,7 @@ func TestRepositoriesPartial_TrafficForeignType(t *testing.T) {
 	d := plugins.NewData()
 	putResult(d, activitySample())
 	d.SetPlugin("traffic", struct{}{}) // intentionally not implementing TotalViews()
-	got, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
+	got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
 	if err != nil {
 		t.Fatalf("RepositoriesPartial: %v", err)
 	}

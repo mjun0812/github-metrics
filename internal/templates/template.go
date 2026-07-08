@@ -29,7 +29,27 @@ type Template interface {
 
 // PartialFunc is the signature each partial (header, activity,
 // repositories, ...) implements. Functions are meant to be idempotent.
-type PartialFunc func(ctx context.Context, pc *PartialContext) (string, error)
+//
+// Return values:
+//
+//   - markup: the SVG/HTML fragment the partial owns (unchanged from the
+//     original contract; "" is the canonical "render nothing" signal).
+//   - height: the vertical space in px the partial's markup consumes when
+//     it is a self-laying-out native SVG partial (Phase B1+, #409).
+//     Height reporting semantics:
+//     0    = "not self-reported" — the partial is still HTML inside the
+//     outer foreignObject, so its height is decided by HTML flow and
+//     must be measured externally (the current state of every partial).
+//     >0   = the exact number of vertical px this partial consumes; the
+//     template may sum these to size the root <svg> once every
+//     partial reports (Phase C removes the outer foreignObject).
+//   - err: a rendering error; callers abort the whole render on non-nil.
+//
+// Every partial shares this one signature: an unconverted (HTML) partial
+// returns height 0, and a converted (native SVG) partial returns its real
+// height through the same return position. There is no separate API for
+// the two states.
+type PartialFunc func(ctx context.Context, pc *PartialContext) (markup string, height int, err error)
 
 // PartialContext carries the data a partial needs to render its slice
 // of the SVG/Markdown output. Helpers (octicon/twemoji/gemoji) land in

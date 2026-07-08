@@ -19,7 +19,7 @@ func renderTraffic(t *testing.T, r *traffic.Result) string {
 		data.SetPlugin(traffic.Name, r)
 	}
 	pc := &templates.PartialContext{Data: data}
-	got, err := traffic.Partial(context.Background(), pc)
+	got, _, err := traffic.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
