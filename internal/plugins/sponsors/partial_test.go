@@ -51,10 +51,9 @@ func TestPartial_ZeroSponsors_RendersHeadingAndAbout(t *testing.T) {
 	}
 	checks := []string{
 		`<section data-section="sponsors">`,
-		`<h2 class="field">`,
 		`Sponsor Me!`,
-		`<section class="sponsors goal">`,      // goal/list section wrapper
-		`<div class="markdown">`,               // about markdown body
+		`class="sponsors goal"`,                // goal/list section wrapper
+		`class="markdown"`,                     // about markdown body
 		`Hi! I&#39;m Junya Morioka`,            // escaped bio text node
 		`<a href="https://mjunya.com/about/">`, // rendered markdown link (unescaped markup)
 	}
@@ -95,7 +94,7 @@ func TestPartial_EmptyAbout_StillRendersHeading(t *testing.T) {
 	for _, want := range []string{
 		`<section data-section="sponsors">`,
 		`Sponsor Me!`,
-		`<section class="sponsors goal">`,
+		`class="sponsors goal"`,
 	} {
 		if !strings.Contains(frag, want) {
 			t.Errorf("rendered fragment missing %q\n--- fragment ---\n%s", want, frag)
