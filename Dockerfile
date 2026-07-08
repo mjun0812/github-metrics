@@ -1,26 +1,29 @@
 # syntax=docker/dockerfile:1.7
 #
 # github-metrics production container (M10 T-126). The image bundles
-# chromium-headless-shell so the chromedp-backed svg.Resize / PNG /
-# JPEG path can run without additional setup — METRICS_CHROME_PATH
-# points at the headless-shell binary.
+# the `resvg` rasterizer so the PNG / JPEG output path can run without
+# additional setup — METRICS_RESVG_PATH points at the resvg binary.
+# #409 Phase D (#694) replaced the chromedp/headless-chromium renderer
+# with resvg, removing ~500 MB of chromium from the image and the whole
+# class of "distro bumped chromium and headless crashes in a container"
+# incidents (the 2026-07-06 bookworm chromium 149→150 SIGTRAP outage).
 #
 # Multi-arch: built for linux/amd64 + linux/arm64 via `docker buildx`
-# in .github/workflows/release.yml. No arch-specific RUN steps; the Go
-# binary is compiled inside the builder stage which buildx runs at the
-# target platform.
+# in .github/workflows/release.yml. No arch-specific RUN steps; both the
+# Go binary and the resvg binary are compiled inside builder stages that
+# buildx runs at the target platform (resvg has no prebuilt linux/arm64
+# release, so it is built from source with `cargo install`).
 #
 # Runtime user: `metrics` (uid 10001, gid 10001) — non-root for
-# defence-in-depth. chromedp launches chromium with --no-sandbox per
-# internal/render/browser.go which is required when running as a
-# non-root user without seccomp profiles.
+# defence-in-depth. resvg is a self-contained subprocess with no sandbox
+# or seccomp requirements, so no special flags are needed.
 #
-# Image size budget: ≤ 900 MB per platform (asserted in CI by the
-# docker_smoke gate). The v1.0 escalation from 600 MB → 900 MB is
-# documented in research.md R-003 §"Plan-phase risk": the
-# bookworm-slim + chromium + Noto CJK fonts combination measures
-# ~830 MB on GitHub-hosted ubuntu-latest runners. CJK fonts cost
-# ~80 MB but breaking CJK repo-name rendering was rejected for v1.0.
+# Image size budget: ≤ 500 MB per platform (asserted in CI by the
+# docker_smoke gate). The pre-Phase-D budget was ≤ 900 MB, dominated by
+# chromium (~500 MB); with chromium gone the runtime is bookworm-slim +
+# the ~6 MB resvg binary + fonts (Noto CJK ~80 MB, Noto emoji, Liberation
+# — all kept because resvg rasterizes text with the system font database),
+# ~200 MB observed.
 #
 # Build (local):  docker build -t github-metrics:dev .
 # Run   (local):  docker run --rm github-metrics:dev metrics-cli --help
@@ -48,51 +51,60 @@ RUN go build -trimpath \
     -o /out/metrics-cli ./cmd/metrics-cli
 
 # svg2png rasterizes a standalone metrics SVG to PNG through the same
-# internal/render.Browser + Resize chromedp path that --output png uses,
-# with zero API calls (#527). The regen-doc-samples render job ships it
-# alongside metrics-cli so it can fetch each sample's SVG once and derive
-# the PNG locally instead of running a second full API fetch. It is a
-# static CGO_ENABLED=0 binary (~few MB) so the image-size impact is
-# trivial.
+# internal/render.Resvg path that --output png uses, with zero API calls
+# (#527). The regen-doc-samples render job ships it alongside metrics-cli
+# so it can fetch each sample's SVG once and derive the PNG locally
+# instead of running a second full API fetch. It is a static
+# CGO_ENABLED=0 binary (~few MB) so the image-size impact is trivial.
 RUN go build -trimpath \
     -ldflags="-s -w" \
     -o /out/svg2png ./internal/tools/svg2png
 
+# --- resvg build stage ----------------------------------------------
+# resvg publishes no prebuilt linux/arm64 binary (only linux/x86_64), so
+# build it from source with cargo. buildx runs this stage at the target
+# platform, giving a native binary for both amd64 and arm64. resvg 0.47
+# requires rustc ≥ 1.87; `rust:1-slim-bookworm` tracks the latest 1.x.
+# build-essential provides the C compiler a few transitive `cc`-crate
+# deps expect. The buildx layer cache amortizes the compile across CI
+# runs.
+FROM rust:1-slim-bookworm AS resvg-build
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential \
+    && rm -rf /var/lib/apt/lists/*
+RUN cargo install resvg --version 0.47.0 --locked
+# Binary lands at $CARGO_HOME/bin/resvg (/usr/local/cargo/bin/resvg).
+
 # --- Runtime stage --------------------------------------------------
 FROM debian:bookworm-slim
 
-# Install chromium-headless-shell + fonts and clean apt metadata in the
-# same layer so the cleanup actually shrinks the image. The Noto CJK
-# font set costs ~80 MB but is required for CJK glyph rendering in
-# repo / display names; if the per-platform size budget tightens, this
-# is the first lever per research.md R-003.
-#
-# headless-shell instead of the full `chromium` package: bookworm's
-# chromium 150.0.7871 crashes with SIGTRAP on startup in containers
-# under every headless flag combination (149 was fine), which silently
-# broke the chromedp Resize path — every SVG shipped untrimmed at the
-# height=99999 placeholder. chromium-headless-shell 150 starts and
-# renders correctly, and is the purpose-built binary for exactly this
-# chromedp use case (no UI, smaller footprint).
+# Install the font database resvg rasterizes text with, plus CA certs,
+# and clean apt metadata in the same layer so the cleanup shrinks the
+# image. The Noto CJK set costs ~80 MB but is required for CJK glyph
+# rendering in repo / display names; Liberation Sans/Mono back the
+# `sans-serif` / `monospace` generics the SVG font stacks resolve to
+# (see internal/render/resvg.go). No chromium is installed — #409
+# Phase D removed the browser renderer.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
-        chromium-headless-shell \
         fonts-noto-color-emoji \
         fonts-noto-cjk \
         fonts-liberation \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*.deb
 
-ENV METRICS_CHROME_PATH=/usr/lib/chromium/chromium-headless-shell
+# resvg binary + the env var internal/render.Resvg resolves it from.
+COPY --from=resvg-build /usr/local/cargo/bin/resvg /usr/local/bin/resvg
+ENV METRICS_RESVG_PATH=/usr/local/bin/resvg
 
 # Binaries land at /usr/local/bin/, owned by root and mode 0755 so
 # the non-root runtime user can execute but not modify.
 COPY --from=build /out/metrics-cli /usr/local/bin/metrics-cli
 
 # svg2png is a developer/CI aid (regen-doc-samples render job, #527), not
-# part of the action / CLI contract. It shares the runtime's chromium via
-# METRICS_CHROME_PATH.
+# part of the action / CLI contract. It rasterizes via the same resvg
+# binary through METRICS_RESVG_PATH.
 COPY --from=build /out/svg2png /usr/local/bin/svg2png
 
 # Non-root user. uid 10001 sits outside the system range (0-999) and
