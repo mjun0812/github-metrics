@@ -43,7 +43,7 @@ const (
 // native SVG (#409 Phase B6). Multi-year heatmap matching upstream
 // org_repo/source/templates/classic/partials/calendar.ejs.
 //
-// Output (native SVG): a `<section data-section="calendar">` anchor
+// Output (native SVG): a `<g data-section="calendar">` anchor
 // wrapping a nested `<svg>` — the "Contributions calendar" section header
 // above the multi-year heatmap. The heatmap keeps its intrinsic 795-unit
 // viewBox and scales to the 480px card width; the partial reports the

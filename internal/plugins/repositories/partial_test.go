@@ -37,7 +37,7 @@ func TestPartial_FeaturedOnly(t *testing.T) {
 		},
 	})
 	for _, want := range []string{
-		`<section data-section="repositories">`,
+		`<g data-section="repositories">`,
 		`>octocat/alpha</text>`,
 		`>octocat/beta</text>`,
 	} {

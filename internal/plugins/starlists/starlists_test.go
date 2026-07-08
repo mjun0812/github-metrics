@@ -326,7 +326,7 @@ func TestPartial_Starlists_EmptyListRendersHeader(t *testing.T) {
 		}
 		// The section wrapper is present but carries no <div class="starlist">
 		// because the for-loop does not run.
-		if !strings.Contains(got, `<section data-section="starlists">`) {
+		if !strings.Contains(got, `<g data-section="starlists">`) {
 			t.Errorf("partial missing section wrapper in:\n%s", got)
 		}
 		if strings.Contains(got, `class="starlist"`) {

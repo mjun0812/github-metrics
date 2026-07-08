@@ -188,7 +188,7 @@ func truncateName(name string, limit int) string {
 // native SVG (#409 Phase B4), mirroring upstream
 // source/templates/classic/partials/notable.ejs (issue #447).
 //
-// Output: a `<section data-section="notable">` anchor wrapping a nested
+// Output: a `<g data-section="notable">` anchor wrapping a nested
 // `<svg>`. The rocket-octicon header sits above a `<g class="row
 // organization contributions">` of flow-wrapped chips. Each chip is a
 // `<g class="organization contribution <level> ">` with a rounded-border

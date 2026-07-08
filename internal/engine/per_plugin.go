@@ -54,21 +54,14 @@ func ComputePerPlugin(ctx context.Context, req Request, deps Deps) ([]*PerPlugin
 	// Determine the set of plugins to render.
 	targets := resolvePerPluginTargets(req.Inputs)
 
-	// Obtain renderer once so all plugins share a single browser instance.
-	renderer, closeBrowser, rerr := obtainRenderer(deps)
-	if rerr != nil {
-		deps.Logger.Warn("engine: ComputePerPlugin: renderer init failed; SVGs will not be resized", "err", rerr)
-		// renderer stays nil; we'll use unresized SVG below.
-	}
-	if closeBrowser != nil {
-		defer closeBrowser()
-	}
-
+	// #409 Phase C: per-plugin partials emit native SVG with a
+	// Go-computed height, so there is no browser measurement pass — the
+	// per-plugin path no longer spins up Chromium at all.
 	stages := buildPipelineStages(ctx, req.Inputs, imageFetcher(deps))
 
 	results := make([]*PerPluginResult, 0, len(targets))
 	for _, slug := range targets {
-		pr := renderOnePlugin(ctx, slug, req, deps, tmpl, res, renderer, stages)
+		pr := renderOnePlugin(ctx, slug, req, deps, tmpl, res, stages)
 		results = append(results, pr)
 	}
 	return results, nil
@@ -82,7 +75,6 @@ func renderOnePlugin(
 	deps Deps,
 	tmpl templates.Template,
 	res *Result,
-	renderer render.Renderer,
 	stages []render.PipelineStage,
 ) *PerPluginResult {
 	pr := &PerPluginResult{Plugin: slug}
@@ -120,29 +112,10 @@ func renderOnePlugin(
 		deps.Logger.Warn("engine: per-plugin pipeline stage error", "plugin", slug, "err", e)
 	}
 
-	if renderer == nil {
-		// No renderer available — return unresized SVG.
-		pr.Output = []byte(decorated)
-		return pr
-	}
-
-	// Resize / trim via the Renderer (chromedp in production, FakeRenderer in tests).
-	padding := stringSliceInput(req.Inputs, "config.padding")
-	if len(padding) == 0 {
-		padding = []string{"0, 8 + 11%"}
-	}
-	resized, resizeErr := renderer.Resize(ctx, decorated, render.ResizeOpts{
-		Convert: "svg",
-		Padding: padding,
-		Scripts: stringSliceInput(req.Inputs, "extras.js"),
-	})
-	if resizeErr != nil {
-		deps.Logger.Warn("engine: per-plugin resize failed; using unresized SVG", "plugin", slug, "err", resizeErr)
-		pr.Output = []byte(decorated)
-		return pr
-	}
-
-	pr.Output = resized.Body
+	// #409 Phase C: the partial's native SVG already carries its final
+	// Go-computed height, so no resize pass is needed — emit the
+	// decorated SVG directly.
+	pr.Output = []byte(decorated)
 	return pr
 }
 

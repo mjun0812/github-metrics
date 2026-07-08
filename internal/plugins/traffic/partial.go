@@ -29,7 +29,7 @@ const graphOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16
 // header + aggregate counts + per-repo breakdown so downstream consumers
 // can see the data the plugin actually collects.
 //
-// Output (native SVG): a `<section data-section="traffic">` anchor
+// Output (native SVG): a `<g data-section="traffic">` anchor
 // wrapping a nested `<svg>` with a section header, the aggregate views
 // pill, and one text row per repository (#409 Phase B2).
 //

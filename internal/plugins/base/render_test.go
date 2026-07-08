@@ -192,7 +192,7 @@ func TestActivityPartial_RendersAllRows(t *testing.T) {
 		t.Fatalf("ActivityPartial: %v", err)
 	}
 	for _, want := range []string{
-		`<section class="largeable largeable-inline-flex">`,
+		`data-section="activity-community"`,
 		`Activity`,
 		`1.5k Commits`,
 		`12 Pull requests reviewed`,
@@ -390,7 +390,7 @@ func TestRepositoriesPartial_RendersHeadingAndRows(t *testing.T) {
 		t.Fatalf("RepositoriesPartial: %v", err)
 	}
 	for _, want := range []string{
-		`<section class="largeable largeable-inline-flex">`,
+		`data-section="repositories"`,
 		`50 Repositories`,
 		`Prefers MIT License license`,
 		`15 Releases`,
@@ -482,8 +482,15 @@ func TestRepositoriesPartial_EscapesLicenseName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RepositoriesPartial: %v", err)
 	}
-	if !strings.Contains(got, `Prefers &lt;MIT &amp; friends&gt; license`) {
-		t.Errorf("license name not escaped:\n%s", got)
+	// The native-SVG field ellipsis-truncates the label to the column
+	// width, so assert the escaped prefix survives (single-escaped) and
+	// is NOT double-encoded (`&amp;lt;`), which would be the bug if the
+	// writer pre-escaped before chrome.SVGText escaped again.
+	if !strings.Contains(got, `Prefers &lt;MIT &amp; friends`) {
+		t.Errorf("license name not escaped once:\n%s", got)
+	}
+	if strings.Contains(got, `&amp;lt;`) {
+		t.Errorf("license name double-escaped:\n%s", got)
 	}
 }
 

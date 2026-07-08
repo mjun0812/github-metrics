@@ -54,7 +54,7 @@ func bgLevel(p float64) int {
 // native SVG (#409 Phase B5). Mirrors upstream
 // org_repo/source/templates/classic/partials/stargazers.ejs.
 //
-// Output: a `<section data-section="stargazers">` anchor wrapping a
+// Output: a `<g data-section="stargazers">` anchor wrapping a
 // nested `<svg>`. The star-octicon section header sits above either:
 //
 //   - classic: two side-by-side `.chart-bars` columns rendered as native
