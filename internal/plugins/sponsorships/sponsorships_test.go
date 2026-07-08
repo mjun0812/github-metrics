@@ -118,8 +118,8 @@ func TestPartial_ZeroState(t *testing.T) {
 
 	for _, want := range []string{
 		`data-section="sponsorships"`,
-		`<img src="https://github.githubassets.com/images/icons/emoji/hearts_around.png" alt="" />`,
-		`has given a total of <span class="bold">$0.00</span> to open source software`,
+		`<image href="https://github.githubassets.com/images/icons/emoji/hearts_around.png"`,
+		`>$0.00</tspan>`,
 		`mjun0812 helped funding the work of 0 users and organizations.`,
 	} {
 		if !strings.Contains(out, want) {
@@ -138,7 +138,7 @@ func TestPartial_AmountFormatting(t *testing.T) {
 		Amount:   1234.5,
 	}
 	out := partialFor(t, r, "octocat")
-	if !strings.Contains(out, `<span class="bold">$1,234.50</span>`) {
+	if !strings.Contains(out, `>$1,234.50</tspan>`) {
 		t.Errorf("expected $1,234.50 in output\ngot: %s", out)
 	}
 	// Only the amount section requested: no goal-text line.
@@ -162,7 +162,7 @@ func TestPartial_SponsorshipsOnly(t *testing.T) {
 	if !strings.Contains(out, "helped funding the work of 1 user and organizations.") {
 		t.Errorf("expected singular goal text for 1 sponsorship\ngot: %s", out)
 	}
-	if !strings.Contains(out, `src="https://github.com/alice.png?size=64"`) {
+	if !strings.Contains(out, `href="https://github.com/alice.png?size=64"`) {
 		t.Errorf("expected alice avatar img\ngot: %s", out)
 	}
 }
