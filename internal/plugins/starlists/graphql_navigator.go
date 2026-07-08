@@ -124,7 +124,7 @@ func (n *graphqlNavigator) load(ctx context.Context) error {
 }
 
 // starlistKey returns a stable URL-shaped key for a starlist. The
-// shape matches the legacy chromedp navigator's output
+// shape matches the legacy browser navigator's output
 // (`/stars/<login>/lists/<slug>`) so consumers — and tests — can keep
 // using the URL field as a cache key without changes.
 func starlistKey(login, name string) string {

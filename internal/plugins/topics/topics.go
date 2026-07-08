@@ -7,7 +7,7 @@
 //
 // The Navigator interface is preserved as a test seam: production code
 // uses httpNavigator; non-network tests substitute a fake. The
-// upstream chromedp-backed implementation is gone.
+// upstream browser-backed implementation is gone.
 package topics
 
 import (
@@ -106,7 +106,7 @@ func (p *topicsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 
 	// Gate: the user must enable the plugin via `plugin_topics`. Without
 	// this gate the plugin would always run and pollute Result.Errors
-	// with "chromedp not available" entries even when topics was never
+	// with "navigator not available" entries even when topics was never
 	// requested.
 	if !pluginutil.Truthy(pc.Inputs["plugin_topics"]) {
 		return &Result{
@@ -133,7 +133,7 @@ func (p *topicsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	nav := pickNavigator(pc)
 	// pickNavigator always returns a non-nil Navigator: tests can inject
 	// one via NavigatorKey, otherwise we fall back to a stdlib-backed
-	// httpNavigator. (No external dependency on chromedp / browsers any
+	// httpNavigator. (No external dependency on a browser any
 	// more — the GitHub stars-topics page is fully SSR.)
 
 	login := pluginutil.LoginFromInputs(pc.Inputs)

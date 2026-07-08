@@ -19,10 +19,9 @@ env:
   GOLANGCI_LINT_VERSION: "v2.12.2"
 
 # Job placement: every Linux/x86 job (test / vet / lint / vuln /
-# test-race / test-chromedp / test-heavy / compliance) runs on the
-# self-hosted ARC runner scale set `home-k3s-runner` (k3s cluster with
-# docker-in-docker, so the test-chromedp container job works) to keep
-# GitHub-hosted minute usage down. Only smoke-macos stays on a
+# test-race / test-resvg / test-heavy / compliance) runs on the
+# self-hosted ARC runner scale set `home-k3s-runner` (k3s cluster) to
+# keep GitHub-hosted minute usage down. Only smoke-macos stays on a
 # GitHub-hosted macos-latest runner (the sole Darwin capacity) — it is
 # temporarily commented out below to conserve Actions minutes.
 jobs:
@@ -36,9 +35,9 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
       - name: go test
-        # tests/visual requires chromium; that is covered by test-chromedp.
-        # Exclude it here so the runner does not fail in CI strict mode.
-        run: go list ./... | grep -v 'tests/visual' | xargs go test
+        # resvg-dependent tests skip when the binary is absent (covered
+        # for real by test-resvg); the rest of the suite runs here.
+        run: go test ./...
 
   vet:
     name: vet
@@ -99,48 +98,49 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
       - name: go test -race
-        # tests/visual requires chromium; exclude it here (covered by test-chromedp).
-        # xargs -r skips execution if the package list is empty.
-        run: go list ./... | grep -v 'tests/visual' | xargs -r go test -race
+        run: go test -race ./...
 
-  test-chromedp:
-    name: test-chromedp
+  test-resvg:
+    name: test-resvg
     runs-on: home-k3s-runner
-    container:
-      image: chromedp/headless-shell:latest
-    env:
-      METRICS_CHROME_PATH: /headless-shell/headless-shell
     steps:
-      # The chromedp/headless-shell image is minimal and ships
-      # without `make` or `ca-certificates`. apt-get is available
-      # because the base is debian-slim; install the cert bundle so
-      # `go mod download` can verify the GoSumDB / proxy TLS chain.
-      - name: Install CA certificates
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends ca-certificates
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
-      # Run only the chromium-dependent packages here. The default test
-      # job already covers the rest of the suite, so avoid re-running
-      # every package just because the chromedp build tag is enabled.
-      - name: go test -tags=chromedp
+      # resvg publishes a prebuilt linux/x86_64 binary; CI is amd64-only
+      # so curl it (much faster than the `cargo install` the Docker image
+      # uses for multi-arch) and verify the pinned checksum before trusting
+      # it. The rasterizer-dependent Go tests skip when the binary is
+      # absent, so this job is what actually exercises the resvg path.
+      - name: install resvg
         run: |
-          go test -tags=chromedp ./internal/render -run 'Test(Browser_|Resize_(FixedSVG|PNG|JPEG))'
-          go test -tags=chromedp ./tests/integration -run 'Test(ComputePNG_E2E|RepositoryTemplate_(PNG|JPEG)_MagicNumber)$'
-          go test ./tests/visual
+          set -euo pipefail
+          RESVG_VERSION=0.47.0
+          RESVG_SHA256=5c84dcbcd032fe7e8d96e616fd6807a2f9df6561d2e6582b37e91e63c6cb4fe7
+          curl -fsSL -o resvg.tar.gz \
+            "https://github.com/linebender/resvg/releases/download/v${RESVG_VERSION}/resvg-linux-x86_64.tar.gz"
+          echo "${RESVG_SHA256}  resvg.tar.gz" | sha256sum -c -
+          tar xzf resvg.tar.gz
+          mkdir -p "$HOME/.local/bin"
+          install -m 0755 resvg "$HOME/.local/bin/resvg"
+          echo "METRICS_RESVG_PATH=$HOME/.local/bin/resvg" >> "$GITHUB_ENV"
+      # Run only the rasterizer-dependent tests here; the default `test`
+      # job already covers the rest of the suite (where they skip).
+      - name: go test (resvg)
+        run: |
+          go test ./internal/render -run 'Resvg|ApplyPadding'
+          go test ./tests/integration -run 'Resvg'
 
   test-heavy:
     name: test-heavy
     runs-on: home-k3s-runner
     # `heavy` build tag covers M4 plugins that pull in go-enry's
     # embedded language database and go-git's shallow clone path
-    # (languages.recent, languages.indepth). Both are pure Go, so no
-    # chromium container is needed; we just want the wall-time cost
-    # off the default `test` job. Parallel with `test` + `test-chromedp`.
+    # (languages.recent, languages.indepth). Both are pure Go; we just
+    # want the wall-time cost off the default `test` job. Parallel with
+    # `test` + `test-resvg`.
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6

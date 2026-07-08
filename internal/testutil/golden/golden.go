@@ -33,7 +33,7 @@ func Compare(t *testing.T, got []byte, goldenPath string) {
 }
 
 // CompareSVG applies NormalizeSVG to both sides before byte-diffing.
-// Used for SVG goldens that must tolerate Go-runtime / chromedp drift
+// Used for SVG goldens that must tolerate Go-runtime / renderer drift
 // in non-semantic bytes (attribute order, whitespace inside text
 // nodes, dynamic footer fragments).
 func CompareSVG(t *testing.T, got []byte, goldenPath string) {

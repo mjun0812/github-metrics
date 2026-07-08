@@ -115,7 +115,7 @@ func TestComputeSVG_Classic(t *testing.T) {
 
 // TestComputePNG_M3ReturnsImageBytes validates the M3 PNG branch: the
 // FakeRenderer (injected by newEngineDeps) emits valid PNG bytes plus
-// the matching image/png MIME, and the M2-era "chromedp conversion
+// the matching image/png MIME, and the M2-era "png conversion
 // lands in M3" warn log is no longer produced (FR-009).
 func TestComputePNG_M3ReturnsImageBytes(t *testing.T) {
 	t.Parallel()
@@ -144,7 +144,7 @@ func TestComputePNG_M3ReturnsImageBytes(t *testing.T) {
 	if len(res.Output) < len(pngMagic) || !bytes.HasPrefix(res.Output, pngMagic) {
 		t.Fatalf("Output should start with PNG magic; got %x", res.Output[:min(8, len(res.Output))])
 	}
-	if strings.Contains(sink.String(), "chromedp conversion lands in M3") {
+	if strings.Contains(sink.String(), "png conversion lands in M3") {
 		t.Errorf("M2 warn log leaked into M3 output: %s", sink.String())
 	}
 }

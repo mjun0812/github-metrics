@@ -23,15 +23,13 @@ import (
 	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 
 	// Side-effect imports keep the P3 plugins (topics, starlists)
-	// registered in the global plugin registry regardless of which
-	// build tag the test runs under. Without this, the JSON golden
-	// differs between `go test ./...` (topics/starlists absent) and
-	// `go test -tags=chromedp ./...` (topics/starlists present via the
-	// chromedp-tagged integration file).
+	// registered in the global plugin registry. Without this, the JSON
+	// golden would differ depending on whether topics/starlists happen
+	// to be registered elsewhere in the test binary.
 	_ "github.com/mjun0812/github-metrics/internal/plugins/starlists"
 	_ "github.com/mjun0812/github-metrics/internal/plugins/topics"
 
-	// #602: register the opt-in header plugin so the chromedp
+	// #602: register the opt-in header plugin so the
 	// TestComputePNG_E2E (and any other integration test that runs
 	// engine.Compute without pulling cmd/metrics-cli's plugin manifest)
 	// can render the identity card when plugin_header=yes is set.
@@ -224,8 +222,7 @@ func newEngineDeps(t testing.TB, gqlBody map[string]string) (engine.Deps, *graph
 		Settings: &config.Settings{Repositories: 100},
 		GraphQL:  gql,
 		// Inject a FakeRenderer so the M3 dispatch path can be
-		// exercised without starting chromium. Tests that need real
-		// chromedp behavior live under the chromedp build tag.
+		// exercised without starting a real browser.
 		Render: &render.FakeRenderer{},
 	}, fixture
 }

@@ -8,15 +8,14 @@ import (
 	"image/color"
 	"image/jpeg"
 	"image/png"
-	"time"
 
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 )
 
 // Renderer is the abstraction engine.Compute uses to convert a rendered
 // SVG string into final SVG/PNG/JPEG bytes. It exists so the engine
-// package never imports chromedp directly: production code injects a
-// *Browser via Deps.Render, tests inject a *FakeRenderer.
+// package never depends on a concrete rasterizer: production code
+// injects a *Resvg via Deps.Render, tests inject a *FakeRenderer.
 type Renderer interface {
 	Resize(ctx context.Context, in string, opts ResizeOpts) (ResizeResult, error)
 }
@@ -31,16 +30,9 @@ type ResizeOpts struct {
 	// Padding mirrors the upstream `config.padding` input format:
 	// either a single string "<abs> + <rel>%" or two strings
 	// [width-padding, height-padding] / one comma-separated string.
+	// It expands the rasterized canvas after the height is already
+	// finalized in the SVG (no layout measurement).
 	Padding []string
-	// Scripts is the list of user JS bodies to evaluate before
-	// measuring. Each entry is wrapped into `(async () => { ... })()`
-	// by the resize JS template.
-	Scripts []string
-	// ViewportWidth / ViewportHeight default to 980/980 when zero.
-	ViewportWidth, ViewportHeight int
-	// SettleDelay overrides the post-script sleep. Zero falls back to
-	// 2.4 seconds (upstream parity).
-	SettleDelay time.Duration
 }
 
 // ResizeResult is the value Resize returns on success.
@@ -57,18 +49,8 @@ type ResizeResult struct {
 	MIME string
 }
 
-// Default values applied by ResizeOpts.normalize when callers pass
-// zero values. Centralized here so tests can reference the same
-// constants the production code uses.
-const (
-	defaultViewportWidth  = 980
-	defaultViewportHeight = 980
-	defaultSettleDelay    = 2400 * time.Millisecond
-)
-
-// normalize fills in zero values with their documented defaults and
-// validates Convert. Returns the normalized opts plus an error when
-// Convert is unrecognized.
+// normalize maps an empty Convert to "svg" and validates it. Returns
+// the normalized opts plus an error when Convert is unrecognized.
 func (o ResizeOpts) normalize() (ResizeOpts, error) {
 	switch o.Convert {
 	case "":
@@ -78,15 +60,6 @@ func (o ResizeOpts) normalize() (ResizeOpts, error) {
 	default:
 		return o, xerrors.NewUnsupportedFormatError(o.Convert,
 			fmt.Errorf("render: ResizeOpts.Convert"))
-	}
-	if o.ViewportWidth <= 0 {
-		o.ViewportWidth = defaultViewportWidth
-	}
-	if o.ViewportHeight <= 0 {
-		o.ViewportHeight = defaultViewportHeight
-	}
-	if o.SettleDelay <= 0 {
-		o.SettleDelay = defaultSettleDelay
 	}
 	return o, nil
 }
@@ -109,8 +82,8 @@ func mimeForConvert(convert string) string {
 
 // FakeRenderer returns deterministic, minimal bytes for tests. Use
 // only in _test.go files or build-tagged fixtures: production code
-// always uses *Browser. The fake never starts chromium and never
-// touches the network.
+// always uses *Resvg. The fake never shells out to a rasterizer and
+// never touches the network.
 type FakeRenderer struct {
 	// Width / Height override the returned ResizeResult dimensions.
 	// Zero falls back to 1 so image.Decode-style callers still see a

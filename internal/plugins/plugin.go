@@ -54,7 +54,7 @@ type PluginContext struct {
 	// Render carries the engine's renderer. Only the SVG -> PNG/JPEG
 	// resize pipeline (engine.dispatch.go) consumes this field today;
 	// plugins themselves never type-assert it. Tests inject a
-	// *render.FakeRenderer to avoid launching chromium.
+	// *render.FakeRenderer to avoid shelling out to the resvg binary.
 	Render render.Renderer
 }
 

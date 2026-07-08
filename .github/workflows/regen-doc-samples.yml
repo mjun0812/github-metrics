@@ -26,13 +26,12 @@ name: Regen doc samples
 #   cleanup-preview — (branch mode only) deletes the preview-<sha7> tag
 #                    from GHCR (success or failure)
 #
-# Why job-level containers instead of `docker run` (#523): chromedp /
-# chromium does not work when the image is launched through the ARC
-# runner's DinD sidecar — every SVG shipped untrimmed (the height
-# stayed at the 99999 placeholder) and no PNG could be produced at
-# all. go-ci's test-chromedp job proves chromedp works fine inside a
-# job-level container on the same `home-k3s-runner` scale set, so the
-# render jobs now run the same way.
+# Why job-level containers instead of `docker run` (#523): the render
+# jobs run the production image (which now rasterizes via the resvg
+# binary, #409 Phase D) as a job-level container on the
+# `home-k3s-runner` scale set. This historically also sidestepped the
+# chromium-in-DinD breakage that predated the resvg switch; resvg is a
+# self-contained subprocess with none of those constraints.
 #
 # Requirements:
 #   - METRICS_TOKEN secret: classic PAT with read:user + repo scopes.
@@ -205,8 +204,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
       # The image ships `USER metrics`, but the runner mounts the job
       # workspace with its own uid — run as root so the step can write
-      # $GITHUB_WORKSPACE. chromium is fine with root because chromedp
-      # launches it with --no-sandbox.
+      # $GITHUB_WORKSPACE. resvg runs fine as root (no sandbox).
       options: --user root
     strategy:
       # Cap concurrency so 35 GraphQL-heavy renders don't trip the
@@ -315,12 +313,13 @@ jobs:
             echo "FAIL: ${SAMPLE_NAME}.svg after 3 attempts" >&2
             exit 1
           fi
-          # Postcondition (#523): an untrimmed SVG means the chromedp
-          # resize step silently failed — exactly the breakage this
-          # workflow shipped once. Refuse to upload it. Checked BEFORE
-          # conversion so a bad SVG never produces a bad PNG either.
+          # Postcondition (#523): an SVG that still carries the 99999
+          # placeholder means the template's Go-side height computation
+          # (#409 Phase C) silently failed to finalize the root <svg>
+          # height. Refuse to upload it. Checked BEFORE conversion so a
+          # bad SVG never produces a bad PNG either.
           if grep -q 'height="99999"' "$svg_out"; then
-            echo "FAIL: ${SAMPLE_NAME}.svg still carries the height=99999 placeholder (chromedp trim did not run)" >&2
+            echo "FAIL: ${SAMPLE_NAME}.svg still carries the height=99999 placeholder (height was not finalized)" >&2
             exit 1
           fi
           echo "OK: ${SAMPLE_NAME}.svg ($(wc -c < "$svg_out" | tr -d ' ') bytes)"
@@ -328,12 +327,12 @@ jobs:
           # --- 2. Derive the PNG from the rendered SVG (no API) --------
           # svg2png ships in the production image next to metrics-cli
           # (see Dockerfile) and rasterizes through the identical
-          # internal/render.Browser + Resize chromedp path that
-          # `--output png` uses, so the PNG is pixel-equivalent. It is
-          # API-free and deterministic, so a single attempt is enough; a
-          # missing/empty PNG stays fatal (#523) — chromedp is expected
-          # to work in the job-level container, and a silent PNG gap must
-          # fail loudly instead of shipping a half-regenerated sample.
+          # internal/render.Resvg path that `--output png` uses, so the
+          # PNG is pixel-equivalent. It is API-free and deterministic, so
+          # a single attempt is enough; a missing/empty PNG stays fatal
+          # (#523) — resvg is expected to work in the job-level container,
+          # and a silent PNG gap must fail loudly instead of shipping a
+          # half-regenerated sample.
           png_out="${outdir}/${SAMPLE_NAME}.png"
           rm -f "$png_out"
           # Friendly guard: image tags <= v1.2.0 predate the svg2png

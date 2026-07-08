@@ -241,7 +241,7 @@ func TestRun_LimitRepositories(t *testing.T) {
 // TestRun_TimeoutWrapped — FetchLists error wraps as *RetryableError.
 func TestRun_TimeoutWrapped(t *testing.T) {
 	t.Parallel()
-	nav := &fakeNavigator{err: errors.New("chromedp: timeout")}
+	nav := &fakeNavigator{err: errors.New("navigator: timeout")}
 	pc := newPC(t, nav, nil)
 	_, err := starlists.Plugin.Run(context.Background(), pc)
 	if err == nil {
