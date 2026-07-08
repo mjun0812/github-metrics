@@ -56,18 +56,24 @@ const jsMeasureTemplate = `(() => {
   if (!svg) {
     throw new Error("no <svg> root in document at measurement time");
   }
-  const endNode = svg.querySelector("#metrics-end");
-  if (!endNode) {
-    throw new Error("missing #metrics-end measurement anchor");
-  }
   // Upstream uses #metrics-end.getBoundingClientRect() but for an
   // empty <g> the bbox width is 0. We pull width from the <svg> root
   // (which carries the intrinsic content width) and height from the
   // anchor's vertical position.
+  //
+  // #409 Phase C removed the #metrics-end anchor: the template now
+  // computes the exact height in Go and writes it onto the root <svg>.
+  // When the anchor is absent we fall back to that attribute so PNG/JPEG
+  // rasterization keeps working (SVG output skips this pass entirely).
   const svgRect = svg.getBoundingClientRect();
-  const endRect = endNode.getBoundingClientRect();
-  let height = endRect.y - svgRect.y;
-  let width  = svgRect.width;
+  const endNode = svg.querySelector("#metrics-end");
+  let height;
+  if (endNode) {
+    height = endNode.getBoundingClientRect().y - svgRect.y;
+  } else {
+    height = parseFloat(svg.getAttribute("height")) || svgRect.height;
+  }
+  let width = svgRect.width;
   height = Math.max(1, Math.ceil(height * padding.height + padding.absoluteHeight));
   width  = Math.max(1, Math.ceil(width  * padding.width  + padding.absoluteWidth));
   if (svg.getAttribute("height") !== "auto") svg.setAttribute("height", String(height));
