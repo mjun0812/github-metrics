@@ -22,16 +22,16 @@ import (
 // Introduction is a stub: the introduction plugin lands in M4. Until
 // then the partial returns "" so the partial dispatch order stays
 // stable.
-func Introduction(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Introduction(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	if _, ok := pc.Data.GetPlugin("introduction"); !ok {
-		return "", nil
+		return "", 0, nil
 	}
 	// Plugin will populate this in M4; for now we keep the structure
 	// addressable but empty so the DOM does not gain a stray section.
-	return "", nil
+	return "", 0, nil
 }
 
 // emptyPartial is the no-op fallback installed for the base.* static
@@ -44,8 +44,8 @@ func Introduction(_ context.Context, pc *templates.PartialContext) (string, erro
 // entries from its own init() via Register (which overwrites by
 // design), so at runtime the production binary always renders the
 // real partial body when plugin_base* inputs are truthy.
-func emptyPartial(_ context.Context, _ *templates.PartialContext) (string, error) {
-	return "", nil
+func emptyPartial(_ context.Context, _ *templates.PartialContext) (string, int, error) {
+	return "", 0, nil
 }
 
 // registry maps partial names (e.g. "plugin.languages") to their

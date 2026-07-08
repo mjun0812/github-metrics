@@ -61,19 +61,20 @@ func init() {
 // It reads the Result published by Run under data.Plugins["header"]
 // and produces an output byte-equivalent to the legacy BaseHeader
 // partial.
-func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	raw, ok := pc.Data.GetPlugin(Name)
 	if !ok || raw == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := raw.(*Result)
 	if !ok || r == nil || r.Profile == nil {
-		return "", nil
+		return "", 0, nil
 	}
-	return renderResult(r)
+	markup, err := renderResult(r)
+	return markup, 0, err
 }
 
 // basePartialEnabled is the explicit input-level gate for BasePartial.
@@ -118,18 +119,19 @@ func runEnabledForInputs(in map[string]any) bool {
 // readable when this function is exercised in isolation — and lets
 // the legacy `plugin_base=yes` v2 compat path still pull in the
 // identity card without forcing callers to also set chrome_header.
-func BasePartial(ctx context.Context, pc *templates.PartialContext) (string, error) {
+func BasePartial(ctx context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	if !basePartialEnabled(pc) {
-		return "", nil
+		return "", 0, nil
 	}
 	// Prefer a Result already published by the header plugin's Run.
 	if pc.Data != nil {
 		if raw, ok := pc.Data.GetPlugin(Name); ok && raw != nil {
 			if r, ok := raw.(*Result); ok && r != nil && r.Profile != nil {
-				return renderResult(r)
+				markup, err := renderResult(r)
+				return markup, 0, err
 			}
 		}
 	}
@@ -137,11 +139,11 @@ func BasePartial(ctx context.Context, pc *templates.PartialContext) (string, err
 	// pieces directly from the Provider. Any Provider failure degrades
 	// silently so the rest of the classic SVG still renders.
 	if pc.Provider == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	prof, err := pc.Provider.Profile(ctx)
 	if err != nil || prof == nil {
-		return "", nil //nolint:nilerr // partial-local degradation: a Profile fetch failure must not break the static dispatcher; classic continues rendering the rest of the SVG.
+		return "", 0, nil //nolint:nilerr // partial-local degradation: a Profile fetch failure must not break the static dispatcher; classic continues rendering the rest of the SVG.
 	}
 	r := &Result{Profile: prof}
 	// CommitCalendar is decorative: a fetch failure leaves the
@@ -149,7 +151,8 @@ func BasePartial(ctx context.Context, pc *templates.PartialContext) (string, err
 	if cal, cErr := pc.Provider.CommitCalendar(ctx); cErr == nil {
 		r.CommitCalendar = cal
 	}
-	return renderResult(r)
+	markup, err := renderResult(r)
+	return markup, 0, err
 }
 
 // renderResult is the shared rendering core used by Partial (plugin

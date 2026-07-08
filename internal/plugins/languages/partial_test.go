@@ -71,7 +71,7 @@ func TestPartial_Languages_Golden(t *testing.T) {
 	data.SetPlugin(languages.Name, r)
 	pc := &templates.PartialContext{Data: data}
 
-	got, err := languages.Partial(context.Background(), pc)
+	got, _, err := languages.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -118,7 +118,7 @@ func TestPartial_Languages_Skipped(t *testing.T) {
 	data := plugins.NewData()
 	data.SetPlugin(languages.Name, &languages.Result{Skipped: true})
 	pc := &templates.PartialContext{Data: data}
-	got, err := languages.Partial(context.Background(), pc)
+	got, _, err := languages.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -146,7 +146,7 @@ func TestPartial_Languages_Recent(t *testing.T) {
 		Repos:     []string{"octocat/py"},
 	})
 	pc := &templates.PartialContext{Data: data}
-	got, err := languages.Partial(context.Background(), pc)
+	got, _, err := languages.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -178,7 +178,7 @@ func TestPartial_Languages_NoDuplicateMaskID(t *testing.T) {
 		Repos:     []string{"octocat/py"},
 	})
 	pc := &templates.PartialContext{Data: data}
-	got, err := languages.Partial(context.Background(), pc)
+	got, _, err := languages.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -217,7 +217,7 @@ func TestPartial_Languages_Indepth(t *testing.T) {
 		Analyzed: []string{"octocat/svc"},
 	})
 	pc := &templates.PartialContext{Data: data}
-	got, err := languages.Partial(context.Background(), pc)
+	got, _, err := languages.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

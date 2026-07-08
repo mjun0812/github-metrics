@@ -18,14 +18,14 @@ func newPC(repo *plugins.Repo) *templates.PartialContext {
 
 func TestBaseHeader_NilRepoSafe(t *testing.T) {
 	t.Parallel()
-	got, err := BaseHeader(context.Background(), newPC(nil))
+	got, _, err := BaseHeader(context.Background(), newPC(nil))
 	if err != nil || got != "" {
 		t.Errorf("BaseHeader nil-safe: got=%q err=%v", got, err)
 	}
 }
 
 func TestBaseHeader_RepoNameAndOwner(t *testing.T) {
-	got, err := BaseHeader(context.Background(), newPC(&plugins.Repo{
+	got, _, err := BaseHeader(context.Background(), newPC(&plugins.Repo{
 		Owner: "octocat", Name: "hello-world",
 		OwnerAvatar: "https://x/a.png", Description: "Test repo",
 	}))
@@ -55,7 +55,7 @@ func TestBaseHeader_UpstreamFields(t *testing.T) {
 	})
 	defer restore()
 
-	got, err := BaseHeader(context.Background(), newPC(&plugins.Repo{
+	got, _, err := BaseHeader(context.Background(), newPC(&plugins.Repo{
 		Owner: "mjun0812", Name: "flash-attention-prebuild-wheels",
 		CreatedAt:    time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC),
 		DiskUsageKB:  18739, // ~18.3 MB
@@ -85,7 +85,7 @@ func TestBaseHeader_UpstreamFields(t *testing.T) {
 // TestBaseHeader_Pluralization asserts the singular/plural toggles for
 // Deployed / Environments match upstream's `s()` helper. #464.
 func TestBaseHeader_Pluralization(t *testing.T) {
-	got, _ := BaseHeader(context.Background(), newPC(&plugins.Repo{
+	got, _, _ := BaseHeader(context.Background(), newPC(&plugins.Repo{
 		Owner: "o", Name: "n", Deployments: 1, Environments: 1,
 	}))
 	for _, s := range []string{"Deployed 1 time<", "1 Environment<"} {
@@ -97,7 +97,7 @@ func TestBaseHeader_Pluralization(t *testing.T) {
 
 func TestIntroduction_NilRepoSafe(t *testing.T) {
 	t.Parallel()
-	got, err := Introduction(context.Background(), newPC(nil))
+	got, _, err := Introduction(context.Background(), newPC(nil))
 	if err != nil || got != "" {
 		t.Errorf("Introduction nil-safe: got=%q err=%v", got, err)
 	}
@@ -105,7 +105,7 @@ func TestIntroduction_NilRepoSafe(t *testing.T) {
 
 func TestIntroduction_EmptyMetaSkips(t *testing.T) {
 	t.Parallel()
-	got, _ := Introduction(context.Background(), newPC(&plugins.Repo{Owner: "x", Name: "y"}))
+	got, _, _ := Introduction(context.Background(), newPC(&plugins.Repo{Owner: "x", Name: "y"}))
 	if got != "" {
 		t.Errorf("expected empty when no language/license/branch, got %q", got)
 	}
@@ -113,7 +113,7 @@ func TestIntroduction_EmptyMetaSkips(t *testing.T) {
 
 func TestIntroduction_PrimaryLanguageBadge(t *testing.T) {
 	t.Parallel()
-	got, _ := Introduction(context.Background(), newPC(&plugins.Repo{
+	got, _, _ := Introduction(context.Background(), newPC(&plugins.Repo{
 		PrimaryLanguage: "Go", PrimaryLanguageColor: "#00ADD8", LicenseName: "MIT", DefaultBranch: "main",
 	}))
 	for _, s := range []string{`badge language`, "Go", "#00ADD8", "MIT", "main"} {
@@ -125,17 +125,17 @@ func TestIntroduction_PrimaryLanguageBadge(t *testing.T) {
 
 func TestBaseCommunity_NilOrZero(t *testing.T) {
 	t.Parallel()
-	if got, _ := BaseCommunity(context.Background(), newPC(nil)); got != "" {
+	if got, _, _ := BaseCommunity(context.Background(), newPC(nil)); got != "" {
 		t.Errorf("nil should be empty")
 	}
-	if got, _ := BaseCommunity(context.Background(), newPC(&plugins.Repo{})); got != "" {
+	if got, _, _ := BaseCommunity(context.Background(), newPC(&plugins.Repo{})); got != "" {
 		t.Errorf("all-zero should be empty")
 	}
 }
 
 func TestBaseCommunity_Populated(t *testing.T) {
 	t.Parallel()
-	got, _ := BaseCommunity(context.Background(), newPC(&plugins.Repo{Stargazers: 42, Forks: 7, Contributors: 3}))
+	got, _, _ := BaseCommunity(context.Background(), newPC(&plugins.Repo{Stargazers: 42, Forks: 7, Contributors: 3}))
 	for _, s := range []string{`data-section="community"`, "42", "7", "3"} {
 		if !strings.Contains(got, s) {
 			t.Errorf("expected %q in %q", s, got)
@@ -145,17 +145,17 @@ func TestBaseCommunity_Populated(t *testing.T) {
 
 func TestBaseActivity_NilOrZero(t *testing.T) {
 	t.Parallel()
-	if got, _ := BaseActivity(context.Background(), newPC(nil)); got != "" {
+	if got, _, _ := BaseActivity(context.Background(), newPC(nil)); got != "" {
 		t.Errorf("nil should be empty")
 	}
-	if got, _ := BaseActivity(context.Background(), newPC(&plugins.Repo{})); got != "" {
+	if got, _, _ := BaseActivity(context.Background(), newPC(&plugins.Repo{})); got != "" {
 		t.Errorf("zero-activity should be empty")
 	}
 }
 
 func TestBaseActivity_Populated(t *testing.T) {
 	t.Parallel()
-	got, _ := BaseActivity(context.Background(), newPC(&plugins.Repo{
+	got, _, _ := BaseActivity(context.Background(), newPC(&plugins.Repo{
 		Activity: plugins.RepoActivity{RecentCommits: 5, OpenIssues: 2, OpenPullRequests: 1},
 	}))
 	for _, s := range []string{`data-section="activity"`, "5", "2", "1"} {

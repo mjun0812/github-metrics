@@ -213,7 +213,7 @@ func TestPartial_Repositories_Golden(t *testing.T) {
 	data := plugins.NewData()
 	data.SetPlugin(repositories.Name, r)
 	pc := &templates.PartialContext{Data: data}
-	got, err := repositories.Partial(context.Background(), pc)
+	got, _, err := repositories.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

@@ -405,7 +405,7 @@ func TestPartial_ChartistOutputIdenticalToGraph(t *testing.T) {
 		r := out.(*stargazers.Result)
 		data := plugins.NewData()
 		data.SetPlugin("stargazers", r)
-		got, err := stargazers.Partial(context.Background(), &templates.PartialContext{Data: data})
+		got, _, err := stargazers.Partial(context.Background(), &templates.PartialContext{Data: data})
 		if err != nil {
 			t.Fatalf("Partial(%s): %v", chartsType, err)
 		}
@@ -433,7 +433,7 @@ func renderPartial(t *testing.T, chartsType string) string {
 			},
 		},
 	})
-	got, err := stargazers.Partial(context.Background(), &templates.PartialContext{Data: data})
+	got, _, err := stargazers.Partial(context.Background(), &templates.PartialContext{Data: data})
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

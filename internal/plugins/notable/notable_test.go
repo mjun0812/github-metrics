@@ -435,7 +435,7 @@ func TestPartial_BasicGolden(t *testing.T) {
 		},
 	})
 	pc := &templates.PartialContext{Data: data}
-	got, err := notable.Partial(context.Background(), pc)
+	got, _, err := notable.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -492,7 +492,7 @@ func TestPartial_BasicTruncatesLongHandle(t *testing.T) {
 		}},
 	})
 	pc := &templates.PartialContext{Data: data}
-	got, err := notable.Partial(context.Background(), pc)
+	got, _, err := notable.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -524,7 +524,7 @@ func TestPartial_DefaultModeOmitsIndepthClass(t *testing.T) {
 		}},
 	})
 	pc := &templates.PartialContext{Data: data}
-	got, err := notable.Partial(context.Background(), pc)
+	got, _, err := notable.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -558,7 +558,7 @@ func TestPartial_IndepthModeOmitsIndepthClass(t *testing.T) {
 		}},
 	})
 	pc := &templates.PartialContext{Data: data}
-	got, err := notable.Partial(context.Background(), pc)
+	got, _, err := notable.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -590,7 +590,7 @@ func TestPartial_IndepthGolden(t *testing.T) {
 		}},
 	})
 	pc := &templates.PartialContext{Data: data}
-	got, err := notable.Partial(context.Background(), pc)
+	got, _, err := notable.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

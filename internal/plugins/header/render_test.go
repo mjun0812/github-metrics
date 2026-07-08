@@ -57,7 +57,7 @@ func putResult(d *plugins.Data, r *header.Result) {
 
 func TestPartial_NilContext(t *testing.T) {
 	t.Parallel()
-	got, err := header.Partial(context.Background(), nil)
+	got, _, err := header.Partial(context.Background(), nil)
 	if err != nil || got != "" {
 		t.Fatalf("Partial(nil) = %q, %v; want \"\", nil", got, err)
 	}
@@ -65,7 +65,7 @@ func TestPartial_NilContext(t *testing.T) {
 
 func TestPartial_NilData(t *testing.T) {
 	t.Parallel()
-	got, err := header.Partial(context.Background(), &templates.PartialContext{})
+	got, _, err := header.Partial(context.Background(), &templates.PartialContext{})
 	if err != nil || got != "" {
 		t.Fatalf("Partial(nil data) = %q, %v; want \"\", nil", got, err)
 	}
@@ -73,7 +73,7 @@ func TestPartial_NilData(t *testing.T) {
 
 func TestPartial_MissingPluginEntry(t *testing.T) {
 	t.Parallel()
-	got, err := header.Partial(context.Background(), newPC(plugins.NewData()))
+	got, _, err := header.Partial(context.Background(), newPC(plugins.NewData()))
 	if err != nil || got != "" {
 		t.Fatalf("Partial(missing plugin) = %q, %v; want \"\", nil", got, err)
 	}
@@ -83,7 +83,7 @@ func TestPartial_NilProfile(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	putResult(d, &header.Result{}) // Profile is nil
-	got, err := header.Partial(context.Background(), newPC(d))
+	got, _, err := header.Partial(context.Background(), newPC(d))
 	if err != nil || got != "" {
 		t.Fatalf("Partial(nil profile) = %q, %v; want \"\", nil", got, err)
 	}
@@ -93,7 +93,7 @@ func TestPartial_WrongResultType(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	d.SetPlugin(header.Name, "not a *Result")
-	got, err := header.Partial(context.Background(), newPC(d))
+	got, _, err := header.Partial(context.Background(), newPC(d))
 	if err != nil || got != "" {
 		t.Fatalf("Partial(wrong type) = %q, %v; want \"\", nil", got, err)
 	}
@@ -115,7 +115,7 @@ func TestPartial_UserPopulatedEscapesName(t *testing.T) {
 			},
 		},
 	})
-	got, err := header.Partial(context.Background(), newPC(d))
+	got, _, err := header.Partial(context.Background(), newPC(d))
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -169,7 +169,7 @@ func TestPartial_UserCountersAndAge(t *testing.T) {
 		CommitCalendar: cal,
 	})
 
-	got, err := header.Partial(context.Background(), newPC(d))
+	got, _, err := header.Partial(context.Background(), newPC(d))
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -199,7 +199,7 @@ func TestPartial_ContributedToSingular(t *testing.T) {
 			},
 		},
 	})
-	got, err := header.Partial(context.Background(), newPC(d))
+	got, _, err := header.Partial(context.Background(), newPC(d))
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -226,7 +226,7 @@ func TestPartial_HidesZeroCounters(t *testing.T) {
 			},
 		},
 	})
-	got, err := header.Partial(context.Background(), newPC(d))
+	got, _, err := header.Partial(context.Background(), newPC(d))
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -251,7 +251,7 @@ func TestPartial_EmptyLoginAndName(t *testing.T) {
 			User: &plugins.User{},
 		},
 	})
-	got, err := header.Partial(context.Background(), newPC(d))
+	got, _, err := header.Partial(context.Background(), newPC(d))
 	if err != nil || got != "" {
 		t.Fatalf("Partial(empty user) = %q, %v; want \"\", nil", got, err)
 	}
@@ -272,7 +272,7 @@ func TestPartial_OrgRenders(t *testing.T) {
 			},
 		},
 	})
-	got, err := header.Partial(context.Background(), newPC(d))
+	got, _, err := header.Partial(context.Background(), newPC(d))
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -299,7 +299,7 @@ func TestPartial_OrgNilOrganization(t *testing.T) {
 	putResult(d, &header.Result{
 		Profile: &plugins.Profile{Kind: plugins.ProfileKindOrganization},
 	})
-	got, err := header.Partial(context.Background(), newPC(d))
+	got, _, err := header.Partial(context.Background(), newPC(d))
 	if err != nil || got != "" {
 		t.Fatalf("Partial(nil org) = %q, %v; want \"\", nil", got, err)
 	}
@@ -315,7 +315,7 @@ func TestPartial_OrgEmptyLoginAndName(t *testing.T) {
 			Organization: &plugins.Organization{},
 		},
 	})
-	got, err := header.Partial(context.Background(), newPC(d))
+	got, _, err := header.Partial(context.Background(), newPC(d))
 	if err != nil || got != "" {
 		t.Fatalf("Partial(empty org) = %q, %v; want \"\", nil", got, err)
 	}
@@ -338,7 +338,7 @@ func TestBasePartial_ChromeHeaderGate(t *testing.T) {
 		Data:   d,
 		Inputs: map[string]any{"chrome_metadata": "yes"},
 	}
-	got, err := header.BasePartial(context.Background(), pc)
+	got, _, err := header.BasePartial(context.Background(), pc)
 	if err != nil || got != "" {
 		t.Fatalf("BasePartial(no chrome_header) = %q, %v; want \"\", nil", got, err)
 	}
@@ -360,7 +360,7 @@ func TestBasePartial_LegacyPluginBaseEnables(t *testing.T) {
 		Data:   d,
 		Inputs: map[string]any{"plugin_base": "yes"},
 	}
-	got, err := header.BasePartial(context.Background(), pc)
+	got, _, err := header.BasePartial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("BasePartial: %v", err)
 	}
@@ -373,7 +373,7 @@ func TestBasePartial_LegacyPluginBaseEnables(t *testing.T) {
 // passes nil.
 func TestBasePartial_NilContext(t *testing.T) {
 	t.Parallel()
-	got, err := header.BasePartial(context.Background(), nil)
+	got, _, err := header.BasePartial(context.Background(), nil)
 	if err != nil || got != "" {
 		t.Fatalf("BasePartial(nil) = %q, %v; want \"\", nil", got, err)
 	}
@@ -383,7 +383,7 @@ func TestBasePartial_NilContext(t *testing.T) {
 // source can supply the header payload.
 func TestBasePartial_NoDataNoProvider(t *testing.T) {
 	t.Parallel()
-	got, err := header.BasePartial(context.Background(), &templates.PartialContext{})
+	got, _, err := header.BasePartial(context.Background(), &templates.PartialContext{})
 	if err != nil || got != "" {
 		t.Fatalf("BasePartial(empty pc) = %q, %v; want \"\", nil", got, err)
 	}
@@ -413,7 +413,7 @@ func TestBasePartial_UsesPluginResult(t *testing.T) {
 		Provider: prov,
 		Inputs:   map[string]any{"chrome_header": "yes"},
 	}
-	got, err := header.BasePartial(context.Background(), pc)
+	got, _, err := header.BasePartial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("BasePartial: %v", err)
 	}
@@ -458,7 +458,7 @@ func TestBasePartial_LazyFetchSuccess(t *testing.T) {
 		Provider: prov,
 		Inputs:   map[string]any{"chrome_header": "yes"},
 	}
-	got, err := header.BasePartial(context.Background(), pc)
+	got, _, err := header.BasePartial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("BasePartial: %v", err)
 	}
@@ -480,7 +480,7 @@ func TestBasePartial_ProfileErrorSkips(t *testing.T) {
 	t.Parallel()
 	prov := &providerStub{profileErr: errors.New("boom")}
 	pc := &templates.PartialContext{Provider: prov}
-	got, err := header.BasePartial(context.Background(), pc)
+	got, _, err := header.BasePartial(context.Background(), pc)
 	if err != nil || got != "" {
 		t.Fatalf("BasePartial(profile err) = %q, %v; want \"\", nil", got, err)
 	}
@@ -509,7 +509,7 @@ func TestBasePartial_CalendarErrorDegrades(t *testing.T) {
 		Provider: prov,
 		Inputs:   map[string]any{"chrome_header": "yes"},
 	}
-	got, err := header.BasePartial(context.Background(), pc)
+	got, _, err := header.BasePartial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("BasePartial: %v", err)
 	}

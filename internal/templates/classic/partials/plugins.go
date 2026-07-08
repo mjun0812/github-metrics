@@ -15,12 +15,20 @@
 //     Name it after the slug in PascalCase (Languages, Activity, ...).
 //  2. Register it via partials.Register("plugin."+slug, ...) from the
 //     owning plugin package's init() function.
-//  3. Inside the function, return "" (no error) when pc or pc.Data is
+//  3. Inside the function, return ("", 0, nil) when pc or pc.Data is
 //     nil, when pc.Data.Plugins[slug] is missing or asserted to *T but
 //     .Skipped == true, or when the resulting fragment would be empty.
 //     Empty returns are the canonical Skipped signal at this layer.
 //  4. Escape dynamic strings with EscapeXML; format integer counts via
 //     FormatCount; reuse the M2 helpers in text.go.
+//
+// Height reporting (Phase B0, #409): the middle return value is the
+// vertical px this partial consumes. Today every partial returns 0 =
+// "not self-reported" — the fragment is HTML laid out by the outer
+// foreignObject. When a partial is converted to a self-laying-out native
+// SVG (Phase B1-B7), return the exact consumed height there instead of 0
+// so the template can eventually sum heights and size the root <svg>
+// (Phase C). See templates.PartialFunc for the full semantics.
 
 package partials
 

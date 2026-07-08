@@ -19,7 +19,7 @@ func newPC(t *testing.T, r *repositories.Result) *templates.PartialContext {
 
 func render(t *testing.T, r *repositories.Result) string {
 	t.Helper()
-	got, err := repositories.Partial(context.Background(), newPC(t, r))
+	got, _, err := repositories.Partial(context.Background(), newPC(t, r))
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

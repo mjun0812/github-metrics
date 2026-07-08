@@ -16,7 +16,7 @@ func newPC(d *plugins.Data) *templates.PartialContext {
 func TestIntroduction_AbsentPlugin(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
-	got, err := partials.Introduction(context.Background(), newPC(d))
+	got, _, err := partials.Introduction(context.Background(), newPC(d))
 	if err != nil || got != "" {
 		t.Fatalf("Introduction(absent) = %q,%v", got, err)
 	}

@@ -95,7 +95,7 @@ func partialFor(t *testing.T, r *sponsorships.Result, login string) string {
 	data := plugins.NewData()
 	data.User = &plugins.User{Login: login}
 	data.SetPlugin(sponsorships.Name, r)
-	out, err := sponsorships.Partial(context.Background(), &templates.PartialContext{Data: data})
+	out, _, err := sponsorships.Partial(context.Background(), &templates.PartialContext{Data: data})
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
