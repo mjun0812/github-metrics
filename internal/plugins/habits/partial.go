@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
+	"github.com/mjun0812/github-metrics/internal/render/fontmetrics"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -22,7 +25,50 @@ const brainOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16
 // dayNames mirrors upstream's `["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]`.
 var dayNames = [7]string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}
 
-// maxIntArr returns the largest entry in a slice/array of ints; 0
+// Native-SVG layout metrics. The facts header mirrors the CSS
+// `.field`/`h2` box (section-inset 5px, 8px icon margins, 16px octicon,
+// 16px blue label) so the icon+label line up with the shared section
+// headers; the fact list indents 37px (`.habits .facts { padding-left:
+// 37px }`). The chart metrics mirror the `.chart` column padding.
+const (
+	hdrInset         = 5.0
+	hdrIconGap       = 8.0
+	hdrIconSize      = 16.0
+	hdrTop           = 8.0
+	hdrBand          = 18.0
+	hdrFont          = 16.0
+	hdrFill          = "#0366d6"
+	hdrIconFill      = "#959da5" // `.field svg { fill: #959da5 }`
+	hdrDetailFont    = 11.0      // `.h-details { font-size: 0.8rem }`
+	hdrBaselineRatio = 0.32
+
+	factIndent    = 37.0 // `.habits .facts { padding-left: 37px }`
+	factFont      = 14.0
+	factFill      = "#777777"
+	factLineTop   = 4.0
+	factLinePitch = 20.0
+
+	chartPad = 8.0 // `.chart { padding: 0 8px }`
+
+	// Language-activity horizontal-bar metrics (`.chart-bars.horizontal`):
+	// a right-aligned 34%-width name column, a 7px-tall share-scaled bar
+	// with 6px side margins, then the percentage value.
+	langTopGap       = 8.0 // `.chart-bars { margin-top: 8px }`
+	langRowPitch     = 18.0
+	langBarHeight    = 7.0
+	langBarRadius    = 3.0
+	langNameFrac     = 0.34
+	langBarMargin    = 6.0
+	langValueReserve = 40.0
+	langFont         = 10.0
+	langFill         = "#666666"
+)
+
+// itoa formats a layout coordinate as a rounded integer for compact,
+// stable SVG output.
+func itoa(v float64) string { return strconv.Itoa(int(math.Round(v))) }
+
+// maxIntSlice returns the largest entry in a slice/array of ints; 0
 // when empty so callers divide safely.
 func maxIntSlice(xs []int) int {
 	m := 0
@@ -62,8 +108,7 @@ func dominantDayName(days [7]int) string {
 	return dayNames[bestIdx]
 }
 
-// bgLevel maps a 0..1 share to the upstream
-// `var(--color-calendar-graph-day-L{1..4}-bg)` color ramp via
+// bgLevel maps a 0..1 share to the contribution-graph L{1..4} ramp via
 // `Math.ceil(p/0.25)` (clamped to 1..4).
 func bgLevel(p float64) int {
 	if p <= 0 {
@@ -79,20 +124,22 @@ func bgLevel(p float64) int {
 	return lvl
 }
 
-// Partial renders the classic SVG fragment for the habits plugin.
-// Mirrors upstream org_repo/source/templates/classic/partials/habits.ejs.
+// Partial renders the classic SVG fragment for the habits plugin as
+// native SVG (#409 Phase B5). Mirrors upstream
+// org_repo/source/templates/classic/partials/habits.ejs.
 //
-// Two sections are emitted:
+// Output: a `<section data-section="habits">` anchor wrapping a nested
+// `<svg>` with two stacked blocks:
 //
-//  1. <section class="habits"> — header + facts list
-//     ("Mostly pushes code around HH:00", "Mostly active on Day", etc.)
+//  1. facts — the light-bulb section header + a list of `<text>` facts
+//     ("Uses spaces for indentation", "Mostly active on Fri", etc.).
+//  2. charts — `<rect>` chart-bars for commit activity per hour of day
+//     (full width) and, side by side, per day of week plus the
+//     horizontal language-activity chart.
 //
-//  2. <section class="habits"> — chart-bars
-//     - <h3>Commit activity per hour of day</h3> + chart-bars (24 bars)
-//     - <h3>Commit activity per day of week</h3> + chart-bars (7 bars)
-//
-// The chart-bars block emits plain HTML inside foreignObject (no bare
-// SVG primitives), fixing the v1.0.0 bare-`<g>` invisibility bug.
+// Bar colors are emitted as literal contribution-graph hex (resvg does
+// not resolve the CSS `var()` ramp). Returns the markup and the pixel
+// height it consumes.
 func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
 		return "", 0, nil
@@ -121,77 +168,99 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		return "", 0, nil
 	}
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="habits">`)
+	var body strings.Builder
+	y := 0.0
 
-	// ── Section 1: header + facts list ──────────────────────────────
 	if r.FactsEnabled && factsHasContent {
-		b.WriteString(`<section class="habits">`)
-		b.WriteString(`<h2 class="field wrap">`)
-		b.WriteString(brainOcticon)
-		b.WriteString(`Recent coding habits`)
-		if r.From > 0 {
-			fmt.Fprintf(
-				&b,
-				`<small class="h-details">(computed from last %d commit%s)</small>`,
-				r.From, pluginutil.Plural(r.From),
-			)
-		}
-		b.WriteString(`</h2>`)
-
-		b.WriteString(`<div class="row"><ul class="facts">`)
-		if r.Facts.IndentStyle != "" {
-			fmt.Fprintf(&b, `<li>Uses %s for indentation</li>`, partials.EscapeXML(r.Facts.IndentStyle))
-		}
-		if r.Facts.CharsPerLine > 0 {
-			fmt.Fprintf(
-				&b,
-				`<li>Has approximately %.1f characters per line of code written</li>`,
-				r.Facts.CharsPerLine,
-			)
-		}
-		if hourIdx >= 0 {
-			fmt.Fprintf(&b, `<li>Mostly pushes code around %d:00</li>`, hourIdx)
-		}
-		if dayName != "" {
-			fmt.Fprintf(&b, `<li>Mostly active on %s</li>`, dayName)
-		}
-		b.WriteString(`</ul></div>`)
-		b.WriteString(`</section>`)
+		y = writeFactsBlock(&body, r, hourIdx, dayName, y)
 	}
 
-	// ── Section 2: chart-bars (hour + day + language activity) ──────
 	if r.ChartsEnabled && chartsHasContent {
-		b.WriteString(`<section class="habits">`)
 		if hourIdx >= 0 {
-			writeHourChart(&b, r.Charts.Hours, r.Trim)
+			y = writeHourChart(&body, r.Charts.Hours, r.Trim, y)
 		}
 		// Upstream wraps the day chart and the language-activity chart in
 		// a single `<div class="row largeable">` so they sit side by side.
-		if dayName != "" || langAvailable {
-			b.WriteString(`<div class="row largeable">`)
+		present := 0
+		if dayName != "" {
+			present++
+		}
+		if langAvailable {
+			present++
+		}
+		if present > 0 {
+			colW := float64(chrome.CardWidth) / float64(present)
+			rowTop := y
+			rowH := 0.0
+			col := 0.0
 			if dayName != "" {
-				writeDayChart(&b, r.Charts.Days)
+				h := writeDayChart(&body, r.Charts.Days, col*colW, rowTop, colW)
+				rowH = math.Max(rowH, h-rowTop)
+				col++
 			}
 			if langAvailable {
-				writeLanguageChart(&b, r.Linguist.Ordered)
+				h := writeLanguageChart(&body, r.Linguist.Ordered, col*colW, rowTop, colW)
+				rowH = math.Max(rowH, h-rowTop)
 			}
-			b.WriteString(`</div>`)
+			y = rowTop + rowH
 		}
-		b.WriteString(`</section>`)
 	}
 
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+	height := int(y)
+	return chrome.WrapSection("habits", height, body.String()), height, nil
 }
 
-// writeHourChart emits the hour-of-day chart-bars block (EJS lines 51-72).
-// When trim=true the leading + trailing zero-count hours are stripped
-// (matches upstream's `displayedValues.shift()` / `pop()`).
-func writeHourChart(b *strings.Builder, hours [24]int, trim bool) {
-	b.WriteString(`<div class="column chart largeable">`)
-	b.WriteString(`<h3>Commit activity per hour of day</h3>`)
-	b.WriteString(`<div class="chart-bars">`)
+// writeFactsBlock emits the light-bulb section header (with the optional
+// "(computed from last N commits)" detail) and the facts list, starting
+// at y=top. Returns the y cursor after the block.
+func writeFactsBlock(b *strings.Builder, r *Result, hourIdx int, dayName string, top float64) float64 {
+	iconX := hdrInset + hdrIconGap
+	iconY := top + hdrTop + (hdrBand-hdrIconSize)/2
+	textX := iconX + hdrIconSize + hdrIconGap
+	baseline := top + hdrTop + hdrBand/2 + hdrFont*hdrBaselineRatio
+
+	b.WriteString(chrome.SVGIcon(iconX, iconY, hdrIconFill, brainOcticon))
+	b.WriteString(chrome.SVGText(textX, baseline, "Recent coding habits", chrome.SVGTextOpts{Size: hdrFont, Fill: hdrFill}))
+	if r.From > 0 {
+		detailX := textX + fontmetrics.Width("Recent coding habits", hdrFont) + 4
+		detail := fmt.Sprintf("(computed from last %d commit%s)", r.From, pluginutil.Plural(r.From))
+		b.WriteString(chrome.SVGText(detailX, baseline, detail, chrome.SVGTextOpts{Size: hdrDetailFont, Fill: hdrFill}))
+	}
+
+	y := top + chrome.SectionHeaderPitch
+	writeFact := func(text string) {
+		b.WriteString(chrome.SVGText(factIndent, y+factLineTop+factFont, text, chrome.SVGTextOpts{Size: factFont, Fill: factFill}))
+		y += factLinePitch
+	}
+	if r.Facts.IndentStyle != "" {
+		writeFact(fmt.Sprintf("Uses %s for indentation", r.Facts.IndentStyle))
+	}
+	if r.Facts.CharsPerLine > 0 {
+		writeFact(fmt.Sprintf("Has approximately %.1f characters per line of code written", r.Facts.CharsPerLine))
+	}
+	if hourIdx >= 0 {
+		writeFact(fmt.Sprintf("Mostly pushes code around %d:00", hourIdx))
+	}
+	if dayName != "" {
+		writeFact(fmt.Sprintf("Mostly active on %s", dayName))
+	}
+	return y
+}
+
+// writeHourChart emits the full-width hour-of-day chart-bars block. When
+// trim=true the leading + trailing zero-count hours are stripped (matches
+// upstream's `displayedValues.shift()` / `pop()`). Returns the y cursor
+// after the block.
+func writeHourChart(b *strings.Builder, hours [24]int, trim bool, top float64) float64 {
+	innerW := float64(chrome.CardWidth) - 2*chartPad
+	m, hh := chrome.SVGSubHeader(float64(chrome.CardWidth)/2, top, innerW, "Commit activity per hour of day")
+	b.WriteString(m)
+	bars, bh := chrome.SVGVBars(chartPad, top+hh, innerW, buildHourBars(hours, trim))
+	b.WriteString(bars)
+	return top + hh + bh
+}
+
+func buildHourBars(hours [24]int, trim bool) []chrome.VBar {
 	maxN := maxIntSlice(hours[:])
 	if maxN == 0 {
 		maxN = 1
@@ -205,64 +274,81 @@ func writeHourChart(b *strings.Builder, hours [24]int, trim bool) {
 			end--
 		}
 	}
+	bars := make([]chrome.VBar, 0, end-start)
 	for h := start; h < end; h++ {
 		share := float64(hours[h]) / float64(maxN)
-		writeBarEntry(b, fmt.Sprintf("%02d", h), hours[h], share)
+		bars = append(bars, chrome.VBar{
+			Value: strconv.Itoa(hours[h]),
+			Label: fmt.Sprintf("%02d", h),
+			Share: share,
+			Level: bgLevel(share),
+		})
 	}
-	b.WriteString(`</div>`)
-	b.WriteString(`</div>`)
+	return bars
 }
 
-// writeDayChart emits the day-of-week chart-bars block (EJS lines 75-93).
-func writeDayChart(b *strings.Builder, days [7]int) {
-	b.WriteString(`<section class="column chart">`)
-	b.WriteString(`<h3>Commit activity per day of week</h3>`)
-	b.WriteString(`<div class="chart-bars">`)
+// writeDayChart emits the day-of-week chart-bars column at x=colX (width
+// colW), starting at y=top. Returns the y cursor after the block.
+func writeDayChart(b *strings.Builder, days [7]int, colX, top, colW float64) float64 {
+	innerW := colW - 2*chartPad
+	m, hh := chrome.SVGSubHeader(colX+colW/2, top, innerW, "Commit activity per day of week")
+	b.WriteString(m)
+	bars, bh := chrome.SVGVBars(colX+chartPad, top+hh, innerW, buildDayBars(days))
+	b.WriteString(bars)
+	return top + hh + bh
+}
+
+func buildDayBars(days [7]int) []chrome.VBar {
 	maxN := maxIntSlice(days[:])
 	if maxN == 0 {
 		maxN = 1
 	}
+	bars := make([]chrome.VBar, 0, 7)
 	for d := 0; d < 7; d++ {
 		share := float64(days[d]) / float64(maxN)
-		writeBarEntry(b, dayNames[d], days[d], share)
+		bars = append(bars, chrome.VBar{
+			Value: strconv.Itoa(days[d]),
+			Label: dayNames[d],
+			Share: share,
+			Level: bgLevel(share),
+		})
 	}
-	b.WriteString(`</div>`)
-	b.WriteString(`</section>`)
+	return bars
 }
 
-// writeLanguageChart emits the "Language activity" chart-bars block
-// (EJS lines 91-110, `plugins.habits.linguist`). Unlike the hour/day
-// charts this uses the `horizontal` variant: each entry carries a
-// `<span class="name">` label, a width-scaled bar (share*80%), and a
-// `<span class="value">N%</span>` percentage. The literal heading
-// "Language activity" matches upstream's EJS exactly (singular).
-func writeLanguageChart(b *strings.Builder, langs []LanguageShare) {
-	b.WriteString(`<section class="column chart">`)
-	b.WriteString(`<h3>Language activity</h3>`)
-	b.WriteString(`<div class="chart-bars horizontal">`)
-	for _, ls := range langs {
-		width := ls.Share * 80
-		lvl := bgLevel(ls.Share)
+// writeLanguageChart emits the horizontal "Language activity" chart-bars
+// column at x=colX (width colW), starting at y=top. Each row is a
+// right-aligned name, a width-scaled bar, and a percentage value,
+// mirroring upstream's `.chart-bars.horizontal` layout. Returns the y
+// cursor after the block.
+func writeLanguageChart(b *strings.Builder, langs []LanguageShare, colX, top, colW float64) float64 {
+	innerW := colW - 2*chartPad
+	m, hh := chrome.SVGSubHeader(colX+colW/2, top, innerW, "Language activity")
+	b.WriteString(m)
+
+	barsTop := top + hh + langTopGap
+	x0 := colX + chartPad
+	nameW := innerW * langNameFrac
+	nameRight := x0 + nameW
+	barStart := nameRight + langBarMargin
+	barMaxW := innerW - nameW - 2*langBarMargin - langValueReserve
+	if barMaxW < 0 {
+		barMaxW = 0
+	}
+	for i, ls := range langs {
+		cy := barsTop + float64(i)*langRowPitch + langRowPitch/2
+		txtBaseline := cy + langFont*hdrBaselineRatio
+		b.WriteString(chrome.SVGText(nameRight, txtBaseline, ls.Name, chrome.SVGTextOpts{
+			Size: langFont, Fill: langFill, Anchor: "end", MaxWidth: nameW,
+		}))
+		barW := ls.Share * barMaxW
+		fmt.Fprintf(b,
+			`<rect x="%s" y="%s" width="%s" height="%d" rx="%d" ry="%d" fill=%q/>`,
+			itoa(barStart), itoa(cy-langBarHeight/2), itoa(barW), int(langBarHeight),
+			int(langBarRadius), int(langBarRadius), chrome.CalendarLevelColor(bgLevel(ls.Share)))
 		pct := int(math.Round(100 * ls.Share))
-		fmt.Fprintf(
-			b,
-			`<div class="entry"><span class="name">%s</span><div class="bar" style="width: %g%%; background-color: var(--color-calendar-graph-day-L%d-bg)"></div><span class="value">%d%%</span></div>`,
-			partials.EscapeXML(ls.Name), width, lvl, pct,
-		)
+		b.WriteString(chrome.SVGText(barStart+barW+langBarMargin, txtBaseline, fmt.Sprintf("%d%%", pct),
+			chrome.SVGTextOpts{Size: langFont, Fill: langFill}))
 	}
-	b.WriteString(`</div>`)
-	b.WriteString(`</section>`)
-}
-
-// writeBarEntry emits one `<div class="entry">` row in the chart-bars
-// block (EJS lines 66-71, 84-89). height = share*50px, color uses the
-// L1..L4 calendar-graph ramp.
-func writeBarEntry(b *strings.Builder, label string, value int, share float64) {
-	height := share * 50
-	lvl := bgLevel(share)
-	fmt.Fprintf(
-		b,
-		`<div class="entry"><span class="value">%d</span><div class="bar" style="height: %.0fpx; background-color: var(--color-calendar-graph-day-L%d-bg)"></div>%s</div>`,
-		value, height, lvl, partials.EscapeXML(label),
-	)
+	return barsTop + float64(len(langs))*langRowPitch + 4
 }
