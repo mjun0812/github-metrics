@@ -136,7 +136,7 @@ func TestWrap_WordsPreserved(t *testing.T) {
 	text := "Joined GitHub 8 years ago and made many contributions since then"
 	lines := Wrap(text, 14, 150)
 
-	var rejoined []string
+	rejoined := make([]string, 0, len(strings.Fields(text)))
 	for _, l := range lines {
 		rejoined = append(rejoined, strings.Fields(l)...)
 	}
