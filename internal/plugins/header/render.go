@@ -287,13 +287,14 @@ func nameMarkup(display string, hasAvatar bool) string {
 	})
 }
 
-// wrapHeaderSVG wraps the header body in the `<section>` HTML anchor
-// (kept for DOM diffing / the section gate) plus the nested `<svg>` the
-// browser lays out as a fixed-height block within the outer
-// foreignObject flow.
+// wrapHeaderSVG wraps the header body in a `<g data-section="header">`
+// anchor (kept for DOM diffing / the section gate) plus a fixed-height
+// nested `<svg>`. Pure SVG since #409 Phase C dropped the outer
+// foreignObject; the template stacks it with the other sections via
+// `<g transform="translate(0,y)">`.
 func wrapHeaderSVG(body string, height int) string {
 	return fmt.Sprintf(
-		`<section data-section="header"><svg xmlns="http://www.w3.org/2000/svg" width="100%%" height="%d" viewBox="0 0 %d %d">%s</svg></section>`,
+		`<g data-section="header"><svg xmlns="http://www.w3.org/2000/svg" width="100%%" height="%d" viewBox="0 0 %d %d">%s</svg></g>`,
 		height, chrome.CardWidth, height, body)
 }
 

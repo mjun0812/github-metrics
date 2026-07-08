@@ -73,14 +73,14 @@ const (
 // Partial renders the classic SVG fragment for the people plugin.
 // Mirrors upstream org_repo/source/templates/classic/partials/people.ejs.
 //
-// Output (native SVG): a `<section data-section="people">` anchor
+// Output (native SVG): a `<g data-section="people">` anchor
 // wrapping a nested `<svg>`. Each requested type with a non-empty list
 // becomes a `<g data-type="...">` group stacked vertically — a section
 // header (people octicon + "N follower(s)" style label) above a wrapping
 // avatar grid of clipped `<image>` circles. The partial reports the
 // pixel height it consumes (#409 Phase B3).
 //
-// The wrapping `<section data-section="people">` and per-type
+// The wrapping `<g data-section="people">` and per-type
 // `data-type` hooks are our addition for downstream CSS/JS selectors.
 func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {

@@ -37,7 +37,7 @@ const (
 // Output structure mirrors upstream
 // org_repo/source/templates/classic/partials/isocalendar.ejs:
 //
-//	<section data-section="isocalendar" data-duration="...">
+//	<g data-section="isocalendar" data-duration="...">
 //	  <section>
 //	    <h2 class="field"><svg cal/>Contributions calendar</h2>
 //	    <div class="row">
@@ -116,11 +116,12 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		height = statsBottom
 	}
 
-	// Keep the data-duration hook the upstream DOM carried.
+	// Keep the data-duration hook the upstream DOM carried, injected onto
+	// the native-SVG `<g data-section>` wrapper (#409 Phase C).
 	section := chrome.WrapSection("isocalendar", height, body.String())
 	section = strings.Replace(section,
-		`<section data-section="isocalendar">`,
-		fmt.Sprintf(`<section data-section="isocalendar" data-duration="%s">`, partials.EscapeXML(r.Duration)),
+		`<g data-section="isocalendar">`,
+		fmt.Sprintf(`<g data-section="isocalendar" data-duration="%s">`, partials.EscapeXML(r.Duration)),
 		1)
 	return section, height, nil
 }

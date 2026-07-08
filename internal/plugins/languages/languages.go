@@ -97,7 +97,7 @@ func (p *languagesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 	// "languages", and internal/dataprovider's repository-mode
 	// Provider synthesizes a single-repo RepositoryList regardless of
 	// chrome/base inputs, so without this gate every repo-mode
-	// sample still leaked a `<section data-section="languages">`
+	// sample still leaked a `<g data-section="languages">`
 	// (plugin-base-repo / plugin-people-repo* /
 	// plugin-contributors-repo-contributions / metrics-repository).
 	// Gating here also keeps the JSON output

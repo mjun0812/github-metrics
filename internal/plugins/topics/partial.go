@@ -57,7 +57,7 @@ const (
 // Partial renders the classic SVG fragment for the topics plugin.
 // Returns "" when the result is missing or skipped.
 //
-// Output (native SVG): a `<section data-section="topics">` anchor
+// Output (native SVG): a `<g data-section="topics">` anchor
 // wrapping a nested `<svg>` with a section header and a wrapping flow of
 // either `.label` pills (labels mode) or 24px icon images (icons mode),
 // reporting the pixel height it consumes (#409 Phase B2).

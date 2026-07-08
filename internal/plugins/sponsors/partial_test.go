@@ -50,7 +50,7 @@ func TestPartial_ZeroSponsors_RendersHeadingAndAbout(t *testing.T) {
 		t.Fatal("partial rendered empty fragment with zero sponsors; expected heading + about")
 	}
 	checks := []string{
-		`<section data-section="sponsors">`,
+		`<g data-section="sponsors">`,
 		`Sponsor Me!`,
 		`class="sponsors goal"`,                // goal/list section wrapper
 		`class="markdown"`,                     // about markdown body
@@ -92,7 +92,7 @@ func TestPartial_EmptyAbout_StillRendersHeading(t *testing.T) {
 	}
 	frag := renderPartial(t, r)
 	for _, want := range []string{
-		`<section data-section="sponsors">`,
+		`<g data-section="sponsors">`,
 		`Sponsor Me!`,
 		`class="sponsors goal"`,
 	} {

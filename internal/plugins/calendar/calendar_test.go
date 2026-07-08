@@ -332,7 +332,7 @@ func TestPartial_NativeSVG(t *testing.T) {
 		t.Errorf("height = %d, want > 0 (self-reported)", h)
 	}
 	for _, marker := range []string{
-		`<section data-section="calendar">`,
+		`<g data-section="calendar">`,
 		`<svg class="calendar"`,
 		`Contributions calendar`,
 		`fill="#216e39"`,
