@@ -13,6 +13,7 @@ import (
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/calendar"
+	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 )
 
@@ -305,6 +306,45 @@ func TestRun_MonthHistogram(t *testing.T) {
 	}
 	if r.Years[0].Months[11] != 7*12 {
 		t.Errorf("December should have 84 contributions (7 days × 12); got %d", r.Years[0].Months[11])
+	}
+}
+
+// TestPartial_NativeSVG pins the #409 Phase B6 conversion: the calendar
+// partial emits native SVG (a WrapSection nested `<svg>`, no foreignObject
+// HTML wrapper) and self-reports a non-zero pixel height.
+func TestPartial_NativeSVG(t *testing.T) {
+	t.Parallel()
+	r := &calendar.Result{
+		Years: []calendar.YearCalendar{
+			{Year: 2026, Weeks: []calendar.CalendarWeek{
+				{ContributionDays: []calendar.ContributionCell{{Color: "#9be9a8"}, {Color: "#216e39"}}},
+			}},
+		},
+	}
+	data := plugins.NewData()
+	data.SetPlugin(calendar.Name, r)
+	pc := &templates.PartialContext{Data: data}
+	got, h, err := calendar.Partial(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	if h <= 0 {
+		t.Errorf("height = %d, want > 0 (self-reported)", h)
+	}
+	for _, marker := range []string{
+		`<section data-section="calendar">`,
+		`<svg class="calendar"`,
+		`Contributions calendar`,
+		`fill="#216e39"`,
+	} {
+		if !strings.Contains(got, marker) {
+			t.Errorf("missing marker %q in:\n%s", marker, got)
+		}
+	}
+	for _, html := range []string{`<div`, `<h2`, `class="row"`, `class="field"`} {
+		if strings.Contains(got, html) {
+			t.Errorf("native SVG output should not contain HTML %q in:\n%s", html, got)
+		}
 	}
 }
 
