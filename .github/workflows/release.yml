@@ -136,9 +136,9 @@ jobs:
             type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=${{ github.event.inputs.dry_run != 'true' }}
           # GitHub Actions cache, scoped per architecture so amd64 and
           # arm64 don't collide. mode=max keeps every intermediate
-          # layer — the apt-get install of chromium + Noto fonts is
-          # the dominant cost (~3-5 min on native runners, still worth
-          # caching).
+          # layer — the `cargo install resvg` build stage and the
+          # apt-get install of Noto fonts are the dominant cost
+          # (several minutes, especially arm64 via QEMU — worth caching).
           cache-from: type=gha,scope=${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
 

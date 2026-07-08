@@ -136,7 +136,7 @@ func mkRespAction(req *http.Request, status int, h http.Header, body string) *ht
 
 // buildTestDeps returns a fully-mocked engine.Deps for action tests.
 // REST + GraphQL hit the fake transports; Render is a FakeRenderer
-// so chromedp is never started.
+// so a real browser is never started.
 func buildTestDeps(t *testing.T, rest *fakeREST) func(context.Context, *Invocation) (engine.Deps, error) {
 	t.Helper()
 	return func(_ context.Context, inv *Invocation) (engine.Deps, error) {

@@ -29,7 +29,7 @@ import (
 //   - Document without an <svg> root → ("", *xerrors.InputError)
 //   - Multiple metadata groups / footers → only the first is removed
 //
-// The implementation is pure Go (goquery / crypto/md5); no chromedp
+// The implementation is pure Go (goquery / crypto/md5); no rasterizer
 // dependency lands on the hash path.
 func Hash(rendered string) (string, error) {
 	if strings.TrimSpace(rendered) == "" {

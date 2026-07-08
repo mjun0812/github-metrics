@@ -177,9 +177,7 @@ func envIsSet(key string) bool {
 }
 
 // repoRel resolves a project-rooted relative path by walking upward
-// from CWD. Mirrors the helper in svg_resize_chromedp_test.go (which
-// lives behind a build tag, so we duplicate here for the non-tag
-// test file).
+// from CWD.
 func repoRel(t *testing.T, relPath string) string {
 	t.Helper()
 	dir, err := os.Getwd()

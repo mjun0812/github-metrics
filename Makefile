@@ -19,7 +19,7 @@ GOVULNCHECK_VERSION   := latest
 GOFUMPT_VERSION       := latest
 LEFTHOOK_VERSION      := latest
 
-.PHONY: all build build-cli test test-chromedp test-heavy test-race lint vet bench gen \
+.PHONY: all build build-cli test test-resvg test-heavy test-race lint vet bench gen \
         gen-octicons verify-octicons gen-action-yml docker docker-build docker-run-cli \
         docker-smoke release-dry-run \
         tools hooks-install hooks-run hooks-uninstall \
@@ -38,7 +38,7 @@ help:
 	@echo "  docker-smoke        Run the M10 docker-smoke integration test (requires docker)"
 	@echo "  release-dry-run     Trigger .github/workflows/release.yml in dry_run=true mode and watch (requires gh CLI)"
 	@echo "  test                Run unit tests (go test ./...)"
-	@echo "  test-chromedp       Run chromedp-tagged tests (requires chromium; set METRICS_CHROME_PATH)"
+	@echo "  test-resvg          Run resvg-dependent tests (requires resvg; set METRICS_RESVG_PATH)"
 	@echo "  test-heavy          Run heavy-tagged tests (M4 languages.recent / languages.indepth)"
 	@echo "  test-race           Run tests with the race detector"
 	@echo "  vet                 Run go vet ./..."
@@ -72,10 +72,11 @@ $(BIN_DIR)/%: cmd/%/main.go
 gen-action-yml:
 	$(GO) run ./internal/tools/gen-action-yml --output ./action.yml
 
-# Build the metrics-cli Docker image. The image is multi-stage:
-# builder produces the binary + runtime layer adds chromium for
-# SVG/PNG/JPEG rendering. Multi-arch build + size budget assertion
-# live in .github/workflows/release.yml (M10).
+# Build the metrics-cli Docker image. The image is multi-stage: the Go
+# builder produces the binaries, a rust stage builds the resvg binary
+# for PNG/JPEG rasterization, and the runtime layer bundles both plus
+# fonts. Multi-arch build + size budget assertion live in
+# .github/workflows/release.yml (M10).
 docker-build:
 	docker build -t ghcr.io/mjun0812/github-metrics:dev .
 
@@ -92,12 +93,13 @@ docker-run-cli:
 test:
 	$(GO) test ./...
 
-# Runs the chromedp-tagged tests (svg.Resize, Browser lifecycle, etc).
-# Requires a chromium binary; set METRICS_CHROME_PATH or rely on PATH
-# auto-detection. Default `make test` deliberately skips these so
-# contributors without chromium installed stay green.
-test-chromedp:
-	$(GO) test -tags=chromedp ./...
+# Runs the resvg-dependent tests (PNG/JPEG rasterization round-trips,
+# applyPadding). Requires the `resvg` binary; set METRICS_RESVG_PATH or
+# rely on PATH auto-detection. These tests skip when the binary is
+# absent, so `make test` stays green for contributors without resvg.
+test-resvg:
+	$(GO) test ./internal/render -run 'Resvg|ApplyPadding'
+	$(GO) test ./tests/integration -run 'Resvg'
 
 # Runs the heavy-tagged tests (M4 languages.recent / languages.indepth).
 # These tests depend on go-enry's embedded language DB and go-git's
@@ -186,8 +188,8 @@ hooks-uninstall:
 #                    assets/plugins/*/metadata.yml. No token needed.
 # `docs-samples`   — renders the 21 plugin sample SVGs
 #                    via scripts/gen-doc-samples.sh. Requires
-#                    GITHUB_TOKEN, METRICS_CHROME_PATH, and the docker
-#                    image github-metrics:local.
+#                    GITHUB_TOKEN and the docker image
+#                    github-metrics:local (which bundles resvg).
 # `docs-examples`  — convenience target: run docs-samples then docs in
 #                    the correct order.
 # `docs-lint`      — reports how many docs/plugins/*.md pages still

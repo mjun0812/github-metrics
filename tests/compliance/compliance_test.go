@@ -58,11 +58,11 @@ var scanRoots = []string{
 //
 //   - `crypto/md5` import line in svg_hash.go matches the "crypto"
 //     unadopted plugin slug.
-//   - `chromedp` / `CaptureScreenshot` references in svg_resize.go
+//   - `CaptureScreenshot` references in svg_resize.go
 //     match the "screenshot" unadopted plugin slug.
 //
 // The matches are word-boundary regex hits in import paths /
-// chromedp API names that have nothing to do with the unadopted
+// browser API names that have nothing to do with the unadopted
 // upstream plugins.
 var allowedFiles = map[string]struct{}{
 	"tests/compliance/compliance_test.go": {},
@@ -243,7 +243,7 @@ var adoptedM4Plugins = []string{
 	"calendar", "habits", "stars", "people", "notable",
 	"contributors", "reactions", "sponsors", "sponsorships",
 	"stargazers", "traffic",
-	// P3 chromedp / heavy (2 with own directories; the recent/indepth
+	// P3 heavy (2 with own directories; the recent/indepth
 	// sub-modes live in internal/plugins/languages/)
 	"topics", "starlists",
 	// #602 header extraction (identity card lifted out of base into

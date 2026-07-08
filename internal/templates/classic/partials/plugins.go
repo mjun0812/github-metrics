@@ -34,7 +34,7 @@ package partials
 
 // PluginPartialOrder defines the M4 plugin partial render order. It
 // mirrors the upstream lowlighter/metrics classic ordering: P1 MVP
-// 5 plugins first, then P2 GraphQL/REST 12 plugins, then P3 chromedp/
+// 5 plugins first, then P2 GraphQL/REST 12 plugins, then P3
 // heavy 4 plugins. classic.go iterates this slice; slugs whose partial
 // is not yet registered are silently skipped during incremental M4
 // landing so the build stays green between US1/US2/US3 PRs.
@@ -60,7 +60,7 @@ var PluginPartialOrder = []string{
 	"sponsorships",
 	"stargazers",
 	"traffic",
-	// P3 chromedp/heavy — US3
+	// P3 heavy — US3
 	"topics",
 	"starlists",
 	// Note: languages.recent / languages.indepth are sub-modes of the

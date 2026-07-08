@@ -38,7 +38,7 @@ func (stubTemplate) Run(_ context.Context, _ *templates.PartialContext) (string,
 // TestDispatch_FakeRenderer_PNG injects a FakeRenderer, calls
 // dispatchOutput directly with Format=png, and asserts the renderer's
 // PNG bytes flow through unchanged. Critically: the M2-era warn log
-// "chromedp conversion lands in M3" must NOT appear (FR-009).
+// "png conversion lands in M3" must NOT appear (FR-009).
 func TestDispatch_FakeRenderer_PNG(t *testing.T) {
 	t.Parallel()
 
@@ -70,7 +70,7 @@ func TestDispatch_FakeRenderer_PNG(t *testing.T) {
 			t.Errorf("Output[%d] = %#x, want %#x (PNG magic)", i, out[i], want)
 		}
 	}
-	if strings.Contains(sink.String(), "chromedp conversion lands in M3") {
+	if strings.Contains(sink.String(), "png conversion lands in M3") {
 		t.Errorf("M2 warn log leaked into M3 output: %s", sink.String())
 	}
 }
@@ -144,7 +144,7 @@ func TestDispatch_SVG_SkipsRenderer(t *testing.T) {
 func TestDispatch_RendererError_PNG_NilOutput(t *testing.T) {
 	t.Parallel()
 
-	sentinel := errors.New("simulated chromedp failure")
+	sentinel := errors.New("simulated renderer failure")
 	deps := Deps{
 		Logger: slog.Default(),
 		Render: &render.FakeRenderer{ErrOnConvert: map[string]error{"png": sentinel}},
@@ -179,11 +179,11 @@ func TestDispatch_RendererError_PNG_NilOutput(t *testing.T) {
 
 // TestDispatch_SVG_RendererInitIgnored pins the #409 Phase C corollary
 // of the #666 contract: because the svg path no longer constructs a
-// Renderer, a broken METRICS_CHROME_PATH can no longer degrade an SVG
+// Renderer, a broken METRICS_RESVG_PATH can no longer degrade an SVG
 // render. The run must succeed with the decorated SVG and record no
 // error (there is nothing to fail).
 func TestDispatch_SVG_RendererInitIgnored(t *testing.T) {
-	t.Setenv("METRICS_CHROME_PATH", "/nonexistent/chromium-binary")
+	t.Setenv("METRICS_RESVG_PATH", "/nonexistent/resvg-binary")
 
 	deps := Deps{Logger: slog.Default()} // Render nil → would lazy-init for png/jpeg
 

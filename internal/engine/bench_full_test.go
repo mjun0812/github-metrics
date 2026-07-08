@@ -99,7 +99,7 @@ func fullPluginInputs() map[string]any {
 		"plugin_sponsorships": true,
 		"plugin_stargazers":   true,
 		"plugin_traffic":      true,
-		// P3 (formerly chromedp; now HTTP + GraphQL). topics fetches
+		// P3 (formerly browser-driven; now HTTP + GraphQL). topics fetches
 		// the SSR /stars/<user>/topics page over plain HTTPS; starlists
 		// rides on the project GraphQL client. Both run unconditionally
 		// when their `plugin_<slug>` gate is set.

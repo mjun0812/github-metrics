@@ -1,10 +1,10 @@
 // Command svg2png rasterizes one or more standalone metrics SVG files
-// to PNG using the same chromedp-based renderer the production pipeline
-// uses (internal/render.Browser + Resize). Two uses:
+// to PNG using the same resvg-based renderer the production pipeline
+// uses (internal/render.Resvg + Resize). Two uses:
 //
 //   - Developer aid for visual layout comparison between the Go output
 //     (docs/examples/) and the upstream reference output
-//     (docs/org_examples/) — both rendered through the identical Chrome
+//     (docs/org_examples/) — both rendered through the identical resvg
 //     path so any difference is a real layout difference, not a renderer
 //     artifact.
 //   - The doc-sample regen pipeline (regen-doc-samples.yml /
@@ -15,7 +15,7 @@
 //
 // Usage:
 //
-//	METRICS_CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+//	METRICS_RESVG_PATH=/usr/local/bin/resvg \
 //	  go run ./internal/tools/svg2png --out /tmp/png a.svg b.svg ...
 //
 // It has no bearing on the action / CLI binaries' contract.
@@ -51,15 +51,14 @@ func run() error {
 		return fmt.Errorf("mkdir out: %w", err)
 	}
 
-	browser, err := render.New(render.BrowserOpts{})
+	renderer, err := render.NewResvg(render.ResvgOpts{})
 	if err != nil {
-		return fmt.Errorf("browser: %w", err)
+		return fmt.Errorf("resvg: %w", err)
 	}
-	defer func() { _ = browser.Close() }()
 
 	var failures int
 	for _, f := range files {
-		if err := rasterize(browser, f, *out); err != nil {
+		if err := rasterize(renderer, f, *out); err != nil {
 			fmt.Fprintf(os.Stderr, "  FAIL %s: %v\n", filepath.Base(f), err)
 			failures++
 		}
@@ -71,17 +70,14 @@ func run() error {
 }
 
 // rasterize renders a single SVG file to <out>/<base>.png.
-func rasterize(browser *render.Browser, file, out string) error {
+func rasterize(renderer *render.Resvg, file, out string) error {
 	svg, err := os.ReadFile(file) //nolint:gosec // dev tool: caller-supplied path is intentional
 	if err != nil {
 		return fmt.Errorf("read: %w", err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
-	res, err := browser.Resize(ctx, string(svg), render.ResizeOpts{
-		Convert: "png",
-		Padding: []string{"0, 8 + 11%"},
-	})
+	res, err := renderer.Resize(ctx, string(svg), render.ResizeOpts{Convert: "png"})
 	if err != nil {
 		return fmt.Errorf("resize: %w", err)
 	}

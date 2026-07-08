@@ -57,7 +57,7 @@ func newPC(_ *testing.T, nav topics.Navigator, inputs map[string]any) *plugins.P
 
 // TestRun_DefaultNavigator_IsHTTP — when no Navigator is injected the
 // plugin falls back to the stdlib-backed httpNavigator. The plugin is
-// no longer "skipped" for missing chromedp because the SSR topics page
+// no longer "skipped" for missing a browser because the SSR topics page
 // is reachable via plain HTTPS.
 func TestRun_DefaultNavigator_IsHTTP(t *testing.T) {
 	t.Parallel()
@@ -270,7 +270,7 @@ func TestPartial_MasteredRendersIcons(t *testing.T) {
 // *RetryableError so the engine surfaces it on Result.Errors.
 func TestRun_TimeoutWrapped(t *testing.T) {
 	t.Parallel()
-	nav := &fakeNavigator{err: errors.New("chromedp: navigate timeout")}
+	nav := &fakeNavigator{err: errors.New("navigator: navigate timeout")}
 	pc := newPC(t, nav, nil)
 	_, err := topics.Plugin.Run(context.Background(), pc)
 	if err == nil {

@@ -40,7 +40,7 @@
 #   1. docker run github-metrics:local --output svg → writes /out/<file>.svg
 #      (the only API-touching step; PNG is no longer a second full fetch)
 #   2. docker run --entrypoint svg2png → rasterize the raw SVG to PNG
-#      through the same chromedp path --output png uses (no API)
+#      through the same resvg path --output png uses (no API)
 #   3. mv svg + png into docs/examples/ atomically
 #
 # Pre-conditions:
@@ -111,10 +111,10 @@ FAILURES=()
 # doubling the per-sample rate-limit cost and letting the SVG and PNG
 # render from different data snapshots. We now rasterize the
 # already-rendered raw SVG through svg2png, which uses the identical
-# internal/render.Browser + Resize chromedp path as `--output png`, so
-# the PNG is pixel-equivalent. svg2png ships in the production image
-# (see Dockerfile) and is invoked through the same image as the render
-# so no local chromium install is required; it reads/writes inside the
+# internal/render.Resvg path as `--output png`, so the PNG is
+# pixel-equivalent. svg2png ships in the production image (see
+# Dockerfile) and is invoked through the same image as the render so no
+# local rasterizer install is required; it reads/writes inside the
 # mounted ${WORKDIR} (/out). The conversion is API-free and deterministic,
 # so it gets a single attempt (no retry loop).
 # Returns 0 on success (PNG present at ${WORKDIR}/<base>.png), 1 otherwise.
