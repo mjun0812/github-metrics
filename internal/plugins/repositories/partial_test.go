@@ -38,14 +38,14 @@ func TestPartial_FeaturedOnly(t *testing.T) {
 	})
 	for _, want := range []string{
 		`<section data-section="repositories">`,
-		`>octocat/alpha</a>`,
-		`>octocat/beta</a>`,
+		`>octocat/alpha</text>`,
+		`>octocat/beta</text>`,
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in output:\n%s", want, got)
 		}
 	}
-	if n := strings.Count(got, `<section class="repository"`); n != 2 {
+	if n := strings.Count(got, `<g class="repository"`); n != 2 {
 		t.Errorf("want 2 repository cards, got %d:\n%s", n, got)
 	}
 }
@@ -64,7 +64,7 @@ func TestPartial_PinnedAppendedAfterFeatured(t *testing.T) {
 			{NameWithOwner: "octocat/pinned-y", URL: "https://github.com/octocat/pinned-y", Stars: 10},
 		},
 	})
-	if n := strings.Count(got, `<section class="repository"`); n != 3 {
+	if n := strings.Count(got, `<g class="repository"`); n != 3 {
 		t.Fatalf("want 3 repository cards (1 featured + 2 pinned), got %d:\n%s", n, got)
 	}
 	// Order: featured first, pinned after.
@@ -89,7 +89,7 @@ func TestPartial_PinnedDedupesFeaturedCopy(t *testing.T) {
 		Featured: featured,
 		Pinned:   featured, // copy semantics from repositories.go:134
 	})
-	if n := strings.Count(got, `<section class="repository"`); n != 2 {
+	if n := strings.Count(got, `<g class="repository"`); n != 2 {
 		t.Errorf("dedup should yield 2 cards (no Pinned duplicates), got %d:\n%s", n, got)
 	}
 }
@@ -110,7 +110,7 @@ func TestPartial_PinnedPartialOverlap(t *testing.T) {
 			{NameWithOwner: "octocat/pet-project", URL: "https://github.com/octocat/pet-project", Stars: 3},
 		},
 	})
-	if n := strings.Count(got, `<section class="repository"`); n != 3 {
+	if n := strings.Count(got, `<g class="repository"`); n != 3 {
 		t.Fatalf("want 3 cards (popular + second + pet-project), got %d:\n%s", n, got)
 	}
 	if strings.Count(got, "octocat/popular") != 2 {
