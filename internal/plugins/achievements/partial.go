@@ -3,9 +3,13 @@ package achievements
 import (
 	"context"
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 
+	"github.com/mjun0812/github-metrics/internal/render/fontmetrics"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -75,32 +79,79 @@ func rankClass(rank string) string {
 	return strings.ToLower(rank[:1])
 }
 
-// Partial renders the classic SVG fragment for the achievements plugin.
-// Mirrors upstream org_repo/source/templates/classic/partials/achievements.ejs.
+// Achievement-card geometry / colors, mirroring the `.achievement` CSS.
+const (
+	achMargin      = 4.0  // `.achievement { margin: 4px 0 }`
+	achIconMargin  = 4.0  // `.achievement .icon { margin: 0 4px }`
+	achIconSize    = 44.0 // `.achievement .icon { width/height: 44px }`
+	achTitleFont   = 14.0 // `.achievement .title { font-size: 14px }`
+	achTextFont    = 12.0 // `.achievement .text { font-size: 12px }`
+	achTextFill    = "#666666"
+	achValueFont   = 10.0 // `.achievement .value { font-size: 10px }`
+	achValuePadX   = 5.0  // `.achievement .value { padding: 0 5px }`
+	achValueHeight = 16.0
+	achValueBgOpac = "0.15" // 0x26 / 255
+	achValueGap    = 46.0   // `.achievement .value { margin-left: 46px }`
+	achPrefixFont  = 10.0   // compact `.title .prefix { font-size: 10px }`
+	achCompactCell = 80.0   // compact `.achievement { width: 80px }`
+	baselineFrac   = 0.32
+)
+
+// achRankColors maps the rank class (rankClass output) to its
+// [titleColor, valueBgColor] pair, mirroring the per-rank `.achievement`
+// CSS. titleColor sets the title text + the value pill border/text;
+// valueBgColor is the translucent value-pill background. Emitted as
+// literal fills because resvg does not resolve the class chain.
+var achRankColors = map[string][2]string{
+	"":       {"#58A6FF", "#58A6FF"},
+	"x":      {"#666666", "#B0B0B0"},
+	"b":      {"#9D8FFF", "#9E91FF"},
+	"a":      {"#D79533", "#E7BD69"},
+	"s":      {"#EB355E", "#EB355E"},
+	"secret": {"#FF76CD", "#FF79D1"},
+}
+
+// achColors returns the title/value colors for a rank token.
+func achColors(rank string) (title, valueBg string) {
+	c, ok := achRankColors[rankClass(rank)]
+	if !ok {
+		c = achRankColors[""]
+	}
+	return c[0], c[1]
+}
+
+// ai formats a layout coordinate as a rounded integer for compact,
+// stable SVG output.
+func ai(v float64) string { return strconv.Itoa(int(math.Round(v))) }
+
+// achTitle builds the achievement title string, applying the upstream
+// EJS line 35 rule: when a rank prefix is set the title is lowercased and
+// the prefix is prepended.
+func achTitle(a Achievement) string {
+	prefix := rankPrefixes[a.Rank]
+	if prefix != "" {
+		return prefix + " " + strings.ToLower(a.Title)
+	}
+	return a.Title
+}
+
+// Partial renders the classic SVG fragment for the achievements plugin
+// as native SVG (#409 Phase B6). Mirrors upstream
+// org_repo/source/templates/classic/partials/achievements.ejs.
 //
-// Output structure:
+// Output (native SVG): a `<section data-section="achievements">` anchor
+// wrapping a nested `<svg>` with the trophy section header above the
+// achievement badges. Two layouts:
 //
-//	<section data-section="achievements">
-//	  <h2 class="field"><svg trophy/>Achievements</h2>
-//	  <div class="row">
-//	    <section class="achievements [compact] largeable-flex-wrap">
-//	      [for each achievement]:
-//	        <div class="achievement ${rank-class} largeable-width-half">
-//	          <div class="icon"><svg/>...</div>
-//	          <div class="info">
-//	            <div class="title">${title}</div>
-//	            [detailed only] <div class="text">${description}</div>
-//	          </div>
-//	        </div>
-//	    </section>
-//	  </div>
-//	</section>
+//   - detailed: a vertical list of horizontal cards (44px rank icon on
+//     the left; title + value pill + description on the right);
+//   - compact: an 80px-wide badge grid (centered icon with an overlapping
+//     value pill and the centered prefix/title below), wrapping across
+//     rows.
 //
-// The upstream icon is a per-achievement inline SVG path (`<%- icon %>`
-// unescaped); our data model only carries the icon NAME (`Icon` field).
-// Until the achievements package ships the per-rank SVG paths, the
-// `<div class="icon">` block holds the trophy octicon as a placeholder
-// (still renders, no bare elements).
+// Each badge keeps its `class="achievement <rank>"` / `data-rank` /
+// `data-icon` DOM hooks, and the partial reports the pixel height it
+// consumes.
 func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
 		return "", 0, nil
@@ -114,86 +165,159 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		return "", 0, nil
 	}
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="achievements">`)
-	fmt.Fprintf(&b, `<h2 class="field">%sAchievements</h2>`, trophyHeaderSVG)
-	b.WriteString(`<div class="row">`)
+	header, hh := chrome.SVGSectionHeader(trophyHeaderSVG, "Achievements")
+
+	var body strings.Builder
+	body.WriteString(header)
+
+	var consumed float64
 	if r.Display == displayCompact {
-		b.WriteString(`<section class="achievements compact largeable-flex-wrap">`)
+		consumed = renderCompact(&body, r.List, hh)
 	} else {
-		b.WriteString(`<section class="achievements largeable-flex-wrap">`)
+		consumed = renderDetailed(&body, r.List, hh)
 	}
-	for _, a := range r.List {
-		writeAchievement(&b, a, r.Display == displayCompact)
-	}
-	b.WriteString(`</section>`)
-	b.WriteString(`</div>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+
+	height := int(math.Round(hh + consumed))
+	return chrome.WrapSection("achievements", height, body.String()), height, nil
 }
 
-func writeAchievement(b *strings.Builder, a Achievement, compact bool) {
+// renderDetailed lays the achievements out as a vertical list of
+// horizontal cards and returns the total height consumed below top.
+func renderDetailed(body *strings.Builder, list []Achievement, top float64) float64 {
+	const (
+		descWidth = 380.0
+		descTop   = 2.0
+	)
+	y := top
+	for _, a := range list {
+		y += achMargin
+		titleColor, valueBg := achColors(a.Rank)
+
+		iconX, iconY := achIconMargin, y
+		infoX := iconX + achIconSize + achIconMargin // 52
+
+		var card strings.Builder
+		card.WriteString(chrome.SVGIcon(iconX, iconY, "", iconForAchievement(a)))
+
+		title := achTitle(a)
+		titleBaseline := iconY + achTitleFont + 2
+		card.WriteString(chrome.SVGText(infoX, titleBaseline, title,
+			chrome.SVGTextOpts{Size: achTitleFont, Fill: titleColor}))
+
+		// Value pill after the title (`.value { margin-left: 46px }`),
+		// vertically centered on the title line.
+		titleW := fontmetrics.Width(title, achTitleFont)
+		pillX := infoX + titleW + achValueGap
+		lineCenter := titleBaseline - achTitleFont*baselineFrac
+		card.WriteString(achValuePill(pillX, lineCenter-achValueHeight/2,
+			strconv.Itoa(a.Value), titleColor, valueBg))
+
+		infoBottom := titleBaseline
+		if a.Description != "" {
+			m, dh := chrome.SVGParagraph(infoX, titleBaseline+descTop, descWidth, achTextFont, achTextFill, a.Description)
+			card.WriteString(m)
+			infoBottom = titleBaseline + descTop + dh
+		}
+
+		cardBottom := iconY + achIconSize
+		if infoBottom > cardBottom {
+			cardBottom = infoBottom
+		}
+		y = cardBottom + achMargin
+
+		writeAchievementGroup(body, a, card.String())
+	}
+	return y - top
+}
+
+// renderCompact lays the achievements out as an 80px-wide badge grid and
+// returns the total height consumed below top.
+func renderCompact(body *strings.Builder, list []Achievement, top float64) float64 {
+	perRow := int(chrome.CardWidth / achCompactCell)
+	if perRow < 1 {
+		perRow = 1
+	}
+	// Per-cell vertical budget: top margin + icon + prefix line + title
+	// line + bottom margin.
+	const cellHeight = achMargin + achIconSize + achPrefixFont + achTitleFont + 8
+
+	for i, a := range list {
+		col := i % perRow
+		row := i / perRow
+		cellX := float64(col) * achCompactCell
+		cellTop := top + float64(row)*cellHeight
+		cx := cellX + achCompactCell/2
+		titleColor, valueBg := achColors(a.Rank)
+
+		var card strings.Builder
+		iconX := cellX + (achCompactCell-achIconSize)/2
+		iconY := cellTop + achMargin
+		card.WriteString(chrome.SVGIcon(iconX, iconY, "", iconForAchievement(a)))
+
+		// Value pill overlapping the lower part of the icon, centered
+		// (`.value-wrapper { margin-top: 36px }`).
+		pillText := strconv.Itoa(a.Value)
+		pillW := fontmetrics.Width(pillText, achValueFont) + 2*achValuePadX
+		card.WriteString(achValuePill(cx-pillW/2, iconY+36, pillText, titleColor, valueBg))
+
+		// Prefix (block above the title) + capitalized title, both
+		// centered below the icon.
+		labelBaseline := iconY + achIconSize + achPrefixFont
+		prefix := rankPrefixes[a.Rank]
+		title := a.Title
+		if prefix != "" {
+			card.WriteString(chrome.SVGText(cx, labelBaseline, prefix,
+				chrome.SVGTextOpts{Size: achPrefixFont, Fill: titleColor, Anchor: "middle"}))
+			title = strings.ToLower(a.Title)
+		}
+		titleBaseline := labelBaseline + achTitleFont
+		card.WriteString(chrome.SVGText(cx, titleBaseline, capitalize(title),
+			chrome.SVGTextOpts{Size: achTitleFont, Fill: titleColor, Anchor: "middle", MaxWidth: achCompactCell}))
+
+		writeAchievementGroup(body, a, card.String())
+	}
+
+	rows := (len(list) + perRow - 1) / perRow
+	return float64(rows) * cellHeight
+}
+
+// writeAchievementGroup wraps one badge's native markup in the
+// `<g class="achievement <rank>">` anchor that carries the upstream
+// data-rank / data-icon DOM hooks.
+func writeAchievementGroup(body *strings.Builder, a Achievement, card string) {
 	fmt.Fprintf(
-		b,
-		`<div class="achievement %s largeable-width-half" data-rank="%s" data-icon="%s">`,
+		body,
+		`<g class="achievement %s" data-rank="%s" data-icon="%s">%s</g>`,
 		partials.EscapeXML(rankClass(a.Rank)),
 		partials.EscapeXML(a.Rank),
 		partials.EscapeXML(a.Icon),
+		card,
 	)
-	// Icon — per-achievement upstream SVG tinted with the rank
-	// color pair. Sized 44x44 to fill `.achievement .icon` and align
-	// with the title/text column (Issue #554).
-	fmt.Fprintf(b, `<div class="icon">%s</div>`, iconForAchievement(a))
-	b.WriteString(`<div class="info">`)
-	prefix := rankPrefixes[a.Rank]
-	// Upstream EJS line 35: when a prefix is set the title is lowered;
-	// otherwise the title is rendered as-is.
-	title := a.Title
-	if prefix != "" {
-		title = strings.ToLower(a.Title)
+}
+
+// achValuePill renders one `.value` pill: a fully-rounded rect whose
+// top-left is (x, top), filled with the translucent rank color and
+// bordered/labeled in the title color. Returns the markup.
+func achValuePill(x, top float64, text, titleColor, bgColor string) string {
+	w := fontmetrics.Width(text, achValueFont) + 2*achValuePadX
+	baseline := top + achValueHeight/2 + achValueFont*baselineFrac
+	var b strings.Builder
+	fmt.Fprintf(&b,
+		`<rect x="%s" y="%s" width="%s" height="%d" rx="%d" ry="%d" fill=%q fill-opacity=%q stroke=%q/>`,
+		ai(x), ai(top), ai(w), int(achValueHeight), int(achValueHeight/2), int(achValueHeight/2),
+		bgColor, achValueBgOpac, titleColor)
+	b.WriteString(chrome.SVGText(x+achValuePadX, baseline, text,
+		chrome.SVGTextOpts{Size: achValueFont, Fill: titleColor}))
+	return b.String()
+}
+
+// capitalize upper-cases the first rune, matching the compact
+// `.title { text-transform: capitalize }` rule for the leading word.
+func capitalize(s string) string {
+	if s == "" {
+		return s
 	}
-	if compact {
-		if prefix != "" {
-			fmt.Fprintf(
-				b,
-				`<div class="title"><span class="prefix">%s</span> %s<div class="value-wrapper"><div class="value">%d</div></div></div>`,
-				partials.EscapeXML(prefix),
-				partials.EscapeXML(title),
-				a.Value,
-			)
-		} else {
-			fmt.Fprintf(
-				b,
-				`<div class="title">%s<div class="value-wrapper"><div class="value">%d</div></div></div>`,
-				partials.EscapeXML(title),
-				a.Value,
-			)
-		}
-	} else {
-		if prefix != "" {
-			fmt.Fprintf(
-				b,
-				`<div class="title"><span class="prefix">%s</span> %s<span class="value">%d</span></div>`,
-				partials.EscapeXML(prefix),
-				partials.EscapeXML(title),
-				a.Value,
-			)
-		} else {
-			fmt.Fprintf(
-				b,
-				`<div class="title">%s<span class="value">%d</span></div>`,
-				partials.EscapeXML(title),
-				a.Value,
-			)
-		}
-		if a.Description != "" {
-			fmt.Fprintf(
-				b,
-				`<div class="text">%s</div>`,
-				partials.EscapeXML(a.Description),
-			)
-		}
-	}
-	b.WriteString(`</div>`) // .info
-	b.WriteString(`</div>`) // .achievement
+	r := []rune(s)
+	r[0] = []rune(strings.ToUpper(string(r[0])))[0]
+	return string(r)
 }

@@ -310,12 +310,11 @@ func TestPartial_Isocalendar_Golden(t *testing.T) {
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
-	// 011 v2: replaced the flat <g class="calendar"> + <rect class="calendar-day">
-	// emission with the upstream-equivalent 3D isometric heatmap inside
-	// <svg class="isocalendar-grid"> per upstream index.mjs lines 38-69.
-	// New markers reflect the stats panel + isometric wrapper.
+	// #409 Phase B6: the partial is now native SVG (WrapSection nested
+	// <svg>, no foreignObject HTML). The stats panel + isometric wrapper
+	// markers survive; the h2/h3/field HTML wrappers are gone.
 	for _, marker := range []string{
-		`<h2 class="field">`,
+		`<section data-section="isocalendar" data-duration="half-year">`,
 		`Contributions calendar`,
 		`class="isocalendar-grid"`,
 		`<filter id="brightness1">`,
@@ -324,6 +323,11 @@ func TestPartial_Isocalendar_Golden(t *testing.T) {
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("partial missing marker %q in:\n%s", marker, got)
+		}
+	}
+	for _, html := range []string{`<h2`, `<h3`, `<div class="field"`, `class="row"`} {
+		if strings.Contains(got, html) {
+			t.Errorf("native SVG output should not contain HTML %q in:\n%s", html, got)
 		}
 	}
 }

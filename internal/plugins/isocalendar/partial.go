@@ -7,6 +7,7 @@ import (
 
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -78,53 +79,93 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		return "", 0, nil
 	}
 
-	var b strings.Builder
-	fmt.Fprintf(&b, `<section data-section="isocalendar" data-duration="%s">`,
-		partials.EscapeXML(r.Duration))
-	b.WriteString(`<section>`)
+	header, hh := chrome.SVGSectionHeader(calendarOcticon, "Contributions calendar")
 
-	// Header.
-	fmt.Fprintf(&b, `<h2 class="field">%sContributions calendar</h2>`, calendarOcticon)
-
-	// Stats panel (no error branch — error path empty in v1).
-	b.WriteString(`<div class="row">`)
-	b.WriteString(`<section></section>`)
-	b.WriteString(`<section>`)
-
-	fmt.Fprintf(&b, `<h3 class="field">%sCommits streaks</h3>`, streaksOcticon)
-	if r.Streak.Current > 0 {
-		fmt.Fprintf(
-			&b,
-			`<div class="field">%sCurrent streak %d day%s</div>`,
-			flameOcticon, r.Streak.Current, pluginutil.Plural(r.Streak.Current),
-		)
-	}
-	fmt.Fprintf(
-		&b,
-		`<div class="field">%sBest streak %d day%s</div>`,
-		plusXOcticon, r.Streak.Max, pluginutil.Plural(r.Streak.Max),
-	)
-	fmt.Fprintf(&b, `<h3 class="field">%sCommits per day</h3>`, commitsPerDayOcticon)
-	fmt.Fprintf(
-		&b,
-		`<div class="field">%sHighest in a day at %d</div>`,
-		upArrowOcticon, r.Max,
-	)
-	fmt.Fprintf(
-		&b,
-		`<div class="field">%sAverage per day at ~%.2f</div>`,
-		arrowsOcticon, r.Average,
-	)
-	b.WriteString(`</section>`)
-	b.WriteString(`</div>`)
+	var body strings.Builder
+	body.WriteString(header)
 
 	// 3D isometric heatmap SVG (upstream EJS line 47-49 — pre-computed
 	// in upstream's index.mjs lines 38-69; ported faithfully here).
-	b.WriteString(buildIsometricSVG(r))
+	// Upstream pulls it up with `margin-top: -130px` so it overlaps the
+	// stats panel; here it is positioned directly under the header (full
+	// card width) and the stats panel is laid out in the right column so
+	// the two coexist (3D calendar on the left, stats on the right).
+	grid, gridH := buildIsometricSVG(r, hh)
+	body.WriteString(grid)
 
-	b.WriteString(`</section>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+	// Stats panel — the right-hand flex column (`<div class="row"><section/>
+	// <section>…`). Rendered as native SVG in the right half of the card.
+	statsX, statsW := float64(chrome.CardWidth)/2, float64(chrome.CardWidth)/2
+	y := hh
+	y += writeStatHeader(&body, statsX, y, streaksOcticon, "Commits streaks")
+	if r.Streak.Current > 0 {
+		_, fh := writeStatField(&body, statsX, y, statsW, flameOcticon,
+			fmt.Sprintf("Current streak %d day%s", r.Streak.Current, pluginutil.Plural(r.Streak.Current)))
+		y += fh
+	}
+	_, fh := writeStatField(&body, statsX, y, statsW, plusXOcticon,
+		fmt.Sprintf("Best streak %d day%s", r.Streak.Max, pluginutil.Plural(r.Streak.Max)))
+	y += fh
+	y += writeStatHeader(&body, statsX, y, commitsPerDayOcticon, "Commits per day")
+	_, fh = writeStatField(&body, statsX, y, statsW, upArrowOcticon,
+		fmt.Sprintf("Highest in a day at %d", r.Max))
+	y += fh
+	_, fh = writeStatField(&body, statsX, y, statsW, arrowsOcticon,
+		fmt.Sprintf("Average per day at ~%.2f", r.Average))
+	y += fh
+
+	// The block height spans whichever of the grid / stats column reaches
+	// lower (the grid is the taller element for both durations).
+	height := int(hh) + gridH
+	if statsBottom := int(y); statsBottom > height {
+		height = statsBottom
+	}
+
+	// Keep the data-duration hook the upstream DOM carried.
+	section := chrome.WrapSection("isocalendar", height, body.String())
+	section = strings.Replace(section,
+		`<section data-section="isocalendar">`,
+		fmt.Sprintf(`<section data-section="isocalendar" data-duration="%s">`, partials.EscapeXML(r.Duration)),
+		1)
+	return section, height, nil
+}
+
+// h3 sub-header / field geometry, mirroring the `.field` CSS the HTML
+// rows used (`section > .field { margin-left: 5px }`, `.field svg {
+// margin: 0 8px }`, `.octicon { 16px }`) so the native rows line up with
+// the h2 header rendered by chrome.SVGSectionHeader.
+const (
+	statInset    = 5.0
+	statIconGap  = 8.0
+	statIconSize = 16.0
+	// h3 { font-size: 14px; color: #0366d6; margin: 8px 0 2px }.
+	statH3Font   = 14.0
+	statH3Fill   = "#0366d6"
+	statH3Top    = 8.0
+	statH3Band   = 18.0
+	statIconFill = "#959da5"
+	baselineFrac = 0.32
+)
+
+// writeStatHeader renders an `<h3 class="field">` stats sub-header (grey
+// 16px octicon + 14px blue label) at the given column. Returns the
+// height consumed (margin-top 8 + band 18 + margin-bottom 2).
+func writeStatHeader(b *strings.Builder, colX, top float64, icon, label string) float64 {
+	iconX := colX + statInset + statIconGap
+	iconY := top + statH3Top + (statH3Band-statIconSize)/2
+	textX := iconX + statIconSize + statIconGap
+	baseline := top + statH3Top + statH3Band/2 + statH3Font*baselineFrac
+	b.WriteString(chrome.SVGIcon(iconX, iconY, statIconFill, icon))
+	b.WriteString(chrome.SVGText(textX, baseline, label, chrome.SVGTextOpts{Size: statH3Font, Fill: statH3Fill}))
+	return statH3Top + statH3Band + 2
+}
+
+// writeStatField renders one `<div class="field">` stats row (grey 16px
+// octicon + 14px grey label) via chrome.SVGField at the given column.
+func writeStatField(b *strings.Builder, colX, top, colWidth float64, icon, label string) (string, float64) {
+	m, h := chrome.SVGField(colX, top, colWidth, icon, label)
+	b.WriteString(m)
+	return m, h
 }
 
 // buildIsometricSVG renders the 3D isometric contribution heatmap as
@@ -136,7 +177,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 // Cell color uses ContributionDay.Color (GitHub palette) and the
 // extruded height is proportional to count/max — high-contribution
 // days are tall prisms.
-func buildIsometricSVG(r *Result) string {
+func buildIsometricSVG(r *Result, top float64) (string, int) {
 	const size = 6
 	height := 170
 	if r.Duration == "full-year" {
@@ -149,10 +190,14 @@ func buildIsometricSVG(r *Result) string {
 	}
 
 	var b strings.Builder
+	// Positioned via x/y/width/height (upstream's `margin-top: -130px` CSS
+	// is dropped — resvg lays out no HTML box model). Rendered at the 480px
+	// card width, so viewBox scale is 1 and the drawn height equals the
+	// viewBox height.
 	fmt.Fprintf(
 		&b,
-		`<svg version="1.1" xmlns="http://www.w3.org/2000/svg" class="isocalendar-grid" style="margin-top: -130px;" viewBox="0,0 480,%d">`,
-		height,
+		`<svg version="1.1" xmlns="http://www.w3.org/2000/svg" class="isocalendar-grid" x="0" y="%d" width="%d" height="%d" viewBox="0,0 480,%d">`,
+		int(top), chrome.CardWidth, height, height,
 	)
 
 	// Brightness filters (upstream uses linear slope 0.6 and 0.2).
@@ -211,5 +256,5 @@ func buildIsometricSVG(r *Result) string {
 
 	b.WriteString(`</g>`)
 	b.WriteString(`</svg>`)
-	return b.String()
+	return b.String(), height
 }
