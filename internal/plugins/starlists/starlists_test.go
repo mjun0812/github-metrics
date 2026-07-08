@@ -288,10 +288,10 @@ func TestPartial_Starlists_Golden(t *testing.T) {
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
-	// Markers asserted against the upstream-parity DOM shape (post 011).
-	// Each starlist is a <div class="starlist"> with a header <h2>, a
-	// <div class="count"> repo count, and an optional <div class="description">.
-	for _, marker := range []string{`<div class="starlist">`, `class="count"`, `<h2 class="field">`} {
+	// Markers asserted against the native-SVG shape (#409 Phase B2). Each
+	// starlist is a <g class="starlist"> with a header <text>, a
+	// <g class="count"> repo count, and an optional description paragraph.
+	for _, marker := range []string{`class="starlist"`, `class="count"`, `>AI</text>`} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("partial missing marker %q in:\n%s", marker, got)
 		}
@@ -329,7 +329,7 @@ func TestPartial_Starlists_EmptyListRendersHeader(t *testing.T) {
 		if !strings.Contains(got, `<section data-section="starlists">`) {
 			t.Errorf("partial missing section wrapper in:\n%s", got)
 		}
-		if strings.Contains(got, `<div class="starlist">`) {
+		if strings.Contains(got, `class="starlist"`) {
 			t.Errorf("partial unexpectedly rendered a starlist entry for empty List:\n%s", got)
 		}
 	}
@@ -361,17 +361,17 @@ func TestPartial_Starlists_Repositories(t *testing.T) {
 		t.Fatalf("Partial: %v", err)
 	}
 	for _, marker := range []string{
-		`<div class="repositories">`,
-		`<section class="repository">`,
-		`<div class="name"><span>octocat/repo-a</span><span></span></div>`,
-		`<div class="field description">handy tool</div>`,
+		`class="repositories"`,
+		`class="repository"`,
+		`>octocat/repo-a</text>`,
+		`>handy tool</text>`,
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("partial missing marker %q in:\n%s", marker, got)
 		}
 	}
 	// Exactly one wrapper — the empty starlist must not emit its own.
-	if n := strings.Count(got, `<div class="repositories">`); n != 1 {
+	if n := strings.Count(got, `class="repositories"`); n != 1 {
 		t.Errorf("repositories wrapper count = %d, want 1 (empty list omits it)", n)
 	}
 }
