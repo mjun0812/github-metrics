@@ -47,17 +47,17 @@ const heartOcticon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16
 //	    </section>
 //	  </div>
 //	</section>
-func Partial(ctx context.Context, pc *templates.PartialContext) (string, error) {
+func Partial(ctx context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	raw, ok := pc.Data.GetPlugin(Name)
 	if !ok || raw == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := raw.(*Result)
 	if !ok || r == nil || r.Skipped {
-		return "", nil
+		return "", 0, nil
 	}
 	sections := r.Sections
 	if len(sections) == 0 {
@@ -80,7 +80,7 @@ func Partial(ctx context.Context, pc *templates.PartialContext) (string, error) 
 	}
 
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 // writeAmountSection renders the upstream "amount" branch: the heart

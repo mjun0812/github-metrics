@@ -213,7 +213,7 @@ func TestPartial_HonorsResultSize(t *testing.T) {
 	}
 	data := plugins.NewData()
 	data.SetPlugin(people.Name, r)
-	got, err := people.Partial(context.Background(), &templates.PartialContext{Data: data})
+	got, _, err := people.Partial(context.Background(), &templates.PartialContext{Data: data})
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -402,7 +402,7 @@ func TestPartial_RepositoryGolden(t *testing.T) {
 	data.SetPlugin(people.Name, r)
 	pc := &templates.PartialContext{Data: data}
 
-	got, err := people.Partial(context.Background(), pc)
+	got, _, err := people.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -460,7 +460,7 @@ func TestPartial_HeadingPrefersCountsOverFetchedLen(t *testing.T) {
 	}
 	data := plugins.NewData()
 	data.SetPlugin(people.Name, r)
-	got, err := people.Partial(context.Background(), &templates.PartialContext{Data: data})
+	got, _, err := people.Partial(context.Background(), &templates.PartialContext{Data: data})
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

@@ -162,7 +162,10 @@ func (t *repositoryTemplate) Run(ctx context.Context, pc *templates.PartialConte
 		if !ok {
 			continue
 		}
-		frag, err := fn(ctx, pc)
+		// Phase B0 (#409): partials report their consumed height as the
+		// middle return value. Ignored for now (the outer foreignObject
+		// still drives layout); Phase C will sum it to size the root <svg>.
+		frag, _, err := fn(ctx, pc)
 		if err != nil {
 			return "", fmt.Errorf("repository: partial %q: %w", name, err)
 		}

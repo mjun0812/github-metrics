@@ -38,9 +38,9 @@ func SetNow(now func() time.Time) func() {
 // Deployed / disk-usage on the left, the contribution mini-calendar /
 // Environments on the right). Returns "" when data.Repo is nil so the
 // dispatch path stays nil-safe. #464.
-func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error) {
+func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil || pc.Data.Repo == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r := pc.Data.Repo
 	var b strings.Builder
@@ -77,18 +77,18 @@ func BaseHeader(_ context.Context, pc *templates.PartialContext) (string, error)
 
 	b.WriteString(`</div>`)
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 // Introduction surfaces the repo's about text + primary language /
 // license badges. Returns "" when data.Repo is nil.
-func Introduction(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Introduction(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil || pc.Data.Repo == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r := pc.Data.Repo
 	if r.PrimaryLanguage == "" && r.LicenseName == "" && r.DefaultBranch == "" {
-		return "", nil
+		return "", 0, nil
 	}
 	var b strings.Builder
 	b.WriteString(`<section data-section="introduction">`)
@@ -112,19 +112,19 @@ func Introduction(_ context.Context, pc *templates.PartialContext) (string, erro
 	}
 	b.WriteString(`</div>`)
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 // BaseCommunity renders contributors / stargazers / forks counts.
 // Returns "" when data.Repo is nil OR all counts are zero (so empty
 // repos do not render a stray empty section).
-func BaseCommunity(_ context.Context, pc *templates.PartialContext) (string, error) {
+func BaseCommunity(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil || pc.Data.Repo == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r := pc.Data.Repo
 	if r.Stargazers == 0 && r.Forks == 0 && r.Contributors == 0 {
-		return "", nil
+		return "", 0, nil
 	}
 	var b strings.Builder
 	b.WriteString(`<section data-section="community">`)
@@ -137,19 +137,19 @@ func BaseCommunity(_ context.Context, pc *templates.PartialContext) (string, err
 		classicpart.FormatCount(int64(maxNonNegative(r.Contributors))))
 	b.WriteString(`</div>`)
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 // BaseActivity renders the recent commits / open issues / open PRs
 // triple. Returns "" when data.Repo is nil OR the repo is archived
 // AND has no activity to show.
-func BaseActivity(_ context.Context, pc *templates.PartialContext) (string, error) {
+func BaseActivity(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil || pc.Data.Repo == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	a := pc.Data.Repo.Activity
 	if a.RecentCommits == 0 && a.OpenIssues == 0 && a.OpenPullRequests == 0 {
-		return "", nil
+		return "", 0, nil
 	}
 	var b strings.Builder
 	b.WriteString(`<section data-section="activity">`)
@@ -162,7 +162,7 @@ func BaseActivity(_ context.Context, pc *templates.PartialContext) (string, erro
 		classicpart.FormatCount(int64(maxNonNegative(a.OpenPullRequests))))
 	b.WriteString(`</div>`)
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 // Lookup returns the repository-template partial for the given name,

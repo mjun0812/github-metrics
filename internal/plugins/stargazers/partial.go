@@ -63,21 +63,21 @@ func bgLevel(p float64) int {
 //	    </section>
 //	  </div>
 //	</section>
-func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	raw, ok := pc.Data.GetPlugin(Name)
 	if !ok || raw == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := raw.(*Result)
 	if !ok || r == nil || r.Skipped {
-		return "", nil
+		return "", 0, nil
 	}
 	series := r.Charts.Series
 	if len(series) == 0 && len(r.List) == 0 {
-		return "", nil
+		return "", 0, nil
 	}
 
 	var b strings.Builder
@@ -103,7 +103,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	}
 
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 // writeClassicCharts renders the two upstream chart-bars columns over

@@ -251,7 +251,7 @@ func TestPartial_MasteredRendersIcons(t *testing.T) {
 		Mode: "mastered",
 		List: []topics.Topic{{Name: "go", Icon: "/img/go.png"}},
 	})
-	got, err := topics.Partial(context.Background(), &templates.PartialContext{Data: data})
+	got, _, err := topics.Partial(context.Background(), &templates.PartialContext{Data: data})
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -300,7 +300,7 @@ func TestPartial_Topics_Golden(t *testing.T) {
 	data := plugins.NewData()
 	data.SetPlugin(topics.Name, r)
 	pc := &templates.PartialContext{Data: data}
-	got, err := topics.Partial(context.Background(), pc)
+	got, _, err := topics.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

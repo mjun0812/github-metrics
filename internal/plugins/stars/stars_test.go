@@ -260,7 +260,7 @@ func TestPartial_RendersRepoMetadata(t *testing.T) {
 	}
 	data := plugins.NewData()
 	data.SetPlugin(stars.Name, r)
-	got, err := stars.Partial(context.Background(), &templates.PartialContext{Data: data})
+	got, _, err := stars.Partial(context.Background(), &templates.PartialContext{Data: data})
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -296,7 +296,7 @@ func TestPartial_RendersRelativeStarredDates(t *testing.T) {
 	}
 	data := plugins.NewData()
 	data.SetPlugin(stars.Name, r)
-	got, err := stars.Partial(context.Background(), &templates.PartialContext{Data: data})
+	got, _, err := stars.Partial(context.Background(), &templates.PartialContext{Data: data})
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}
@@ -334,7 +334,7 @@ func TestPartial_RelativeStarredDateBoundaries(t *testing.T) {
 	}
 	data := plugins.NewData()
 	data.SetPlugin(stars.Name, r)
-	got, err := stars.Partial(context.Background(), &templates.PartialContext{Data: data})
+	got, _, err := stars.Partial(context.Background(), &templates.PartialContext{Data: data})
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

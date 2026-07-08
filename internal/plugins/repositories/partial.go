@@ -90,17 +90,17 @@ func langDotOcticon(color string) string {
 // label follows upstream `f.license` (nickname → spdxId → name) via
 // plugins.RepositoryLicense.Label. REST-sourced starred repos leave
 // CreatedAt / License zero, so those fragments are simply skipped.
-func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	raw, ok := pc.Data.GetPlugin(Name)
 	if !ok || raw == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := raw.(*Result)
 	if !ok || r == nil || r.Skipped || len(r.Featured) == 0 {
-		return "", nil
+		return "", 0, nil
 	}
 
 	var b strings.Builder
@@ -128,7 +128,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 	}
 	b.WriteString(`</section></div>`)
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 // writeRepoCard emits one upstream-equivalent `<section class="repository">`

@@ -291,7 +291,7 @@ func TestPartial_Isocalendar_Golden(t *testing.T) {
 	data := plugins.NewData()
 	data.SetPlugin(isocalendar.Name, r)
 	pc := &templates.PartialContext{Data: data}
-	got, err := isocalendar.Partial(context.Background(), pc)
+	got, _, err := isocalendar.Partial(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Partial: %v", err)
 	}

@@ -136,7 +136,11 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 			// the mismatch loudly.
 			return "", fmt.Errorf("classic: partial %q listed in _.json but not implemented", name)
 		}
-		frag, err := fn(ctx, pc)
+		// Phase B0 (#409): partials now report the height they consume as
+		// the middle return value. It is ignored for now — the outer
+		// foreignObject still lays partials out by HTML flow; Phase C will
+		// sum these to size the root <svg>.
+		frag, _, err := fn(ctx, pc)
 		if err != nil {
 			return "", fmt.Errorf("classic: partial %q: %w", name, err)
 		}
@@ -187,7 +191,11 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 			// the wrapper.
 			continue
 		}
-		frag, err := fn(ctx, pc)
+		// Phase B0 (#409): partials now report the height they consume as
+		// the middle return value. It is ignored for now — the outer
+		// foreignObject still lays partials out by HTML flow; Phase C will
+		// sum these to size the root <svg>.
+		frag, _, err := fn(ctx, pc)
 		if err != nil {
 			return "", fmt.Errorf("classic: plugin partial %q: %w", slug, err)
 		}

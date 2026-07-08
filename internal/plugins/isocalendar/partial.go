@@ -65,17 +65,17 @@ const (
 //	</section>
 //
 // Settings: mjun0812 uses plugin_isocalendar: yes, plugin_isocalendar_duration: full-year.
-func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
+func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	raw, ok := pc.Data.GetPlugin(Name)
 	if !ok || raw == nil {
-		return "", nil
+		return "", 0, nil
 	}
 	r, ok := raw.(*Result)
 	if !ok || r == nil || r.Skipped || len(r.Weeks) == 0 {
-		return "", nil
+		return "", 0, nil
 	}
 
 	var b strings.Builder
@@ -124,7 +124,7 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, error) {
 
 	b.WriteString(`</section>`)
 	b.WriteString(`</section>`)
-	return b.String(), nil
+	return b.String(), 0, nil
 }
 
 // buildIsometricSVG renders the 3D isometric contribution heatmap as
