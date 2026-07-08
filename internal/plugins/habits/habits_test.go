@@ -309,9 +309,8 @@ func TestPartial_Habits_FactsOnly_Golden(t *testing.T) {
 	got := renderPartial(t, r)
 	assertPartialGolden(t, "habits_facts_only.svg", got)
 	for _, marker := range []string{
-		`Recent coding habits`,
-		`<ul class="facts">`,
-		`Mostly active on Fri`,
+		`>Recent coding habits</text>`,
+		`>Mostly active on Fri</text>`,
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("facts-only partial missing marker %q in:\n%s", marker, got)
@@ -320,7 +319,8 @@ func TestPartial_Habits_FactsOnly_Golden(t *testing.T) {
 	for _, marker := range []string{
 		`Commit activity per hour of day`,
 		`Commit activity per day of week`,
-		`class="chart-bars"`,
+		`data-block="chart-bars"`,
+		`var(`,
 	} {
 		if strings.Contains(got, marker) {
 			t.Errorf("facts-only partial unexpectedly contains marker %q in:\n%s", marker, got)
@@ -380,10 +380,13 @@ func TestRun_LanguageActivity_FromCommits(t *testing.T) {
 	}
 	// Section must render with the upstream literal heading.
 	got := renderPartial(t, r)
-	for _, marker := range []string{`Language activity`, `chart-bars horizontal`, `<span class="name">Go</span>`, `90%`} {
+	for _, marker := range []string{`>Language activity</text>`, `>Go</text>`, `>90%</text>`} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("partial missing marker %q in:\n%s", marker, got)
 		}
+	}
+	if strings.Contains(got, "var(") {
+		t.Errorf("language chart must not emit CSS var() references:\n%s", got)
 	}
 }
 
@@ -478,11 +481,14 @@ func TestPartial_Habits_ChartsOnly_Golden(t *testing.T) {
 	for _, marker := range []string{
 		`Commit activity per hour of day`,
 		`Commit activity per day of week`,
-		`class="chart-bars"`,
+		`data-block="chart-bars"`,
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("charts-only partial missing marker %q in:\n%s", marker, got)
 		}
+	}
+	if strings.Contains(got, "var(") {
+		t.Errorf("charts-only partial must not emit CSS var() references:\n%s", got)
 	}
 	for _, marker := range []string{
 		`Recent coding habits`,
