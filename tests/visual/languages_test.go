@@ -20,8 +20,9 @@ func TestLanguages_Visual(t *testing.T) {
 	svg := loadGoldenSVG(t, "languages")
 
 	t.Run("count_header_exists", func(t *testing.T) {
-		// A1: <h2 class="field"> count header — present after T006.
-		assertElementExists(t, svg, "h2.field", 1)
+		// A1: #409 Phase B7 renders the count header as a 16px native
+		// <text> (SVGSectionHeader) instead of <h2 class="field">.
+		assertElementExists(t, svg, `text[font-size="16"]`, 1)
 	})
 
 	t.Run("count_header_has_languages_text", func(t *testing.T) {
@@ -30,8 +31,9 @@ func TestLanguages_Visual(t *testing.T) {
 	})
 
 	t.Run("section_subheader_exists", func(t *testing.T) {
-		// A1: <h3 class="field"> section sub-header — present after T006.
-		assertElementExists(t, svg, "h3.field", 1)
+		// A1: #409 Phase B7 renders the section sub-header as a centered
+		// native <text> (SVGSubHeader) instead of <h3 class="field">.
+		assertElementExists(t, svg, `text[text-anchor="middle"]`, 1)
 	})
 
 	t.Run("most_used_section_text", func(t *testing.T) {
