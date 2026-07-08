@@ -185,3 +185,72 @@ func TestSVGAvatar(t *testing.T) {
 		t.Errorf("org avatar should clip to a 15%% rounded square: %q", rect)
 	}
 }
+
+func TestCalendarLevelColor(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		level int
+		want  string
+	}{
+		{0, "#ebedf0"},
+		{1, "#9be9a8"},
+		{2, "#40c463"},
+		{3, "#30a14e"},
+		{4, "#216e39"},
+		{5, "#ebedf0"},  // out of range → empty-cell fallback
+		{-1, "#ebedf0"}, // out of range → empty-cell fallback
+	} {
+		if got := CalendarLevelColor(tc.level); got != tc.want {
+			t.Errorf("CalendarLevelColor(%d) = %q, want %q", tc.level, got, tc.want)
+		}
+	}
+}
+
+func TestSVGSubHeader(t *testing.T) {
+	t.Parallel()
+	m, h := SVGSubHeader(120, 54, 224, "Total stargazers")
+	if h != SubHeaderPitch {
+		t.Errorf("height = %v, want %v", h, SubHeaderPitch)
+	}
+	for _, want := range []string{
+		`text-anchor="middle"`,
+		`fill="#0366d6"`,
+		`font-size="14"`,
+		`>Total stargazers</text>`,
+	} {
+		if !strings.Contains(m, want) {
+			t.Errorf("sub-header missing %q: %q", want, m)
+		}
+	}
+}
+
+func TestSVGVBars(t *testing.T) {
+	t.Parallel()
+	if m, h := SVGVBars(8, 54, 224, nil); m != "" || h != 0 {
+		t.Errorf("empty bars = (%q, %v), want (\"\", 0)", m, h)
+	}
+	bars := []VBar{
+		{Value: "1", Label: "1", Caption: "Apr.", Share: 0.05, Level: 1},
+		{Value: "3", Label: "2", Share: 1.0, Level: 4},
+	}
+	m, h := SVGVBars(8, 54, 224, bars)
+	if !strings.Contains(m, `data-block="chart-bars"`) {
+		t.Errorf("chart-bars marker missing: %q", m)
+	}
+	if n := strings.Count(m, "<rect"); n != 2 {
+		t.Errorf("want 2 bars, got %d: %q", n, m)
+	}
+	// Literal contribution-graph fills, no CSS var() references.
+	if !strings.Contains(m, `fill="#9be9a8"`) || !strings.Contains(m, `fill="#216e39"`) {
+		t.Errorf("expected literal L1/L4 fills: %q", m)
+	}
+	if strings.Contains(m, "var(") {
+		t.Errorf("must not emit CSS var() references: %q", m)
+	}
+	// The month caption reserves an extra label line, so a captioned chart
+	// is one label-line taller than an uncaptioned one.
+	_, hNoCaption := SVGVBars(8, 54, 224, []VBar{{Label: "1", Share: 0.5, Level: 2}})
+	if h <= hNoCaption {
+		t.Errorf("captioned height %v should exceed uncaptioned %v", h, hNoCaption)
+	}
+}
