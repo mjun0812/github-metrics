@@ -67,25 +67,22 @@ type Result struct {
 	//   application/json   when Request.Format == "json"
 	//   image/svg+xml      when Request.Format == "svg"  (Template.Run
 	//                                                     output after
-	//                                                     the M3
-	//                                                     decoration
-	//                                                     pipeline +
-	//                                                     chromedp
-	//                                                     svg.Resize)
+	//                                                     the decoration
+	//                                                     pipeline; the
+	//                                                     height is
+	//                                                     already final)
 	//   image/png          when Request.Format == "png"  (real PNG
-	//                                                     bytes from
-	//                                                     chromedp
-	//                                                     page.CaptureScreenshot,
-	//                                                     M3+)
-	//   image/jpeg         when Request.Format == "jpeg" (same as PNG
-	//                                                     with JPEG
-	//                                                     format)
+	//                                                     bytes from the
+	//                                                     resvg
+	//                                                     rasterizer)
+	//   image/jpeg         when Request.Format == "jpeg" (resvg PNG
+	//                                                     re-encoded to
+	//                                                     JPEG in Go)
 	//
 	// On Renderer failure for png / jpeg paths the dispatch returns
-	// (nil, "") and appends the chromedp error to Result.Errors so
+	// (nil, "") and appends the rasterization error to Result.Errors so
 	// callers can detect the failure via the empty Output (FR-018).
-	// For svg the dispatch falls back to the un-resized decorated
-	// SVG bytes.
+	// For svg the dispatch returns the decorated SVG bytes directly.
 	Output []byte
 	// MIME is the IANA type that matches Output. Never empty when
 	// Output is set; never set when Output is empty.
@@ -107,13 +104,12 @@ type Deps struct {
 	HTTPClient *httpx.Client
 	REST       *githubapi.REST
 	GraphQL    *githubapi.GraphQL
-	// Render performs the chromedp-backed SVG resize / convert and is
-	// consumed only when Request.Format ∈ {"svg","png","jpeg"}. Nil
-	// is permitted: when needed, Compute lazily allocates a default
-	// *render.Browser on first use and tears it down at the end of
-	// the call. Tests should inject a *render.FakeRenderer so they
-	// never start chromium. JSON-format requests never read this
-	// field.
+	// Render rasterizes the finalized SVG to PNG / JPEG and is consumed
+	// only when Request.Format ∈ {"png","jpeg"} (svg output skips it).
+	// Nil is permitted: when needed, Compute lazily allocates a default
+	// *render.Resvg on first use. Tests should inject a
+	// *render.FakeRenderer so they never shell out to resvg. JSON- and
+	// svg-format requests never read this field.
 	Render render.Renderer
 }
 

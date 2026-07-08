@@ -8,6 +8,7 @@ import (
 	"image/png"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
@@ -104,6 +105,49 @@ func TestResvg_SVG_PassThrough(t *testing.T) {
 	if string(res.Body) != resvgFixtureSVG {
 		t.Errorf("Body = %q, want verbatim input", res.Body)
 	}
+}
+
+// TestApplyPadding covers the pure-Go canvas expansion: trivial padding
+// is a no-op that reports the intrinsic dims, and a non-trivial spec
+// rewrites width/height/viewBox by width*mult+abs / height*mult+abs
+// (ceil) while keeping the viewBox origin so content is not scaled.
+func TestApplyPadding(t *testing.T) {
+	const in = `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="128" viewBox="0 0 480 128"><rect/></svg>`
+
+	t.Run("trivial padding is a no-op", func(t *testing.T) {
+		out, w, h := applyPadding(in, parsePadding(nil, nil))
+		if out != in {
+			t.Errorf("body rewritten for empty padding:\n got %q", out)
+		}
+		if w != 480 || h != 128 {
+			t.Errorf("dims = %dx%d, want 480x128", w, h)
+		}
+	})
+
+	t.Run("non-trivial padding expands the canvas", func(t *testing.T) {
+		// height "10 + 25%": mult 1.25, abs 10 -> ceil(128*1.25+10)=170.
+		// width "0": unchanged -> 480.
+		out, w, h := applyPadding(in, parsePadding([]string{"0, 10 + 25%"}, nil))
+		if w != 480 || h != 170 {
+			t.Errorf("dims = %dx%d, want 480x170", w, h)
+		}
+		for _, want := range []string{`width="480"`, `height="170"`, `viewBox="0 0 480 170"`} {
+			if !strings.Contains(out, want) {
+				t.Errorf("output missing %q\n got %q", want, out)
+			}
+		}
+		if !strings.Contains(out, "<rect/>") {
+			t.Errorf("padding must not touch the SVG body; got %q", out)
+		}
+	})
+
+	t.Run("unparseable root dims return input unchanged", func(t *testing.T) {
+		const noDims = `<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>`
+		out, w, h := applyPadding(noDims, parsePadding([]string{"0, 20"}, nil))
+		if out != noDims || w != 0 || h != 0 {
+			t.Errorf("expected unchanged/zero dims, got %q %dx%d", out, w, h)
+		}
+	})
 }
 
 // TestNewResvg_MissingBinary confirms a non-existent ExecPath fails

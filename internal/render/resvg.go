@@ -7,17 +7,21 @@ import (
 	"image/jpeg"
 	"image/png"
 	"log/slog"
+	"math"
 	"os"
 	"os/exec"
+	"regexp"
+	"strconv"
+	"strings"
 
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 )
 
 // Resvg rasterizes SVG bytes by shelling out to the resvg CLI. It is
-// the pipeline-agnostic replacement for the chromedp-backed *Browser:
-// resvg has no browser dependency, so PNG/JPEG output no longer needs a
-// running chromium. Because resvg does not measure layout, it assumes
-// the incoming SVG already carries a finalized `height` — see Resize.
+// the Renderer used in production: resvg has no browser dependency, so
+// PNG/JPEG output needs no running browser. Because resvg does not
+// measure layout, it assumes the incoming SVG already carries a
+// finalized `height` — see Resize.
 //
 // resvg cannot emit JPEG, so the JPEG branch rasterizes to PNG and
 // re-encodes via image/jpeg.
@@ -37,6 +41,22 @@ type ResvgOpts struct {
 }
 
 const resvgPathEnv = "METRICS_RESVG_PATH"
+
+// Generic-family fonts passed to resvg. The SVG font stacks end in the
+// CSS generic keywords `sans-serif` (body text) and `monospace` (code /
+// language rows); every *named* family before them (-apple-system,
+// Segoe UI, Helvetica, Arial, …) is a macOS/Windows font absent from
+// the Linux Docker image, so resvg resolves the stack through these
+// generics. Without a concrete mapping resvg cannot match the stack and
+// silently *skips every <text>* (verified against #409 Phase C). We map
+// the generics to the Liberation family, which the runtime image ships
+// via fonts-liberation and which is metric-compatible with Arial /
+// Times New Roman / Courier New.
+const (
+	fontSansSerif = "Liberation Sans"
+	fontSerif     = "Liberation Serif"
+	fontMonospace = "Liberation Mono"
+)
 
 // normalize fills in zero values with their documented defaults and
 // resolves the resvg executable path. Resolution order: ExecPath →
@@ -76,11 +96,14 @@ func NewResvg(opts ResvgOpts) (*Resvg, error) {
 	return &Resvg{opts: opts}, nil
 }
 
-// Resize implements Renderer. Unlike *Browser it performs no layout
-// measurement: the input SVG is expected to already carry a finalized
-// `height` (native SVGs written by the pipeline satisfy this). The svg
-// branch is therefore a pass-through, and the returned Width/Height for
-// the raster branches come from decoding the rasterized PNG.
+// Resize implements Renderer. Unlike the removed browser renderer it
+// performs no layout measurement: the input SVG is expected to already
+// carry a finalized `height` (native SVGs written by the pipeline
+// satisfy this). The only geometric transform is the optional
+// `config.padding` expansion, applied by rewriting the root <svg>
+// width/height/viewBox in Go (pure arithmetic — see applyPadding). The
+// svg branch is therefore a padding-only rewrite, and the raster
+// branches rasterize the padded SVG.
 //
 // resvg subprocess failures are wrapped as *xerrors.RetryableError so
 // the engine dispatch can surface them via Result.Errors while
@@ -91,15 +114,19 @@ func (r *Resvg) Resize(ctx context.Context, in string, opts ResizeOpts) (ResizeR
 		return ResizeResult{}, err
 	}
 
+	padded, w, h := applyPadding(in, parsePadding(opts.Padding, r.opts.Logger))
+
 	if opts.Convert == "svg" {
 		return ResizeResult{
-			Body: []byte(in),
-			MIME: mimeForConvert("svg"),
+			Body:   []byte(padded),
+			Width:  w,
+			Height: h,
+			MIME:   mimeForConvert("svg"),
 		}, nil
 	}
 
 	// PNG / JPEG both rasterize to PNG first via the resvg subprocess.
-	pngBytes, err := r.rasterizePNG(ctx, in)
+	pngBytes, err := r.rasterizePNG(ctx, padded)
 	if err != nil {
 		return ResizeResult{}, err
 	}
@@ -131,14 +158,21 @@ func (r *Resvg) Resize(ctx context.Context, in string, opts ResizeOpts) (ResizeR
 	}, nil
 }
 
-// rasterizePNG runs `resvg - -c`, streaming the SVG in via stdin and
-// reading the PNG back from stdout. Streaming avoids temp files; the
-// SVGs the pipeline produces are self-contained (images are inlined),
-// so resvg's stdin resources-dir warning does not apply.
+// rasterizePNG runs `resvg [font flags] - -c`, streaming the SVG in via
+// stdin and reading the PNG back from stdout. Streaming avoids temp
+// files; the SVGs the pipeline produces are self-contained (images are
+// inlined), so resvg's stdin resources-dir warning does not apply. The
+// generic-family flags let resvg resolve the SVG font stacks — see the
+// font* constants for why they are mandatory.
 func (r *Resvg) rasterizePNG(ctx context.Context, in string) ([]byte, error) {
 	// #nosec G204 -- ExecPath comes from caller config / METRICS_RESVG_PATH,
-	// both trusted in this CLI's threat model (METRICS_CHROME_PATH parity).
-	cmd := exec.CommandContext(ctx, r.opts.ExecPath, "-", "-c")
+	// trusted in this CLI's threat model. The remaining args are constants.
+	cmd := exec.CommandContext(ctx, r.opts.ExecPath,
+		"--sans-serif-family", fontSansSerif,
+		"--serif-family", fontSerif,
+		"--monospace-family", fontMonospace,
+		"--font-family", fontSansSerif,
+		"-", "-c")
 	cmd.Stdin = bytes.NewReader([]byte(in))
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -148,6 +182,82 @@ func (r *Resvg) rasterizePNG(ctx context.Context, in string) ([]byte, error) {
 			fmt.Errorf("render: resvg run: %w: %s", err, bytes.TrimSpace(stderr.Bytes())))
 	}
 	return stdout.Bytes(), nil
+}
+
+// svgOpenTagRe captures the root <svg …> opening tag so padding
+// rewrites stay scoped to it (nested <svg> partials keep their dims).
+var svgOpenTagRe = regexp.MustCompile(`(?s)<svg\b[^>]*?>`)
+
+// svgWidthRe / svgHeightRe / svgViewBoxRe capture a single attribute
+// value inside the root tag. width/height are numeric; viewBox is
+// four space/comma separated numbers "minX minY w h".
+var (
+	svgWidthRe   = regexp.MustCompile(`(\bwidth=")([0-9.]+)(")`)
+	svgHeightRe  = regexp.MustCompile(`(\bheight=")([0-9.]+)(")`)
+	svgViewBoxRe = regexp.MustCompile(`(\bviewBox=")([^"]*)(")`)
+)
+
+// applyPadding expands the rasterized canvas per the parsed padding
+// spec. The height is already finalized in the SVG, so this is pure
+// arithmetic — no browser measurement. With the default (empty / "0")
+// padding it is a no-op that just reports the intrinsic width/height.
+//
+// A non-trivial padding rewrites the root <svg> width, height, and the
+// viewBox's w/h to width*mult+abs / height*mult+abs (ceil). Growing the
+// viewBox in lockstep with width/height keeps the 1:1 unit→pixel
+// mapping, so the extra space renders as transparent margin on the
+// right / bottom rather than scaling the content (upstream padding
+// semantics). Returns the (possibly rewritten) SVG and the final
+// integer dimensions; when the root dims cannot be parsed the input is
+// returned unchanged with zero dims.
+func applyPadding(in string, pad padding) (string, int, int) {
+	tagLoc := svgOpenTagRe.FindStringIndex(in)
+	if tagLoc == nil {
+		return in, 0, 0
+	}
+	tag := in[tagLoc[0]:tagLoc[1]]
+
+	w, okW := attrFloat(svgWidthRe, tag)
+	h, okH := attrFloat(svgHeightRe, tag)
+	if !okW || !okH {
+		return in, 0, 0
+	}
+
+	trivial := pad.width == 1 && pad.height == 1 &&
+		pad.absoluteWidth == 0 && pad.absoluteHeight == 0
+	if trivial {
+		return in, int(w), int(h)
+	}
+
+	newW := int(math.Max(1, math.Ceil(w*pad.width+pad.absoluteWidth)))
+	newH := int(math.Max(1, math.Ceil(h*pad.height+pad.absoluteHeight)))
+
+	newTag := svgWidthRe.ReplaceAllString(tag, "${1}"+strconv.Itoa(newW)+"$3")
+	newTag = svgHeightRe.ReplaceAllString(newTag, "${1}"+strconv.Itoa(newH)+"$3")
+	newTag = svgViewBoxRe.ReplaceAllStringFunc(newTag, func(m string) string {
+		sub := svgViewBoxRe.FindStringSubmatch(m)
+		fields := strings.Fields(strings.ReplaceAll(sub[2], ",", " "))
+		if len(fields) != 4 {
+			return m
+		}
+		return sub[1] + fields[0] + " " + fields[1] + " " +
+			strconv.Itoa(newW) + " " + strconv.Itoa(newH) + sub[3]
+	})
+
+	return in[:tagLoc[0]] + newTag + in[tagLoc[1]:], newW, newH
+}
+
+// attrFloat pulls the numeric group-2 value of re out of tag.
+func attrFloat(re *regexp.Regexp, tag string) (float64, bool) {
+	m := re.FindStringSubmatch(tag)
+	if m == nil {
+		return 0, false
+	}
+	v, err := strconv.ParseFloat(m[2], 64)
+	if err != nil {
+		return 0, false
+	}
+	return v, true
 }
 
 // Compile-time interface check: catch signature drift between the

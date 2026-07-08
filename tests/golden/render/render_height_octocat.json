@@ -1,0 +1,7 @@
+{
+  "_comment": "Expected dimension ranges for engine.Compute(template=classic, format=png) against the mocked octocat GraphQL fixture, rasterized by resvg (#409 Phase D). The values are an envelope, not a target — width_min guards the 480px canvas width (SC-001); the height bounds catch a 1x1 placeholder leaking through (lower) and accidental layout explosions (upper). Since #602 the header card is an opt-in plugin (no longer always-on base chrome); the test renders with plugin_header=yes producing the identity card alone (~94px). Phase D dropped the default '0, 8 + 11%' padding to 0 (it only absorbed the removed browser measurement error), so the card is no longer inflated. height_min=50 still catches the 1x1 placeholder regression class.",
+  "width_min": 470,
+  "width_max": 1000,
+  "height_min": 50,
+  "height_max": 9000
+}

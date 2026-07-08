@@ -668,15 +668,14 @@ func TestDispatch_SVG_NoTemplate(t *testing.T) {
 	}
 }
 
-// TestDispatch_ObtainRenderer_NilDepsRender verifies that when deps.Render
-// is nil and the real Browser cannot be created (no chromium in CI),
-// dispatchOutput records the error in res.Errors and returns the svg
-// fallback (for svg format) or (nil, "") for png format.
+// TestDispatch_ObtainRenderer_NilDepsRender verifies the svg-format
+// contract: since #409 Phase C the svg path returns the decorated SVG
+// without ever constructing a Renderer, so a nil deps.Render cannot
+// degrade it — output is the SVG and res.Errors stays empty.
 func TestDispatch_ObtainRenderer_NilDepsRender_SVGFallback(t *testing.T) {
 	t.Parallel()
 
-	// deps.Render is nil — obtainRenderer will try to create a real Browser.
-	// In a no-chromium environment this always fails, so we get the SVG fallback.
+	// deps.Render is nil, but the svg path never reaches obtainRenderer.
 	deps := Deps{Logger: slog.Default(), Render: nil}
 	res := &Result{}
 
@@ -693,10 +692,8 @@ func TestDispatch_ObtainRenderer_NilDepsRender_SVGFallback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("dispatchOutput with nil render: unexpected error: %v", err)
 	}
-	// On renderer-init failure for svg: fallback returns the decorated SVG.
+	// The svg path returns the decorated SVG directly (no renderer).
 	if len(res.Errors) == 0 {
-		// If chromium was somehow available, out/mime would be set normally.
-		// That is fine too — either path is valid.
 		if mime == "" {
 			t.Error("no renderer error and no output: unexpected state")
 		}
