@@ -41,7 +41,7 @@ var adoptedPlugins = []string{
 	"calendar", "habits", "stars", "people", "notable",
 	"contributors", "reactions", "projects", "sponsors", "sponsorships",
 	"stargazers", "traffic",
-	// P3 chromedp / heavy (4 slugs; 2 own-key + 2 sub-modes of `languages`)
+	// P3 heavy (4 slugs; 2 own-key + 2 sub-modes of `languages`)
 	"topics", "starlists",
 	"languages.recent", "languages.indepth",
 }

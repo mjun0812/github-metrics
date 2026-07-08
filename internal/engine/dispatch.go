@@ -20,14 +20,16 @@ import (
 //   - empty Format: defaults to Template.Metadata().Formats[0] when a
 //     template is registered; "json" otherwise.
 //   - "json": [Marshal](data) → application/json.
-//   - "svg" / "png" / "jpeg": tmpl.Run + decoration stages + chromedp
-//     resize. Renderer comes from deps.Render; nil triggers a lazy
-//     *render.Browser construction that is owned + closed by Compute.
+//   - "svg": tmpl.Run + decoration stages, returned verbatim (the
+//     template already wrote a Go-computed height — no rasterizer).
+//   - "png" / "jpeg": the SVG path plus a resvg rasterization. Renderer
+//     comes from deps.Render; nil triggers a lazy *render.Resvg
+//     construction.
 //   - anything else: *UnsupportedFormatError.
 //
-// Stage-level errors (decoration, chromedp) are appended to
+// Stage-level errors (decoration, rasterization) are appended to
 // res.Errors and the call falls through to a best-effort response:
-// SVG path returns the un-resized SVG, PNG/JPEG path returns
+// SVG path returns the decorated SVG, PNG/JPEG path returns
 // (nil, "") so the caller can detect the failure via the empty
 // Output.
 func dispatchOutput(
@@ -84,20 +86,16 @@ func dispatchOutput(
 
 		// #409 Phase C: the SVG height is now computed in Go — the
 		// template sums each native-SVG partial's self-reported height
-		// and writes the root `<svg height>` directly. The browser
-		// measurement pass (svg_resize.go, which needed the now-removed
-		// `#metrics-end` anchor) is therefore unnecessary for SVG output,
-		// so the svg path skips the Renderer entirely and returns the
-		// decorated SVG verbatim. This also removes Chromium from the
-		// critical path for the common `--output svg` case (the whole
-		// point of #409). PNG/JPEG still rasterize through the Renderer
-		// until Phase D (#694) swaps chromedp for resvg.
+		// and writes the root `<svg height>` directly. There is no
+		// measurement pass, so the svg path skips the Renderer entirely
+		// and returns the decorated SVG verbatim.
 		if format == "svg" {
 			return []byte(decorated), "image/svg+xml", nil
 		}
 
-		// Stage 5 (PNG/JPEG only): rasterize via the Renderer interface.
-		renderer, closeBrowser, err := obtainRenderer(deps)
+		// Stage 5 (PNG/JPEG only): rasterize via the Renderer interface
+		// (resvg). #409 Phase D removed the browser from this path too.
+		renderer, err := obtainRenderer(deps)
 		if err != nil {
 			deps.Logger.Warn("engine: renderer init failed; cannot rasterize",
 				"format", format, "err", err)
@@ -108,22 +106,16 @@ func dispatchOutput(
 			}
 			return nil, "", nil
 		}
-		if closeBrowser != nil {
-			defer closeBrowser()
-		}
 
-		// Apply upstream's `config_padding` default ("0, 8 + 11%") when
-		// the caller did not override — width:0 absolute (no padding),
-		// height:8 absolute + 11% relative.
-		// org_repo/source/plugins/core/metadata.yml line 347.
-		padding := stringSliceInput(req.Inputs, "config.padding")
-		if len(padding) == 0 {
-			padding = []string{"0, 8 + 11%"}
-		}
+		// #409 Phase D: the upstream `config.padding` default ("0, 8 + 11%")
+		// dropped to 0. That 8px + 11% cushion existed only to absorb the
+		// browser's foreignObject height-measurement error; resvg
+		// rasterizes the SVG at its now-exact Go-computed height, so no
+		// cushion is needed. A caller-supplied `config.padding` is still
+		// honored (parsed by render.parsePadding, applied by applyPadding).
 		out, err := renderer.Resize(ctx, decorated, render.ResizeOpts{
 			Convert: format,
-			Padding: padding,
-			Scripts: stringSliceInput(req.Inputs, "extras.js"),
+			Padding: stringSliceInput(req.Inputs, "config.padding"),
 		})
 		if err != nil {
 			deps.Logger.Warn("engine: rasterize failed",
@@ -141,17 +133,14 @@ func dispatchOutput(
 }
 
 // obtainRenderer returns the configured Renderer when deps.Render is
-// non-nil. When nil, a fresh *render.Browser is constructed and the
-// returned cleanup func cancels it at the end of the request.
-func obtainRenderer(deps Deps) (render.Renderer, func(), error) {
+// non-nil. When nil, a fresh *render.Resvg is constructed. resvg holds
+// no long-lived resources (it shells out per call), so unlike the
+// removed browser renderer there is nothing for the caller to close.
+func obtainRenderer(deps Deps) (render.Renderer, error) {
 	if deps.Render != nil {
-		return deps.Render, nil, nil
+		return deps.Render, nil
 	}
-	b, err := render.New(render.BrowserOpts{Logger: deps.Logger})
-	if err != nil {
-		return nil, nil, err
-	}
-	return b, func() { _ = b.Close() }, nil
+	return render.NewResvg(render.ResvgOpts{Logger: deps.Logger})
 }
 
 // buildPipelineStages assembles the decoration stages applied between

@@ -34,7 +34,7 @@ const upstreamHashFixtureDir = "tests/fixtures/upstream/svg_hash"
 // expansion, whitespace). Our Go Hash uses goquery, whose
 // normalization rules are similar but not byte-identical. Cases that
 // fail this test today should be triaged in T035 — at worst, the
-// upstream hash can be re-derived through chromedp on the fly to
+// upstream hash can be re-derived through a headless browser on the fly to
 // match byte-for-byte (research R-013 fallback option).
 func TestUpstreamHashCompatible(t *testing.T) {
 	t.Parallel()

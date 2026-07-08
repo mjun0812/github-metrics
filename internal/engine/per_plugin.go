@@ -55,8 +55,8 @@ func ComputePerPlugin(ctx context.Context, req Request, deps Deps) ([]*PerPlugin
 	targets := resolvePerPluginTargets(req.Inputs)
 
 	// #409 Phase C: per-plugin partials emit native SVG with a
-	// Go-computed height, so there is no browser measurement pass — the
-	// per-plugin path no longer spins up Chromium at all.
+	// Go-computed height, so there is no measurement pass — the
+	// per-plugin path emits SVG directly and never rasterizes.
 	stages := buildPipelineStages(ctx, req.Inputs, imageFetcher(deps))
 
 	results := make([]*PerPluginResult, 0, len(targets))

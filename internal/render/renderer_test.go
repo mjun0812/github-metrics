@@ -106,7 +106,7 @@ func TestFakeRenderer_Resize(t *testing.T) {
 func TestFakeRenderer_ErrOnConvert(t *testing.T) {
 	t.Parallel()
 
-	sentinel := errors.New("simulated chromedp failure")
+	sentinel := errors.New("simulated renderer failure")
 	f := &FakeRenderer{ErrOnConvert: map[string]error{"png": sentinel}}
 
 	// PNG branch returns the sentinel.
@@ -210,8 +210,8 @@ func TestFakeRenderer_WidthHeightOverride(t *testing.T) {
 func TestResizeOpts_Normalize(t *testing.T) {
 	t.Parallel()
 
-	// Zero ViewportWidth/Height/SettleDelay should not error, and
-	// the resulting ResizeResult should still come back populated.
+	// Zero-value opts should not error, and the resulting ResizeResult
+	// should still come back populated.
 	f := &FakeRenderer{}
 	res, err := f.Resize(context.Background(), "<svg/>", ResizeOpts{})
 	if err != nil {

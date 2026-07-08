@@ -58,7 +58,7 @@ func TestCompute_TemplateNotFound_ReturnsError(t *testing.T) {
 
 // TestCompute_JSON_Format tests that Compute with Format="json" returns
 // a valid JSON body and "application/json" MIME. Uses Format="json" to
-// avoid the SVG/PNG chromedp path.
+// avoid the SVG/PNG render path.
 func TestCompute_JSON_Format(t *testing.T) {
 	t.Parallel()
 
