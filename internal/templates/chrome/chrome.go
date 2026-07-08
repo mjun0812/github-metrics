@@ -142,6 +142,22 @@ const (
 	emptyCellColor    = "#ebedf0"
 )
 
+// calendarLevelColors is the GitHub contribution-graph L0..L4 ramp
+// (`--color-calendar-graph-day-{bg,L1..L4}-bg` in style.css). resvg does
+// not resolve those CSS variables (#409 decision log #4), so the chart
+// partials emit the literal hex via CalendarLevelColor.
+var calendarLevelColors = [5]string{emptyCellColor, "#9be9a8", "#40c463", "#30a14e", "#216e39"}
+
+// CalendarLevelColor returns the literal fill for contribution-graph
+// level `level` (0 = empty, 1..4 = increasing intensity). Out-of-range
+// levels fall back to the empty-cell color.
+func CalendarLevelColor(level int) string {
+	if level < 0 || level >= len(calendarLevelColors) {
+		return emptyCellColor
+	}
+	return calendarLevelColors[level]
+}
+
 // ContributionRow renders the mini contribution calendar as a single
 // horizontal row of day cells. Returns "" when no days are present so
 // the partial can hide the block. Mirrors upstream `base.header.ejs`,

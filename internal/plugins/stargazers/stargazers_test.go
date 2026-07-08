@@ -293,54 +293,59 @@ func TestRun_GraphGoldenShape(t *testing.T) {
 func TestPartial_ClassicChartBarsMaintained(t *testing.T) {
 	t.Parallel()
 	got := renderPartial(t, "classic")
-	if !strings.Contains(got, `class="chart-bars"`) {
-		t.Fatalf("classic partial missing chart-bars:\n%s", got)
+	if !strings.Contains(got, `data-block="chart-bars"`) {
+		t.Fatalf("classic partial missing native chart-bars block:\n%s", got)
 	}
 	if strings.Contains(got, `class="stargazers-graph"`) {
 		t.Fatalf("classic partial should not render graph svg:\n%s", got)
 	}
+	// #409 Phase B5 completion condition: no CSS var() color references
+	// survive the native-SVG conversion (resvg cannot resolve them).
+	if strings.Contains(got, "var(") {
+		t.Fatalf("classic partial must not emit CSS var() references:\n%s", got)
+	}
 }
 
 // TestPartial_ClassicTwoColumns asserts the classic chart renders the
-// two upstream columns (cumulative Total + per-bucket New) with
-// upstream-equivalent day-of-month labels plus month-boundary captions
-// (#541), rather than the day-only stride-thinned labels of #508.
+// two upstream columns (cumulative Total + per-bucket New) as native SVG
+// with day-of-month ticks plus month-boundary captions (#541), rather
+// than the day-only stride-thinned labels of #508.
 func TestPartial_ClassicTwoColumns(t *testing.T) {
 	t.Parallel()
 	got := renderPartial(t, "classic")
 	for _, marker := range []string{
-		`<h3>Total stargazers</h3>`,
-		`<h3>New stargazers per day</h3>`,
-		// Day-of-month labels sit as bare text inside `.entry`; the
-		// first bar and any day-1 bar additionally carries a
-		// `<div class="bottom">{month}</div>` caption (#541), matching
+		`>Total stargazers</text>`,
+		`>New stargazers per day</text>`,
+		// Day-of-month ticks sit as bare `<text>` under each bar; the
+		// first bar and any day-1 bar additionally carries a month
+		// caption line (#541), matching
 		// `org_repo/source/templates/classic/partials/stargazers.ejs`.
-		`</div>1<div class="bottom">Apr.</div></div>`,
-		`<div class="bottom">May</div>`,
+		`>Apr.</text>`,
+		`>May</text>`,
 	} {
 		if !strings.Contains(got, marker) {
 			t.Fatalf("classic partial missing %q:\n%s", marker, got)
 		}
 	}
-	// The x-axis ticks must NOT reuse the pill-badge `.label` class.
-	if strings.Contains(got, `<span class="label">`) {
-		t.Errorf("chart x-axis ticks must not use the pill `.label` class:\n%s", got)
+	// The chart must not fall back to any HTML chart-bars markup.
+	if strings.Contains(got, `<span class="label">`) || strings.Contains(got, `<div class="chart-bars">`) {
+		t.Errorf("chart must not emit HTML chart-bars markup:\n%s", got)
 	}
 	// Two chart-bars columns (one per section).
-	if n := strings.Count(got, `class="chart-bars"`); n != 2 {
+	if n := strings.Count(got, `data-block="chart-bars"`); n != 2 {
 		t.Fatalf("want 2 chart-bars columns, got %d:\n%s", n, got)
 	}
 	// New-stargazers column: Apr is the first bucket (cumulative 1 →
 	// +1), May adds 2 (cumulative 3 → +2). The signed increment "+2"
 	// must appear (#541 switched the Increments column to upstream's
 	// `f(value, {sign:true})` shape).
-	if !strings.Contains(got, `<span class="value">+2</span>`) {
+	if !strings.Contains(got, `>+2</text>`) {
 		t.Errorf("expected a +2 increment in the New column:\n%s", got)
 	}
 	// Total column: the second bar (May, cumulative 3) carries the
 	// raw count, exercising the "label only when the value changed"
-	// rule from writeClassicCharts.
-	if !strings.Contains(got, `<span class="value">3</span>`) {
+	// rule from writeClassicSection.
+	if !strings.Contains(got, `>3</text>`) {
 		t.Errorf("expected the Total column to label the changed cumulative count 3:\n%s", got)
 	}
 }
