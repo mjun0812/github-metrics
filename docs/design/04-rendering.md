@@ -4,7 +4,7 @@
 
 - [1. パイプライン概要](#1-パイプライン概要)
 - [2. EJS 互換テンプレートエンジン](#2-ejs-互換テンプレートエンジン)
-- [3. SVG リサイズ (chromedp)](#3-svg-リサイズ-chromedp)
+- [3. SVG ラスタライズ (resvg)](#3-svg-ラスタライズ-resvg)
 - [4. SVG 最適化](#4-svg-最適化)
 - [5. PDF 出力](#5-pdf-出力)
 - [6. Insights HTML 出力](#6-insights-html-出力)
@@ -28,7 +28,8 @@
 6. (任意) CSS 最適化 (purgecss + csso)
 7. (任意) XML 整形 (xml-formatter)
 8. (任意) SVG 最適化 (svgo / --optimize experimental)
-9. svg.Resize() → chromedp で高さを実測、最終 SVG (or PNG/JPEG)
+9. render.Resize() → 高さは step 3-4 で確定済みなので、任意の `config.padding`
+   を適用し、SVG はそのまま / PNG・JPEG は resvg でラスタライズ
 10. {Rendered, Mime} を返す
 ```
 
@@ -83,38 +84,61 @@ markdown 出力時には `{ }` を delimiter とする 2 パスレンダリン�
 | `Range(start, end, step)` | for ループ補助 |
 | `Octicon(name, size)` | `:octicon-name-size:` プレースホルダ生成 |
 
-## 3. SVG リサイズ (chromedp)
+## 3. SVG ラスタライズ (resvg)
 
-SVG リサイズ機能は **必須**: 最終高さを実ブラウザで計測して決定する。
-chromedp に渡す JS 評価スクリプトの本体と padding パース規則は [13-appendix.md §G](./13-appendix.md#g-svgresize-の-chromedp-評価スクリプト) を参照。
+最終出力はブラウザに依存しない。upstream は Headless Chromium で高さを実測し
+`page.CaptureScreenshot` で PNG/JPEG を得ていたが、本移植では:
 
-### 3.1 アルゴリズム
+- **高さ**は生成時に確定する。各 partial が自分の消費高さを Go 側の
+  フォントメトリクス (`internal/render/fontmetrics`, `x/image/font/sfnt` で
+  埋め込み TTF を計測) から算出し、`classic.go` / `repository.go` が
+  それを積み上げてルート `<svg height>` に直接書き込む
+  (`height="99999"` プレースホルダも `foreignObject` も無い)。
+- **PNG/JPEG**は確定済み SVG を [resvg](https://github.com/linebender/resvg)
+  CLI (`render.Resvg`) でラスタライズする。JPEG は resvg が対応しないため、
+  resvg の PNG を Go の `image/jpeg` で再エンコードする。
 
-1. chromedp タブを開き、`page.SetContent(rendered)`。
-2. `body { margin: 0; padding: 0; }` を追加 CSS で適用。
-3. ユーザー JS (`scripts[]`) を順次実行 (`(async () => { … })()` の形)。
-4. SVG クラスから一時的に `no-animations` を付与してアニメーション停止。
-5. 2.4 秒 sleep (アニメーション安定化)。
-6. `getBoundingClientRect()` を `svg #metrics-end` 要素に対して取得 → `(width, height)` を得る。
-7. `padding` 適用: 文字列を `"<absolute> + <relative>%"` 形式でパースし、`width = ceil(width * (1 + relative/100) + absolute)` 等を計算。
-8. `<svg>` 要素の `height` 属性を更新 (元値が `auto` なら skip)。
-9. `XMLSerializer().serializeToString(...)` 相当を `goquery` ベースで取り出す。
-10. `convert` 指定があれば `page.Screenshot(clip={0,0,width,height}, type=convert, omitBackground=true)` で PNG/JPEG バイト列を取得。
+この構造により chromium への実行時依存が消え、distro のブラウザパッケージ
+更新で描画が壊れる障害クラスを排除した (経緯: [#409](https://github.com/mjun0812/github-metrics/issues/409))。
 
-### 3.2 chromedp 実装メモ
+### 3.1 `render.Resize` アルゴリズム (`internal/render/resvg.go`)
 
-- `chromedp.Run(ctx, chromedp.Tasks{ chromedp.Navigate("about:blank"), chromedp.Sleep(...), chromedp.Evaluate(jsSource, &result) })`
-- ブラウザは `chromedp.NewContext(allocCtx)` で再利用するインスタンスを保持(`svg.resize.browser` と同じ)。
-- `setViewport(980, 980)` 相当: `chromedp.EmulateViewport(980, 980)`。
-- `waitUntil: ["load", "domcontentloaded", "networkidle2"]` の挙動は chromedp の `NavigationLifecycle` で表現できないため、`Sleep(800ms)` + ネットワークアイドル待機関数 (`network.SetCacheDisabled` 等)を使う。
+高さは既に確定しているので測定は行わない。処理は次のとおり:
 
-### 3.3 デバッグオプション
+1. `config.padding` をパース (`internal/render/padding.go`、後述 §3.3)。
+2. `applyPadding`: padding が非自明ならルート `<svg>` の width / height /
+   viewBox を `dim*mult + absolute` (ceil) に書き換える純粋な算術。既定
+   (空 / `"0"`) では no-op でルートの寸法をそのまま返す。
+3. `convert == "svg"`: padding 適用後の SVG をそのまま返す (resvg は呼ばない)。
+4. `convert == "png" | "jpeg"`: SVG を resvg サブプロセスの stdin に流し込み、
+   PNG を stdout から受け取る。JPEG はその PNG をデコードして `image/jpeg`
+   で再エンコードする。
 
-| Node debug flag | Go 動作 |
-|-----------------|---------|
-| `--puppeteer-disable-headless` | `chromedp.Flag("headless", false)` |
-| `--puppeteer-debug` | `chromedp.WithDebugf(log.Printf)` |
-| `--puppeteer-wait-<event>` | `Sleep` で待機する event を追加 |
+### 3.2 resvg サブプロセス
+
+- 呼び出し: `resvg [フォントフラグ] - -c` (stdin から SVG、stdout へ PNG)。
+  生成 SVG は画像を base64 で inline 済みなので resources-dir は不要。
+- **フォントフラグは必須**。生成 SVG のフォントスタックは CSS 総称ファミリ
+  (`sans-serif` / `monospace`) で終わるので、`--sans-serif-family` 等で
+  Liberation ファミリ (`Liberation Sans` / `Serif` / `Mono`、Arial 等と
+  メトリクス互換) にマップする。マップしないと resvg はスタックを解決できず
+  **全 `<text>` を無言でスキップ**する。
+- バイナリの解決順は `ResvgOpts.ExecPath` → 環境変数 `METRICS_RESVG_PATH`
+  → `PATH` 上の `resvg`。構築時に stat して見つからなければ即エラー
+  (`*InputError`) にし、無言劣化を防ぐ。
+- resvg のプレビルド静的バイナリ (~6 MB) を Docker image / CI に同梱する。
+
+### 3.3 padding パース
+
+`config.padding` は入力互換のため upstream と同じ `"<絶対> + <相対>%"` 形式を
+サポートする (`internal/render/padding.go`)。ブラウザ計測誤差を吸収するための
+既定値だったが、計測が無くなったため既定は実質 no-op である。
+
+### 3.4 デバッグオプション
+
+upstream の puppeteer デバッグフラグ (`--puppeteer-disable-headless` /
+`--puppeteer-debug` / `--puppeteer-wait-<event>`) はブラウザ前提のため、
+本移植では入力互換のために受理するが動作には影響しない (no-op)。
 
 ## 4. SVG 最適化
 
