@@ -38,7 +38,9 @@ const fallbackAdvanceRatio = 0.5
 type Weight int
 
 const (
+	// Regular measures with LiberationSans-Regular.ttf.
 	Regular Weight = iota
+	// Bold measures with LiberationSans-Bold.ttf.
 	Bold
 )
 
