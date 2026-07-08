@@ -59,18 +59,18 @@ func TestPartial_Traffic_Normal(t *testing.T) {
 		HideEmpty: true,
 	})
 	// Aggregate line uses k short form and plural "views".
-	if !strings.Contains(got, `<span class="label">1.3k views (41 unique)</span>`) {
+	if !strings.Contains(got, `>1.3k views (41 unique)</text>`) {
 		t.Errorf("missing/incorrect aggregate line; got:\n%s", got)
 	}
 	// Per-repo rows.
-	if !strings.Contains(got, `<span class="repo">octocat/alpha</span>: 1.2k views (40 unique)`) {
+	if !strings.Contains(got, `>octocat/alpha: 1.2k views (40 unique)</text>`) {
 		t.Errorf("missing alpha row; got:\n%s", got)
 	}
 	// Singular "view" and "unique" when the count is 1.
-	if !strings.Contains(got, `<span class="repo">octocat/beta</span>: 50 views (1 unique)`) {
+	if !strings.Contains(got, `>octocat/beta: 50 views (1 unique)</text>`) {
 		t.Errorf("missing beta row; got:\n%s", got)
 	}
-	if !strings.Contains(got, `data-section="traffic"`) || !strings.Contains(got, `Traffic</h2>`) {
+	if !strings.Contains(got, `data-section="traffic"`) || !strings.Contains(got, `>Traffic</text>`) {
 		t.Errorf("missing section wrapper/header; got:\n%s", got)
 	}
 }
@@ -86,7 +86,7 @@ func TestPartial_Traffic_SingularView(t *testing.T) {
 		Total:     traffic.TrafficView{Count: 1, Uniques: 1},
 		HideEmpty: true,
 	})
-	if !strings.Contains(got, `<span class="label">1 view (1 unique)</span>`) {
+	if !strings.Contains(got, `>1 view (1 unique)</text>`) {
 		t.Errorf("expected singular 'view'; got:\n%s", got)
 	}
 }
@@ -108,7 +108,7 @@ func TestPartial_Traffic_Ordering(t *testing.T) {
 	order := []string{"octocat/high", "octocat/mid", "octocat/tie-b", "octocat/low"}
 	prev := -1
 	for _, name := range order {
-		idx := strings.Index(got, `<span class="repo">`+name+`</span>`)
+		idx := strings.Index(got, `>`+name+`:`)
 		if idx == -1 {
 			t.Fatalf("row %q not found; got:\n%s", name, got)
 		}
@@ -149,7 +149,7 @@ func TestPartial_Traffic_HideEmptyFalse(t *testing.T) {
 		Total:     traffic.TrafficView{Count: 100, Uniques: 40},
 		HideEmpty: false,
 	})
-	if !strings.Contains(got, `<span class="repo">octocat/zero</span>: 0 views (0 unique)`) {
+	if !strings.Contains(got, `>octocat/zero: 0 views (0 unique)</text>`) {
 		t.Errorf("HideEmpty=false should keep zero-view repos; got:\n%s", got)
 	}
 }
@@ -166,11 +166,12 @@ func TestPartial_Traffic_EmptyViews(t *testing.T) {
 	if !strings.Contains(got, `data-section="traffic"`) {
 		t.Errorf("expected section wrapper for empty views; got:\n%s", got)
 	}
-	if !strings.Contains(got, `<span class="label">0 views (0 unique)</span>`) {
+	if !strings.Contains(got, `>0 views (0 unique)</text>`) {
 		t.Errorf("expected aggregate-only 0 views line; got:\n%s", got)
 	}
-	if strings.Contains(got, `class="repo"`) {
-		t.Errorf("expected no per-repo rows; got:\n%s", got)
+	// Header text + aggregate pill text = exactly two <text> elements.
+	if n := strings.Count(got, "</text>"); n != 2 {
+		t.Errorf("expected no per-repo rows (2 <text> total), got %d; got:\n%s", n, got)
 	}
 }
 
