@@ -1,74 +1,107 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="455" class="">
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="457" viewBox="0 0 480 457" class="">
   <defs>
     <style/>
   </defs>
   <style>
-    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}h1,h2,h3{margin:8px 0 2px;padding:0;color:#0366d6;font-weight:400}h1 svg,h2 svg,h3 svg{fill:currentColor}h2{font-size:16px}section&gt;.field{margin-left:5px;margin-right:5px}.field{display:flex;align-items:center;margin-bottom:2px;white-space:nowrap}.field svg{margin:0 8px;fill:#959da5;flex-shrink:0}.row{display:flex;flex-wrap:wrap}.row section{flex:1}.repo-badges .badge.language::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}.fill-width{width:100%}@keyframes animation-gauge{from{stroke-dasharray:0 329}}.introduction,.sponsors{white-space:normal;margin:0 13px 2px}.sponsors.goal{padding:6px 8px;border-radius:5px;background-color:#7777771f}.sponsors .goal-text,.sponsors .past-text{display:flex;justify-content:space-between;font-style:italic;font-size:12px;margin-bottom:4px}.markdown p{margin:8px 0}.markdown a{color:#58a6ff;text-decoration:none}@keyframes animation-rainbow{0%,100%{color:#7f00ff;fill:#7f00ff}14%{color:#a933ff;fill:#a933ff}29%{color:#007fff;fill:#007fff}43%{color:#00ff7f;fill:#00ff7f}57%{color:#ff0;fill:#ff0}71%{color:#ff7f00;fill:#ff7f00}86%{color:red;fill:red}}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
+    svg{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;font-size:14px;color:#777}.repo-badges .badge.language::before{content:&#34;&#34;;display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;background-color:var(--lang-color,#959da5)}@keyframes animation-gauge{from{stroke-dasharray:0 329}}.sponsors{white-space:normal;margin:0 13px 2px}.sponsors.goal{padding:6px 8px;border-radius:5px;background-color:#7777771f}.markdown a{color:#58a6ff;text-decoration:none}:root{--color-calendar-graph-day-bg:#ebedf0;--color-calendar-graph-day-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-bg:#9be9a8;--color-calendar-graph-day-L2-bg:#40c463;--color-calendar-graph-day-L3-bg:#30a14e;--color-calendar-graph-day-L4-bg:#216e39;--color-calendar-halloween-graph-day-L1-bg:#ffee4a;--color-calendar-halloween-graph-day-L2-bg:#ffc501;--color-calendar-halloween-graph-day-L3-bg:#fe9600;--color-calendar-halloween-graph-day-L4-bg:#03001c;--color-calendar-winter-graph-day-L1-bg:#0a3069;--color-calendar-winter-graph-day-L2-bg:#0969da;--color-calendar-winter-graph-day-L3-bg:#54aeff;--color-calendar-winter-graph-day-L4-bg:#b6e3ff;--color-calendar-graph-day-L4-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L3-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L2-border:rgba(27,31,35,0.06);--color-calendar-graph-day-L1-border:rgba(27,31,35,0.06)}#metrics-end{width:100%}
   </style>
   <style/>
-  <foreignObject x="0" y="0" width="100%" height="100%">
-    <div xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" class="items-wrapper">
-      <div class="plugin-sponsors" data-plugin="sponsors">
-        <section data-section="sponsors">
-          <section>
-            <h2 class="field">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                <path fill-rule="evenodd" d="M4.25 2.5c-1.336 0-2.75 1.164-2.75 3 0 2.15 1.58 4.144 3.365 5.682A20.565 20.565 0 008 13.393a20.561 20.561 0 003.135-2.211C12.92 9.644 14.5 7.65 14.5 5.5c0-1.836-1.414-3-2.75-3-1.373 0-2.609.986-3.029 2.456a.75.75 0 01-1.442 0C6.859 3.486 5.623 2.5 4.25 2.5zM8 14.25l-.345.666-.002-.001-.006-.003-.018-.01a7.643 7.643 0 01-.31-.17 22.075 22.075 0 01-3.434-2.414C2.045 10.731 0 8.35 0 5.5 0 2.836 2.086 1 4.25 1 5.797 1 7.153 1.802 8 3.02 8.847 1.802 10.203 1 11.75 1 13.914 1 16 2.836 16 5.5c0 2.85-2.045 5.231-3.885 6.818a22.08 22.08 0 01-3.744 2.584l-.018.01-.006.003h-.002L8 14.25zm0 0l.345.666a.752.752 0 01-.69 0L8 14.25z"/>
-              </svg>
-              Sponsor Me!
-            </h2>
-            <div class="fill-width">
-              <section class="sponsors goal">
-                <div class="goal-text">
-                  <span></span>
-                </div>
-                <div class="row"></div>
-              </section>
-            </div>
-            <div class="row fill-width">
-              <section class="sponsors">
-                <h2 class="field">
-                  About Me
-                </h2>
-                <div class="markdown">
-                  <p>
-                    Hi! I'm Junya Morioka (@mjun0812), a Machine Learning Engineer in Tokyo with a Ph.D. in Computer Science.
-                  </p>
-                  <p>
-                    I build and maintain open-source tools for ML/AI developers, especially around CUDA, PyTorch, GitHub Actions, and modern Python development environments.
-                  </p>
-                  <p>
-                    My main project is
-                    <a href="https://github.com/mjun0812/flash-attention-prebuild-wheels">
-                      flash-attention-prebuild-wheels
-                    </a>
-                    , which provides pre-built Flash Attention 2 and 3 wheels for Linux and Windows. It uses GitHub Actions, self-hosted runners, and AWS CodeBuild to support many CUDA / PyTorch / Python / platform combinations that are not always available officially.
-                  </p>
-                  <p>
-                    I also maintain
-                    <a href="https://github.com/mjun0812/setup-cuda">
-                      setup-cuda
-                    </a>
-                    and Python project templates, and I have contributed fixes to OSS projects such as Hugging Face Accelerate / Datasets, YOLOv5, PyTorch, oxc, mirrors-oxfmt, and azooKey Desktop.
-                  </p>
-                  <p>
-                    Sponsorship helps me keep maintaining build infrastructure, release automation, documentation, and user support. If my projects have saved you time or compute resources, I would really appreciate your support.
-                  </p>
-                  <p>
-                    <a href="https://mjunya.com/about/">
-                      📝 About Me (JA)
-                    </a>
-                    <a href="https://mjunya.com/en/about/">
-                      📝 About Me (EN)
-                    </a>
-                  </p>
-                </div>
-              </section>
-            </div>
-          </section>
-        </section>
-      </div>
-      <div id="metrics-end"></div>
-    </div>
-  </foreignObject>
+  <g transform="translate(0,0)" class="plugin-sponsors" data-plugin="sponsors">
+    <g data-section="sponsors">
+      <svg width="100%" height="457" viewBox="0 0 480 457">
+        <g transform="translate(13,9)" fill="#959da5">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path fill-rule="evenodd" d="M4.25 2.5c-1.336 0-2.75 1.164-2.75 3 0 2.15 1.58 4.144 3.365 5.682A20.565 20.565 0 008 13.393a20.561 20.561 0 003.135-2.211C12.92 9.644 14.5 7.65 14.5 5.5c0-1.836-1.414-3-2.75-3-1.373 0-2.609.986-3.029 2.456a.75.75 0 01-1.442 0C6.859 3.486 5.623 2.5 4.25 2.5zM8 14.25l-.345.666-.002-.001-.006-.003-.018-.01a7.643 7.643 0 01-.31-.17 22.075 22.075 0 01-3.434-2.414C2.045 10.731 0 8.35 0 5.5 0 2.836 2.086 1 4.25 1 5.797 1 7.153 1.802 8 3.02 8.847 1.802 10.203 1 11.75 1 13.914 1 16 2.836 16 5.5c0 2.85-2.045 5.231-3.885 6.818a22.08 22.08 0 01-3.744 2.584l-.018.01-.006.003h-.002L8 14.25zm0 0l.345.666a.752.752 0 01-.69 0L8 14.25z"/>
+          </svg>
+        </g>
+        <text x="37" y="22" font-size="16" fill="#0366d6">
+          Sponsor Me!
+        </text>
+        <g class="sponsors goal">
+          <rect x="13" y="32" width="454" height="30" rx="5" ry="5" fill="#777777" fill-opacity="0.12"/>
+        </g>
+        <g class="sponsors">
+          <text x="13" y="86" font-size="16" fill="#0366d6">
+            About Me
+          </text>
+          <g class="markdown">
+            <text x="13" y="108" font-size="14" fill="#777777">
+              Hi! I&#39;m Junya Morioka (@mjun0812), a Machine Learning Engineer in
+            </text>
+            <text x="13" y="127" font-size="14" fill="#777777">
+              Tokyo with a Ph.D. in Computer Science.
+            </text>
+            <text x="13" y="154" font-size="14" fill="#777777">
+              I build and maintain open-source tools for ML/AI developers, especially
+            </text>
+            <text x="13" y="173" font-size="14" fill="#777777">
+              around CUDA, PyTorch, GitHub Actions, and modern Python
+            </text>
+            <text x="13" y="192" font-size="14" fill="#777777">
+              development environments.
+            </text>
+            <text x="13" y="219" font-size="14" fill="#777777">
+              My main project is
+            </text>
+            <a href="https://github.com/mjun0812/flash-attention-prebuild-wheels">
+              <text x="130" y="219" font-size="14" fill="#58a6ff">
+                flash-attention-prebuild-wheels
+              </text>
+            </a>
+            <text x="324" y="219" font-size="14" fill="#777777">
+              , which provides
+            </text>
+            <text x="13" y="237" font-size="14" fill="#777777">
+              pre-built Flash Attention 2 and 3 wheels for Linux and Windows. It uses
+            </text>
+            <text x="13" y="256" font-size="14" fill="#777777">
+              GitHub Actions, self-hosted runners, and AWS CodeBuild to support
+            </text>
+            <text x="13" y="275" font-size="14" fill="#777777">
+              many CUDA / PyTorch / Python / platform combinations that are not
+            </text>
+            <text x="13" y="294" font-size="14" fill="#777777">
+              always available officially.
+            </text>
+            <text x="13" y="321" font-size="14" fill="#777777">
+              I also maintain
+            </text>
+            <a href="https://github.com/mjun0812/setup-cuda">
+              <text x="107" y="321" font-size="14" fill="#58a6ff">
+                setup-cuda
+              </text>
+            </a>
+            <text x="180" y="321" font-size="14" fill="#777777">
+              and Python project templates, and I have
+            </text>
+            <text x="13" y="340" font-size="14" fill="#777777">
+              contributed fixes to OSS projects such as Hugging Face Accelerate /
+            </text>
+            <text x="13" y="359" font-size="14" fill="#777777">
+              Datasets, YOLOv5, PyTorch, oxc, mirrors-oxfmt, and azooKey Desktop.
+            </text>
+            <text x="13" y="386" font-size="14" fill="#777777">
+              Sponsorship helps me keep maintaining build infrastructure, release
+            </text>
+            <text x="13" y="405" font-size="14" fill="#777777">
+              automation, documentation, and user support. If my projects have saved
+            </text>
+            <text x="13" y="423" font-size="14" fill="#777777">
+              you time or compute resources, I would really appreciate your support.
+            </text>
+            <a href="https://mjunya.com/about/">
+              <text x="13" y="450" font-size="14" fill="#58a6ff">
+                📝 About Me (JA)
+              </text>
+            </a>
+            <a href="https://mjunya.com/en/about/">
+              <text x="117" y="450" font-size="14" fill="#58a6ff">
+                📝 About Me (EN)
+              </text>
+            </a>
+          </g>
+        </g>
+      </svg>
+    </g>
+  </g>
 </svg>
