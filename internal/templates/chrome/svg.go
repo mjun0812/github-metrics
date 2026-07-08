@@ -14,6 +14,7 @@ package chrome
 import (
 	"fmt"
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -363,6 +364,110 @@ func SVGChipFlow(x, top, maxRight float64, texts []string) (string, float64) {
 		cx += adv
 	}
 	return b.String(), float64(rows) * svgChipRowPitch
+}
+
+const (
+	// Repository-card colors: the name is GitHub link-blue and the
+	// trailing date grey 10px (`.repository .name span:first-child {
+	// color:#58a6ff }`, `span:last-child { color:#666666; font-size:10px;
+	// max-width:150px }`).
+	svgRepoNameFill = "#58a6ff"
+	svgRepoDateFill = "#666666"
+	svgRepoDateFont = 10.0
+	svgRepoDateMax  = 150.0
+	svgRepoNameGap  = 8.0 // `.repository .name { gap: 8px }`
+)
+
+// SVGRepoName renders a repository card's name row: the repo/fork
+// octicon at the card's field inset, the blue repository name
+// (ellipsis-truncated), and an optional right-aligned grey date label
+// (ellipsis-truncated to 150px). cardX is the card's left edge and
+// nameWidth the name area width (the `.repository .name` box). When url
+// is non-empty the name is wrapped in an `<a>` so SVG viewers keep the
+// link. Returns the markup and the height consumed (FieldPitch).
+func SVGRepoName(cardX, top, nameWidth, nameFont float64, icon, name, url, date string) (string, float64) {
+	iconX := cardX + svgSectionInset + svgIconMargin
+	iconY := top + (FieldPitch-svgIconSize)/2
+	nameX := iconX + svgIconSize + svgIconMargin
+	rightEdge := nameX + nameWidth
+
+	var b strings.Builder
+	b.WriteString(SVGIcon(iconX, iconY, svgIconFill, icon))
+
+	dateW := 0.0
+	if date != "" {
+		date = TruncateToWidth(date, svgRepoDateFont, fontmetrics.Regular, svgRepoDateMax)
+		dateW = fontmetrics.Width(date, svgRepoDateFont)
+		dbase := top + FieldPitch/2 + svgRepoDateFont*baselineRatio
+		b.WriteString(SVGText(rightEdge, dbase, date, SVGTextOpts{
+			Size: svgRepoDateFont, Fill: svgRepoDateFill, Anchor: "end",
+		}))
+	}
+
+	baseline := top + FieldPitch/2 + nameFont*baselineRatio
+	nameMax := rightEdge - nameX - svgRepoNameGap - dateW
+	nameSVG := SVGText(nameX, baseline, name, SVGTextOpts{Size: nameFont, Fill: svgRepoNameFill, MaxWidth: nameMax})
+	if url != "" {
+		fmt.Fprintf(&b, `<a href=%q>%s</a>`, escapeXML(url), nameSVG)
+	} else {
+		b.WriteString(nameSVG)
+	}
+	return b.String(), FieldPitch
+}
+
+const (
+	// `.repository .infos` row: 13px grey text with small icons
+	// (`margin-left:38px; color:#666666; font-size:13px`; icons
+	// `margin-right:4px`; segments `margin-right:16px`).
+	svgInfoFont    = 13.0
+	svgInfoFill    = "#666666"
+	svgInfoRowH    = 18.0
+	svgInfoIconGap = 4.0
+	svgInfoSegGap  = 16.0
+)
+
+// iconWidthRe extracts an octicon fragment's declared pixel width so a
+// row can vertically center icons of mixed sizes (16px vs 11px).
+var iconWidthRe = regexp.MustCompile(`width="(\d+)"`)
+
+// SVGInfoSegment is one icon + label pair in an info row. Class, when
+// set, wraps the segment in a `<g class="...">` (e.g. "language") so the
+// section keeps its DOM hook.
+type SVGInfoSegment struct {
+	Icon  string
+	Text  string
+	Class string
+}
+
+// SVGInfoRow lays the repository info segments (language / license /
+// stars / forks / issues / PRs) out left-to-right starting at (x, top).
+// Each segment's octicon keeps the grey icon fill (a language dot's own
+// path color is preserved); the label is 13px grey. Returns the markup
+// and the row height.
+func SVGInfoRow(x, top float64, segs []SVGInfoSegment) (string, float64) {
+	baseline := top + svgInfoRowH/2 + svgInfoFont*baselineRatio
+	var b strings.Builder
+	cx := x
+	for _, s := range segs {
+		iconW := 16.0
+		if m := iconWidthRe.FindStringSubmatch(s.Icon); m != nil {
+			if n, err := strconv.Atoi(m[1]); err == nil {
+				iconW = float64(n)
+			}
+		}
+		iconY := top + (svgInfoRowH-iconW)/2
+		var seg strings.Builder
+		seg.WriteString(SVGIcon(cx, iconY, svgIconFill, s.Icon))
+		tx := cx + iconW + svgInfoIconGap
+		seg.WriteString(SVGText(tx, baseline, s.Text, SVGTextOpts{Size: svgInfoFont, Fill: svgInfoFill}))
+		if s.Class != "" {
+			fmt.Fprintf(&b, `<g class=%q>%s</g>`, s.Class, seg.String())
+		} else {
+			b.WriteString(seg.String())
+		}
+		cx = tx + fontmetrics.Width(s.Text, svgInfoFont) + svgInfoSegGap
+	}
+	return b.String(), svgInfoRowH
 }
 
 // SVGAvatar renders a profile avatar as a clipped `<image>` of the given
