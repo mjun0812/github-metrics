@@ -481,7 +481,7 @@ func TestPartial_PullRequestStats(t *testing.T) {
 		t.Fatalf("Partial: %v", err)
 	}
 	for _, want := range []string{
-		`<div class="details">`,
+		`<g class="code">`,
 		`2 files changed`,
 		`++34 --5`,
 	} {

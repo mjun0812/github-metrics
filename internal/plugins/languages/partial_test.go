@@ -93,19 +93,21 @@ func TestPartial_Languages_Golden(t *testing.T) {
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
-	// DOM contract spot-checks (base markers + parity additions):
+	// DOM contract spot-checks (base markers + parity additions).
+	// #409 Phase B7: the count header, sub-header, and per-language list
+	// are now native SVG <text>/<g> instead of <h2>/<h3>/<div>; the
+	// progress bar (writeLanguageBar) stays verbatim.
 	for _, marker := range []string{
 		// v1.0.0 byte-frozen markers (preserved for backward compat)
 		`<g class="languages-progress">`,
 		`<rect class="language-bar"`,
-		// 011 parity additions:
-		`<h2 class="field">`, // count header (FR-001 row #2)
-		`Language`,           // count text "N Language(s)"
-		`<h3 class="field">Most used languages</h3>`,            // section sub-header (row #3)
-		`<svg class="bar" xmlns="http://www.w3.org/2000/svg"`,   // bar wrapped in <svg> (row #8, FR-002 bare-<g> fix)
-		`<title>Languages distribution</title>`,                 // a11y title (row #16, Q1 verbatim preservation)
-		`role="img" aria-label="Languages distribution"`,        // a11y attrs (Q1 verbatim)
-		`<div class="field center horizontal-wrap fill-width">`, // per-language color-dot list (row #13)
+		// native-SVG parity markers:
+		`Language`,            // count text "N Language(s)"
+		`Most used languages`, // section sub-header text (row #3)
+		`<svg class="bar" xmlns="http://www.w3.org/2000/svg"`, // bar kept as nested <svg> (row #8)
+		`<title>Languages distribution</title>`,               // a11y title (row #16, Q1 verbatim preservation)
+		`role="img" aria-label="Languages distribution"`,      // a11y attrs (Q1 verbatim)
+		`<g class="languages-names">`,                         // per-language color-dot list (row #13)
 	} {
 		if !strings.Contains(got, marker) {
 			t.Errorf("partial missing marker %q in:\n%s", marker, got)

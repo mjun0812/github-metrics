@@ -3,9 +3,13 @@ package activity
 import (
 	"context"
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 
+	"github.com/mjun0812/github-metrics/internal/render/fontmetrics"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
@@ -54,27 +58,55 @@ func pluralSuffix(n int) string {
 	return "s"
 }
 
-// Partial renders the classic SVG fragment for the activity plugin.
-// Mirrors upstream org_repo/source/templates/classic/partials/activity.ejs.
+// Native-SVG activity geometry (#409 Phase B7). The event field mirrors
+// the CSS `.field` box (section-inset 5px, 8px icon margins, 16px
+// octicon); the details / timestamp rows indent 38px to sit under the
+// text column (`.activity .details, .timestamp { padding-left: 38px }`),
+// and each event carries a 12px bottom gap (`.activity { margin-bottom:
+// 12px }`).
+const (
+	actInset      = 5.0  // section > .field { margin-left: 5px }
+	actIconGap    = 8.0  // .field svg { margin: 0 8px }
+	actIconSize   = 16.0 // .octicon { width/height: 16px }
+	actIconFill   = "#959da5"
+	actBodyFont   = 14.0 // svg { font-size: 14px }
+	actBodyFill   = "#777777"
+	actRepoFill   = "#58a6ff" // .activity .repo { color: #58a6ff }
+	actFieldPitch = chrome.FieldPitch
+	actBaseRatio  = 0.32
+
+	actDetailIndent = 38.0 // .activity .details/.timestamp { padding-left: 38px }
+	actDetailFont   = 13.0 // .activity .details { font-size: 13px }
+	actDetailFill   = "#666666"
+	actDetailRowH   = 18.0
+	actCodeFont     = 10.0 // .activity .code { font-size: 80% of 13px ≈ 10 }
+	actCodeFill     = "#777777"
+	actCodeBG       = "#777777" // .activity .code background #7777771F (12% opacity)
+	actCodePadX     = 5.0       // .activity .code { padding: 1px 5px }
+
+	actTSFont = 10.0 // .activity .timestamp { font-size: 10px }
+	actTSTop  = 4.0  // .activity .timestamp { margin-top: 4px }
+	actTSRowH = 14.0
+
+	actEventGap = 12.0 // .activity { margin-bottom: 12px }
+)
+
+// itoa formats a layout coordinate as a rounded integer for compact,
+// stable SVG output.
+func itoa(v float64) string { return strconv.Itoa(int(math.Round(v))) }
+
+// Partial renders the classic SVG fragment for the activity plugin as
+// native SVG (#409 Phase B7). Mirrors upstream
+// org_repo/source/templates/classic/partials/activity.ejs.
 //
-// Output structure:
-//
-//	<section data-section="activity">
-//	  <h2 class="field"><svg pulse/>Recent activity</h2>
-//	  <div class="row"><section>
-//	    [for each event]:
-//	      <div class="row fill-width">
-//	        <section class="activity">
-//	          <div class="field"><svg/>${verb} in <span class="repo">${repo}</span></div>
-//	          <div class="timestamp">${date}</div>
-//	        </section>
-//	      </div>
-//	  </section></div>
-//	</section>
-//
-// Each per-event row is HTML (not bare <text> / <svg> primitives) so it
-// renders inside the classic template's foreignObject (fixes the
-// v1.0.0 bare-element invisibility bug).
+// Output: a `<section data-section="activity">` anchor wrapping a nested
+// `<svg>` with the pulse section header and one `<g class="activity">`
+// per event. Each event carries a field line (event-type octicon +
+// "${verb} in ${repo}" with the repo in link-blue), an optional PR
+// details line ("N file(s) changed ++A --D" with the diff volume in a
+// code chip), and an optional timestamp line. Event-type octicons and
+// verbs come from eventOcticonAndVerb so every GitHub Events API type is
+// covered. Returns the markup and the pixel height it consumes.
 func Partial(_ context.Context, pc *templates.PartialContext) (string, int, error) {
 	if pc == nil || pc.Data == nil {
 		return "", 0, nil
@@ -88,52 +120,95 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		return "", 0, nil
 	}
 
-	var b strings.Builder
-	b.WriteString(`<section data-section="activity">`)
-	fmt.Fprintf(&b, `<h2 class="field">%sRecent activity</h2>`, pulseOcticon)
-	b.WriteString(`<div class="row"><section>`)
+	var body strings.Builder
+	header, y := chrome.SVGSectionHeader(pulseOcticon, "Recent activity")
+	body.WriteString(header)
+
 	if len(r.Events) == 0 {
-		b.WriteString(`<div class="field">No recent activity</div>`)
+		// Empty-state field row (upstream "No recent activity").
+		baseline := y + actFieldPitch/2 + actBodyFont*actBaseRatio
+		body.WriteString(chrome.SVGText(actInset+actIconGap, baseline, "No recent activity",
+			chrome.SVGTextOpts{Size: actBodyFont, Fill: actBodyFill}))
+		y += actFieldPitch
 	}
+
 	for _, e := range r.Events {
 		octicon, verb := eventOcticonAndVerb(e.Type)
 		dateStr := ""
 		if !e.Date.IsZero() {
 			dateStr = e.Date.UTC().Format("2006-01-02")
 		}
-		b.WriteString(`<div class="row fill-width">`)
-		fmt.Fprintf(
-			&b,
-			`<section class="activity" data-type="%s" data-repo="%s" data-date="%s">`,
-			partials.EscapeXML(e.Type),
-			partials.EscapeXML(e.Repo),
-			partials.EscapeXML(dateStr),
-		)
-		fmt.Fprintf(
-			&b,
-			`<div class="field">%s<div class="content">%s in <span class="repo">%s</span></div></div>`,
-			octicon,
-			partials.EscapeXML(verb),
-			partials.EscapeXML(e.Repo),
-		)
+
+		var g strings.Builder
+		gy := y
+		writeEventField(&g, gy, octicon, verb, e.Repo)
+		gy += actFieldPitch
+
 		// Mirror upstream activity.ejs line 79: PR events show the diff
 		// stats ("N file(s) changed ++A --D") in a details block.
 		if e.Files != nil && e.Lines != nil {
-			fmt.Fprintf(
-				&b,
-				`<div class="details"><div>%d file%s changed <span class="code">++%d --%d</span></div></div>`,
-				e.Files.Changed,
-				pluralSuffix(e.Files.Changed),
-				e.Lines.Added,
-				e.Lines.Deleted,
-			)
+			writeDetailsLine(&g, gy, e.Files.Changed, e.Lines.Added, e.Lines.Deleted)
+			gy += actDetailRowH
 		}
 		if dateStr != "" {
-			fmt.Fprintf(&b, `<div class="timestamp">%s</div>`, partials.EscapeXML(dateStr))
+			baseline := gy + actTSTop + actTSFont
+			g.WriteString(chrome.SVGText(actDetailIndent, baseline, dateStr,
+				chrome.SVGTextOpts{Size: actTSFont, Fill: actDetailFill}))
+			gy += actTSRowH
 		}
-		b.WriteString(`</section></div>`)
+
+		// The writeEventField return is the field markup; g already holds
+		// the details / timestamp. Reassemble in one <g class="activity">.
+		fmt.Fprintf(&body,
+			`<g class="activity" data-type="%s" data-repo="%s" data-date="%s">%s</g>`,
+			partials.EscapeXML(e.Type), partials.EscapeXML(e.Repo), partials.EscapeXML(dateStr),
+			g.String())
+		y = gy + actEventGap
 	}
-	b.WriteString(`</section></div>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
+
+	height := int(y)
+	return chrome.WrapSection("activity", height, body.String()), height, nil
+}
+
+// writeEventField writes the event field line (octicon + "${verb} in
+// ${repo}") into b at y=top. The repo name is link-blue and
+// ellipsis-truncated to the remaining card width; it keeps a
+// `class="repo"` hook.
+func writeEventField(b *strings.Builder, top float64, octicon, verb, repo string) {
+	iconX := actInset + actIconGap
+	iconY := top + (actFieldPitch-actIconSize)/2
+	textX := iconX + actIconSize + actIconGap
+	baseline := top + actFieldPitch/2 + actBodyFont*actBaseRatio
+
+	b.WriteString(chrome.SVGIcon(iconX, iconY, actIconFill, octicon))
+
+	prefix := verb + " in "
+	prefixW := fontmetrics.Width(prefix, actBodyFont)
+	repoMax := chrome.CardWidth - textX - actInset - prefixW
+	repo = chrome.TruncateToWidth(repo, actBodyFont, fontmetrics.Regular, repoMax)
+	fmt.Fprintf(b,
+		`<text x="%s" y="%s" font-size="%s" fill="%s">%s<tspan class="repo" fill="%s">%s</tspan></text>`,
+		itoa(textX), itoa(baseline), itoa(actBodyFont), actBodyFill,
+		partials.EscapeXML(prefix), actRepoFill, partials.EscapeXML(repo))
+}
+
+// writeDetailsLine writes the PR diff-stat line ("N file(s) changed"
+// followed by a "++A --D" code chip) into b at y=top.
+func writeDetailsLine(b *strings.Builder, top float64, changed, added, deleted int) {
+	baseline := top + actDetailRowH/2 + actDetailFont*actBaseRatio
+	prefix := fmt.Sprintf("%d file%s changed ", changed, pluralSuffix(changed))
+	b.WriteString(chrome.SVGText(actDetailIndent, baseline, prefix,
+		chrome.SVGTextOpts{Size: actDetailFont, Fill: actDetailFill}))
+
+	code := fmt.Sprintf("++%d --%d", added, deleted)
+	codeX := actDetailIndent + fontmetrics.Width(prefix, actDetailFont)
+	codeW := fontmetrics.Width(code, actCodeFont) + 2*actCodePadX
+	chipH := actCodeFont + 4
+	chipY := top + (actDetailRowH-chipH)/2
+	codeBaseline := chipY + chipH/2 + actCodeFont*actBaseRatio
+	fmt.Fprintf(b,
+		`<g class="code"><rect x="%s" y="%s" width="%s" height="%s" rx="3" ry="3" fill="%s" fill-opacity="0.12"/><text x="%s" y="%s" font-size="%s" fill="%s" font-family="monospace">%s</text></g>`,
+		itoa(codeX), itoa(chipY), itoa(codeW), itoa(chipH), actCodeBG,
+		itoa(codeX+actCodePadX), itoa(codeBaseline), itoa(actCodeFont), actCodeFill,
+		partials.EscapeXML(code))
 }
