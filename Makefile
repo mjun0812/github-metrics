@@ -93,13 +93,16 @@ docker-run-cli:
 test:
 	$(GO) test ./...
 
-# Runs the resvg-dependent tests (PNG/JPEG rasterization round-trips,
-# applyPadding). Requires the `resvg` binary; set METRICS_RESVG_PATH or
+# Runs the resvg-dependent tests: PNG/JPEG rasterization round-trips and
+# applyPadding (internal/render), the engine E2E raster path
+# (tests/integration), and the golden-SVG visual regression suite
+# (tests/visual). Requires the `resvg` binary; set METRICS_RESVG_PATH or
 # rely on PATH auto-detection. These tests skip when the binary is
 # absent, so `make test` stays green for contributors without resvg.
 test-resvg:
 	$(GO) test ./internal/render -run 'Resvg|ApplyPadding'
 	$(GO) test ./tests/integration -run 'Resvg'
+	$(GO) test ./tests/visual
 
 # Runs the heavy-tagged tests (M4 languages.recent / languages.indepth).
 # These tests depend on go-enry's embedded language DB and go-git's

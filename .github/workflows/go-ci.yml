@@ -132,6 +132,7 @@ jobs:
         run: |
           go test ./internal/render -run 'Resvg|ApplyPadding'
           go test ./tests/integration -run 'Resvg'
+          go test ./tests/visual
 
   test-heavy:
     name: test-heavy
