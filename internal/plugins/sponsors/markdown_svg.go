@@ -95,7 +95,7 @@ func mdParaWords(para string) []mdWord {
 func mdWrap(words []mdWord, maxWidth float64) [][]mdWord {
 	spaceW := fontmetrics.Width(" ", mdFont)
 	var out [][]mdWord
-	var cur []mdWord
+	cur := make([]mdWord, 0, len(words))
 	curW := 0.0
 	for _, w := range words {
 		ww := fontmetrics.Width(w.text, mdFont)

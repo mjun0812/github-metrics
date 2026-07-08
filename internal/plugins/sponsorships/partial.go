@@ -216,7 +216,7 @@ func flowRich(words []rword, x, top, maxWidth float64) (string, float64) {
 	}
 	// Greedy wrap into rows.
 	var rows [][]rword
-	var cur []rword
+	cur := make([]rword, 0, len(words))
 	curW := 0.0
 	for _, w := range words {
 		add := wordW(w)
