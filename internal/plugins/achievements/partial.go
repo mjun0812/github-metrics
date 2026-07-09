@@ -81,14 +81,21 @@ func rankClass(rank string) string {
 
 // Achievement-card geometry / colors, mirroring the `.achievement` CSS.
 const (
-	achMargin      = 4.0  // `.achievement { margin: 4px 0 }`
-	achIconMargin  = 4.0  // `.achievement .icon { margin: 0 4px }`
-	achIconSize    = 44.0 // `.achievement .icon { width/height: 44px }`
-	achTitleFont   = 14.0 // `.achievement .title { font-size: 14px }`
-	achTextFont    = 12.0 // `.achievement .text { font-size: 12px }`
-	achTextFill    = "#666666"
-	achValueFont   = 10.0 // `.achievement .value { font-size: 10px }`
-	achValuePadX   = 5.0  // `.achievement .value { padding: 0 5px }`
+	achMargin     = 4.0  // `.achievement { margin: 4px 0 }`
+	achIconMargin = 4.0  // `.achievement .icon { margin: 0 4px }`
+	achIconSize   = 44.0 // `.achievement .icon { width/height: 44px }`
+	achTitleFont  = 14.0 // `.achievement .title { font-size: 14px }`
+	achTextFont   = 12.0 // `.achievement .text { font-size: 12px }`
+	achTextFill   = "#666666"
+	achValueFont  = 10.0 // `.achievement .value { font-size: 10px }`
+	achValuePadX  = 5.0  // `.achievement .value { padding: 0 5px }`
+	// Width headroom multiplier for the digits: viewer fallback fonts
+	// (e.g. DejaVu Sans) run up to ~13.5% wider than the Liberation
+	// metrics used for measurement, and the stadium pill's rounded caps
+	// leave no slack of their own — without this the digits clip against
+	// the pill's right edge in browsers (same rationale as notable's
+	// chipLabelSafety).
+	achValueSafety = 1.14
 	achValueHeight = 16.0
 	achValueBgOpac = "0.15" // 0x26 / 255
 	achValueGap    = 46.0   // `.achievement .value { margin-left: 46px }`
@@ -310,17 +317,19 @@ func writeAchievementGroup(body *strings.Builder, a Achievement, card string) {
 
 // achValuePill renders one `.value` pill: a fully-rounded rect whose
 // top-left is (x, top), filled with the translucent rank color and
-// bordered/labeled in the title color. Returns the markup.
+// bordered/labeled in the title color. The digits are anchored to the
+// pill's center so the achValueSafety headroom splits evenly between
+// both rounded caps regardless of the viewer's font. Returns the markup.
 func achValuePill(x, top float64, text, titleColor, bgColor string) string {
-	w := fontmetrics.Width(text, achValueFont) + 2*achValuePadX
+	w := fontmetrics.Width(text, achValueFont)*achValueSafety + 2*achValuePadX
 	baseline := top + achValueHeight/2 + achValueFont*baselineFrac
 	var b strings.Builder
 	fmt.Fprintf(&b,
 		`<rect x="%s" y="%s" width="%s" height="%d" rx="%d" ry="%d" fill=%q fill-opacity=%q stroke=%q/>`,
 		ai(x), ai(top), ai(w), int(achValueHeight), int(achValueHeight/2), int(achValueHeight/2),
 		bgColor, achValueBgOpac, titleColor)
-	b.WriteString(chrome.SVGText(x+achValuePadX, baseline, text,
-		chrome.SVGTextOpts{Size: achValueFont, Fill: titleColor}))
+	b.WriteString(chrome.SVGText(x+w/2, baseline, text,
+		chrome.SVGTextOpts{Size: achValueFont, Fill: titleColor, Anchor: "middle"}))
 	return b.String()
 }
 
