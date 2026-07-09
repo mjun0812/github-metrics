@@ -276,7 +276,11 @@ deploy/               Production Dockerfile + deployment manifests
 scripts/              release-verify.sh and other maintainer helpers
 tests/                Fixtures, golden files, compliance + integration tests
 docs/migration-to-go.md   User-facing migration guide (Japanese)
-docs/design/          Design corpus (Japanese — internal reference)
+docs/architecture.md      Architecture overview (Japanese)
+docs/rendering.md         Rendering pipeline (Japanese)
+docs/configuration.md     Inputs & configuration (Japanese)
+docs/scope.md             Adopted / skipped feature scope (Japanese)
+docs/github-api-data-sources.md  Per-plugin data-source reference (Japanese)
 ```
 
 `internal/` is the standard Go visibility boundary — nothing under it

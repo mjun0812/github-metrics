@@ -11,7 +11,7 @@ import (
 )
 
 // TestHash_EmptyString covers the empty-input contract: blank-only
-// input returns ("", nil) per docs/design/13-appendix.md §H.
+// input returns ("", nil) per docs/rendering.md §7.
 func TestHash_EmptyString(t *testing.T) {
 	t.Parallel()
 	tests := []string{"", "   ", "\n\t  \r\n"}

@@ -20,10 +20,10 @@ type BannerInfo struct {
 	OSArch      string   // "darwin/arm64" etc.
 }
 
-// PrintBanner writes the English-fixed startup banner to w. Format
-// follows docs/design/13-appendix.md §E semantics: a top-bordered
-// table block with key/value columns, suitable for grep'ing in
-// GitHub Actions run logs and pinning via snapshot tests (SC-003).
+// PrintBanner writes the English-fixed startup banner to w. Format is
+// a top-bordered table block with key/value columns, suitable for
+// grep'ing in GitHub Actions run logs and pinning via snapshot tests
+// (SC-003).
 //
 // The banner is intentionally written directly to w (bypassing slog)
 // so handler choice (JSON / text) does not mangle the ASCII layout.
