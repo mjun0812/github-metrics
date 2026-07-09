@@ -21,7 +21,7 @@
           Recently used languages
         </text>
         <text x="240" y="65" font-size="11" fill="#666666" text-anchor="middle">
-          activity from 58 repositories analysed over last 30 days
+          activity from 57 repositories analysed over last 30 days
         </text>
         <g transform="translate(10,79)">
           <svg class="bar" width="460" height="8" role="img" aria-label="Recently used languages distribution">
@@ -33,12 +33,11 @@
             </mask>
             <rect mask="url(#languages-bar-recent)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
             <g class="languages-recent">
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="361.52" height="8" fill="#00ADD8" data-language="Go"/>
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="361.52" y="0" width="86.22" height="8" fill="#3572A5" data-language="Python"/>
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="447.74" y="0" width="7.48" height="8" fill="#f34b7d" data-language="C++"/>
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="455.22" y="0" width="2.56" height="8" fill="#384d54" data-language="Dockerfile"/>
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="457.79" y="0" width="1.37" height="8" fill="#427819" data-language="Makefile"/>
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.16" y="0" width="0.84" height="8" fill="#89e051" data-language="Shell"/>
+              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="358.52" height="8" fill="#00ADD8" data-language="Go"/>
+              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="358.52" y="0" width="96.65" height="8" fill="#3572A5" data-language="Python"/>
+              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="455.17" y="0" width="2.59" height="8" fill="#384d54" data-language="Dockerfile"/>
+              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="457.76" y="0" width="1.38" height="8" fill="#427819" data-language="Makefile"/>
+              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.15" y="0" width="0.85" height="8" fill="#89e051" data-language="Shell"/>
             </g>
           </svg>
         </g>
@@ -52,33 +51,33 @@
             Go
           </text>
           <text x="232" y="108" font-size="11" fill="#666666" text-anchor="end">
-            12.1 kB  78.6%
+            11.9 kB  77.9%
           </text>
         </g>
-        <g class="language details" data-language="C++">
+        <g class="language details" data-language="Dockerfile">
           <g transform="translate(8,117)">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-              <path fill="#f34b7d" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+              <path fill="#384d54" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
             </svg>
           </g>
           <text x="32" y="129" font-size="14" fill="#777777">
-            C++
+            Dockerfile
           </text>
           <text x="232" y="128" font-size="11" fill="#666666" text-anchor="end">
-            257 B  1.6%
+            88 B  0.6%
           </text>
         </g>
-        <g class="language details" data-language="Makefile">
+        <g class="language details" data-language="Shell">
           <g transform="translate(8,137)">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-              <path fill="#427819" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+              <path fill="#89e051" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
             </svg>
           </g>
           <text x="32" y="149" font-size="14" fill="#777777">
-            Makefile
+            Shell
           </text>
           <text x="232" y="148" font-size="11" fill="#666666" text-anchor="end">
-            47 B  0.3%
+            29 B  0.2%
           </text>
         </g>
         <g class="language details" data-language="Python">
@@ -91,33 +90,20 @@
             Python
           </text>
           <text x="472" y="108" font-size="11" fill="#666666" text-anchor="end">
-            2.9 kB  18.7%
+            3.2 kB  21.0%
           </text>
         </g>
-        <g class="language details" data-language="Dockerfile">
+        <g class="language details" data-language="Makefile">
           <g transform="translate(248,117)">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-              <path fill="#384d54" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+              <path fill="#427819" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
             </svg>
           </g>
           <text x="272" y="129" font-size="14" fill="#777777">
-            Dockerfile
+            Makefile
           </text>
           <text x="472" y="128" font-size="11" fill="#666666" text-anchor="end">
-            88 B  0.6%
-          </text>
-        </g>
-        <g class="language details" data-language="Shell">
-          <g transform="translate(248,137)">
-            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-              <path fill="#89e051" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
-            </svg>
-          </g>
-          <text x="272" y="149" font-size="14" fill="#777777">
-            Shell
-          </text>
-          <text x="472" y="148" font-size="11" fill="#666666" text-anchor="end">
-            29 B  0.2%
+            47 B  0.3%
           </text>
         </g>
       </svg>
