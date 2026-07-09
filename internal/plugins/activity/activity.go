@@ -388,10 +388,12 @@ func parseInputs(in map[string]any) inputs {
 		skipped:    map[string]struct{}{},
 		ignored:    map[string]struct{}{},
 	}
-	if v, ok := pluginutil.ReadInt(in, "plugin_activity_limit"); ok {
+	// Non-positive limit/load would panic downstream (events[:limit]
+	// slicing, make(..., 0, load)); keep the defaults instead.
+	if v, ok := pluginutil.ReadInt(in, "plugin_activity_limit"); ok && v > 0 {
 		out.limit = v
 	}
-	if v, ok := pluginutil.ReadInt(in, "plugin_activity_load"); ok {
+	if v, ok := pluginutil.ReadInt(in, "plugin_activity_load"); ok && v > 0 {
 		out.load = v
 	}
 	if v, ok := pluginutil.ReadInt(in, "plugin_activity_days"); ok {

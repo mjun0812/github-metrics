@@ -568,11 +568,20 @@ func newInvocation(inputs map[string]any, env map[string]string, outputDir strin
 	if _, ok := inputs["optimize"]; !ok {
 		inputs["optimize"] = []string{"css", "xml"}
 	}
+	// The action.yml default for `config_output` is "auto" ("use the
+	// template's default format"), and the Actions runner forwards
+	// defaults as INPUT_CONFIG_OUTPUT=auto. Every adopted template
+	// defaults to SVG, so resolve it here before the format reaches
+	// filename resolution and template.CheckFormat.
+	format := stringInput(inputs, "config_output", "svg")
+	if format == "auto" {
+		format = "svg"
+	}
 	inv := &Invocation{
 		Inputs:           inputs,
 		Template:         stringInput(inputs, "template", "classic"),
 		Login:            stringInput(inputs, "user", ""),
-		Format:           stringInput(inputs, "config_output", "svg"),
+		Format:           format,
 		Dryrun:           boolInput(inputs, "dryrun", false),
 		OutputAction:     stringInput(inputs, "output_action", "commit"),
 		OutputCondition:  stringInput(inputs, "output_condition", "always"),

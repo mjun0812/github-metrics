@@ -236,7 +236,15 @@ func populateFromGraphQL(out *Result, resp *githubapi.ViewerSponsorsResponse, pa
 	if past && v.Past != nil {
 		pastOnly := collectPast(v.Past.Nodes)
 		out.Past = pastOnly
-		out.Count.Past.Total = len(pastOnly)
+		// The past connection uses activeOnly:false, so its
+		// totalCount covers all sponsorships; subtract the active
+		// total for the server-side past-only count instead of the
+		// fetched-page length (which undercounts beyond one page).
+		total := v.Past.TotalCount - out.Count.Active.Total
+		if total < len(pastOnly) {
+			total = len(pastOnly)
+		}
+		out.Count.Past.Total = total
 	}
 }
 
