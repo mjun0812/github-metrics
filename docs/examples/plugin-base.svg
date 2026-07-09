@@ -31,7 +31,7 @@
           </svg>
         </g>
         <text x="37" y="62" font-size="14" fill="#777777">
-          121 Pull requests reviewed
+          122 Pull requests reviewed
         </text>
         <g transform="translate(13,70)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -39,7 +39,7 @@
           </svg>
         </g>
         <text x="37" y="82" font-size="14" fill="#777777">
-          770 Pull requests opened
+          773 Pull requests opened
         </text>
         <g transform="translate(13,90)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -135,7 +135,7 @@
           </svg>
         </g>
         <text x="37" y="62" font-size="14" fill="#777777">
-          159 Releases
+          161 Releases
         </text>
         <g transform="translate(13,70)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
