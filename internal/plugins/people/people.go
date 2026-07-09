@@ -156,7 +156,15 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		if login == "" {
 			return &Result{Skipped: true, SkippedReason: "no login", Types: map[string][]Person{}}, nil
 		}
-		resp, err := pc.GraphQL.UserFollowers(ctx, login, limit, size)
+		// GitHub's GraphQL connections reject first > 100 with
+		// EXCESSIVE_PAGINATION, which fails the entire query and
+		// blanks the section, so clamp the connection size to the
+		// 100 ceiling (#472).
+		first := limit
+		if first > 100 {
+			first = 100
+		}
+		resp, err := pc.GraphQL.UserFollowers(ctx, login, first, size)
 		if err != nil {
 			return nil, xerrors.NewRetryableError(fmt.Errorf("people: %w", err))
 		}
