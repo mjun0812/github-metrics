@@ -30,10 +30,10 @@
             </mask>
             <rect mask="url(#languages-bar-most)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
             <g class="languages-progress">
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="384.63" height="8" fill="#3572A5" data-language="Python"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="384.63" y="0" width="44.59" height="8" fill="#012456" data-language="PowerShell"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="429.22" y="0" width="22.82" height="8" fill="#89e051" data-language="Shell"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="452.04" y="0" width="7.96" height="8" fill="#384d54" data-language="Dockerfile"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="384.57" height="8" fill="#3572A5" data-language="Python"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="384.57" y="0" width="44.63" height="8" fill="#012456" data-language="PowerShell"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="429.20" y="0" width="22.84" height="8" fill="#89e051" data-language="Shell"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="452.03" y="0" width="7.97" height="8" fill="#384d54" data-language="Dockerfile"/>
             </g>
           </svg>
         </g>
@@ -47,7 +47,7 @@
             Python
           </text>
           <text x="232" y="90" font-size="11" fill="#666666" text-anchor="end">
-            136.2 kB  83.6%
+            136.1 kB  83.6%
           </text>
         </g>
         <g class="language details" data-language="Shell">
