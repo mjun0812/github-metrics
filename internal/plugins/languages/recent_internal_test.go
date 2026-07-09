@@ -250,6 +250,19 @@ func TestParseRecentInputsDefaults(t *testing.T) {
 	}
 }
 
+// TestParseRecentInputsNegativeLoadFallsBack asserts a non-positive
+// plugin_languages_recent_load keeps the default instead of reaching
+// fetchPushEvents, where make(..., 0, load) would panic.
+func TestParseRecentInputsNegativeLoadFallsBack(t *testing.T) {
+	t.Parallel()
+	in := parseRecentInputs(map[string]any{
+		"plugin_languages_recent_load": -1,
+	})
+	if in.load != 100 {
+		t.Errorf("load = %d, want default 100 for negative input", in.load)
+	}
+}
+
 func TestParseRecentInputsOverrides(t *testing.T) {
 	t.Parallel()
 	in := parseRecentInputs(map[string]any{

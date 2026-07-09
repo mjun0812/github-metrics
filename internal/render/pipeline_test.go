@@ -27,29 +27,30 @@ func TestApply_AllSucceed(t *testing.T) {
 	}
 }
 
-// TestApply_StageErrorPassthrough: when a middle stage fails, the
-// downstream stage receives the prior stage's output (not the failing
-// stage's partial output).
-func TestApply_StageErrorPassthrough(t *testing.T) {
+// TestApply_StageErrorKeepsPartialOutput: when a middle stage fails, its
+// best-effort output is still forwarded to the downstream stage (e.g.
+// image-inline keeps successfully inlined images even when other fetches
+// failed), and the error is aggregated.
+func TestApply_StageErrorKeepsPartialOutput(t *testing.T) {
 	t.Parallel()
 
 	sentinel := errors.New("simulated stage failure")
 	stages := []PipelineStage{
 		{Name: "first", Run: func(in string) (string, error) { return in + "+first", nil }},
 		{Name: "broken", Run: func(in string) (string, error) {
-			// Even though we built a partial value, returning an
-			// error means Apply ignores it.
-			return in + "+broken-not-used", sentinel
+			// A failing stage returns its best-effort partial
+			// output; Apply must forward it downstream.
+			return in + "+partial", sentinel
 		}},
 		{Name: "third", Run: func(in string) (string, error) {
-			// Expect "x+first" as input, NOT "x+first+broken-not-used".
+			// Expect "x+first+partial" as input.
 			return in + "+third", nil
 		}},
 	}
 
 	got, errs := Apply(stages, "x")
-	if got != "x+first+third" {
-		t.Errorf("got %q, want %q (third must see first stage's output, not broken stage's partial)", got, "x+first+third")
+	if got != "x+first+partial+third" {
+		t.Errorf("got %q, want %q (third must see the broken stage's best-effort output)", got, "x+first+partial+third")
 	}
 	if len(errs) != 1 {
 		t.Fatalf("got %d errors, want 1: %v", len(errs), errs)
