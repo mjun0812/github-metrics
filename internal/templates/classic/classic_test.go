@@ -145,6 +145,38 @@ func TestClassic_Run_ZeroM4Plugins(t *testing.T) {
 	}
 }
 
+// TestClassic_Run_ConfigAnimations is the #736 regression: the
+// config_animations toggle must reach the root <svg> class so the
+// style.css `.no-animations *` rule can zero every animation-duration.
+func TestClassic_Run_ConfigAnimations(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name       string
+		animations bool
+	}{
+		{"enabled", true},
+		{"disabled", false},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			pc := &templates.PartialContext{
+				Inputs: map[string]any{},
+				Data:   &plugins.Data{Config: plugins.ComputedConfig{Animations: tc.animations}},
+			}
+			out, err := classic.Template.Run(context.Background(), pc)
+			if err != nil {
+				t.Fatalf("Run: %v", err)
+			}
+			hasClass := strings.Contains(out, `class="no-animations"`)
+			if hasClass == tc.animations {
+				t.Fatalf("animations=%v: root <svg> no-animations class present=%v; output:\n%s",
+					tc.animations, hasClass, out)
+			}
+		})
+	}
+}
+
 func TestClassic_Run_EmptyCardKeepsValidSVGSize(t *testing.T) {
 	t.Parallel()
 	// All sections empty (no chrome_* inputs, no plugin data): the
