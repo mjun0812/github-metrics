@@ -127,6 +127,24 @@ func TestRun_NilRepo_StillEmitsSkeleton(t *testing.T) {
 	}
 }
 
+func TestRun_EmptyCardKeepsValidSVGSize(t *testing.T) {
+	t.Parallel()
+	// All sections empty: the summed height is 0, but a 0
+	// height/viewBox is not a valid SVG size (rasterizers reject it),
+	// so the template must clamp to a minimal positive canvas.
+	pc := &templates.PartialContext{
+		Data:   plugins.NewData(),
+		Inputs: map[string]any{"repo": "hello-world"},
+	}
+	out, err := Template.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if strings.Contains(out, `height="0"`) || strings.Contains(out, `viewBox="0 0 480 0"`) {
+		t.Fatalf("empty card must not declare a zero size; output:\n%s", truncate(out, 300))
+	}
+}
+
 func TestRun_RepositoryPeopleCard(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
