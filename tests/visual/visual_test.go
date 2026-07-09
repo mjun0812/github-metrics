@@ -131,7 +131,11 @@ func TestGoldenRasters(t *testing.T) {
 			if err != nil {
 				t.Fatalf("read %s: %v", svgPath, err)
 			}
+			// The raster is RasterScale× the declared SVG size (2x for
+			// high-DPI displays).
 			wantW, wantH := rootDims(t, body)
+			wantW *= render.RasterScale
+			wantH *= render.RasterScale
 
 			res, err := r.Resize(context.Background(), string(body), render.ResizeOpts{Convert: "png"})
 			if err != nil {

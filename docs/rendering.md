@@ -61,6 +61,7 @@ SVG プリミティブ (`WrapSection` / `SVGText` / `SVGField` 等) は `interna
 PNG / JPEG は確定済み SVG を `resvg` バイナリでラスタライズする (`internal/render/resvg.go`, `render.NewResvg`)。
 
 - **PNG**: `resvg` サブプロセスに SVG を stdin で流し込み、PNG を stdout で受け取る (`rasterizePNG`)。生成 SVG は画像を base64 でインライン済みなので resources-dir は不要。
+- **解像度**: PNG/JPEG は `render.RasterScale` (= 2) 倍でラスタライズする (`--zoom 2`)。SVG 座標系 480px 幅 → 出力 960px 幅。高 DPI (Retina) ディスプレイでのぼやけを防ぐためで、カード原寸で埋め込む場合は `<img width="480">` のように表示幅を指定する。
 - **JPEG**: resvg は JPEG を出力しないため、一旦 PNG にして Go 標準の `image/jpeg` で再エンコードする。
 - **SVG**: `Resize` は padding 適用のみ (ラスタライズしない)。
 
