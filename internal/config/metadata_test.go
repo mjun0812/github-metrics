@@ -13,8 +13,7 @@ import (
 )
 
 // adoptedPlugins is the source of truth for the M1 plugin set; it must
-// stay in sync with scripts/sync-assets.sh and
-// docs/design/15-selection-answer.md §6.4.
+// stay in sync with scripts/sync-assets.sh and docs/scope.md §2.
 //
 // `chrome` is a synthetic input-only namespace (#640) — it ships no Go
 // plugin but contributes the six `chrome_<section>` booleans to
