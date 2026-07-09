@@ -31,13 +31,13 @@
             <rect mask="url(#languages-bar-most)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
             <g class="languages-progress">
               <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="67.53" height="8" fill="#3D6117" data-language="TeX"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="67.53" y="0" width="59.54" height="8" fill="#f34b7d" data-language="C++"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="127.07" y="0" width="57.94" height="8" fill="#00ADD8" data-language="Go"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="185.01" y="0" width="55.12" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="240.13" y="0" width="54.82" height="8" fill="#a91e50" data-language="EJS"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="294.95" y="0" width="47.21" height="8" fill="#89e051" data-language="Shell"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="67.53" y="0" width="59.53" height="8" fill="#f34b7d" data-language="C++"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="127.06" y="0" width="57.96" height="8" fill="#00ADD8" data-language="Go"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="185.03" y="0" width="55.11" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="240.14" y="0" width="54.82" height="8" fill="#a91e50" data-language="EJS"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="294.96" y="0" width="47.20" height="8" fill="#89e051" data-language="Shell"/>
               <rect class="language-bar" mask="url(#languages-bar-most)" x="342.16" y="0" width="45.43" height="8" fill="#3572A5" data-language="Python"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="387.58" y="0" width="35.48" height="8" fill="#f1e05a" data-language="JavaScript"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="387.59" y="0" width="35.48" height="8" fill="#f1e05a" data-language="JavaScript"/>
               <rect class="language-bar" mask="url(#languages-bar-most)" x="423.07" y="0" width="36.93" height="8" fill="#cccccc" data-language="Other"/>
             </g>
           </svg>
