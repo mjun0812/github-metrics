@@ -17,7 +17,7 @@
         <text x="37" y="22" font-size="16" fill="#0366d6">
           Recently starred repositories
         </text>
-        <g class="repository" data-stars="3549" data-forks="269">
+        <g class="repository" data-stars="3550" data-forks="269">
           <g transform="translate(13,36)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
               <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/>
@@ -62,7 +62,7 @@
             </svg>
           </g>
           <text x="215" y="120" font-size="13" fill="#666666">
-            3.5k
+            3.6k
           </text>
           <g transform="translate(255,108)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -97,7 +97,7 @@
             </svg>
           </g>
           <text x="477" y="150" font-size="10" fill="#666666" text-anchor="end">
-            starred 2 days ago
+            starred 3 days ago
           </text>
           <text x="37" y="151" font-size="14" fill="#58a6ff">
             donarai/donarai
@@ -206,10 +206,10 @@
             </svg>
           </g>
           <text x="378" y="272" font-size="13" fill="#666666">
-            681
+            682
           </text>
         </g>
-        <g class="repository" data-stars="7827" data-forks="796">
+        <g class="repository" data-stars="7828" data-forks="797">
           <g transform="translate(13,291)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
               <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/>
@@ -256,7 +256,7 @@
             </svg>
           </g>
           <text x="232" y="340" font-size="13" fill="#666666">
-            796
+            797
           </text>
           <g transform="translate(270,328)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
