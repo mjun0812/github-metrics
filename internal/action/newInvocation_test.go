@@ -70,6 +70,31 @@ func TestNewInvocation_FilenameWildcard(t *testing.T) {
 	}
 }
 
+// TestNewInvocation_ConfigOutputAuto_ResolvesToSVG pins the resolution
+// of the action.yml default `config_output: auto` (forwarded verbatim as
+// INPUT_CONFIG_OUTPUT=auto by the Actions runner): it must resolve to
+// the template default "svg" so filename wildcards and
+// template.CheckFormat don't see the literal "auto".
+func TestNewInvocation_ConfigOutputAuto_ResolvesToSVG(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]any{
+		"user":          "octocat",
+		"config_output": "auto",
+		"combined":      "yes",
+	}
+	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test-repo"}
+	inv, err := newInvocation(inputs, env, "/tmp/out")
+	if err != nil {
+		t.Fatalf("newInvocation: %v", err)
+	}
+	if inv.Format != "svg" {
+		t.Errorf("Format = %q, want %q", inv.Format, "svg")
+	}
+	if inv.OutputFilename != "github-metrics.svg" {
+		t.Errorf("OutputFilename = %q, want %q", inv.OutputFilename, "github-metrics.svg")
+	}
+}
+
 // ---------------------------------------------------------------------------
 // newInvocation: user / GITHUB_ACTOR fallback (Action mode)
 // ---------------------------------------------------------------------------

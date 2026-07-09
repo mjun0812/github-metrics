@@ -457,7 +457,9 @@ func parseRecentInputs(in map[string]any) recentInputs {
 	if v, ok := pluginutil.ReadInt(in, "plugin_languages_recent_days"); ok {
 		out.days = v
 	}
-	if v, ok := pluginutil.ReadInt(in, "plugin_languages_recent_load"); ok {
+	// Non-positive load would panic in fetchPushEvents
+	// (make(..., 0, load)); keep the default instead.
+	if v, ok := pluginutil.ReadInt(in, "plugin_languages_recent_load"); ok && v > 0 {
 		out.load = v
 	}
 	if cats := pluginutil.ReadCSV(in, "plugin_languages_recent_categories"); len(cats) > 0 {

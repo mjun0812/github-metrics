@@ -272,6 +272,33 @@ func TestRun_DefaultLimit(t *testing.T) {
 	}
 }
 
+// TestRun_NegativeLimitAndLoad_NoPanic asserts non-positive
+// plugin_activity_limit / plugin_activity_load fall back to the
+// defaults instead of panicking (events[:-1] slice bounds /
+// make(..., 0, -1) cap out of range).
+func TestRun_NegativeLimitAndLoad_NoPanic(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	mux := newRESTMux()
+	mux.on(
+		"/users/octocat/events",
+		http.StatusOK,
+		eventsBody(ev("PushEvent", "octocat/a", now.Add(-1*time.Hour), true)),
+	)
+	pc := newPC(t, mux, map[string]any{
+		"plugin_activity_limit": -1,
+		"plugin_activity_load":  -1,
+	})
+	out, err := activity.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*activity.Result)
+	if len(r.Events) != 1 {
+		t.Errorf("Events len = %d, want 1", len(r.Events))
+	}
+}
+
 // TestRun_EmptyEvents returns an empty array and asserts the plugin
 // still returns Skipped=false with an empty Events slice (contract §2.5).
 func TestRun_EmptyEvents(t *testing.T) {

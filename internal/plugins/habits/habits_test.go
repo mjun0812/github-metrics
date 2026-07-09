@@ -117,6 +117,11 @@ func TestRun_PushEventsBuildHistograms(t *testing.T) {
 	if r.Charts.Hours[11] != 1 {
 		t.Errorf("Hours[11] = %d, want 1", r.Charts.Hours[11])
 	}
+	// Sun-first indexing (time.Weekday): both events fall on the
+	// Friday, so Days[5] must hold them — not Days[4] ("Thu").
+	if r.Charts.Days[5] != 2 {
+		t.Errorf("Days[5] (Friday) = %d, want 2 (Days = %v)", r.Charts.Days[5], r.Charts.Days)
+	}
 }
 
 func TestRun_NonPushFiltered(t *testing.T) {

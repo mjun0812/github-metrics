@@ -186,9 +186,9 @@ func (p *habitsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 			continue
 		}
 		hour := e.CreatedAt.UTC().Hour()
-		// time.Weekday: Sunday=0 ... Saturday=6.
-		// Upstream maps Mon-first; remap so Monday=0 ... Sunday=6.
-		wd := (int(e.CreatedAt.UTC().Weekday()) + 6) % 7
+		// time.Weekday: Sunday=0 ... Saturday=6, matching upstream's
+		// getDay() indexing and partial.go's Sun-first dayNames.
+		wd := int(e.CreatedAt.UTC().Weekday())
 		charts.Hours[hour]++
 		charts.Days[wd]++
 		if e.CreatedAt.After(cutoff) {

@@ -10,8 +10,10 @@ type PipelineStage struct {
 	// Name labels the stage in error wrapping and debug logs.
 	Name string
 	// Run takes the current SVG and returns the next SVG. Any error
-	// is surfaced via Apply's []error return; the input string is
-	// forwarded to the next stage unchanged (best-effort chain).
+	// is surfaced via Apply's []error return; the returned string is
+	// still forwarded to the next stage, so Run must always return its
+	// best-effort output — the input unchanged on total failure, or a
+	// partially-processed result (best-effort chain).
 	Run func(in string) (string, error)
 }
 
@@ -31,10 +33,10 @@ func Apply(stages []PipelineStage, in string) (string, []error) {
 		next, err := s.Run(current)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("stage %q: %w", s.Name, err))
-			// Leave `current` untouched so the next stage sees the
-			// last known-good output (best-effort chain — see
-			// FR-018).
-			continue
+			// Keep `next` anyway: stages return their best-effort
+			// output alongside the error (e.g. image-inline keeps
+			// the successfully inlined images even when other
+			// fetches failed — FR-018).
 		}
 		current = next
 	}
