@@ -12,9 +12,10 @@ import (
 // supplied (action.yml + CLI both default to this). Spec FR-007.
 const DefaultRetries = 3
 
-// DefaultRetryDelay is the default `retries_delay` input value (ms)
-// when none is supplied. Spec FR-007.
-const DefaultRetryDelay = 300 * time.Millisecond
+// DefaultRetryDelay is the default `retries_delay` input value when
+// none is supplied. action.yml declares the input in seconds with a
+// default of 300 (upstream parity). Spec FR-007.
+const DefaultRetryDelay = 300 * time.Second
 
 // RetryPolicy controls retry-on-RetryableError behavior for fn calls
 // (typically engine.Compute or committer API operations).
