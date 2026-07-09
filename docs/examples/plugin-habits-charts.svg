@@ -13,52 +13,52 @@
           Commit activity per hour of day
         </text>
         <g data-block="chart-bars">
-          <text x="18" y="40" font-size="6" fill="#666666" text-anchor="middle">
-            11
+          <text x="18" y="86" font-size="6" fill="#666666" text-anchor="middle">
+            1
           </text>
-          <rect x="14" y="42" width="7" height="50" rx="3" ry="3" fill="#216e39"/>
+          <rect x="14" y="88" width="7" height="4" rx="3" ry="3" fill="#9be9a8"/>
           <text x="18" y="104" font-size="10" fill="#666666" text-anchor="middle">
             00
           </text>
-          <text x="37" y="67" font-size="6" fill="#666666" text-anchor="middle">
+          <text x="37" y="69" font-size="6" fill="#666666" text-anchor="middle">
             5
           </text>
-          <rect x="34" y="69" width="7" height="23" rx="3" ry="3" fill="#40c463"/>
+          <rect x="34" y="71" width="7" height="21" rx="3" ry="3" fill="#40c463"/>
           <text x="37" y="104" font-size="10" fill="#666666" text-anchor="middle">
             01
           </text>
-          <text x="56" y="54" font-size="6" fill="#666666" text-anchor="middle">
-            8
+          <text x="56" y="53" font-size="6" fill="#666666" text-anchor="middle">
+            9
           </text>
-          <rect x="53" y="56" width="7" height="36" rx="3" ry="3" fill="#30a14e"/>
+          <rect x="53" y="55" width="7" height="38" rx="3" ry="3" fill="#30a14e"/>
           <text x="56" y="104" font-size="10" fill="#666666" text-anchor="middle">
             02
           </text>
-          <text x="76" y="67" font-size="6" fill="#666666" text-anchor="middle">
-            5
+          <text x="76" y="40" font-size="6" fill="#666666" text-anchor="middle">
+            12
           </text>
-          <rect x="72" y="69" width="7" height="23" rx="3" ry="3" fill="#40c463"/>
+          <rect x="72" y="42" width="7" height="50" rx="3" ry="3" fill="#216e39"/>
           <text x="76" y="104" font-size="10" fill="#666666" text-anchor="middle">
             03
           </text>
-          <text x="95" y="81" font-size="6" fill="#666666" text-anchor="middle">
+          <text x="95" y="82" font-size="6" fill="#666666" text-anchor="middle">
             2
           </text>
-          <rect x="92" y="83" width="7" height="9" rx="3" ry="3" fill="#9be9a8"/>
+          <rect x="92" y="84" width="7" height="8" rx="3" ry="3" fill="#9be9a8"/>
           <text x="95" y="104" font-size="10" fill="#666666" text-anchor="middle">
             04
           </text>
-          <text x="114" y="85" font-size="6" fill="#666666" text-anchor="middle">
+          <text x="114" y="86" font-size="6" fill="#666666" text-anchor="middle">
             1
           </text>
-          <rect x="111" y="87" width="7" height="5" rx="3" ry="3" fill="#9be9a8"/>
+          <rect x="111" y="88" width="7" height="4" rx="3" ry="3" fill="#9be9a8"/>
           <text x="114" y="104" font-size="10" fill="#666666" text-anchor="middle">
             05
           </text>
-          <text x="134" y="67" font-size="6" fill="#666666" text-anchor="middle">
+          <text x="134" y="69" font-size="6" fill="#666666" text-anchor="middle">
             5
           </text>
-          <rect x="130" y="69" width="7" height="23" rx="3" ry="3" fill="#40c463"/>
+          <rect x="130" y="71" width="7" height="21" rx="3" ry="3" fill="#40c463"/>
           <text x="134" y="104" font-size="10" fill="#666666" text-anchor="middle">
             06
           </text>
@@ -201,16 +201,16 @@
             Mon
           </text>
           <text x="88" y="144" font-size="6" fill="#666666" text-anchor="middle">
-            31
+            21
           </text>
           <rect x="85" y="146" width="7" height="50" rx="3" ry="3" fill="#216e39"/>
           <text x="88" y="208" font-size="10" fill="#666666" text-anchor="middle">
             Tue
           </text>
-          <text x="120" y="184" font-size="6" fill="#666666" text-anchor="middle">
-            6
+          <text x="120" y="161" font-size="6" fill="#666666" text-anchor="middle">
+            14
           </text>
-          <rect x="117" y="186" width="7" height="10" rx="3" ry="3" fill="#9be9a8"/>
+          <rect x="117" y="163" width="7" height="33" rx="3" ry="3" fill="#30a14e"/>
           <text x="120" y="208" font-size="10" fill="#666666" text-anchor="middle">
             Wed
           </text>
@@ -242,35 +242,35 @@
         <text x="324" y="150" font-size="10" fill="#666666" text-anchor="end">
           SVG
         </text>
-        <rect x="330" y="144" width="69" height="7" rx="3" ry="3" fill="#30a14e"/>
-        <text x="405" y="150" font-size="10" fill="#666666">
-          72%
+        <rect x="330" y="144" width="54" height="7" rx="3" ry="3" fill="#30a14e"/>
+        <text x="390" y="150" font-size="10" fill="#666666">
+          56%
         </text>
         <text x="324" y="168" font-size="10" fill="#666666" text-anchor="end">
           Go
         </text>
-        <rect x="330" y="162" width="19" height="7" rx="3" ry="3" fill="#9be9a8"/>
-        <text x="355" y="168" font-size="10" fill="#666666">
-          20%
+        <rect x="330" y="162" width="22" height="7" rx="3" ry="3" fill="#9be9a8"/>
+        <text x="358" y="168" font-size="10" fill="#666666">
+          23%
         </text>
         <text x="324" y="186" font-size="10" fill="#666666" text-anchor="end">
-          Python
+          JSON
         </text>
-        <rect x="330" y="180" width="4" height="7" rx="3" ry="3" fill="#9be9a8"/>
-        <text x="340" y="186" font-size="10" fill="#666666">
-          4%
+        <rect x="330" y="180" width="11" height="7" rx="3" ry="3" fill="#9be9a8"/>
+        <text x="347" y="186" font-size="10" fill="#666666">
+          12%
         </text>
         <text x="324" y="204" font-size="10" fill="#666666" text-anchor="end">
-          Markdown
+          Python
         </text>
-        <rect x="330" y="198" width="2" height="7" rx="3" ry="3" fill="#9be9a8"/>
-        <text x="338" y="204" font-size="10" fill="#666666">
-          2%
+        <rect x="330" y="198" width="5" height="7" rx="3" ry="3" fill="#9be9a8"/>
+        <text x="341" y="204" font-size="10" fill="#666666">
+          6%
         </text>
         <text x="324" y="222" font-size="10" fill="#666666" text-anchor="end">
-          CSS
+          Markdown
         </text>
-        <rect x="330" y="216" width="1" height="7" rx="3" ry="3" fill="#9be9a8"/>
+        <rect x="330" y="216" width="2" height="7" rx="3" ry="3" fill="#9be9a8"/>
         <text x="338" y="222" font-size="10" fill="#666666">
           2%
         </text>
@@ -282,14 +282,14 @@
           0%
         </text>
         <text x="324" y="258" font-size="10" fill="#666666" text-anchor="end">
-          Text
+          Dockerfile
         </text>
         <rect x="330" y="252" width="0" height="7" rx="3" ry="3" fill="#9be9a8"/>
         <text x="336" y="258" font-size="10" fill="#666666">
           0%
         </text>
         <text x="324" y="276" font-size="10" fill="#666666" text-anchor="end">
-          Dockerfile
+          TOML
         </text>
         <rect x="330" y="270" width="0" height="7" rx="3" ry="3" fill="#9be9a8"/>
         <text x="336" y="276" font-size="10" fill="#666666">
