@@ -12,9 +12,9 @@ permissions:
 env:
   # Track the latest stable Go release. Keep in lockstep with the
   # GOLANGCI_LINT_VERSION pin so the lint binary can fully type-check
-  # the modules we ship. Pinned to 1.26.4 for the net/textproto
-  # (GO-2026-5039) and crypto/x509 (GO-2026-5037) stdlib fixes.
-  GO_VERSION: "1.26.4"
+  # the modules we ship. Pinned to 1.26.5 for the crypto/tls
+  # (GO-2026-5856) stdlib fix.
+  GO_VERSION: "1.26.5"
   # Built against Go 1.26; matches the runner pin above.
   GOLANGCI_LINT_VERSION: "v2.12.2"
 
@@ -85,7 +85,7 @@ jobs:
     # golang:bookworm provides gcc so the race detector (which requires
     # CGO) works. The k3s runner environment has CGO disabled by default.
     container:
-      image: golang:1.26.4-bookworm
+      image: golang:1.26.5-bookworm
     env:
       # Propagates -buildvcs=false to every go command in this job,
       # including the go build call inside tests/integration TestMain,
