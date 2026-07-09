@@ -21,7 +21,7 @@
           Recently used languages
         </text>
         <text x="240" y="65" font-size="11" fill="#666666" text-anchor="middle">
-          activity from 53 repositories analysed over last 30 days
+          activity from 54 repositories analysed over last 30 days
         </text>
         <g transform="translate(10,79)">
           <svg class="bar" width="460" height="8" role="img" aria-label="Recently used languages distribution">
@@ -33,10 +33,10 @@
             </mask>
             <rect mask="url(#languages-bar-recent)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
             <g class="languages-recent">
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="360.53" height="8" fill="#00ADD8" data-language="Go"/>
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="360.53" y="0" width="94.78" height="8" fill="#3572A5" data-language="Python"/>
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="455.31" y="0" width="2.60" height="8" fill="#384d54" data-language="Dockerfile"/>
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="457.90" y="0" width="1.39" height="8" fill="#427819" data-language="Makefile"/>
+              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="360.73" height="8" fill="#00ADD8" data-language="Go"/>
+              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="360.73" y="0" width="94.59" height="8" fill="#3572A5" data-language="Python"/>
+              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="455.32" y="0" width="2.59" height="8" fill="#384d54" data-language="Dockerfile"/>
+              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="457.91" y="0" width="1.38" height="8" fill="#427819" data-language="Makefile"/>
               <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.29" y="0" width="0.71" height="8" fill="#89e051" data-language="Shell"/>
             </g>
           </svg>
@@ -51,7 +51,7 @@
             Go
           </text>
           <text x="232" y="108" font-size="11" fill="#666666" text-anchor="end">
-            11.9 kB  78.4%
+            12.0 kB  78.4%
           </text>
         </g>
         <g class="language details" data-language="Dockerfile">
