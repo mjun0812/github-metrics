@@ -7,7 +7,7 @@
 # committing org_repo to git history; this script is the only sanctioned
 # path for materializing assets/.
 #
-# Adopted set (from docs/design/15-selection-answer.md):
+# Adopted set (from docs/scope.md):
 #   plugins: base, core, languages, activity, achievements, repositories,
 #            isocalendar, calendar, habits, stars, topics, starlists,
 #            people, notable, contributors, reactions, sponsors,

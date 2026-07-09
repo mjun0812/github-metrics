@@ -1,7 +1,7 @@
 # original_examples — upstream `lowlighter/metrics` 出力リファレンス
 
 本ディレクトリは、Go 再実装の参照用に **upstream の公式レンダリング済み SVG** を保存したものです。
-本プロジェクトが採用している plugin / テンプレート（[docs/design/15-selection-answer.md](../design/15-selection-answer.md) §4）に対応する出力だけを抜粋しています。
+本プロジェクトが採用している plugin / テンプレート（[docs/scope.md](../scope.md) §2）に対応する出力だけを抜粋しています。
 
 ## 出所 (provenance)
 

@@ -253,7 +253,7 @@ func toNumber(raw any) (float64, error) {
 }
 
 // truthyValues matches the upstream legacy-converter boolean casts
-// (docs/design/13-appendix.md §F): "yes" / "true" / "1" / "on" are true;
+// (docs/configuration.md §5): "yes" / "true" / "1" / "on" are true;
 // "" defers to default; everything else is false.
 var truthyValues = map[string]bool{
 	"yes": true, "true": true, "on": true, "1": true,

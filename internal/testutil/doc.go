@@ -2,10 +2,9 @@
 //
 // The package consolidates the mock GraphQL / REST RoundTrippers and
 // golden-file helpers that M1-M7 grew ad-hoc across 8+ test files.
-// Per [docs/design/10-testing-deployment.md §2 mocks-の設計] +
-// [docs/design/16-tasks-mvp.md Phase M9 (T-118..T-125)], the canonical
-// surface lives here so future tests reuse one well-tested helper set
-// instead of copying scattered scaffolding.
+// The canonical surface lives here so future tests reuse one
+// well-tested helper set instead of copying scattered scaffolding.
+// Test categories are documented in CONTRIBUTING.md.
 //
 // Sub-packages:
 //
