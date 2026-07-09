@@ -315,3 +315,20 @@ func TestNewInvocation_RetryPolicyDefaults(t *testing.T) {
 	}
 	_ = time.Millisecond // keep time import referenced
 }
+
+// TestNewInvocation_RetriesDelayInSeconds pins the action.yml contract:
+// `retries_delay` is declared in seconds ("Delay between each retry (in
+// seconds)"), so retries_delay=10 must yield a 10-second delay — not
+// 10 milliseconds as the pre-fix implementation consumed it.
+func TestNewInvocation_RetriesDelayInSeconds(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]any{"user": "octocat", "combined": "yes", "retries_delay": 10}
+	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
+	inv, err := newInvocation(inputs, env, "/tmp/out")
+	if err != nil {
+		t.Fatalf("newInvocation: %v", err)
+	}
+	if inv.RetryPolicy.Delay != 10*time.Second {
+		t.Errorf("Delay = %v, want 10s", inv.RetryPolicy.Delay)
+	}
+}
