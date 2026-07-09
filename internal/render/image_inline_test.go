@@ -138,6 +138,31 @@ func TestInlineImages_FetchFailureKeepsURL(t *testing.T) {
 	}
 }
 
+// TestInlineImages_PartialFailureKeepsSuccessesThroughApply asserts that
+// when one fetch fails, the successfully inlined images survive the full
+// Apply chain instead of being discarded with the stage's error.
+func TestInlineImages_PartialFailureKeepsSuccessesThroughApply(t *testing.T) {
+	t.Parallel()
+	f := newFakeFetcher()
+	bad := "https://example/bad.png"
+	good := "https://example/good.png"
+	f.fail[bad] = true
+	in := `<img src="` + good + `"/><img src="` + bad + `"/>`
+	got, errs := Apply([]PipelineStage{InlineImagesStage(context.Background(), f)}, in)
+	if len(errs) != 1 {
+		t.Fatalf("got %d errors, want 1: %v", len(errs), errs)
+	}
+	if strings.Contains(got, good) {
+		t.Errorf("successful URL should be inlined despite sibling failure; got %q", got)
+	}
+	if !strings.Contains(got, `src="data:image/png;base64,AAAA"`) {
+		t.Errorf("data URI not inlined; got %q", got)
+	}
+	if !strings.Contains(got, bad) {
+		t.Errorf("failed URL should be preserved; got %q", got)
+	}
+}
+
 // TestInlineImages_NilFetcher asserts the stage is a no-op when no
 // fetcher is wired (mocked-data path).
 func TestInlineImages_NilFetcher(t *testing.T) {
