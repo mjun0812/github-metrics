@@ -95,7 +95,7 @@ func isPlainSlug(s string) bool {
 // but are excluded from the README gallery. #605 removed `base`; #625
 // re-added it as a foundational plugin (no standalone card, composes
 // chrome via plugin_base*). Any further addition needs a constitution
-// amendment per docs/design/15-selection-answer.md.
+// amendment per docs/scope.md.
 func TestFoundationalSlugs_IsBaseAndCore(t *testing.T) {
 	t.Parallel()
 	want := map[string]struct{}{"base": {}, "core": {}}

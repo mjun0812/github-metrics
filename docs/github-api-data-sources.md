@@ -1,7 +1,8 @@
-# 17. GitHub データ取得方法リファレンス
+# GitHub データ取得方法リファレンス
 
-> 調査日: 2026-06-04
-> 対象: 採用済み全プラグイン（base 含む 20 プラグイン）
+採用済み各プラグインが GitHub のどのデータを、どの取得方法 (REST / GraphQL / HTML スクレイピング / ローカル計算) で得ているかの一覧。採用プラグインの確定リストは [`scope.md`](scope.md) を参照。
+
+> 初版調査日: 2026-06-04
 
 ---
 
@@ -46,7 +47,7 @@ GraphQL に相当するエンドポイントが存在しないため REST を使
 | `GET /repos/{owner}/{repo}/subscribers?per_page={n}`  | リポジトリウォッチャー一覧                                      | people(repo)                        |
 | `GET /users/{login}/starred?per_page=100&page={n}`    | ユーザーがスターしたリポジトリ一覧                              | repositories(starred)               |
 | `GET /repos/{owner}/{repo}/traffic/views`             | リポジトリの PV・ユニーク訪問者数（`repo` スコープ必須）        | traffic                             |
-| `HEAD /`（`X-OAuth-Scopes` ヘッダー）                 | トークンのスコープ確認                                          | projects, traffic                   |
+| `HEAD /`（`X-OAuth-Scopes` ヘッダー）                 | トークンのスコープ確認                                          | traffic                             |
 
 ### 2.2 GraphQL のみ
 
@@ -63,7 +64,6 @@ REST に相当するエンドポイントが存在しないため GraphQL を使
 | `user.repositoriesContributedTo(orderBy: STARGAZERS_DESC)` | コントリビュートした他者リポジトリ一覧                                | notable                                |
 | `user.followers(first: limit)`                             | フォロワー一覧                                                        | people                                 |
 | `user.following(first: limit)`                             | フォロー中一覧                                                        | people                                 |
-| `viewer.projectsV2(first: limit)`                          | Projects V2 一覧（名前・説明・URL・更新日）— V2 は GraphQL 専用       | projects                               |
 | `user.issues.reactions.content`                            | Issue のリアクション集計                                              | reactions                              |
 | `user.issueComments.reactions.content`                     | Issue コメントのリアクション集計                                      | reactions                              |
 | `user.sponsorshipsAsMaintainer(first: limit)`              | スポンサー一覧（tier・開始日）                                        | sponsors                               |
@@ -120,13 +120,12 @@ base プラグインが取得済みのデータを加工するだけで追加 AP
 - 最低限必要なスコープ:
   - 基本（公開情報のみ）: `public_repo`
   - traffic プラグイン: `repo`
-  - projects プラグイン: `read:project`
 
 ### Fine-grained PAT（将来対応が必要）
 
 - `X-OAuth-Scopes` ヘッダーを返さないため、現在のスコープ検出が機能しない
-- `traffic` / `projects` プラグインが常にスキップされる
-- 必要な権限: traffic → `Metadata: read`、projects → `Projects: read`
+- `traffic` プラグインが常にスキップされる
+- 必要な権限: traffic → `Metadata: read`
 - Classic PAT の廃止アナウンスが出た時点で対応予定
 
 ---

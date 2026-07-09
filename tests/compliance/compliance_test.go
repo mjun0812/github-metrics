@@ -27,7 +27,7 @@ import (
 
 // unadoptedPluginNames is the source of truth for "plugin slugs we
 // deliberately do NOT implement in this MVP". The list mirrors
-// docs/design/15-selection-answer.md §7 (Backlog).
+// docs/scope.md §3 (採用しなかった機能).
 //
 // Each entry MUST be matched as a whole word; substring matching
 // would false-flag legitimate strings like "code" inside "codebase".
@@ -496,7 +496,7 @@ var nonTemplateInternalDirs = map[string]struct{}{
 // hosts exactly the adopted templates (classic from M2, repository
 // from M7) and nothing else. Adding `markdown`/`terminal`/etc. would
 // silently violate the M5/M8 skipped-scope rule from
-// docs/design/15-selection-answer.md.
+// docs/scope.md.
 func TestCompliance_M7_TemplateInvariant(t *testing.T) {
 	root := mustRepoRoot(t)
 	entries, err := os.ReadDir(filepath.Join(root, "internal", "templates"))

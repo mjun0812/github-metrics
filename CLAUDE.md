@@ -6,9 +6,7 @@ upstream `lowlighter/metrics` (Node.js/EJS) の **subset** を Go に移植し�
 
 新しい機能に着手する前に、必ず以下の source of truth で採用対象を確認すること。
 
-- **採用機能定義**: [docs/design/15-selection-answer.md](docs/design/15-selection-answer.md)
-- **MVP タスク順序**: [docs/design/16-tasks-mvp.md](docs/design/16-tasks-mvp.md)
-- ⚠️ **`docs/design/12-tasks.md` は upstream 全機能 (採用外含む)** — 採用判断には使わないこと
+- **採用機能定義・MVP スコープ**: [docs/scope.md](docs/scope.md)
 
 ### Skipped (実装禁止)
 
@@ -34,7 +32,7 @@ v4.0.0 で chromedp/Chromium を排除し、native SVG + resvg のパイプラ�
 - **ネスト `<svg>` の viewport は card 幅 (480px) と申告高さでクリップされる**: HTML と違い overflow が visible にならない。要素が境界を越えないよう clamp / 高さ算入を忘れない (PR #722 が前例)
 - `chrome_*` input と `internal/templates/chrome` の「chrome」は **UI 用語 (カードの枠) で、ブラウザとは無関係**
 
-詳細は [docs/design/04-rendering.md](docs/design/04-rendering.md)。
+詳細は [docs/rendering.md](docs/rendering.md)。
 
 ## Development workflow
 

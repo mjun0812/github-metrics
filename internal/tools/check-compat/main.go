@@ -27,8 +27,8 @@ import (
 )
 
 // adoptedPlugins lists the upstream plugin slugs we have promised to
-// remain key-compatible with (docs/design/15-selection-answer.md §6.4
-// + core). #605 deleted the upstream `base` slug; the in-tree header /
+// remain key-compatible with (docs/scope.md §2 + core). #605 deleted
+// the upstream `base` slug; the in-tree header /
 // activity / repositories plugins now own its surface separately.
 var adoptedPlugins = []string{
 	"core",
