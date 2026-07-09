@@ -217,10 +217,11 @@ func renderDetailed(body *strings.Builder, list []Achievement, top float64) floa
 		// Value pill after the title (`.value { margin-left: 46px }`),
 		// vertically centered on the title line.
 		titleW := fontmetrics.Width(title, achTitleFont)
-		pillX := infoX + titleW + achValueGap
+		pillText := strconv.Itoa(a.Value)
+		pillX := clampPillX(infoX+titleW+achValueGap, pillText)
 		lineCenter := titleBaseline - achTitleFont*baselineFrac
 		card.WriteString(achValuePill(pillX, lineCenter-achValueHeight/2,
-			strconv.Itoa(a.Value), titleColor, valueBg))
+			pillText, titleColor, valueBg))
 
 		infoBottom := titleBaseline
 		if a.Description != "" {
@@ -290,7 +291,7 @@ func renderCompact(body *strings.Builder, list []Achievement, top float64) float
 		// — with `.value-wrapper { margin-top: 36px }` dropping it to the
 		// bottom row).
 		pillText := strconv.Itoa(a.Value)
-		pillX := iconX + achIconSize - achValueHeight/2
+		pillX := clampPillX(iconX+achIconSize-achValueHeight/2, pillText)
 		pillTop := iconY + achIconSize - achValueHeight/2
 		card.WriteString(achValuePill(pillX, pillTop, pillText, titleColor, valueBg))
 
@@ -298,7 +299,22 @@ func renderCompact(body *strings.Builder, list []Achievement, top float64) float
 	}
 
 	rows := (len(list) + perRow - 1) / perRow
-	return float64(rows) * cellHeight
+	// The last row's pill dips half its height (plus the 1px stroke)
+	// below the icon, and the enclosing svg viewport clips anything
+	// past the reported height — without this overhang the pill's
+	// bottom arc is cut off.
+	return float64(rows)*cellHeight + achValueHeight/2 + 1
+}
+
+// clampPillX keeps a value pill (plus its 1px stroke) inside the card:
+// the enclosing svg viewport clips anything past CardWidth, which cut
+// the last grid column's pill on the right (the HTML original never
+// clipped because div overflow is visible).
+func clampPillX(x float64, text string) float64 {
+	if maxX := float64(chrome.CardWidth) - achValuePillWidth(text) - 1; x > maxX {
+		return maxX
+	}
+	return x
 }
 
 // writeAchievementGroup wraps one badge's native markup in the
@@ -315,13 +331,19 @@ func writeAchievementGroup(body *strings.Builder, a Achievement, card string) {
 	)
 }
 
+// achValuePillWidth returns the pill width for the given digits,
+// including the achValueSafety font headroom and the upstream padding.
+func achValuePillWidth(text string) float64 {
+	return fontmetrics.Width(text, achValueFont)*achValueSafety + 2*achValuePadX
+}
+
 // achValuePill renders one `.value` pill: a fully-rounded rect whose
 // top-left is (x, top), filled with the translucent rank color and
 // bordered/labeled in the title color. The digits are anchored to the
 // pill's center so the achValueSafety headroom splits evenly between
 // both rounded caps regardless of the viewer's font. Returns the markup.
 func achValuePill(x, top float64, text, titleColor, bgColor string) string {
-	w := fontmetrics.Width(text, achValueFont)*achValueSafety + 2*achValuePadX
+	w := achValuePillWidth(text)
 	baseline := top + achValueHeight/2 + achValueFont*baselineFrac
 	var b strings.Builder
 	fmt.Fprintf(&b,
