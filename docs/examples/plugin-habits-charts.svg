@@ -20,10 +20,10 @@
           <text x="18" y="104" font-size="10" fill="#666666" text-anchor="middle">
             00
           </text>
-          <text x="37" y="75" font-size="6" fill="#666666" text-anchor="middle">
-            4
+          <text x="37" y="82" font-size="6" fill="#666666" text-anchor="middle">
+            2
           </text>
-          <rect x="34" y="77" width="7" height="15" rx="3" ry="3" fill="#40c463"/>
+          <rect x="34" y="84" width="7" height="8" rx="3" ry="3" fill="#9be9a8"/>
           <text x="37" y="104" font-size="10" fill="#666666" text-anchor="middle">
             01
           </text>
@@ -41,10 +41,10 @@
           <text x="76" y="104" font-size="10" fill="#666666" text-anchor="middle">
             03
           </text>
-          <text x="95" y="75" font-size="6" fill="#666666" text-anchor="middle">
-            4
+          <text x="95" y="71" font-size="6" fill="#666666" text-anchor="middle">
+            5
           </text>
-          <rect x="92" y="77" width="7" height="15" rx="3" ry="3" fill="#40c463"/>
+          <rect x="92" y="73" width="7" height="19" rx="3" ry="3" fill="#40c463"/>
           <text x="95" y="104" font-size="10" fill="#666666" text-anchor="middle">
             04
           </text>
@@ -55,10 +55,10 @@
           <text x="114" y="104" font-size="10" fill="#666666" text-anchor="middle">
             05
           </text>
-          <text x="134" y="71" font-size="6" fill="#666666" text-anchor="middle">
-            5
+          <text x="134" y="67" font-size="6" fill="#666666" text-anchor="middle">
+            6
           </text>
-          <rect x="130" y="73" width="7" height="19" rx="3" ry="3" fill="#40c463"/>
+          <rect x="130" y="69" width="7" height="23" rx="3" ry="3" fill="#40c463"/>
           <text x="134" y="104" font-size="10" fill="#666666" text-anchor="middle">
             06
           </text>
@@ -200,17 +200,17 @@
           <text x="56" y="208" font-size="10" fill="#666666" text-anchor="middle">
             Mon
           </text>
-          <text x="88" y="144" font-size="6" fill="#666666" text-anchor="middle">
-            19
+          <text x="88" y="149" font-size="6" fill="#666666" text-anchor="middle">
+            17
           </text>
-          <rect x="85" y="146" width="7" height="50" rx="3" ry="3" fill="#216e39"/>
+          <rect x="85" y="151" width="7" height="45" rx="3" ry="3" fill="#216e39"/>
           <text x="88" y="208" font-size="10" fill="#666666" text-anchor="middle">
             Tue
           </text>
-          <text x="120" y="149" font-size="6" fill="#666666" text-anchor="middle">
-            17
+          <text x="120" y="144" font-size="6" fill="#666666" text-anchor="middle">
+            19
           </text>
-          <rect x="117" y="151" width="7" height="45" rx="3" ry="3" fill="#216e39"/>
+          <rect x="117" y="146" width="7" height="50" rx="3" ry="3" fill="#216e39"/>
           <text x="120" y="208" font-size="10" fill="#666666" text-anchor="middle">
             Wed
           </text>
@@ -242,21 +242,21 @@
         <text x="324" y="150" font-size="10" fill="#666666" text-anchor="end">
           SVG
         </text>
-        <rect x="330" y="144" width="55" height="7" rx="3" ry="3" fill="#30a14e"/>
-        <text x="392" y="150" font-size="10" fill="#666666">
-          58%
+        <rect x="330" y="144" width="57" height="7" rx="3" ry="3" fill="#30a14e"/>
+        <text x="394" y="150" font-size="10" fill="#666666">
+          60%
         </text>
         <text x="324" y="168" font-size="10" fill="#666666" text-anchor="end">
           Go
         </text>
-        <rect x="330" y="162" width="20" height="7" rx="3" ry="3" fill="#9be9a8"/>
-        <text x="356" y="168" font-size="10" fill="#666666">
-          21%
+        <rect x="330" y="162" width="18" height="7" rx="3" ry="3" fill="#9be9a8"/>
+        <text x="354" y="168" font-size="10" fill="#666666">
+          18%
         </text>
         <text x="324" y="186" font-size="10" fill="#666666" text-anchor="end">
           JSON
         </text>
-        <rect x="330" y="180" width="11" height="7" rx="3" ry="3" fill="#9be9a8"/>
+        <rect x="330" y="180" width="12" height="7" rx="3" ry="3" fill="#9be9a8"/>
         <text x="348" y="186" font-size="10" fill="#666666">
           12%
         </text>
@@ -270,7 +270,7 @@
         <text x="324" y="222" font-size="10" fill="#666666" text-anchor="end">
           Markdown
         </text>
-        <rect x="330" y="216" width="2" height="7" rx="3" ry="3" fill="#9be9a8"/>
+        <rect x="330" y="216" width="3" height="7" rx="3" ry="3" fill="#9be9a8"/>
         <text x="339" y="222" font-size="10" fill="#666666">
           3%
         </text>
