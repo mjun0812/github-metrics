@@ -57,7 +57,7 @@
             <rect class="day" fill="#9be9a8" x="403" y="38" width="11" height="11" rx="2" ry="2"/>
             <rect class="day" fill="#9be9a8" x="418" y="38" width="11" height="11" rx="2" ry="2"/>
             <rect class="day" fill="#30a14e" x="433" y="38" width="11" height="11" rx="2" ry="2"/>
-            <rect class="day" fill="#9be9a8" x="448" y="38" width="11" height="11" rx="2" ry="2"/>
+            <rect class="day" fill="#40c463" x="448" y="38" width="11" height="11" rx="2" ry="2"/>
           </g>
           <g transform="translate(253,56)" fill="#959da5">
             <svg width="16" height="16" viewBox="0 0 16 16" class="octicon">
@@ -96,7 +96,7 @@
           </svg>
         </g>
         <text x="37" y="62" font-size="14" fill="#777777">
-          159 Releases
+          161 Releases
         </text>
         <g transform="translate(13,70)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
