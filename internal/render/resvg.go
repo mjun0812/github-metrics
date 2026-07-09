@@ -58,6 +58,14 @@ const (
 	fontMonospace = "Liberation Mono"
 )
 
+// RasterScale is the resvg --zoom factor for PNG/JPEG output. The SVG
+// coordinate space is 480px wide; rasterizing at 1x looks blurry on
+// high-DPI (Retina) displays, where the card is upscaled 2x by the
+// screen. 2x output (960px wide) stays crisp there and downsamples
+// cleanly on 1x displays. Consumers embedding the PNG at its original
+// card size should set an explicit display width (e.g. width="480").
+const RasterScale = 2
+
 // normalize fills in zero values with their documented defaults and
 // resolves the resvg executable path. Resolution order: ExecPath →
 // METRICS_RESVG_PATH env → exec.LookPath("resvg"). Returns an
@@ -168,6 +176,7 @@ func (r *Resvg) rasterizePNG(ctx context.Context, in string) ([]byte, error) {
 	// #nosec G204 -- ExecPath comes from caller config / METRICS_RESVG_PATH,
 	// trusted in this CLI's threat model. The remaining args are constants.
 	cmd := exec.CommandContext(ctx, r.opts.ExecPath,
+		"--zoom", strconv.Itoa(RasterScale),
 		"--sans-serif-family", fontSansSerif,
 		"--serif-family", fontSerif,
 		"--monospace-family", fontMonospace,
