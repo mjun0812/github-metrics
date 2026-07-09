@@ -328,7 +328,11 @@ jobs:
           # height 0). The smallest legitimate sample is >40px, so
           # anything under 10px is an empty card that must not replace
           # a good committed sample.
-          root_h=$(grep -o '<svg[^>]*height="[0-9]*"' "$svg_out" | head -1 | grep -o '[0-9]*$' || echo 0)
+          # (sed, not `grep -o ... | grep -o '[0-9]*$'`: the attribute's
+          # closing quote made the tail grep match nothing, so root_h
+          # came back empty and the -lt comparison treated it as 0 —
+          # which failed every render in run 29001143452.)
+          root_h=$(head -c 500 "$svg_out" | sed -n 's/.*<svg[^>]*height="\([0-9]\{1,\}\)".*/\1/p')
           if [[ "${root_h:-0}" -lt 10 ]]; then
             echo "FAIL: ${SAMPLE_NAME}.svg root height ${root_h}px — every section rendered empty (transient API gap?)" >&2
             exit 1
