@@ -112,12 +112,6 @@
   .horizontal .field {
     flex: 1 1 0;
   }
-  .no-wrap {
-    white-space: nowrap;
-  }
-  .fill-width {
-    width: 100%;
-  }
   .margin-bottom {
     margin-bottom: 16px;
   }
@@ -346,15 +340,6 @@
     stroke-linecap: round;
     fill: none;
   }
-  .gauge.high {
-    color: #18b663;
-  }
-  .gauge.average {
-    color: #fb8c00;
-  }
-  .gauge.low {
-    color: #e53935;
-  }
   .gauge.info {
     color: #58A6FF;
   }
@@ -377,12 +362,6 @@
     font-family: monospace;
     text-anchor: middle;
     font-weight: 600;
-  }
-  .gauge text.secondary {
-    fill: currentColor;
-    font-size: 25px;
-    font-family: monospace;
-    text-anchor: middle;
   }
   .gauge .title {
     font-size: 18px;
@@ -681,16 +660,6 @@
     border-radius: 5px;
     background-color: #7777771F;
   }
-  .sponsors .goal-text, .sponsors .past-text {
-    display: flex;
-    justify-content: space-between;
-    font-style: italic;
-    font-size: 12px;
-    margin-bottom: 4px;
-  }
-  .sponsors .past-text {
-    margin: 8px 0 2px;
-  }
   .sponsors .avatar {
     margin: 2px;
   }
@@ -724,17 +693,11 @@
     font-size: 14px;
     color: #58A6FF;
   }
-  .achievement .gauge.info {
-    color: #58A6FF;
-  }
   .achievement .value {
     background-color: #58A6FF26;
   }
   .achievement.x .title {
     color: #666666;
-  }
-  .achievement.x .gauge.info {
-    color: #B0B0B0;
   }
   .achievement.x .value {
     background-color: #B0B0B026;
@@ -742,17 +705,11 @@
   .achievement.b .title {
     color: #9D8FFF;
   }
-  .achievement.b .gauge.info {
-    color: #9E91FF;
-  }
   .achievement.b .value {
     background-color: #9E91FF26;
   }
   .achievement.a .title {
     color: #D79533;
-  }
-  .achievement.a .gauge.info {
-    color: #E7BD69;
   }
   .achievement.a .value {
     background-color: #E7BD6926;
@@ -760,17 +717,11 @@
   .achievement.s .title {
     color: #EB355E;
   }
-  .achievement.s .gauge.info {
-    color: #EB355E;
-  }
   .achievement.s .value {
     background-color: #EB355E26;
   }
   .achievement.secret .title{
     color: #FF76CD;
-  }
-  .achievement.secret .gauge.info {
-    color: #FF79D1;
   }
   .achievement.secret .value {
     background-color: #FF79D126;
@@ -781,9 +732,6 @@
     font-size: 10px;
     padding: 0 5px;
     white-space: nowrap;
-  }
-  .achievement .gauge-base, .achievement .gauge-arc {
-    stroke-width: 6;
   }
   .achievement .value-wrapper {
     margin-bottom: -50px;
