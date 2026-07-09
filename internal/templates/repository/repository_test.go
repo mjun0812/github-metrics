@@ -111,6 +111,42 @@ func TestRun_NoChromeSuppressesChrome(t *testing.T) {
 	}
 }
 
+// TestRun_ConfigAnimations is the #736 regression: config_animations
+// must reach the root <svg> class so the style.css `.no-animations *`
+// rule can zero every animation-duration.
+func TestRun_ConfigAnimations(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name       string
+		animations bool
+	}{
+		{"enabled", true},
+		{"disabled", false},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			d := plugins.NewData()
+			d.Account = plugins.AccountRepository
+			d.Repo = &plugins.Repo{Owner: "octocat", Name: "hello-world"}
+			d.Config.Animations = tc.animations
+			pc := &templates.PartialContext{
+				Data:   d,
+				Inputs: map[string]any{"repo": "hello-world", "chrome_header": "yes"},
+			}
+			out, err := Template.Run(context.Background(), pc)
+			if err != nil {
+				t.Fatalf("Run: %v", err)
+			}
+			hasClass := strings.Contains(out, `class="no-animations"`)
+			if hasClass == tc.animations {
+				t.Fatalf("animations=%v: root <svg> no-animations class present=%v; output:\n%s",
+					tc.animations, hasClass, truncate(out, 400))
+			}
+		})
+	}
+}
+
 func TestRun_NilRepo_StillEmitsSkeleton(t *testing.T) {
 	t.Parallel()
 	pc := &templates.PartialContext{

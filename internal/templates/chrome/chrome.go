@@ -29,6 +29,18 @@ type StackedSection struct {
 	Attrs  string
 }
 
+// RootSVGClass returns the class value for the root <svg> element that
+// both templates share. When config_animations is disabled it emits
+// "no-animations" so the style.css `.no-animations *` rule zeroes every
+// animation-duration; otherwise it is empty (the animated default) and
+// OptimizeCSS drops the now-unmatched rule.
+func RootSVGClass(pc *templates.PartialContext) string {
+	if pc != nil && pc.Data != nil && !pc.Data.Config.Animations {
+		return "no-animations"
+	}
+	return ""
+}
+
 // StackSections lays the sections out top-to-bottom, wrapping each in a
 // `<g transform="translate(0,y)">`, and returns the combined body markup
 // plus the total stacked height. Used by both templates now that #409
