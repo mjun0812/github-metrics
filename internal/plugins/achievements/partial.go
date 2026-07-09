@@ -275,10 +275,17 @@ func renderCompact(body *strings.Builder, list []Achievement, top float64) float
 		iconY := labelTop + achPrefixMinH + achTitleFont + achLabelGap
 		card.WriteString(chrome.SVGIcon(iconX, iconY, "", iconForAchievement(a)))
 
-		// Value pill overlapping the icon's lower-right corner
-		// (`.value-wrapper { margin-top: 36px }`, `.value { margin-left: 46px }`).
+		// Value pill nudged to the icon's lower-right corner: its top-left
+		// corner overlaps the icon by half the pill height so the badge and
+		// pill read as one unit while the digits sit clear of the icon's
+		// busy center, to the right and below it (upstream renders the pill
+		// just past the 44px icon's right edge — `.value { margin-left: 46px }`
+		// — with `.value-wrapper { margin-top: 36px }` dropping it to the
+		// bottom row).
 		pillText := strconv.Itoa(a.Value)
-		card.WriteString(achValuePill(cellX+achValueGap, iconY+achIconSize*0.55, pillText, titleColor, valueBg))
+		pillX := iconX + achIconSize - achValueHeight/2
+		pillTop := iconY + achIconSize - achValueHeight/2
+		card.WriteString(achValuePill(pillX, pillTop, pillText, titleColor, valueBg))
 
 		writeAchievementGroup(body, a, card.String())
 	}

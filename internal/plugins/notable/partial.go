@@ -156,10 +156,34 @@ func chipStats(c NotableContrib, totalStars int, list []NotableContrib) []chipSt
 	return stats
 }
 
+// chipLabelSafety reserves extra horizontal space after the chip label,
+// as a fraction of its measured width, before the indepth gauge stack.
+// fontmetrics measures label width with Liberation Sans (Arial-metric),
+// which the production renderer also uses, but the chip's CSS font stack
+// may be rendered with a wider face when viewed elsewhere (e.g. DejaVu
+// Sans, ~13.5% wider, is the common Linux browser fallback). Reserving
+// only the Liberation width leaves the gauge stack's 4px margin as the
+// sole headroom, so a wider face pushes the label onto the first gauge
+// and they overlap (issue #409 visual regression). The fraction is sized
+// past the widest measured DejaVu/Liberation ratio so the gauges clear
+// the label across fonts. The label glyphs are still drawn at their
+// measured x; only the reserved advance before the gauges grows, so the
+// headroom scales with label length.
+const chipLabelSafety = 0.14
+
+// chipLabelHeadroom is the cross-font safety gap reserved after a label
+// of measured width nameW before the gauge stack begins.
+func chipLabelHeadroom(nameW float64) float64 { return nameW * chipLabelSafety }
+
 // chipWidth is the total pixel width a chip occupies given its measured
-// label width and stat count.
+// label width and stat count. Indepth chips reserve the cross-font label
+// headroom so the gauge stack clears the label.
 func chipWidth(nameW float64, nStats int) float64 {
-	return 2*chipBorder + 2*chipAvMargin + chipAvSize + nameW + float64(nStats)*chipStatAdvance + chipPadRight
+	w := 2*chipBorder + 2*chipAvMargin + chipAvSize + nameW + chipPadRight
+	if nStats > 0 {
+		w += chipLabelHeadroom(nameW) + float64(nStats)*chipStatAdvance
+	}
+	return w
 }
 
 // maxBasicChipNameLen caps the chip label so the 480 px card width still
@@ -276,9 +300,11 @@ func writeChip(b *strings.Builder, chipX, chipY float64, idx int, c NotableContr
 	nameBaseline := centerY + chipNameFont*baselineRatio
 	b.WriteString(chrome.SVGText(nameX, nameBaseline, label, chrome.SVGTextOpts{Size: chipNameFont, Fill: style.text}))
 
-	// Indepth gauge stack (gauge + type icon per stat).
+	// Indepth gauge stack (gauge + type icon per stat). Start past the
+	// label plus the cross-font headroom (see chipLabelSafety) so a
+	// wider render face cannot push the label onto the first gauge.
 	iconColor := darken(style.text)
-	cx := nameX + nameW
+	cx := nameX + nameW + chipLabelHeadroom(nameW)
 	for _, s := range stats {
 		gx := cx + chipGaugeMargin
 		gy := centerY - chipGaugeSize/2
