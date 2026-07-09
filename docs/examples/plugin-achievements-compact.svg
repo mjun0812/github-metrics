@@ -36,8 +36,8 @@
               </g>
             </svg>
           </g>
-          <rect x="54" y="101" width="21" height="16" rx="8" ry="8" fill="#EB355E" fill-opacity="0.15" stroke="#EB355E"/>
-          <text x="59" y="112" font-size="10" fill="#EB355E">
+          <rect x="54" y="101" width="23" height="16" rx="8" ry="8" fill="#EB355E" fill-opacity="0.15" stroke="#EB355E"/>
+          <text x="65" y="112" font-size="10" fill="#EB355E" text-anchor="middle">
             32
           </text>
         </g>
@@ -69,9 +69,9 @@
               </g>
             </svg>
           </g>
-          <rect x="134" y="101" width="27" height="16" rx="8" ry="8" fill="#E7BD69" fill-opacity="0.15" stroke="#D79533"/>
-          <text x="139" y="112" font-size="10" fill="#D79533">
-            764
+          <rect x="134" y="101" width="29" height="16" rx="8" ry="8" fill="#E7BD69" fill-opacity="0.15" stroke="#D79533"/>
+          <text x="149" y="112" font-size="10" fill="#D79533" text-anchor="middle">
+            766
           </text>
         </g>
         <g class="achievement a" data-rank="A" data-icon="repo">
@@ -100,8 +100,8 @@
               </g>
             </svg>
           </g>
-          <rect x="214" y="101" width="21" height="16" rx="8" ry="8" fill="#E7BD69" fill-opacity="0.15" stroke="#D79533"/>
-          <text x="219" y="112" font-size="10" fill="#D79533">
+          <rect x="214" y="101" width="23" height="16" rx="8" ry="8" fill="#E7BD69" fill-opacity="0.15" stroke="#D79533"/>
+          <text x="225" y="112" font-size="10" fill="#D79533" text-anchor="middle">
             57
           </text>
         </g>
@@ -131,8 +131,8 @@
               </g>
             </svg>
           </g>
-          <rect x="294" y="101" width="21" height="16" rx="8" ry="8" fill="#E7BD69" fill-opacity="0.15" stroke="#D79533"/>
-          <text x="299" y="112" font-size="10" fill="#D79533">
+          <rect x="294" y="101" width="23" height="16" rx="8" ry="8" fill="#E7BD69" fill-opacity="0.15" stroke="#D79533"/>
+          <text x="305" y="112" font-size="10" fill="#D79533" text-anchor="middle">
             10
           </text>
         </g>
@@ -160,7 +160,7 @@
             </svg>
           </g>
           <rect x="374" y="101" width="16" height="16" rx="8" ry="8" fill="#E7BD69" fill-opacity="0.15" stroke="#D79533"/>
-          <text x="379" y="112" font-size="10" fill="#D79533">
+          <text x="382" y="112" font-size="10" fill="#D79533" text-anchor="middle">
             5
           </text>
         </g>
@@ -186,8 +186,8 @@
               </g>
             </svg>
           </g>
-          <rect x="454" y="101" width="27" height="16" rx="8" ry="8" fill="#9E91FF" fill-opacity="0.15" stroke="#9D8FFF"/>
-          <text x="459" y="112" font-size="10" fill="#9D8FFF">
+          <rect x="454" y="101" width="29" height="16" rx="8" ry="8" fill="#9E91FF" fill-opacity="0.15" stroke="#9D8FFF"/>
+          <text x="469" y="112" font-size="10" fill="#9D8FFF" text-anchor="middle">
             293
           </text>
         </g>
@@ -215,8 +215,8 @@
               </g>
             </svg>
           </g>
-          <rect x="54" y="186" width="32" height="16" rx="8" ry="8" fill="#9E91FF" fill-opacity="0.15" stroke="#9D8FFF"/>
-          <text x="59" y="197" font-size="10" fill="#9D8FFF">
+          <rect x="54" y="186" width="35" height="16" rx="8" ry="8" fill="#9E91FF" fill-opacity="0.15" stroke="#9D8FFF"/>
+          <text x="72" y="197" font-size="10" fill="#9D8FFF" text-anchor="middle">
             1601
           </text>
         </g>
@@ -239,8 +239,8 @@
               </g>
             </svg>
           </g>
-          <rect x="134" y="186" width="27" height="16" rx="8" ry="8" fill="#9E91FF" fill-opacity="0.15" stroke="#9D8FFF"/>
-          <text x="139" y="197" font-size="10" fill="#9D8FFF">
+          <rect x="134" y="186" width="29" height="16" rx="8" ry="8" fill="#9E91FF" fill-opacity="0.15" stroke="#9D8FFF"/>
+          <text x="149" y="197" font-size="10" fill="#9D8FFF" text-anchor="middle">
             329
           </text>
         </g>
@@ -259,8 +259,8 @@
               </g>
             </svg>
           </g>
-          <rect x="214" y="186" width="21" height="16" rx="8" ry="8" fill="#58A6FF" fill-opacity="0.15" stroke="#58A6FF"/>
-          <text x="219" y="197" font-size="10" fill="#58A6FF">
+          <rect x="214" y="186" width="23" height="16" rx="8" ry="8" fill="#58A6FF" fill-opacity="0.15" stroke="#58A6FF"/>
+          <text x="225" y="197" font-size="10" fill="#58A6FF" text-anchor="middle">
             27
           </text>
         </g>
@@ -299,8 +299,8 @@
               </g>
             </svg>
           </g>
-          <rect x="294" y="186" width="21" height="16" rx="8" ry="8" fill="#58A6FF" fill-opacity="0.15" stroke="#58A6FF"/>
-          <text x="299" y="197" font-size="10" fill="#58A6FF">
+          <rect x="294" y="186" width="23" height="16" rx="8" ry="8" fill="#58A6FF" fill-opacity="0.15" stroke="#58A6FF"/>
+          <text x="305" y="197" font-size="10" fill="#58A6FF" text-anchor="middle">
             69
           </text>
         </g>
@@ -333,8 +333,8 @@
               </g>
             </svg>
           </g>
-          <rect x="374" y="186" width="21" height="16" rx="8" ry="8" fill="#58A6FF" fill-opacity="0.15" stroke="#58A6FF"/>
-          <text x="379" y="197" font-size="10" fill="#58A6FF">
+          <rect x="374" y="186" width="23" height="16" rx="8" ry="8" fill="#58A6FF" fill-opacity="0.15" stroke="#58A6FF"/>
+          <text x="385" y="197" font-size="10" fill="#58A6FF" text-anchor="middle">
             71
           </text>
         </g>
@@ -363,8 +363,8 @@
               </g>
             </svg>
           </g>
-          <rect x="454" y="186" width="27" height="16" rx="8" ry="8" fill="#58A6FF" fill-opacity="0.15" stroke="#58A6FF"/>
-          <text x="459" y="197" font-size="10" fill="#58A6FF">
+          <rect x="454" y="186" width="29" height="16" rx="8" ry="8" fill="#58A6FF" fill-opacity="0.15" stroke="#58A6FF"/>
+          <text x="469" y="197" font-size="10" fill="#58A6FF" text-anchor="middle">
             119
           </text>
         </g>
@@ -386,7 +386,7 @@
             </svg>
           </g>
           <rect x="54" y="271" width="16" height="16" rx="8" ry="8" fill="#58A6FF" fill-opacity="0.15" stroke="#58A6FF"/>
-          <text x="59" y="282" font-size="10" fill="#58A6FF">
+          <text x="62" y="282" font-size="10" fill="#58A6FF" text-anchor="middle">
             1
           </text>
         </g>
