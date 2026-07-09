@@ -31,7 +31,7 @@
           </svg>
         </g>
         <text x="37" y="62" font-size="14" fill="#777777">
-          131 Releases
+          132 Releases
         </text>
         <g transform="translate(13,70)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -87,7 +87,7 @@
           </svg>
         </g>
         <text x="277" y="122" font-size="14" fill="#777777">
-          5k views in last two weeks
+          4.9k views in last two weeks
         </text>
       </svg>
     </g>
@@ -103,39 +103,39 @@
         <text x="37" y="22" font-size="16" fill="#0366d6">
           Traffic
         </text>
-        <rect x="5" y="30" width="139" height="22" rx="11" ry="11" fill="#58A6FF" fill-opacity="0.19"/>
+        <rect x="5" y="30" width="149" height="22" rx="11" ry="11" fill="#58A6FF" fill-opacity="0.19"/>
         <text x="15" y="45" font-size="12" fill="#0366D6">
-          5k views (1.4k unique)
+          4.9k views (1.4k unique)
         </text>
         <text x="5" y="70" font-size="14" fill="#777777">
           mjun0812/flash-attention-prebuild-wheels: 4.7k views (1.3k unique)
         </text>
         <text x="5" y="90" font-size="14" fill="#777777">
-          mjun0812/dotfiles: 91 views (12 unique)
+          mjun0812/dotfiles: 87 views (12 unique)
         </text>
         <text x="5" y="110" font-size="14" fill="#777777">
-          mjun0812/python-copier-template: 56 views (9 unique)
+          mjun0812/python-copier-template: 48 views (10 unique)
         </text>
         <text x="5" y="130" font-size="14" fill="#777777">
-          mjun0812/llm-wiki-template: 46 views (7 unique)
+          mjun0812/llm-wiki-template: 47 views (8 unique)
         </text>
         <text x="5" y="150" font-size="14" fill="#777777">
-          mjun0812/RobotoMonoJP: 24 views (9 unique)
+          mjun0812/RobotoMonoJP: 25 views (10 unique)
         </text>
         <text x="5" y="170" font-size="14" fill="#777777">
-          mjun0812/python-project-template: 19 views (10 unique)
+          mjun0812/python-project-template: 18 views (9 unique)
         </text>
         <text x="5" y="190" font-size="14" fill="#777777">
           mjun0812/mjun0812: 8 views (8 unique)
         </text>
         <text x="5" y="210" font-size="14" fill="#777777">
-          mjun0812/MLflow-Docker: 6 views (4 unique)
+          mjun0812/chrome-vertical-tab-toggle-hammerspoon: 7 views (3 unique)
         </text>
         <text x="5" y="230" font-size="14" fill="#777777">
-          mjun0812/mjun0812.github.io: 6 views (3 unique)
+          mjun0812/MLflow-Docker: 6 views (4 unique)
         </text>
         <text x="5" y="250" font-size="14" fill="#777777">
-          mjun0812/setup-cuda: 6 views (1 unique)
+          mjun0812/mjun0812.github.io: 6 views (3 unique)
         </text>
         <text x="5" y="270" font-size="14" fill="#777777">
           mjun0812/hf-model-cleanup-experiment: 4 views (4 unique)
