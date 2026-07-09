@@ -93,7 +93,9 @@ const (
 	achValueBgOpac = "0.15" // 0x26 / 255
 	achValueGap    = 46.0   // `.achievement .value { margin-left: 46px }`
 	achPrefixFont  = 10.0   // compact `.title .prefix { font-size: 10px }`
+	achPrefixMinH  = 13.0   // compact `.title .prefix { min-height: 13px }`
 	achCompactCell = 80.0   // compact `.achievement { width: 80px }`
+	achLabelGap    = 6.0    // title descent + `.title { margin-bottom: 2px }` before the icon
 	baselineFrac   = 0.32
 )
 
@@ -145,9 +147,10 @@ func achTitle(a Achievement) string {
 //
 //   - detailed: a vertical list of horizontal cards (44px rank icon on
 //     the left; title + value pill + description on the right);
-//   - compact: an 80px-wide badge grid (centered icon with an overlapping
-//     value pill and the centered prefix/title below), wrapping across
-//     rows.
+//   - compact: an 80px-wide badge grid. Each cell mirrors the upstream
+//     `flex-direction: column-reverse` order — the centered two-line
+//     prefix/title label sits above the icon, and the value pill overlaps
+//     the icon's lower-right corner — wrapping across rows.
 //
 // Each badge keeps its `class="achievement <rank>"` / `data-rank` /
 // `data-icon` DOM hooks, and the partial reports the pixel height it
@@ -237,9 +240,11 @@ func renderCompact(body *strings.Builder, list []Achievement, top float64) float
 	if perRow < 1 {
 		perRow = 1
 	}
-	// Per-cell vertical budget: top margin + icon + prefix line + title
-	// line + bottom margin.
-	const cellHeight = achMargin + achIconSize + achPrefixFont + achTitleFont + 8
+	// Per-cell vertical budget (top to bottom): top margin, the reserved
+	// prefix line, the title line, the label/icon gap, the icon, and the
+	// bottom margin. The value pill overlaps the icon, so it adds no
+	// height.
+	const cellHeight = achMargin + achPrefixMinH + achTitleFont + achLabelGap + achIconSize + achMargin
 
 	for i, a := range list {
 		col := i % perRow
@@ -250,29 +255,30 @@ func renderCompact(body *strings.Builder, list []Achievement, top float64) float
 		titleColor, valueBg := achColors(a.Rank)
 
 		var card strings.Builder
-		iconX := cellX + (achCompactCell-achIconSize)/2
-		iconY := cellTop + achMargin
-		card.WriteString(chrome.SVGIcon(iconX, iconY, "", iconForAchievement(a)))
 
-		// Value pill overlapping the lower part of the icon, centered
-		// (`.value-wrapper { margin-top: 36px }`).
-		pillText := strconv.Itoa(a.Value)
-		pillW := fontmetrics.Width(pillText, achValueFont) + 2*achValuePadX
-		card.WriteString(achValuePill(cx-pillW/2, iconY+36, pillText, titleColor, valueBg))
-
-		// Prefix (block above the title) + capitalized title, both
-		// centered below the icon.
-		labelBaseline := iconY + achIconSize + achPrefixFont
+		// Two-line label above the icon: the prefix line (its 13px slot is
+		// always reserved so titles align across cells) then the title.
+		labelTop := cellTop + achMargin
 		prefix := rankPrefixes[a.Rank]
 		title := a.Title
 		if prefix != "" {
-			card.WriteString(chrome.SVGText(cx, labelBaseline, prefix,
+			card.WriteString(chrome.SVGText(cx, labelTop+achPrefixFont, prefix,
 				chrome.SVGTextOpts{Size: achPrefixFont, Fill: titleColor, Anchor: "middle"}))
 			title = strings.ToLower(a.Title)
 		}
-		titleBaseline := labelBaseline + achTitleFont
+		titleBaseline := labelTop + achPrefixMinH + achTitleFont
 		card.WriteString(chrome.SVGText(cx, titleBaseline, capitalize(title),
 			chrome.SVGTextOpts{Size: achTitleFont, Fill: titleColor, Anchor: "middle", MaxWidth: achCompactCell}))
+
+		// Icon below the label.
+		iconX := cellX + (achCompactCell-achIconSize)/2
+		iconY := labelTop + achPrefixMinH + achTitleFont + achLabelGap
+		card.WriteString(chrome.SVGIcon(iconX, iconY, "", iconForAchievement(a)))
+
+		// Value pill overlapping the icon's lower-right corner
+		// (`.value-wrapper { margin-top: 36px }`, `.value { margin-left: 46px }`).
+		pillText := strconv.Itoa(a.Value)
+		card.WriteString(achValuePill(cellX+achValueGap, iconY+achIconSize*0.55, pillText, titleColor, valueBg))
 
 		writeAchievementGroup(body, a, card.String())
 	}
