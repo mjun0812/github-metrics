@@ -322,6 +322,17 @@ jobs:
             echo "FAIL: ${SAMPLE_NAME}.svg still carries the height=99999 placeholder (height was not finalized)" >&2
             exit 1
           fi
+          # Postcondition: a near-zero root height means every section
+          # rendered empty (e.g. a transient empty API response — run
+          # 28999435871 shipped a 1457-byte plugin-languages.svg with
+          # height 0). The smallest legitimate sample is >40px, so
+          # anything under 10px is an empty card that must not replace
+          # a good committed sample.
+          root_h=$(grep -o '<svg[^>]*height="[0-9]*"' "$svg_out" | head -1 | grep -o '[0-9]*$' || echo 0)
+          if [[ "${root_h:-0}" -lt 10 ]]; then
+            echo "FAIL: ${SAMPLE_NAME}.svg root height ${root_h}px — every section rendered empty (transient API gap?)" >&2
+            exit 1
+          fi
           echo "OK: ${SAMPLE_NAME}.svg ($(wc -c < "$svg_out" | tr -d ' ') bytes)"
 
           # --- 2. Derive the PNG from the rendered SVG (no API) --------
