@@ -733,9 +733,6 @@
     padding: 0 5px;
     white-space: nowrap;
   }
-  .achievement .gauge-base, .achievement .gauge-arc {
-    stroke-width: 6;
-  }
   .achievement .value-wrapper {
     margin-bottom: -50px;
     margin-top: 36px;
