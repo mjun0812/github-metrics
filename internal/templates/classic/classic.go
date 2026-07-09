@@ -205,6 +205,16 @@ func (t *classicTemplate) Run(ctx context.Context, pc *templates.PartialContext)
 	}
 
 	body, total := chrome.StackSections(sections, pc.Logger)
+	if total < 1 {
+		// Every section came back empty (e.g. a transient empty API
+		// response with all chrome_* sections off). A 0 height/viewBox
+		// is not a valid SVG size — rasterizers reject it — so emit a
+		// minimal 1px-high canvas instead.
+		if pc.Logger != nil {
+			pc.Logger.Warn("classic: no section produced content; emitting a 1px-high empty card")
+		}
+		total = 1
+	}
 
 	var b strings.Builder
 	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="%d" viewBox="0 0 480 %d" class="">`,

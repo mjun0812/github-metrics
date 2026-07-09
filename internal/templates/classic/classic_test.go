@@ -145,6 +145,28 @@ func TestClassic_Run_ZeroM4Plugins(t *testing.T) {
 	}
 }
 
+func TestClassic_Run_EmptyCardKeepsValidSVGSize(t *testing.T) {
+	t.Parallel()
+	// All sections empty (no chrome_* inputs, no plugin data): the
+	// summed height is 0, but a 0 height/viewBox is not a valid SVG
+	// size (rasterizers reject it — regen run 28999627774), so the
+	// template must clamp to a minimal positive canvas.
+	pc := &templates.PartialContext{
+		Inputs: map[string]any{},
+		Data:   &plugins.Data{},
+	}
+	out, err := classic.Template.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if strings.Contains(out, `height="0"`) || strings.Contains(out, `viewBox="0 0 480 0"`) {
+		t.Fatalf("empty card must not declare a zero size; output:\n%s", out)
+	}
+	if !strings.Contains(out, `height="1" viewBox="0 0 480 1"`) {
+		t.Fatalf("expected the 1px empty-card fallback; output:\n%s", out)
+	}
+}
+
 func TestClassic_Run_BaseInputEmptySuppressesBaseSections(t *testing.T) {
 	t.Parallel()
 	data := plugins.NewData()
