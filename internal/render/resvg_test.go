@@ -55,11 +55,14 @@ func TestResvg_PNG_Decodable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("png.Decode: %v", err)
 	}
-	if got := img.Bounds(); got.Dx() != 40 || got.Dy() != 30 {
-		t.Errorf("image bounds = %v, want 40x30", got)
+	// The fixture declares 40x30; output is scaled by RasterScale for
+	// high-DPI displays.
+	wantW, wantH := 40*RasterScale, 30*RasterScale
+	if got := img.Bounds(); got.Dx() != wantW || got.Dy() != wantH {
+		t.Errorf("image bounds = %v, want %dx%d", got, wantW, wantH)
 	}
-	if res.Width != 40 || res.Height != 30 {
-		t.Errorf("Width/Height = %d/%d, want 40/30", res.Width, res.Height)
+	if res.Width != wantW || res.Height != wantH {
+		t.Errorf("Width/Height = %d/%d, want %d/%d", res.Width, res.Height, wantW, wantH)
 	}
 }
 
@@ -82,11 +85,14 @@ func TestResvg_JPEG_Decodable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("jpeg.Decode: %v", err)
 	}
-	if got := img.Bounds(); got.Dx() != 40 || got.Dy() != 30 {
-		t.Errorf("image bounds = %v, want 40x30", got)
+	// The fixture declares 40x30; output is scaled by RasterScale for
+	// high-DPI displays.
+	wantW, wantH := 40*RasterScale, 30*RasterScale
+	if got := img.Bounds(); got.Dx() != wantW || got.Dy() != wantH {
+		t.Errorf("image bounds = %v, want %dx%d", got, wantW, wantH)
 	}
-	if res.Width != 40 || res.Height != 30 {
-		t.Errorf("Width/Height = %d/%d, want 40/30", res.Width, res.Height)
+	if res.Width != wantW || res.Height != wantH {
+		t.Errorf("Width/Height = %d/%d, want %d/%d", res.Width, res.Height, wantW, wantH)
 	}
 }
 
