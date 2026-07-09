@@ -71,7 +71,7 @@ permissions:
   packages: write       # GHCR pull AND push+delete (for `branch` preview build)
 
 env:
-  GO_VERSION: "1.26.4"
+  GO_VERSION: "1.26.5"
   REGISTRY_IMAGE: ghcr.io/mjun0812/github-metrics
 
 jobs:
