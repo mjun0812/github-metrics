@@ -182,8 +182,8 @@ func (t *repositoryTemplate) Run(ctx context.Context, pc *templates.PartialConte
 	}
 
 	var b strings.Builder
-	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="%d" viewBox="0 0 480 %d" class="">`,
-		total, total)
+	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="%d" viewBox="0 0 480 %d" class="%s">`,
+		total, total, chrome.RootSVGClass(pc))
 	fmt.Fprintf(&b, `<defs><style>%s</style></defs>`, t.styles.Fonts)
 	fmt.Fprintf(&b, `<style data-optimizable="true">%s</style>`, t.styles.Style)
 	b.WriteString(`<style></style>`)
