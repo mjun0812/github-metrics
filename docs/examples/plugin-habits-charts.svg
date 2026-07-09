@@ -41,10 +41,10 @@
           <text x="76" y="104" font-size="10" fill="#666666" text-anchor="middle">
             03
           </text>
-          <text x="95" y="59" font-size="6" fill="#666666" text-anchor="middle">
-            5
+          <text x="95" y="71" font-size="6" fill="#666666" text-anchor="middle">
+            3
           </text>
-          <rect x="92" y="61" width="7" height="31" rx="3" ry="3" fill="#30a14e"/>
+          <rect x="92" y="73" width="7" height="19" rx="3" ry="3" fill="#40c463"/>
           <text x="95" y="104" font-size="10" fill="#666666" text-anchor="middle">
             04
           </text>
@@ -97,10 +97,10 @@
           <text x="230" y="104" font-size="10" fill="#666666" text-anchor="middle">
             11
           </text>
-          <text x="250" y="90" font-size="6" fill="#666666" text-anchor="middle">
-            0
+          <text x="250" y="84" font-size="6" fill="#666666" text-anchor="middle">
+            1
           </text>
-          <rect x="246" y="92" width="7" height="0" rx="3" ry="3" fill="#9be9a8"/>
+          <rect x="246" y="86" width="7" height="6" rx="3" ry="3" fill="#9be9a8"/>
           <text x="250" y="104" font-size="10" fill="#666666" text-anchor="middle">
             12
           </text>
@@ -200,15 +200,15 @@
           <text x="56" y="208" font-size="10" fill="#666666" text-anchor="middle">
             Mon
           </text>
-          <text x="88" y="183" font-size="6" fill="#666666" text-anchor="middle">
-            8
+          <text x="88" y="186" font-size="6" fill="#666666" text-anchor="middle">
+            6
           </text>
-          <rect x="85" y="185" width="7" height="11" rx="3" ry="3" fill="#9be9a8"/>
+          <rect x="85" y="188" width="7" height="8" rx="3" ry="3" fill="#9be9a8"/>
           <text x="88" y="208" font-size="10" fill="#666666" text-anchor="middle">
             Tue
           </text>
           <text x="120" y="144" font-size="6" fill="#666666" text-anchor="middle">
-            36
+            37
           </text>
           <rect x="117" y="146" width="7" height="50" rx="3" ry="3" fill="#216e39"/>
           <text x="120" y="208" font-size="10" fill="#666666" text-anchor="middle">
@@ -242,9 +242,9 @@
         <text x="324" y="150" font-size="10" fill="#666666" text-anchor="end">
           SVG
         </text>
-        <rect x="330" y="144" width="51" height="7" rx="3" ry="3" fill="#30a14e"/>
-        <text x="387" y="150" font-size="10" fill="#666666">
-          53%
+        <rect x="330" y="144" width="52" height="7" rx="3" ry="3" fill="#30a14e"/>
+        <text x="388" y="150" font-size="10" fill="#666666">
+          54%
         </text>
         <text x="324" y="168" font-size="10" fill="#666666" text-anchor="end">
           Markdown
@@ -263,9 +263,9 @@
         <text x="324" y="204" font-size="10" fill="#666666" text-anchor="end">
           Go
         </text>
-        <rect x="330" y="198" width="8" height="7" rx="3" ry="3" fill="#9be9a8"/>
-        <text x="344" y="204" font-size="10" fill="#666666">
-          8%
+        <rect x="330" y="198" width="7" height="7" rx="3" ry="3" fill="#9be9a8"/>
+        <text x="343" y="204" font-size="10" fill="#666666">
+          7%
         </text>
         <text x="324" y="222" font-size="10" fill="#666666" text-anchor="end">
           Python
