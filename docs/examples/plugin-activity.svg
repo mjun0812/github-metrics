@@ -17,7 +17,7 @@
         <text x="37" y="22" font-size="16" fill="#0366d6">
           Recent activity
         </text>
-        <g class="activity" data-type="PushEvent" data-repo="mjun0812/dotfiles" data-date="2026-07-09">
+        <g class="activity" data-type="PushEvent" data-repo="mjun0812/dotfiles" data-date="2026-07-10">
           <g transform="translate(13,30)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
               <path fill-rule="evenodd" d="M10.5 7.75a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zm1.43.75a4.002 4.002 0 01-7.86 0H.75a.75.75 0 110-1.5h3.32a4.001 4.001 0 017.86 0h3.32a.75.75 0 110 1.5h-3.32z"/>
@@ -30,7 +30,7 @@
             </tspan>
           </text>
           <text x="38" y="62" font-size="10" fill="#666666">
-            2026-07-09
+            2026-07-10
           </text>
         </g>
         <g class="activity" data-type="PushEvent" data-repo="mjun0812/dotfiles" data-date="2026-07-09">
@@ -49,7 +49,7 @@
             2026-07-09
           </text>
         </g>
-        <g class="activity" data-type="PushEvent" data-repo="mjun0812/flash-attention-prebuild-wheels" data-date="2026-07-09">
+        <g class="activity" data-type="PushEvent" data-repo="mjun0812/dotfiles" data-date="2026-07-09">
           <g transform="translate(13,122)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
               <path fill-rule="evenodd" d="M10.5 7.75a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zm1.43.75a4.002 4.002 0 01-7.86 0H.75a.75.75 0 110-1.5h3.32a4.001 4.001 0 017.86 0h3.32a.75.75 0 110 1.5h-3.32z"/>
@@ -58,14 +58,14 @@
           <text x="37" y="134" font-size="14" fill="#777777">
             Pushed in
             <tspan class="repo" fill="#58a6ff">
-              mjun0812/flash-attention-prebuild-wheels
+              mjun0812/dotfiles
             </tspan>
           </text>
           <text x="38" y="154" font-size="10" fill="#666666">
             2026-07-09
           </text>
         </g>
-        <g class="activity" data-type="PushEvent" data-repo="mjun0812/flash-attention-prebuild-wheels" data-date="2026-07-09">
+        <g class="activity" data-type="PushEvent" data-repo="mjun0812/dotfiles" data-date="2026-07-09">
           <g transform="translate(13,168)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
               <path fill-rule="evenodd" d="M10.5 7.75a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zm1.43.75a4.002 4.002 0 01-7.86 0H.75a.75.75 0 110-1.5h3.32a4.001 4.001 0 017.86 0h3.32a.75.75 0 110 1.5h-3.32z"/>
@@ -74,23 +74,23 @@
           <text x="37" y="180" font-size="14" fill="#777777">
             Pushed in
             <tspan class="repo" fill="#58a6ff">
-              mjun0812/flash-attention-prebuild-wheels
+              mjun0812/dotfiles
             </tspan>
           </text>
           <text x="38" y="200" font-size="10" fill="#666666">
             2026-07-09
           </text>
         </g>
-        <g class="activity" data-type="IssueCommentEvent" data-repo="mjun0812/flash-attention-prebuild-wheels" data-date="2026-07-09">
+        <g class="activity" data-type="PushEvent" data-repo="mjun0812/dotfiles" data-date="2026-07-09">
           <g transform="translate(13,214)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-              <path fill-rule="evenodd" d="M3.05 3.05a7 7 0 000 9.9.75.75 0 11-1.06 1.06c-3.32-3.32-3.32-8.7 0-12.02a.75.75 0 011.06 1.06zm9.9-1.06a.75.75 0 011.06 0c3.32 3.32 3.32 8.7 0 12.02a.75.75 0 11-1.06-1.06 7 7 0 000-9.9.75.75 0 010-1.06zM5.879 5.879a3 3 0 000 4.243.75.75 0 11-1.061 1.06 4.5 4.5 0 010-6.364.75.75 0 011.06 1.06zm5.303-1.061a.75.75 0 011.06 0 4.5 4.5 0 010 6.364.75.75 0 11-1.06-1.06 3 3 0 000-4.243.75.75 0 010-1.061zM8 9a1 1 0 100-2 1 1 0 000 2z"/>
+              <path fill-rule="evenodd" d="M10.5 7.75a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zm1.43.75a4.002 4.002 0 01-7.86 0H.75a.75.75 0 110-1.5h3.32a4.001 4.001 0 017.86 0h3.32a.75.75 0 110 1.5h-3.32z"/>
             </svg>
           </g>
           <text x="37" y="226" font-size="14" fill="#777777">
-            IssueCommentEvent in
+            Pushed in
             <tspan class="repo" fill="#58a6ff">
-              mjun0812/flash-attention-prebuild-wheels
+              mjun0812/dotfiles
             </tspan>
           </text>
           <text x="38" y="246" font-size="10" fill="#666666">
