@@ -43,7 +43,7 @@
             </g>
             <svg viewBox="0 0 30 30" width="16" height="16" x="220" y="3" class="gauge">
               <circle class="gauge-base" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"/>
-              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="98.48215927901417 329"/>
+              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="98.45801409745633 329"/>
               <text x="15" y="15" dominant-baseline="central" text-anchor="middle" font-size="11" fill="#777777">
                 9.8k
               </text>
@@ -55,7 +55,7 @@
             </g>
             <svg viewBox="0 0 30 30" width="16" height="16" x="256" y="3" class="gauge">
               <circle class="gauge-base" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"/>
-              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="101.72622747047856 329"/>
+              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="101.66304347826087 329"/>
               <text x="15" y="15" dominant-baseline="central" text-anchor="middle" font-size="11" fill="#777777">
                 1990
               </text>
@@ -68,9 +68,9 @@
             </g>
             <svg viewBox="0 0 30 30" width="16" height="16" x="292" y="3" class="gauge">
               <circle class="gauge-base" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"/>
-              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="31.40625142596395 329"/>
+              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="31.41409671532847 329"/>
               <text x="15" y="15" dominant-baseline="central" text-anchor="middle" font-size="11" fill="#777777">
-                2092
+                2093
               </text>
             </svg>
             <g transform="translate(314,6) scale(0.625)" fill="#3B3B3B">
@@ -94,7 +94,7 @@
               <circle class="gauge-base" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"/>
               <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="0 329"/>
               <text x="15" y="15" dominant-baseline="central" text-anchor="middle" font-size="11" fill="#777777">
-                18940
+                18946
               </text>
             </svg>
             <g transform="translate(157,6) scale(0.625)" fill="#3B3B3B">
@@ -104,7 +104,7 @@
             </g>
             <svg viewBox="0 0 30 30" width="16" height="16" x="171" y="3" class="gauge">
               <circle class="gauge-base" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"/>
-              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="220.7553491508798 329"/>
+              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="220.78188783328224 329"/>
               <text x="15" y="15" dominant-baseline="central" text-anchor="middle" font-size="11" fill="#777777">
                 21.9k
               </text>
@@ -116,9 +116,9 @@
             </g>
             <svg viewBox="0 0 30 30" width="16" height="16" x="207" y="3" class="gauge">
               <circle class="gauge-base" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"/>
-              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="221.44623990055936 329"/>
+              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="221.51304347826087 329"/>
               <text x="15" y="15" dominant-baseline="central" text-anchor="middle" font-size="11" fill="#777777">
-                4332
+                4336
               </text>
             </svg>
             <g transform="translate(229,6) scale(0.625)" fill="#3B3B3B">
@@ -129,9 +129,9 @@
             </g>
             <svg viewBox="0 0 30 30" width="16" height="16" x="243" y="3" class="gauge">
               <circle class="gauge-base" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"/>
-              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="293.9907369381702 329"/>
+              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="293.98371350364965 329"/>
               <text x="15" y="15" dominant-baseline="central" text-anchor="middle" font-size="11" fill="#777777">
-                19583
+                19587
               </text>
             </svg>
             <g transform="translate(265,6) scale(0.625)" fill="#3B3B3B">
@@ -165,7 +165,7 @@
             </g>
             <svg viewBox="0 0 30 30" width="16" height="16" x="244" y="3" class="gauge">
               <circle class="gauge-base" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"/>
-              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="9.742321132977745 329"/>
+              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="9.739932577382776 329"/>
               <text x="15" y="15" dominant-baseline="central" text-anchor="middle" font-size="11" fill="#777777">
                 966
               </text>
@@ -177,7 +177,7 @@
             </g>
             <svg viewBox="0 0 30 30" width="16" height="16" x="280" y="3" class="gauge">
               <circle class="gauge-base" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"/>
-              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="5.725295214418894 329"/>
+              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="5.721739130434782 329"/>
               <text x="15" y="15" dominant-baseline="central" text-anchor="middle" font-size="11" fill="#777777">
                 112
               </text>
@@ -190,7 +190,7 @@
             </g>
             <svg viewBox="0 0 30 30" width="16" height="16" x="316" y="3" class="gauge">
               <circle class="gauge-base" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"/>
-              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="3.4528861510381015 329"/>
+              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="3.452098540145985 329"/>
               <text x="15" y="15" dominant-baseline="central" text-anchor="middle" font-size="11" fill="#777777">
                 230
               </text>
@@ -226,7 +226,7 @@
             </g>
             <svg viewBox="0 0 30 30" width="16" height="16" x="230" y="3" class="gauge">
               <circle class="gauge-base" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"/>
-              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="0.020170437128318314 329"/>
+              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="0.02016549187863929 329"/>
               <text x="15" y="15" dominant-baseline="central" text-anchor="middle" font-size="11" fill="#777777">
                 2
               </text>
@@ -238,7 +238,7 @@
             </g>
             <svg viewBox="0 0 30 30" width="16" height="16" x="266" y="3" class="gauge">
               <circle class="gauge-base" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"/>
-              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="0.10223741454319453 329"/>
+              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="0.10217391304347827 329"/>
               <text x="15" y="15" dominant-baseline="central" text-anchor="middle" font-size="11" fill="#777777">
                 2
               </text>
@@ -251,7 +251,7 @@
             </g>
             <svg viewBox="0 0 30 30" width="16" height="16" x="302" y="3" class="gauge">
               <circle class="gauge-base" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"/>
-              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="0.15012548482774354 329"/>
+              <circle class="gauge-arc" transform="rotate(-90 15 15)" r="12.5" cx="15" cy="15" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-dasharray="0.1500912408759124 329"/>
               <text x="15" y="15" dominant-baseline="central" text-anchor="middle" font-size="11" fill="#777777">
                 10
               </text>
