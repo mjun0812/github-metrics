@@ -27,29 +27,30 @@ import (
 // + committer pipeline. It is built from the merged inputs (INPUT_<UPPER>
 // / INPUTS JSON / --config YAML / CLI flags).
 type Invocation struct {
-	Inputs           map[string]any
-	Token            config.Token
-	Template         string
-	Login            string
-	Format           string // "svg" / "png" / "jpeg" / "json"
-	Dryrun           bool
-	OutputAction     string
-	OutputCondition  string
-	OutputFilename   string
-	OutputDir        string
-	PerPlugin        bool // true when in per-plugin SVG output mode
-	UseMockedData    bool
-	NoticeReleases   bool
-	RepoOwner        string
-	RepoName         string
-	RunID            string // GITHUB_RUN_ID; used by pull-request* head branch naming
-	Branch           string // committer_branch; empty = default
-	CommitterMessage string
-	CommitterAuthor  string
-	CommitterEmail   string
-	RetryPolicy      RetryPolicy
-	GitHubAPIRest    string
-	GitHubAPIGraphQL string
+	Inputs            map[string]any
+	Token             config.Token
+	Template          string
+	Login             string
+	Format            string // "svg" / "png" / "jpeg" / "json"
+	Dryrun            bool
+	OutputAction      string
+	OutputCondition   string
+	OutputFilename    string
+	OutputDir         string
+	PerPlugin         bool // true when in per-plugin SVG output mode
+	UseMockedData     bool
+	NoticeReleases    bool
+	RepoOwner         string
+	RepoName          string
+	RunID             string // GITHUB_RUN_ID; used by pull-request* head branch naming
+	Branch            string // committer_branch; empty = default
+	CommitterMessage  string
+	CommitterAuthor   string
+	CommitterEmail    string
+	RetryPolicy       RetryPolicy // rendering (engine.Compute) retries
+	OutputRetryPolicy RetryPolicy // output_action (committer) retries
+	GitHubAPIRest     string
+	GitHubAPIGraphQL  string
 }
 
 // Run is the unified entry point for the metrics-cli binary. It reads
@@ -621,6 +622,10 @@ func newInvocation(inputs map[string]any, env map[string]string, outputDir strin
 		Retries: intInput(inputs, "retries", DefaultRetries),
 		Delay:   durationSecInput(inputs, "retries_delay", DefaultRetryDelay),
 	}
+	inv.OutputRetryPolicy = RetryPolicy{
+		Retries: intInput(inputs, "retries_output_action", DefaultOutputRetries),
+		Delay:   durationSecInput(inputs, "retries_delay_output_action", DefaultOutputRetryDelay),
+	}
 
 	// Resolve filename wildcard.
 	rawFilename := stringInput(inputs, "filename", "github-metrics.*")
@@ -664,6 +669,13 @@ func newInvocation(inputs map[string]any, env map[string]string, outputDir strin
 		}
 	}
 	inv.RunID = env["GITHUB_RUN_ID"]
+
+	// Expand committer_message placeholders: ${filename} resolves to the
+	// rendered output filename (upstream parity), ${run} to the workflow
+	// run id (GITHUB_RUN_ID; port-local extension for the CLI default).
+	// Both defaults (action.yml + CLI) embed these, so without expansion
+	// commits would carry literal ${filename} / ${run}.
+	inv.CommitterMessage = expandCommitterMessage(inv.CommitterMessage, inv.OutputFilename, inv.RunID)
 
 	// Login fallback: GITHUB_ACTOR (set by the GitHub Actions runner).
 	// In local CLI invocations the env var is typically absent, so the
@@ -812,6 +824,17 @@ func durationSecInput(in map[string]any, key string, def time.Duration) time.Dur
 	}
 	secs := intInput(map[string]any{key: v}, key, int(def/time.Second))
 	return time.Duration(secs) * time.Second
+}
+
+// expandCommitterMessage substitutes the committer_message
+// placeholders: every ${filename} becomes the resolved output filename
+// (upstream's only documented placeholder) and every ${run} becomes the
+// workflow run id — a port-local extension backing the CLI default
+// message. Both replacements are global.
+func expandCommitterMessage(msg, filename, runID string) string {
+	msg = strings.ReplaceAll(msg, "${filename}", filename)
+	msg = strings.ReplaceAll(msg, "${run}", runID)
+	return msg
 }
 
 // writeOutputFile is the historical "mkdir -p + write 0o600" helper
