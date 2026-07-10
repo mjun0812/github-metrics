@@ -26,7 +26,6 @@ import (
 
 	enry "github.com/go-enry/go-enry/v2"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
@@ -44,8 +43,7 @@ func init() {
 
 type indepthPlugin struct{}
 
-func (p *indepthPlugin) Name() string                     { return IndepthName }
-func (p *indepthPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *indepthPlugin) Name() string { return IndepthName }
 
 func (p *indepthPlugin) Requires() []plugins.DataKey {
 	// languages-indepth does not call Provider directly; it reads

@@ -14,7 +14,7 @@ import "embed"
 var fsys embed.FS
 
 // FS returns the embedded filesystem rooted at the assets/ directory.
-// Callers (typically [config.LoadMetadata]) walk plugins/ and
+// Callers (gen-action-yml, template loaders) walk plugins/ and
 // templates/ from this root.
 func FS() embed.FS { return fsys }
 

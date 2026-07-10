@@ -10,9 +10,6 @@ import (
 func TestNewPluginContext_Defaults(t *testing.T) {
 	t.Parallel()
 	pc := mocks.NewPluginContext(t)
-	if pc.Settings == nil || pc.Settings.Repositories != 100 {
-		t.Errorf("default Settings.Repositories = %v, want 100", pc.Settings)
-	}
 	if got := pc.Inputs["user"]; got != "octocat" {
 		t.Errorf("default Inputs[user] = %v, want octocat", got)
 	}

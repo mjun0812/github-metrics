@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
@@ -33,8 +32,7 @@ func init() {
 
 type activityPlugin struct{}
 
-func (p *activityPlugin) Name() string                     { return Name }
-func (p *activityPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *activityPlugin) Name() string { return Name }
 
 func (p *activityPlugin) Requires() []plugins.DataKey {
 	// activity reads from pc.Data fields populated by base; it does not

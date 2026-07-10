@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
@@ -27,8 +26,7 @@ func init() {
 
 type corePlugin struct{}
 
-func (p *corePlugin) Name() string                     { return Name }
-func (p *corePlugin) Metadata() *config.PluginMetadata { return nil } // wired when sync-assets is consumed
+func (p *corePlugin) Name() string { return Name }
 
 func (p *corePlugin) Requires() []plugins.DataKey {
 	// core is the plugin runner infrastructure; it does not call Provider

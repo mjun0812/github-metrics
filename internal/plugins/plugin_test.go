@@ -4,20 +4,17 @@ import (
 	"context"
 	"testing"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
 // fakePlugin implements plugins.Plugin for tests.
 type fakePlugin struct {
 	name string
-	meta *config.PluginMetadata
 	run  func(ctx context.Context, pc *plugins.PluginContext) (any, error)
 }
 
-func (f *fakePlugin) Name() string                     { return f.name }
-func (f *fakePlugin) Metadata() *config.PluginMetadata { return f.meta }
-func (f *fakePlugin) Requires() []plugins.DataKey      { return []plugins.DataKey{} }
+func (f *fakePlugin) Name() string                { return f.name }
+func (f *fakePlugin) Requires() []plugins.DataKey { return []plugins.DataKey{} }
 func (f *fakePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if f.run == nil {
 		return nil, nil

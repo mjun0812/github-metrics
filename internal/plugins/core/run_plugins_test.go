@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/core"
@@ -19,9 +18,8 @@ type stubPlugin struct {
 	run  func(ctx context.Context, pc *plugins.PluginContext) (any, error)
 }
 
-func (s *stubPlugin) Name() string                     { return s.name }
-func (s *stubPlugin) Metadata() *config.PluginMetadata { return nil }
-func (s *stubPlugin) Requires() []plugins.DataKey      { return []plugins.DataKey{} }
+func (s *stubPlugin) Name() string                { return s.name }
+func (s *stubPlugin) Requires() []plugins.DataKey { return []plugins.DataKey{} }
 func (s *stubPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	return s.run(ctx, pc)
 }

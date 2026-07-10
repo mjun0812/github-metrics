@@ -31,7 +31,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
@@ -50,8 +49,7 @@ func init() {
 
 type repositoriesPlugin struct{}
 
-func (p *repositoriesPlugin) Name() string                     { return Name }
-func (p *repositoriesPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *repositoriesPlugin) Name() string { return Name }
 
 func (p *repositoriesPlugin) Requires() []plugins.DataKey {
 	return []plugins.DataKey{plugins.KeyRepositories, plugins.KeyUser}

@@ -6,21 +6,20 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
 type fakeTemplate struct {
 	name string
-	meta *config.TemplateMetadata
+	meta *templates.TemplateMetadata
 	fsys fs.FS
 	run  func(ctx context.Context, pc *templates.PartialContext) (string, error)
 }
 
 func (t *fakeTemplate) Name() string { return t.name }
 
-func (t *fakeTemplate) Metadata() *config.TemplateMetadata { return t.meta }
+func (t *fakeTemplate) Metadata() *templates.TemplateMetadata { return t.meta }
 
 func (t *fakeTemplate) FS() fs.FS { return t.fsys }
 
@@ -107,7 +106,7 @@ func TestEach_SortedOrder(t *testing.T) {
 }
 
 func TestCheckFormat(t *testing.T) {
-	meta := &config.TemplateMetadata{Formats: []string{"svg", "png", "jpeg", "json"}}
+	meta := &templates.TemplateMetadata{Formats: []string{"svg", "png", "jpeg", "json"}}
 
 	for _, f := range []string{"", "svg", "png", "json"} {
 		if err := templates.CheckFormat(meta, f); err != nil {
@@ -128,7 +127,7 @@ func TestCheckFormat(t *testing.T) {
 }
 
 func TestCheckAccount(t *testing.T) {
-	meta := &config.TemplateMetadata{Supports: []string{"user", "organization"}}
+	meta := &templates.TemplateMetadata{Supports: []string{"user", "organization"}}
 
 	for _, ok := range []string{"", "user", "organization"} {
 		if err := templates.CheckAccount(meta, ok); err != nil {

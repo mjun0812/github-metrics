@@ -25,7 +25,6 @@ import (
 	enry "github.com/go-enry/go-enry/v2"
 	enrydata "github.com/go-enry/go-enry/v2/data"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
@@ -44,8 +43,7 @@ func init() {
 
 type recentPlugin struct{}
 
-func (p *recentPlugin) Name() string                     { return RecentName }
-func (p *recentPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *recentPlugin) Name() string { return RecentName }
 
 func (p *recentPlugin) Requires() []plugins.DataKey {
 	// languages-recent does not call Provider directly; it fetches data

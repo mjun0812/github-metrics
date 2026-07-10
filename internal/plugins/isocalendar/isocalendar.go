@@ -11,7 +11,6 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
@@ -27,8 +26,7 @@ func init() {
 
 type isocalendarPlugin struct{}
 
-func (p *isocalendarPlugin) Name() string                     { return Name }
-func (p *isocalendarPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *isocalendarPlugin) Name() string { return Name }
 
 func (p *isocalendarPlugin) Requires() []plugins.DataKey {
 	return []plugins.DataKey{plugins.KeyUser, plugins.KeyCommitCalendar}
