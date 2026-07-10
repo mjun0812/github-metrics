@@ -6,6 +6,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -365,6 +366,108 @@ func TestRun_BasicChipLabelIsOwner(t *testing.T) {
 	if entry.Commits != 0 || entry.Issues != 0 || entry.Pulls != 0 {
 		t.Errorf("basic-mode counters non-zero: commits:%d issues:%d pulls:%d", entry.Commits, entry.Issues, entry.Pulls)
 	}
+}
+
+// TestRun_FollowsPagination pins the #743 fix: the plugin must walk
+// repositoriesContributedTo via pageInfo.hasNextPage / endCursor so
+// contributions beyond the first 100-repo page still surface.
+func TestRun_FollowsPagination(t *testing.T) {
+	t.Parallel()
+	gql := mocks.NewGraphQLMux(t)
+	gql.OnFunc("UserNotable", func(vars map[string]any) (int, string) {
+		if after, _ := vars["after"].(string); after == "CURSOR1" {
+			return 200, notablePageBody("org2", false, "")
+		}
+		return 200, notablePageBody("org1", true, "CURSOR1")
+	})
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithGraphQL(gql),
+		mocks.WithInputs(map[string]any{
+			"user":                        "octocat",
+			"plugin_notable":              true,
+			"plugin_notable_from":         "all",
+			"plugin_notable_repositories": true,
+		}),
+	)
+	out, err := notable.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*notable.Result)
+	if got := gql.Calls("UserNotable"); got != 2 {
+		t.Fatalf("UserNotable calls = %d, want 2 (page 1 + page 2)", got)
+	}
+	names := map[string]bool{}
+	for _, c := range r.List {
+		names[c.Login] = true
+	}
+	if !names["org1"] || !names["org2"] {
+		t.Fatalf("second-page contribution missing; got %+v", r.List)
+	}
+	// Natural exhaustion (hasNextPage=false) is not a degraded state:
+	// no truncation error may be recorded.
+	if errs := pc.Data.SnapshotErrors(); len(errs) != 0 {
+		t.Errorf("SnapshotErrors = %v, want none for a fully-walked connection", errs)
+	}
+}
+
+// TestRun_PaginationCapsPages pins the #743 defensive cap: a response
+// that always advertises a next page must not loop forever — the walk
+// stops at notableMaxPages requests.
+func TestRun_PaginationCapsPages(t *testing.T) {
+	t.Parallel()
+	gql := mocks.NewGraphQLMux(t)
+	gql.OnFunc("UserNotable", func(_ map[string]any) (int, string) {
+		return 200, notablePageBody("org1", true, "CURSOR")
+	})
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithGraphQL(gql),
+		mocks.WithInputs(map[string]any{
+			"user":           "octocat",
+			"plugin_notable": true,
+		}),
+	)
+	if _, err := notable.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if got := gql.Calls("UserNotable"); got != notable.NotableMaxPages {
+		t.Fatalf("UserNotable calls = %d, want %d (page cap)", got, notable.NotableMaxPages)
+	}
+	// The cap-hit truncation must not be silent: one aggregated
+	// AppendError surfaces the degraded state (traffic/activity
+	// precedent).
+	errs := pc.Data.SnapshotErrors()
+	if len(errs) != 1 {
+		t.Fatalf("SnapshotErrors len = %d, want 1; errors: %v", len(errs), errs)
+	}
+	if !strings.Contains(errs[0].Error(), "page cap reached") {
+		t.Errorf("error message should mention page cap; got %q", errs[0].Error())
+	}
+}
+
+// notablePageBody builds a single-node repositoriesContributedTo page
+// owned by an organization, with the given pageInfo cursor state.
+func notablePageBody(owner string, hasNext bool, endCursor string) string {
+	cursor := "null"
+	if endCursor != "" {
+		cursor = `"` + endCursor + `"`
+	}
+	return `{"data":{"user":{"repositoriesContributedTo":{
+		"totalCount":1,
+		"pageInfo":{"hasNextPage":` + strconv.FormatBool(hasNext) + `,"endCursor":` + cursor + `},
+		"nodes":[{
+			"nameWithOwner":"` + owner + `/repo",
+			"description":null,
+			"url":"https://github.com/` + owner + `/repo",
+			"isInOrganization":true,
+			"owner":{"__typename":"Organization","login":"` + owner + `","avatarUrl":"a"},
+			"stargazerCount":10,"forkCount":1,"isFork":false,"isPrivate":false,
+			"defaultBranchRef":{"target":{"__typename":"Commit","history":{"totalCount":5}}},
+			"issues":{"totalCount":1},"pullRequests":{"totalCount":1}
+		}]
+	}}}}`
 }
 
 func TestRun_GoldenShape(t *testing.T) {

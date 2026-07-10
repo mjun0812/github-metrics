@@ -404,6 +404,87 @@ func TestRun_RepositoryStatsFailureFallsBackToContributorList(t *testing.T) {
 	}
 }
 
+// TestRun_ContributorFallbackFollowsPagination pins the #743 fix: the
+// /repos/{owner}/{repo}/contributors fallback must follow the RFC5988
+// Link rel="next" header so contributors beyond the first page are not
+// silently dropped.
+func TestRun_ContributorFallbackFollowsPagination(t *testing.T) {
+	t.Parallel()
+	rest := mocks.NewRESTMux(t)
+	rest.OnBody("/repos/octocat/hello-world/stats/contributors", http.StatusInternalServerError, `{"message":"oops"}`)
+	rest.OnFunc("/repos/octocat/hello-world/contributors", func(req *http.Request) (int, string, http.Header) {
+		if req.URL.Query().Get("page") == "2" {
+			return http.StatusOK, `[{"login":"bob","avatar_url":"b","contributions":3}]`, nil
+		}
+		h := http.Header{"Link": []string{
+			`<https://api.github.com/repos/octocat/hello-world/contributors?per_page=100&anon=true&page=2>; rel="next"`,
+		}}
+		return http.StatusOK, `[{"login":"alice","avatar_url":"a","contributions":8}]`, h
+	})
+	data := plugins.NewData()
+	data.Account = plugins.AccountRepository
+	data.SetRepo(&plugins.Repo{Owner: "octocat", Name: "hello-world", Contributors: 2, DefaultBranch: "main"})
+	pc := mocks.NewPluginContext(t, mocks.WithREST(rest), mocks.WithData(data), mocks.WithInputs(map[string]any{}))
+
+	out, err := contributors.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*contributors.Result)
+	if got := rest.Calls("/repos/octocat/hello-world/contributors"); got != 2 {
+		t.Fatalf("contributors calls = %d, want 2 (page 1 + page 2)", got)
+	}
+	if len(r.List) != 2 || r.List[0].Login != "alice" || r.List[1].Login != "bob" {
+		t.Fatalf("second-page contributor not merged: %+v", r.List)
+	}
+	// Natural exhaustion (no next Link) is not a degraded state: no
+	// page-cap truncation error may be recorded.
+	for _, e := range pc.Data.SnapshotErrors() {
+		if strings.Contains(e.Error(), "page cap reached") {
+			t.Errorf("no page-cap error expected for a fully-walked list; got %q", e.Error())
+		}
+	}
+}
+
+// TestRun_ContributorFallbackCapsPages pins the #743 defensive cap: a
+// misbehaving endpoint that always advertises a next page must not spin
+// forever — the loop stops at contributorsMaxPages requests.
+func TestRun_ContributorFallbackCapsPages(t *testing.T) {
+	t.Parallel()
+	rest := mocks.NewRESTMux(t)
+	rest.OnBody("/repos/octocat/hello-world/stats/contributors", http.StatusInternalServerError, `{"message":"oops"}`)
+	rest.OnFunc("/repos/octocat/hello-world/contributors", func(_ *http.Request) (int, string, http.Header) {
+		h := http.Header{"Link": []string{
+			`<https://api.github.com/repos/octocat/hello-world/contributors?per_page=100&anon=true&page=999>; rel="next"`,
+		}}
+		return http.StatusOK, `[{"login":"alice","avatar_url":"a","contributions":1}]`, h
+	})
+	data := plugins.NewData()
+	data.Account = plugins.AccountRepository
+	data.SetRepo(&plugins.Repo{Owner: "octocat", Name: "hello-world", Contributors: 1, DefaultBranch: "main"})
+	pc := mocks.NewPluginContext(t, mocks.WithREST(rest), mocks.WithData(data), mocks.WithInputs(map[string]any{}))
+
+	if _, err := contributors.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if got := rest.Calls("/repos/octocat/hello-world/contributors"); got != contributors.ContributorsMaxPages {
+		t.Fatalf("contributors calls = %d, want %d (page cap)", got, contributors.ContributorsMaxPages)
+	}
+	// The cap-hit truncation must not be silent: an aggregated
+	// AppendError surfaces the degraded state (traffic/activity
+	// precedent). The stats-failed fallback records its own entry, so
+	// scan for the page-cap message rather than pinning the count.
+	found := false
+	for _, e := range pc.Data.SnapshotErrors() {
+		if strings.Contains(e.Error(), "page cap reached") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("SnapshotErrors should mention the page cap; got %v", pc.Data.SnapshotErrors())
+	}
+}
+
 func TestPartial_ContributionsDisplayMode(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
