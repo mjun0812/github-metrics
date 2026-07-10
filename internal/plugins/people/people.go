@@ -194,9 +194,15 @@ func (p *peoplePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		counts["stargazers"] = repo.Stargazers
 		counts["watchers"] = repo.Watchers
 		for _, typ := range repoTypes {
-			people, err := fetchRepositoryPeople(ctx, pc.REST, repo.Owner, repo.Name, typ, limit)
+			people, truncated, err := fetchRepositoryPeople(ctx, pc.REST, repo.Owner, repo.Name, typ, limit)
 			if err != nil {
 				return nil, xerrors.NewRetryableError(err)
+			}
+			if truncated {
+				// Surface the degraded state (traffic/activity precedent)
+				// so operators can distinguish a complete list from a
+				// page-capped one.
+				pc.Data.AppendError(fmt.Errorf("people: repository %s beyond %d pages unavailable (page cap reached)", typ, peopleMaxPages))
 			}
 			out[typ] = people
 		}
@@ -222,14 +228,18 @@ func isRepositoryPeopleType(t string) bool {
 	return t == "contributors" || t == "stargazers" || t == "watchers"
 }
 
-func fetchRepositoryPeople(ctx context.Context, rest *githubapi.REST, owner, repo, typ string, limit int) ([]Person, error) {
+// fetchRepositoryPeople pages through the repository-mode REST endpoint
+// until the limit is met or the API is exhausted, capped at
+// peopleMaxPages; truncated reports the cap-hit case (more pages
+// remained unfetched).
+func fetchRepositoryPeople(ctx context.Context, rest *githubapi.REST, owner, repo, typ string, limit int) (people []Person, truncated bool, err error) {
 	endpoint, ok := map[string]string{
 		"contributors": "contributors",
 		"stargazers":   "stargazers",
 		"watchers":     "subscribers",
 	}[typ]
 	if !ok {
-		return nil, nil
+		return nil, false, nil
 	}
 	perPage := limit
 	if perPage <= 0 || perPage > 100 {
@@ -237,6 +247,7 @@ func fetchRepositoryPeople(ctx context.Context, rest *githubapi.REST, owner, rep
 	}
 	out := make([]Person, 0)
 	page := 1
+	morePages := false
 	for p := 0; p < peopleMaxPages; p++ {
 		path := fmt.Sprintf(
 			"/repos/%s/%s/%s?per_page=%d&page=%d",
@@ -248,16 +259,16 @@ func fetchRepositoryPeople(ctx context.Context, rest *githubapi.REST, owner, rep
 		)
 		body, resp, err := rest.Get(ctx, path, nil)
 		if err != nil {
-			return nil, fmt.Errorf("people: repository %s: %w", typ, err)
+			return nil, false, fmt.Errorf("people: repository %s: %w", typ, err)
 		}
 		if resp == nil {
-			return nil, fmt.Errorf("people: repository %s: nil response", typ)
+			return nil, false, fmt.Errorf("people: repository %s: nil response", typ)
 		}
 		if resp.StatusCode == http.StatusNotFound {
-			return []Person{}, nil
+			return []Person{}, false, nil
 		}
 		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("people: repository %s: status %d: %s", typ, resp.StatusCode, strings.TrimSpace(string(body)))
+			return nil, false, fmt.Errorf("people: repository %s: status %d: %s", typ, resp.StatusCode, strings.TrimSpace(string(body)))
 		}
 		var nodes []struct {
 			Login     string `json:"login"`
@@ -265,7 +276,7 @@ func fetchRepositoryPeople(ctx context.Context, rest *githubapi.REST, owner, rep
 			AvatarURL string `json:"avatar_url"`
 		}
 		if err := json.Unmarshal(body, &nodes); err != nil {
-			return nil, fmt.Errorf("people: repository %s: decode: %w", typ, err)
+			return nil, false, fmt.Errorf("people: repository %s: decode: %w", typ, err)
 		}
 		for _, n := range nodes {
 			if n.Login == "" {
@@ -274,18 +285,21 @@ func fetchRepositoryPeople(ctx context.Context, rest *githubapi.REST, owner, rep
 			out = append(out, Person{Login: n.Login, Name: n.Name, AvatarURL: n.AvatarURL})
 		}
 		if limit > 0 && len(out) >= limit {
+			morePages = false
 			break
 		}
 		next := pluginutil.NextPageFromLink(resp.Header.Get("Link"))
 		if next <= 0 {
+			morePages = false
 			break
 		}
+		morePages = true
 		page = next
 	}
 	if limit > 0 && len(out) > limit {
 		out = out[:limit]
 	}
-	return out, nil
+	return out, morePages, nil
 }
 
 func followersToPeople(nodes []*githubapi.UserFollowersUserFollowersUserConnectionNodesUser) []Person {

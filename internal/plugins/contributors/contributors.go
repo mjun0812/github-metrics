@@ -144,6 +144,7 @@ func fetchContributorList(ctx context.Context, pc *plugins.PluginContext, owner,
 	}
 	out := make([]Contributor, 0)
 	page := 1
+	morePages := false
 	for p := 0; p < contributorsMaxPages; p++ {
 		path := fmt.Sprintf(
 			"/repos/%s/%s/contributors?per_page=100&anon=true&page=%d",
@@ -169,9 +170,16 @@ func fetchContributorList(ctx context.Context, pc *plugins.PluginContext, owner,
 		}
 		next := pluginutil.NextPageFromLink(resp.Header.Get("Link"))
 		if next <= 0 {
+			morePages = false
 			break
 		}
+		morePages = true
 		page = next
+	}
+	if morePages {
+		// Surface the degraded state (traffic/activity precedent) so
+		// operators can distinguish a complete list from a page-capped one.
+		pc.Data.AppendError(fmt.Errorf("contributors: contributors beyond %d pages unavailable (page cap reached)", contributorsMaxPages))
 	}
 	sort.SliceStable(out, func(i, j int) bool {
 		if out[i].Commits != out[j].Commits {

@@ -8,6 +8,7 @@ package notable
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -139,12 +140,17 @@ func (p *notablePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	// repo list), so the node-level isPrivate check happens locally.
 	skipPrivate := pluginutil.Truthy(pc.Inputs["repositories_skip_private"])
 
-	nodes, err := fetchNotableRepos(ctx, pc.GraphQL, login, types, &self)
+	nodes, truncated, err := fetchNotableRepos(ctx, pc.GraphQL, login, types, &self)
 	if err != nil {
 		base.Skipped = true
 		base.SkippedReason = "GraphQL fetch failed"
 		pc.Data.AppendError(xerrors.NewRetryableError(err))
 		return base, nil
+	}
+	if truncated {
+		// Surface the degraded state (traffic/activity precedent) so
+		// operators can distinguish a complete list from a page-capped one.
+		pc.Data.AppendError(fmt.Errorf("notable: contributions beyond %d repositories unavailable (page cap reached)", notableMaxPages*notablePageSize))
 	}
 	base.List = collectNotable(nodes, indepth, from, useHandle, skipped, limit, skipPrivate)
 	return base, nil
@@ -159,32 +165,32 @@ const notableMaxPages = 10
 // fetchNotableRepos walks repositoriesContributedTo (ordered by
 // STARGAZERS DESC) following pageInfo.hasNextPage / endCursor, mirroring
 // upstream source/plugins/notable/index.mjs's do-while paging. It stops
-// at the last page or notableMaxPages, whichever comes first.
+// at the last page or notableMaxPages, whichever comes first; truncated
+// reports the cap-hit case (more pages remained unfetched).
 func fetchNotableRepos(
 	ctx context.Context,
 	gql *githubapi.GraphQL,
 	login string,
 	types []githubapi.RepositoryContributionType,
 	self *bool,
-) ([]*notableRepoNode, error) {
-	var nodes []*notableRepoNode
+) (nodes []*notableRepoNode, truncated bool, err error) {
 	var cursor *string
 	for page := 0; page < notableMaxPages; page++ {
 		resp, err := gql.UserNotable(ctx, login, notablePageSize, cursor, types, self)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		if resp == nil || resp.User == nil || resp.User.RepositoriesContributedTo == nil {
-			break
+			return nodes, false, nil
 		}
 		conn := resp.User.RepositoriesContributedTo
 		nodes = append(nodes, conn.Nodes...)
 		if conn.PageInfo == nil || !conn.PageInfo.HasNextPage || conn.PageInfo.EndCursor == nil {
-			break
+			return nodes, false, nil
 		}
 		cursor = conn.PageInfo.EndCursor
 	}
-	return nodes, nil
+	return nodes, true, nil
 }
 
 func collectNotable(

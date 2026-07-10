@@ -437,6 +437,13 @@ func TestRun_ContributorFallbackFollowsPagination(t *testing.T) {
 	if len(r.List) != 2 || r.List[0].Login != "alice" || r.List[1].Login != "bob" {
 		t.Fatalf("second-page contributor not merged: %+v", r.List)
 	}
+	// Natural exhaustion (no next Link) is not a degraded state: no
+	// page-cap truncation error may be recorded.
+	for _, e := range pc.Data.SnapshotErrors() {
+		if strings.Contains(e.Error(), "page cap reached") {
+			t.Errorf("no page-cap error expected for a fully-walked list; got %q", e.Error())
+		}
+	}
 }
 
 // TestRun_ContributorFallbackCapsPages pins the #743 defensive cap: a
@@ -462,6 +469,19 @@ func TestRun_ContributorFallbackCapsPages(t *testing.T) {
 	}
 	if got := rest.Calls("/repos/octocat/hello-world/contributors"); got != contributors.ContributorsMaxPages {
 		t.Fatalf("contributors calls = %d, want %d (page cap)", got, contributors.ContributorsMaxPages)
+	}
+	// The cap-hit truncation must not be silent: an aggregated
+	// AppendError surfaces the degraded state (traffic/activity
+	// precedent). The stats-failed fallback records its own entry, so
+	// scan for the page-cap message rather than pinning the count.
+	found := false
+	for _, e := range pc.Data.SnapshotErrors() {
+		if strings.Contains(e.Error(), "page cap reached") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("SnapshotErrors should mention the page cap; got %v", pc.Data.SnapshotErrors())
 	}
 }
 
