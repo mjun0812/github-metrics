@@ -2,13 +2,11 @@ package logger_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"log/slog"
 	"strings"
 	"testing"
 
-	"github.com/mjun0812/github-metrics/internal/ctxutil"
 	"github.com/mjun0812/github-metrics/internal/logger"
 )
 
@@ -124,35 +122,6 @@ func TestParseLevel(t *testing.T) {
 	}
 }
 
-func TestContextLoginAttributeIsPropagated(t *testing.T) {
-	t.Parallel()
-
-	var buf bytes.Buffer
-	l := logger.New(logger.Options{Writer: &buf})
-	ctx := ctxutil.WithLogin(context.Background(), "octocat")
-	l.InfoContext(ctx, "boot")
-
-	var got map[string]any
-	if err := json.Unmarshal(bytes.TrimSpace(buf.Bytes()), &got); err != nil {
-		t.Fatalf("unmarshal json: %v\nraw=%q", err, buf.String())
-	}
-	if got["login"] != "octocat" {
-		t.Fatalf("login attr = %v, want %q", got["login"], "octocat")
-	}
-}
-
-func TestContextWithoutLoginOmitsAttribute(t *testing.T) {
-	t.Parallel()
-
-	var buf bytes.Buffer
-	l := logger.New(logger.Options{Writer: &buf})
-	l.InfoContext(context.Background(), "boot")
-
-	if strings.Contains(buf.String(), `"login"`) {
-		t.Fatalf("unexpected login attribute in output: %q", buf.String())
-	}
-}
-
 func TestSetDefaultReplacesGlobalLogger(t *testing.T) {
 	t.Parallel()
 
@@ -187,22 +156,5 @@ func TestHandlerWithAttrsAndWithGroup(t *testing.T) {
 	grouped.Info("hit", "code", 200)
 	if !strings.Contains(buf.String(), `"svc":{"code":200}`) {
 		t.Fatalf("WithGroup did not nest attrs: %q", buf.String())
-	}
-}
-
-func TestContextHandlerWithAttrsPreservesLogin(t *testing.T) {
-	t.Parallel()
-
-	var buf bytes.Buffer
-	base := logger.New(logger.Options{Writer: &buf})
-	enriched := base.With("component", "boot")
-	ctx := ctxutil.WithLogin(context.Background(), "octocat")
-	enriched.InfoContext(ctx, "ready")
-
-	if !strings.Contains(buf.String(), `"login":"octocat"`) {
-		t.Fatalf("login attr lost through WithAttrs wrapper: %q", buf.String())
-	}
-	if !strings.Contains(buf.String(), `"component":"boot"`) {
-		t.Fatalf("WithAttrs attribute missing: %q", buf.String())
 	}
 }

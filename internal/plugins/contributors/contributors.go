@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
@@ -31,8 +30,7 @@ func init() {
 
 type contributorsPlugin struct{}
 
-func (p *contributorsPlugin) Name() string                     { return Name }
-func (p *contributorsPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *contributorsPlugin) Name() string { return Name }
 
 func (p *contributorsPlugin) Requires() []plugins.DataKey {
 	// contributors is repo-mode only and reads pc.Data.Computed.RepositoryList;

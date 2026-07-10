@@ -1,19 +1,14 @@
 // Package logger configures a slog logger for the github-metrics project.
 //
-// The exported [New] function returns a slog.Logger whose handler enriches
-// log records with context-bound attributes (currently the GitHub login set
-// via [ctxutil.WithLogin]). The default output format is JSON; switch to
-// text via [Options.Format].
+// The exported [New] function returns a slog.Logger backed by a JSON
+// handler by default; switch to text via [Options.Format].
 package logger
 
 import (
-	"context"
 	"io"
 	"log/slog"
 	"os"
 	"strings"
-
-	"github.com/mjun0812/github-metrics/internal/ctxutil"
 )
 
 // Format selects the underlying slog handler.
@@ -49,7 +44,7 @@ func New(opts Options) *slog.Logger {
 	default:
 		inner = slog.NewJSONHandler(opts.Writer, handlerOpts)
 	}
-	return slog.New(&contextHandler{inner: inner})
+	return slog.New(inner)
 }
 
 // SetDefault installs a logger built from opts as the global slog default.
@@ -73,29 +68,4 @@ func ParseLevel(s string) slog.Level {
 	default:
 		return slog.LevelInfo
 	}
-}
-
-// contextHandler wraps a slog.Handler and decorates every record with
-// attributes derived from the context (currently the GitHub login).
-type contextHandler struct {
-	inner slog.Handler
-}
-
-func (h *contextHandler) Enabled(ctx context.Context, level slog.Level) bool {
-	return h.inner.Enabled(ctx, level)
-}
-
-func (h *contextHandler) Handle(ctx context.Context, r slog.Record) error {
-	if login, ok := ctxutil.LoginFromContext(ctx); ok {
-		r.AddAttrs(slog.String("login", login))
-	}
-	return h.inner.Handle(ctx, r)
-}
-
-func (h *contextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return &contextHandler{inner: h.inner.WithAttrs(attrs)}
-}
-
-func (h *contextHandler) WithGroup(name string) slog.Handler {
-	return &contextHandler{inner: h.inner.WithGroup(name)}
 }

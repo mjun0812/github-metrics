@@ -14,7 +14,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
@@ -32,8 +31,7 @@ func init() {
 
 type starlistsPlugin struct{}
 
-func (p *starlistsPlugin) Name() string                     { return Name }
-func (p *starlistsPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *starlistsPlugin) Name() string { return Name }
 
 func (p *starlistsPlugin) Requires() []plugins.DataKey {
 	return []plugins.DataKey{plugins.KeyRepositories}

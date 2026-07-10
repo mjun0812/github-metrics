@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
@@ -31,8 +30,7 @@ func init() {
 
 type reactionsPlugin struct{}
 
-func (p *reactionsPlugin) Name() string                     { return Name }
-func (p *reactionsPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *reactionsPlugin) Name() string { return Name }
 
 func (p *reactionsPlugin) Requires() []plugins.DataKey {
 	// reactions reads from pc.Data fields populated by base; it does not

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
@@ -26,8 +25,7 @@ func init() {
 
 type starsPlugin struct{}
 
-func (p *starsPlugin) Name() string                     { return Name }
-func (p *starsPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *starsPlugin) Name() string { return Name }
 
 func (p *starsPlugin) Requires() []plugins.DataKey {
 	// stars reads from pc.Data fields populated by base; it does not

@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
@@ -36,8 +35,7 @@ func init() {
 
 type stargazersPlugin struct{}
 
-func (p *stargazersPlugin) Name() string                     { return Name }
-func (p *stargazersPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *stargazersPlugin) Name() string { return Name }
 
 func (p *stargazersPlugin) Requires() []plugins.DataKey {
 	// stargazers reads from pc.Data fields populated by base; it does not

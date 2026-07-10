@@ -738,7 +738,6 @@ func defaultBuildDeps(_ context.Context, inv *Invocation) (engine.Deps, error) {
 		imgClient = httpx.New(httpx.Options{})
 	}
 	return engine.Deps{
-		Settings:   &config.Settings{Repositories: 100},
 		REST:       rest,
 		GraphQL:    gql,
 		Render:     renderer,

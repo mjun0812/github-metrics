@@ -18,7 +18,6 @@ import (
 
 	enry "github.com/go-enry/go-enry/v2"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
@@ -35,8 +34,7 @@ func init() {
 
 type habitsPlugin struct{}
 
-func (p *habitsPlugin) Name() string                     { return Name }
-func (p *habitsPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *habitsPlugin) Name() string { return Name }
 
 func (p *habitsPlugin) Requires() []plugins.DataKey {
 	// habits reads from pc.Data fields populated by base; it does not

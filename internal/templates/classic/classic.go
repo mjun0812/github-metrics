@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/mjun0812/github-metrics/assets"
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	"github.com/mjun0812/github-metrics/internal/templates/classic/partials"
@@ -45,7 +44,7 @@ func init() {
 // stay consistent with the metadata/plugin loader.
 type classicTemplate struct {
 	fsys     fs.FS
-	meta     *config.TemplateMetadata
+	meta     *templates.TemplateMetadata
 	partials []string
 
 	styles chrome.Styles
@@ -60,7 +59,7 @@ func newClassicTemplate() (*classicTemplate, error) {
 	if err != nil {
 		return nil, fmt.Errorf("classic: read metadata.yml: %w", err)
 	}
-	var meta config.TemplateMetadata
+	var meta templates.TemplateMetadata
 	if uErr := yaml.Unmarshal(rawMeta, &meta); uErr != nil {
 		return nil, fmt.Errorf("classic: parse metadata.yml: %w", uErr)
 	}
@@ -80,9 +79,9 @@ func newClassicTemplate() (*classicTemplate, error) {
 	}, nil
 }
 
-func (t *classicTemplate) Name() string                       { return Name }
-func (t *classicTemplate) Metadata() *config.TemplateMetadata { return t.meta }
-func (t *classicTemplate) FS() fs.FS                          { return t.fsys }
+func (t *classicTemplate) Name() string                          { return Name }
+func (t *classicTemplate) Metadata() *templates.TemplateMetadata { return t.meta }
+func (t *classicTemplate) FS() fs.FS                             { return t.fsys }
 
 // Check validates the requested account/format combination against the
 // metadata-declared supports/formats lists.

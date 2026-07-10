@@ -7,7 +7,6 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/render"
@@ -16,7 +15,6 @@ import (
 // Plugin is the contract every github-metrics data source implements.
 type Plugin interface {
 	Name() string
-	Metadata() *config.PluginMetadata
 	// Requires returns the set of Provider methods this plugin calls
 	// during Run. The declaration is purely informational at runtime —
 	// the runner does not prefetch based on Requires() (the lazy
@@ -33,14 +31,12 @@ type Plugin interface {
 // one per request and mutates Data only — every other field is treated
 // as read-only by plugin code.
 type PluginContext struct {
-	Settings   *config.Settings
 	Inputs     map[string]any
 	Logger     *slog.Logger
 	HTTPClient *httpx.Client
 	REST       *githubapi.REST
 	GraphQL    *githubapi.GraphQL
 	Data       *Data
-	Metadata   *config.MetadataLoader
 	Imports    PluginImports
 	// Provider is the lazy + memoized fetcher introduced by #603.
 	// Plugins call Provider.User(ctx) / Organization(ctx) /

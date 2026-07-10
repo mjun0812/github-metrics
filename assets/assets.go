@@ -14,8 +14,9 @@ import "embed"
 var fsys embed.FS
 
 // FS returns the embedded filesystem rooted at the assets/ directory.
-// Callers (typically [config.LoadMetadata]) walk plugins/ and
-// templates/ from this root.
+// The template loaders (classic / repository) read templates/<name>
+// from it via fs.Sub; octicon data is exposed separately through
+// OcticonData.
 func FS() embed.FS { return fsys }
 
 // OcticonData returns the embedded primer/octicons data.json that

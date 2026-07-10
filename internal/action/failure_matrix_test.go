@@ -10,7 +10,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/engine"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/httpx"
@@ -166,10 +165,9 @@ func buildFailureMatrixDeps(t *testing.T, transport http.RoundTripper) func(cont
 			return engine.Deps{}, err
 		}
 		return engine.Deps{
-			Settings: &config.Settings{Repositories: 100},
-			REST:     restClient,
-			GraphQL:  gqlClient,
-			Render:   render.NewFakeRenderer(),
+			REST:    restClient,
+			GraphQL: gqlClient,
+			Render:  render.NewFakeRenderer(),
 		}, nil
 	}
 }
