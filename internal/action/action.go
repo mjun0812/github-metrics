@@ -27,29 +27,30 @@ import (
 // + committer pipeline. It is built from the merged inputs (INPUT_<UPPER>
 // / INPUTS JSON / --config YAML / CLI flags).
 type Invocation struct {
-	Inputs           map[string]any
-	Token            config.Token
-	Template         string
-	Login            string
-	Format           string // "svg" / "png" / "jpeg" / "json"
-	Dryrun           bool
-	OutputAction     string
-	OutputCondition  string
-	OutputFilename   string
-	OutputDir        string
-	PerPlugin        bool // true when in per-plugin SVG output mode
-	UseMockedData    bool
-	NoticeReleases   bool
-	RepoOwner        string
-	RepoName         string
-	RunID            string // GITHUB_RUN_ID; used by pull-request* head branch naming
-	Branch           string // committer_branch; empty = default
-	CommitterMessage string
-	CommitterAuthor  string
-	CommitterEmail   string
-	RetryPolicy      RetryPolicy
-	GitHubAPIRest    string
-	GitHubAPIGraphQL string
+	Inputs            map[string]any
+	Token             config.Token
+	Template          string
+	Login             string
+	Format            string // "svg" / "png" / "jpeg" / "json"
+	Dryrun            bool
+	OutputAction      string
+	OutputCondition   string
+	OutputFilename    string
+	OutputDir         string
+	PerPlugin         bool // true when in per-plugin SVG output mode
+	UseMockedData     bool
+	NoticeReleases    bool
+	RepoOwner         string
+	RepoName          string
+	RunID             string // GITHUB_RUN_ID; used by pull-request* head branch naming
+	Branch            string // committer_branch; empty = default
+	CommitterMessage  string
+	CommitterAuthor   string
+	CommitterEmail    string
+	RetryPolicy       RetryPolicy // rendering (engine.Compute) retries
+	OutputRetryPolicy RetryPolicy // output_action (committer) retries
+	GitHubAPIRest     string
+	GitHubAPIGraphQL  string
 }
 
 // Run is the unified entry point for the metrics-cli binary. It reads
@@ -620,6 +621,10 @@ func newInvocation(inputs map[string]any, env map[string]string, outputDir strin
 	inv.RetryPolicy = RetryPolicy{
 		Retries: intInput(inputs, "retries", DefaultRetries),
 		Delay:   durationSecInput(inputs, "retries_delay", DefaultRetryDelay),
+	}
+	inv.OutputRetryPolicy = RetryPolicy{
+		Retries: intInput(inputs, "retries_output_action", DefaultOutputRetries),
+		Delay:   durationSecInput(inputs, "retries_delay_output_action", DefaultOutputRetryDelay),
 	}
 
 	// Resolve filename wildcard.

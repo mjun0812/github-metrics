@@ -381,3 +381,75 @@ func TestNewInvocation_RetriesDelayInSeconds(t *testing.T) {
 		t.Errorf("Delay = %v, want 10s", inv.RetryPolicy.Delay)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// newInvocation: OutputRetryPolicy (regression for #746)
+// ---------------------------------------------------------------------------
+
+// TestNewInvocation_OutputRetryPolicyDefaults pins the action.yml defaults for
+// the output-action retry inputs (retries_output_action=5,
+// retries_delay_output_action=120s), which are distinct from the rendering
+// retries.
+func TestNewInvocation_OutputRetryPolicyDefaults(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]any{"user": "octocat", "combined": "yes"}
+	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
+	inv, err := newInvocation(inputs, env, "/tmp/out")
+	if err != nil {
+		t.Fatalf("newInvocation: %v", err)
+	}
+	if inv.OutputRetryPolicy.Retries != DefaultOutputRetries {
+		t.Errorf("OutputRetryPolicy.Retries = %d, want %d", inv.OutputRetryPolicy.Retries, DefaultOutputRetries)
+	}
+	if inv.OutputRetryPolicy.Delay != DefaultOutputRetryDelay {
+		t.Errorf("OutputRetryPolicy.Delay = %v, want %v", inv.OutputRetryPolicy.Delay, DefaultOutputRetryDelay)
+	}
+}
+
+// TestNewInvocation_OutputRetryInputsWired pins that the dedicated
+// output-action retry inputs are honored (and read in seconds), independent of
+// the rendering retries. Before the fix these inputs were silently ignored.
+func TestNewInvocation_OutputRetryInputsWired(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]any{
+		"user":                        "octocat",
+		"combined":                    "yes",
+		"retries":                     3,
+		"retries_delay":               300,
+		"retries_output_action":       7,
+		"retries_delay_output_action": 45,
+	}
+	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
+	inv, err := newInvocation(inputs, env, "/tmp/out")
+	if err != nil {
+		t.Fatalf("newInvocation: %v", err)
+	}
+	if inv.OutputRetryPolicy.Retries != 7 {
+		t.Errorf("OutputRetryPolicy.Retries = %d, want 7", inv.OutputRetryPolicy.Retries)
+	}
+	if inv.OutputRetryPolicy.Delay != 45*time.Second {
+		t.Errorf("OutputRetryPolicy.Delay = %v, want 45s", inv.OutputRetryPolicy.Delay)
+	}
+	// The rendering policy must remain independent of the output-action inputs.
+	if inv.RetryPolicy.Retries != 3 {
+		t.Errorf("RetryPolicy.Retries = %d, want 3 (unaffected)", inv.RetryPolicy.Retries)
+	}
+}
+
+// TestNewCommitter_UsesOutputRetryPolicy pins that the committer consumes the
+// output-action retry policy, not the rendering one.
+func TestNewCommitter_UsesOutputRetryPolicy(t *testing.T) {
+	t.Parallel()
+	inv := &Invocation{
+		OutputAction:      "none",
+		RetryPolicy:       RetryPolicy{Retries: 3, Delay: 300 * time.Second},
+		OutputRetryPolicy: RetryPolicy{Retries: 5, Delay: 120 * time.Second},
+	}
+	c, err := NewCommitter(nil, inv, []byte("x"))
+	if err != nil {
+		t.Fatalf("NewCommitter: %v", err)
+	}
+	if c.Policy != inv.OutputRetryPolicy {
+		t.Errorf("Committer.Policy = %+v, want OutputRetryPolicy %+v", c.Policy, inv.OutputRetryPolicy)
+	}
+}
