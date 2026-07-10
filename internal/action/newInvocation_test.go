@@ -296,6 +296,55 @@ func TestNewInvocation_Token_NeitherSet_DelegatesToValidator(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// newInvocation: committer_message placeholder expansion (regression for #744)
+// ---------------------------------------------------------------------------
+
+// TestNewInvocation_CommitterMessagePlaceholders pins the upstream-parity
+// expansion: ${filename} resolves to the rendered output filename and ${run}
+// to GITHUB_RUN_ID. Before the fix these landed as literal text in commits.
+func TestNewInvocation_CommitterMessagePlaceholders(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]any{
+		"user":              "octocat",
+		"combined":          "yes",
+		"filename":          "card.svg",
+		"committer_message": "Update ${filename} for run #${run}",
+	}
+	env := map[string]string{
+		"GITHUB_REPOSITORY": "mjun0812/test",
+		"GITHUB_RUN_ID":     "987654",
+	}
+	inv, err := newInvocation(inputs, env, "/tmp/out")
+	if err != nil {
+		t.Fatalf("newInvocation: %v", err)
+	}
+	want := "Update card.svg for run #987654"
+	if inv.CommitterMessage != want {
+		t.Errorf("CommitterMessage = %q, want %q", inv.CommitterMessage, want)
+	}
+}
+
+// TestNewInvocation_CommitterMessageDefaultRunPlaceholder covers the CLI code
+// default ("Auto-generated metrics for run #${run}"): ${run} must expand even
+// when the message input is not supplied.
+func TestNewInvocation_CommitterMessageDefaultRunPlaceholder(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]any{"user": "octocat", "combined": "yes"}
+	env := map[string]string{
+		"GITHUB_REPOSITORY": "mjun0812/test",
+		"GITHUB_RUN_ID":     "42",
+	}
+	inv, err := newInvocation(inputs, env, "/tmp/out")
+	if err != nil {
+		t.Fatalf("newInvocation: %v", err)
+	}
+	want := "Auto-generated metrics for run #42"
+	if inv.CommitterMessage != want {
+		t.Errorf("CommitterMessage = %q, want %q", inv.CommitterMessage, want)
+	}
+}
+
+// ---------------------------------------------------------------------------
 // newInvocation: RetryPolicy defaults
 // ---------------------------------------------------------------------------
 
@@ -330,5 +379,77 @@ func TestNewInvocation_RetriesDelayInSeconds(t *testing.T) {
 	}
 	if inv.RetryPolicy.Delay != 10*time.Second {
 		t.Errorf("Delay = %v, want 10s", inv.RetryPolicy.Delay)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// newInvocation: OutputRetryPolicy (regression for #746)
+// ---------------------------------------------------------------------------
+
+// TestNewInvocation_OutputRetryPolicyDefaults pins the action.yml defaults for
+// the output-action retry inputs (retries_output_action=5,
+// retries_delay_output_action=120s), which are distinct from the rendering
+// retries.
+func TestNewInvocation_OutputRetryPolicyDefaults(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]any{"user": "octocat", "combined": "yes"}
+	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
+	inv, err := newInvocation(inputs, env, "/tmp/out")
+	if err != nil {
+		t.Fatalf("newInvocation: %v", err)
+	}
+	if inv.OutputRetryPolicy.Retries != DefaultOutputRetries {
+		t.Errorf("OutputRetryPolicy.Retries = %d, want %d", inv.OutputRetryPolicy.Retries, DefaultOutputRetries)
+	}
+	if inv.OutputRetryPolicy.Delay != DefaultOutputRetryDelay {
+		t.Errorf("OutputRetryPolicy.Delay = %v, want %v", inv.OutputRetryPolicy.Delay, DefaultOutputRetryDelay)
+	}
+}
+
+// TestNewInvocation_OutputRetryInputsWired pins that the dedicated
+// output-action retry inputs are honored (and read in seconds), independent of
+// the rendering retries. Before the fix these inputs were silently ignored.
+func TestNewInvocation_OutputRetryInputsWired(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]any{
+		"user":                        "octocat",
+		"combined":                    "yes",
+		"retries":                     3,
+		"retries_delay":               300,
+		"retries_output_action":       7,
+		"retries_delay_output_action": 45,
+	}
+	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
+	inv, err := newInvocation(inputs, env, "/tmp/out")
+	if err != nil {
+		t.Fatalf("newInvocation: %v", err)
+	}
+	if inv.OutputRetryPolicy.Retries != 7 {
+		t.Errorf("OutputRetryPolicy.Retries = %d, want 7", inv.OutputRetryPolicy.Retries)
+	}
+	if inv.OutputRetryPolicy.Delay != 45*time.Second {
+		t.Errorf("OutputRetryPolicy.Delay = %v, want 45s", inv.OutputRetryPolicy.Delay)
+	}
+	// The rendering policy must remain independent of the output-action inputs.
+	if inv.RetryPolicy.Retries != 3 {
+		t.Errorf("RetryPolicy.Retries = %d, want 3 (unaffected)", inv.RetryPolicy.Retries)
+	}
+}
+
+// TestNewCommitter_UsesOutputRetryPolicy pins that the committer consumes the
+// output-action retry policy, not the rendering one.
+func TestNewCommitter_UsesOutputRetryPolicy(t *testing.T) {
+	t.Parallel()
+	inv := &Invocation{
+		OutputAction:      "none",
+		RetryPolicy:       RetryPolicy{Retries: 3, Delay: 300 * time.Second},
+		OutputRetryPolicy: RetryPolicy{Retries: 5, Delay: 120 * time.Second},
+	}
+	c, err := NewCommitter(nil, inv, []byte("x"))
+	if err != nil {
+		t.Fatalf("NewCommitter: %v", err)
+	}
+	if c.Policy != inv.OutputRetryPolicy {
+		t.Errorf("Committer.Policy = %+v, want OutputRetryPolicy %+v", c.Policy, inv.OutputRetryPolicy)
 	}
 }

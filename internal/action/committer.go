@@ -67,7 +67,7 @@ func NewCommitter(rest *githubapi.REST, inv *Invocation, body []byte) (*Committe
 	}
 	c := &Committer{
 		REST:      rest,
-		Policy:    inv.RetryPolicy,
+		Policy:    inv.OutputRetryPolicy,
 		RepoOwner: inv.RepoOwner,
 		RepoName:  inv.RepoName,
 		Branch:    inv.Branch,

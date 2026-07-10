@@ -17,6 +17,17 @@ const DefaultRetries = 3
 // default of 300 (upstream parity). Spec FR-007.
 const DefaultRetryDelay = 300 * time.Second
 
+// DefaultOutputRetries is the default `retries_output_action` input
+// value when none is supplied. action.yml defaults to 5 (upstream
+// parity). This governs the committer's GitHub API calls, distinct
+// from the rendering `retries`.
+const DefaultOutputRetries = 5
+
+// DefaultOutputRetryDelay is the default `retries_delay_output_action`
+// input value when none is supplied. action.yml declares it in seconds
+// with a default of 120 (upstream parity).
+const DefaultOutputRetryDelay = 120 * time.Second
+
 // RetryPolicy controls retry-on-RetryableError behavior for fn calls
 // (typically engine.Compute or committer API operations).
 type RetryPolicy struct {
