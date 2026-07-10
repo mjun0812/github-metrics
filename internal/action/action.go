@@ -670,10 +670,11 @@ func newInvocation(inputs map[string]any, env map[string]string, outputDir strin
 	}
 	inv.RunID = env["GITHUB_RUN_ID"]
 
-	// Expand committer_message placeholders (upstream parity): ${filename}
-	// resolves to the rendered output filename, ${run} to the workflow run
-	// id (GITHUB_RUN_ID). Both defaults (action.yml + CLI) embed these, so
-	// without expansion commits would carry literal ${filename} / ${run}.
+	// Expand committer_message placeholders: ${filename} resolves to the
+	// rendered output filename (upstream parity), ${run} to the workflow
+	// run id (GITHUB_RUN_ID; port-local extension for the CLI default).
+	// Both defaults (action.yml + CLI) embed these, so without expansion
+	// commits would carry literal ${filename} / ${run}.
 	inv.CommitterMessage = expandCommitterMessage(inv.CommitterMessage, inv.OutputFilename, inv.RunID)
 
 	// Login fallback: GITHUB_ACTOR (set by the GitHub Actions runner).
@@ -825,10 +826,11 @@ func durationSecInput(in map[string]any, key string, def time.Duration) time.Dur
 	return time.Duration(secs) * time.Second
 }
 
-// expandCommitterMessage substitutes the upstream committer_message
+// expandCommitterMessage substitutes the committer_message
 // placeholders: every ${filename} becomes the resolved output filename
-// and every ${run} becomes the workflow run id. Both replacements are
-// global, matching upstream's regex-based substitution.
+// (upstream's only documented placeholder) and every ${run} becomes the
+// workflow run id — a port-local extension backing the CLI default
+// message. Both replacements are global.
 func expandCommitterMessage(msg, filename, runID string) string {
 	msg = strings.ReplaceAll(msg, "${filename}", filename)
 	msg = strings.ReplaceAll(msg, "${run}", runID)
