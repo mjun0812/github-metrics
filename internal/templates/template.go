@@ -13,7 +13,6 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
@@ -21,7 +20,7 @@ import (
 // Template is the contract every renderer implements.
 type Template interface {
 	Name() string
-	Metadata() *config.TemplateMetadata
+	Metadata() *TemplateMetadata
 	FS() fs.FS
 	Check(q map[string]any, account, format string) error
 	Run(ctx context.Context, pc *PartialContext) (string, error)
@@ -55,11 +54,9 @@ type PartialFunc func(ctx context.Context, pc *PartialContext) (markup string, h
 // of the SVG/Markdown output. Helpers (octicon/twemoji/gemoji) land in
 // M3; the field is nil-safe for M1 callers.
 type PartialContext struct {
-	Settings *config.Settings
-	Inputs   map[string]any
-	Logger   *slog.Logger
-	Data     *plugins.Data
-	Metadata *config.MetadataLoader
+	Inputs map[string]any
+	Logger *slog.Logger
+	Data   *plugins.Data
 	// Provider is the lazy + memoized dataprovider (#603) the engine
 	// constructs per request. Partials read the resolved user /
 	// organization / repository via Provider rather than the legacy
@@ -80,7 +77,7 @@ var AllowedFormats = map[string]struct{}{
 // CheckFormat returns an UnsupportedFormatError when format is not in
 // the supported set declared by metadata. Templates may invoke this
 // from their own Check methods to share the validation.
-func CheckFormat(meta *config.TemplateMetadata, format string) error {
+func CheckFormat(meta *TemplateMetadata, format string) error {
 	if format == "" {
 		return nil
 	}
@@ -96,7 +93,7 @@ func CheckFormat(meta *config.TemplateMetadata, format string) error {
 // InputError otherwise. Templates that need additional shape checks
 // (e.g. "repository" template requires q[repo]) layer their own logic
 // on top of this helper.
-func CheckAccount(meta *config.TemplateMetadata, account string) error {
+func CheckAccount(meta *TemplateMetadata, account string) error {
 	if account == "" || len(meta.Supports) == 0 {
 		return nil
 	}

@@ -22,7 +22,6 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
@@ -40,8 +39,7 @@ func init() {
 
 type trafficPlugin struct{}
 
-func (p *trafficPlugin) Name() string                     { return Name }
-func (p *trafficPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *trafficPlugin) Name() string { return Name }
 
 func (p *trafficPlugin) Requires() []plugins.DataKey {
 	return []plugins.DataKey{plugins.KeyRepositories}

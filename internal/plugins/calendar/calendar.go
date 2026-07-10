@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
@@ -27,8 +26,7 @@ func init() {
 
 type calendarPlugin struct{}
 
-func (p *calendarPlugin) Name() string                     { return Name }
-func (p *calendarPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *calendarPlugin) Name() string { return Name }
 
 func (p *calendarPlugin) Requires() []plugins.DataKey {
 	return []plugins.DataKey{plugins.KeyUser, plugins.KeyCommitCalendar}

@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"github.com/mjun0812/github-metrics/assets"
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/chrome"
 	classicpart "github.com/mjun0812/github-metrics/internal/templates/classic/partials"
@@ -47,7 +46,7 @@ func init() {
 
 type repositoryTemplate struct {
 	fsys     fs.FS
-	meta     *config.TemplateMetadata
+	meta     *templates.TemplateMetadata
 	partials []string
 
 	styles chrome.Styles
@@ -62,7 +61,7 @@ func newRepositoryTemplate() (*repositoryTemplate, error) {
 	if err != nil {
 		return nil, fmt.Errorf("repository: read metadata.yml: %w", err)
 	}
-	var meta config.TemplateMetadata
+	var meta templates.TemplateMetadata
 	if uErr := yaml.Unmarshal(rawMeta, &meta); uErr != nil {
 		return nil, fmt.Errorf("repository: parse metadata.yml: %w", uErr)
 	}
@@ -81,9 +80,9 @@ func newRepositoryTemplate() (*repositoryTemplate, error) {
 	}, nil
 }
 
-func (t *repositoryTemplate) Name() string                       { return Name }
-func (t *repositoryTemplate) Metadata() *config.TemplateMetadata { return t.meta }
-func (t *repositoryTemplate) FS() fs.FS                          { return t.fsys }
+func (t *repositoryTemplate) Name() string                          { return Name }
+func (t *repositoryTemplate) Metadata() *templates.TemplateMetadata { return t.meta }
+func (t *repositoryTemplate) FS() fs.FS                             { return t.fsys }
 
 // Check validates the requested account/format combination against
 // the metadata-declared supports/formats lists, plus the M7-specific

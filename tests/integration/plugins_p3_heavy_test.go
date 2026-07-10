@@ -175,10 +175,9 @@ func TestComputeSVG_P3HeavyAllPlugins(t *testing.T) {
 	}
 
 	deps := engine.Deps{
-		Settings: &config.Settings{Repositories: 100},
-		GraphQL:  gql,
-		REST:     rest,
-		Render:   &render.FakeRenderer{},
+		GraphQL: gql,
+		REST:    rest,
+		Render:  &render.FakeRenderer{},
 	}
 
 	inputs := map[string]any{
@@ -253,10 +252,9 @@ func TestComputeJSON_P3HeavyAllPlugins(t *testing.T) {
 		t.Fatalf("NewREST: %v", err)
 	}
 	deps := engine.Deps{
-		Settings: &config.Settings{Repositories: 100},
-		GraphQL:  gql,
-		REST:     rest,
-		Render:   &render.FakeRenderer{},
+		GraphQL: gql,
+		REST:    rest,
+		Render:  &render.FakeRenderer{},
 	}
 	inputs := map[string]any{
 		"plugin_languages":          true,

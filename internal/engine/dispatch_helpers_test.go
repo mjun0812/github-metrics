@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/render"
@@ -744,9 +743,8 @@ func (e *sentinelError) Error() string { return e.msg }
 // global registry so plugins.Each visits it during collectPluginErrors tests.
 type stubPlugin struct{ name string }
 
-func (s *stubPlugin) Name() string                     { return s.name }
-func (s *stubPlugin) Metadata() *config.PluginMetadata { return &config.PluginMetadata{} }
-func (s *stubPlugin) Requires() []plugins.DataKey      { return []plugins.DataKey{} }
+func (s *stubPlugin) Name() string                { return s.name }
+func (s *stubPlugin) Requires() []plugins.DataKey { return []plugins.DataKey{} }
 
 func (s *stubPlugin) Run(_ context.Context, _ *plugins.PluginContext) (any, error) { return nil, nil }
 

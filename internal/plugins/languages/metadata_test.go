@@ -6,23 +6,15 @@ import (
 	"github.com/mjun0812/github-metrics/internal/plugins/languages"
 )
 
-// TestPluginIdentity pins the Name / Metadata getters every Plugin
-// implementation must expose. The `languages` and `languages.indepth`
-// plugins both return nil metadata (their inputs live on the parent
-// metadata.yml manifest, not a per-plugin one).
+// TestPluginIdentity pins the Name getter every Plugin implementation
+// must expose.
 func TestPluginIdentity(t *testing.T) {
 	t.Parallel()
 	if got := languages.Plugin.Name(); got != "languages" {
 		t.Errorf("Plugin.Name() = %q, want %q", got, "languages")
 	}
-	if got := languages.Plugin.Metadata(); got != nil {
-		t.Errorf("Plugin.Metadata() = %v, want nil", got)
-	}
 	if got := languages.IndepthPlugin.Name(); got != "languages.indepth" {
 		t.Errorf("IndepthPlugin.Name() = %q, want %q", got, "languages.indepth")
-	}
-	if got := languages.IndepthPlugin.Metadata(); got != nil {
-		t.Errorf("IndepthPlugin.Metadata() = %v, want nil", got)
 	}
 }
 

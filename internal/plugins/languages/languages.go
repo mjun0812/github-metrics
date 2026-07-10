@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
@@ -33,8 +32,7 @@ func init() {
 
 type languagesPlugin struct{}
 
-func (p *languagesPlugin) Name() string                     { return Name }
-func (p *languagesPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *languagesPlugin) Name() string { return Name }
 
 func (p *languagesPlugin) Requires() []plugins.DataKey {
 	return []plugins.DataKey{plugins.KeyRepositories}

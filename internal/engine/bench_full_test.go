@@ -220,10 +220,9 @@ func newBenchDeps(tb testing.TB) engine.Deps {
 		tb.Fatalf("NewREST: %v", err)
 	}
 	return engine.Deps{
-		Settings: &config.Settings{Repositories: 100},
-		GraphQL:  gql,
-		REST:     rest,
-		Render:   &render.FakeRenderer{},
+		GraphQL: gql,
+		REST:    rest,
+		Render:  &render.FakeRenderer{},
 	}
 }
 

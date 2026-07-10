@@ -92,11 +92,9 @@ func renderOnePlugin(
 	singleInputs := singlePluginInputs(req.Inputs, slug)
 
 	pcPartial := &templates.PartialContext{
-		Settings: deps.Settings,
 		Inputs:   singleInputs,
 		Logger:   deps.Logger,
 		Data:     res.Data,
-		Metadata: deps.Metadata,
 		Provider: res.Provider,
 	}
 

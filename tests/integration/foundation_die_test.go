@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/engine"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
@@ -18,9 +17,8 @@ type errorStubPlugin struct {
 	err  error
 }
 
-func (p *errorStubPlugin) Name() string                     { return p.name }
-func (p *errorStubPlugin) Metadata() *config.PluginMetadata { return nil }
-func (p *errorStubPlugin) Requires() []plugins.DataKey      { return []plugins.DataKey{} }
+func (p *errorStubPlugin) Name() string                { return p.name }
+func (p *errorStubPlugin) Requires() []plugins.DataKey { return []plugins.DataKey{} }
 func (p *errorStubPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	return nil, p.err
 }
