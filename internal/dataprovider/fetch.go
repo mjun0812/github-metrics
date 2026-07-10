@@ -123,9 +123,18 @@ func organizationFromGraphQL(o *githubapi.OrganizationOrganization) *plugins.Org
 
 // fetchRepoResult drives the batch-halving repository paging loop and
 // folds the per-node accumulator + aggregated totals into a repoResult.
-// Mirrors the base plugin's prior populateRepositories: returns the
-// accumulator on full completion, or the partial result with a nil
-// error on degraded paths (batch=1 still failing).
+// Mirrors the base plugin's prior populateRepositories: on full
+// completion it returns the accumulator with a nil error. On a
+// non-transient failure, or after batch=1 exhausts its retry budget of
+// maxConsecutiveAttempts consecutive transient failures, it returns the
+// partial result gathered so far together with a non-nil error.
+//
+// The transient batch-halving phase (100→50→25→…→1) does not draw on
+// that budget: each halving step is a distinct, self-terminating
+// recovery attempt, so the retry counter is spent only once batch has
+// bottomed out at 1. This gives batch=1 the full budget to ride out a
+// transient burst (e.g. a run of 503s) instead of being cut off after a
+// single failure by attempts consumed while halving.
 func (p *Provider) fetchRepoResult(ctx context.Context) (*repoResult, error) {
 	prof, err := p.Profile(ctx)
 	if err != nil {
@@ -135,11 +144,11 @@ func (p *Provider) fetchRepoResult(ctx context.Context) (*repoResult, error) {
 	state := &repoPagingState{batch: defaultRepoBatch}
 
 	const maxConsecutiveAttempts = 6
-	attempts := 0
+	batchOneAttempts := 0
 	for {
 		hasNext, endCursor, ferr := p.fetchOneRepoPage(ctx, isUser, state)
 		if ferr == nil {
-			attempts = 0
+			batchOneAttempts = 0
 			if !hasNext || endCursor == nil || *endCursor == "" {
 				return state.result(), nil
 			}
@@ -150,7 +159,6 @@ func (p *Provider) fetchRepoResult(ctx context.Context) (*repoResult, error) {
 		if !isTransient(ferr) {
 			return state.result(), fmt.Errorf("dataprovider: repositories(%q): %w", p.login, ferr)
 		}
-		attempts++
 		if state.batch > 1 {
 			state.batch /= 2
 			if state.batch < 1 {
@@ -158,8 +166,9 @@ func (p *Provider) fetchRepoResult(ctx context.Context) (*repoResult, error) {
 			}
 			continue
 		}
-		if attempts >= maxConsecutiveAttempts {
-			return state.result(), fmt.Errorf("dataprovider: repositories(%q): batch=1 failed after %d retries: %w", p.login, attempts, ferr)
+		batchOneAttempts++
+		if batchOneAttempts >= maxConsecutiveAttempts {
+			return state.result(), fmt.Errorf("dataprovider: repositories(%q): batch=1 failed after %d retries: %w", p.login, batchOneAttempts, ferr)
 		}
 	}
 }

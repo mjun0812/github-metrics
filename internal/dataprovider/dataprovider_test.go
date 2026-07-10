@@ -777,6 +777,126 @@ const repositorySecretResponseBody = `{
   }
 }`
 
+// flakyRepoTransport fails the first `fails` UserRepositories round-trips
+// with a transient (503) error, then delegates to inner. fails < 0 fails
+// every UserRepositories call. Non-repository operations (e.g. the User
+// profile lookup) always pass through to inner so Profile resolves. It
+// backs the batch=1 degraded-path retry regression tests (#748): the
+// transient error must reach fetchRepoResult's batch-halving loop, which
+// requires the HTTP layer to NOT swallow it via its own retries — hence
+// newProviderNoHTTPRetry below disables the retryablehttp loop.
+type flakyRepoTransport struct {
+	inner *countingTransport
+	mu    sync.Mutex
+	fails int
+}
+
+func (f *flakyRepoTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	body, _ := io.ReadAll(req.Body)
+	_ = req.Body.Close()
+	req.Body = io.NopCloser(strings.NewReader(string(body)))
+	if operationName(string(body)) == "UserRepositories" {
+		f.mu.Lock()
+		if f.fails != 0 {
+			if f.fails > 0 {
+				f.fails--
+			}
+			f.mu.Unlock()
+			return nil, errors.New("503 Service Unavailable")
+		}
+		f.mu.Unlock()
+	}
+	return f.inner.RoundTrip(req)
+}
+
+// newProviderNoHTTPRetry builds a Provider whose HTTP client performs no
+// retries (DisableRetries), so a transient error surfaces to
+// fetchRepoResult on the first attempt instead of being absorbed by the
+// retryablehttp loop. This isolates the dataprovider-level batch-halving
+// retry logic under test.
+func newProviderNoHTTPRetry(t *testing.T, transport http.RoundTripper) *dataprovider.Provider {
+	t.Helper()
+	gql, err := githubapi.NewGraphQL(config.NewToken("ghp_test"), "", httpx.Options{
+		Transport:      transport,
+		DisableRetries: true,
+	})
+	if err != nil {
+		t.Fatalf("NewGraphQL: %v", err)
+	}
+	return dataprovider.New("octocat", "", gql, nil, nil, dataprovider.Options{})
+}
+
+// TestProvider_RepoResult_BatchOneRecoversAfterHalvingPhase is the #748
+// regression: transient failures run continuously through the entire
+// batch-halving phase (100→50→25→12→6→3→1 = 6 failures) and then one
+// more at batch=1 before the fetch finally succeeds. Before the fix the
+// halving phase and the batch=1 phase shared one counter, so the six
+// halving failures alone exhausted maxConsecutiveAttempts and the first
+// batch=1 failure errored out — the batch=1 success below was never
+// reached. With batch=1 owning its own retry budget the loop rides out
+// the transient burst and returns the repositories.
+func TestProvider_RepoResult_BatchOneRecoversAfterHalvingPhase(t *testing.T) {
+	t.Parallel()
+	inner := newCountingTransport()
+	inner.setResponse("User", userResponseBody)
+	inner.setResponse("UserRepositories", userRepositoriesResponseBody)
+	// 6 halving failures + 1 batch=1 failure, then success.
+	tr := &flakyRepoTransport{inner: inner, fails: 7}
+	p := newProviderNoHTTPRetry(t, tr)
+
+	repos, err := p.Repositories(context.Background())
+	if err != nil {
+		t.Fatalf("Repositories: expected recovery after transient burst, got %v", err)
+	}
+	if got, want := len(repos), 2; got != want {
+		t.Fatalf("len(Repositories) = %d, want %d (both nodes accumulated on the successful batch=1 page)", got, want)
+	}
+}
+
+// TestProvider_RepoResult_BatchOneRetriesMultipleTimes exercises the
+// batch=1 retry budget directly: after the halving phase, batch=1 fails
+// three consecutive times and then succeeds. Each batch=1 failure must
+// consume one unit of the dedicated budget (which resets on the eventual
+// success), not error out immediately.
+func TestProvider_RepoResult_BatchOneRetriesMultipleTimes(t *testing.T) {
+	t.Parallel()
+	inner := newCountingTransport()
+	inner.setResponse("User", userResponseBody)
+	inner.setResponse("UserRepositories", userRepositoriesResponseBody)
+	// 6 halving failures + 3 batch=1 failures, then success.
+	tr := &flakyRepoTransport{inner: inner, fails: 9}
+	p := newProviderNoHTTPRetry(t, tr)
+
+	repos, err := p.Repositories(context.Background())
+	if err != nil {
+		t.Fatalf("Repositories: expected recovery after 3 batch=1 retries, got %v", err)
+	}
+	if got, want := len(repos), 2; got != want {
+		t.Fatalf("len(Repositories) = %d, want %d", got, want)
+	}
+}
+
+// TestProvider_RepoResult_BatchOneExhaustsBudget locks the error contract
+// when batch=1 never recovers: the message must report the actual number
+// of batch=1 retries (6), not the shared counter's inflated total.
+func TestProvider_RepoResult_BatchOneExhaustsBudget(t *testing.T) {
+	t.Parallel()
+	inner := newCountingTransport()
+	inner.setResponse("User", userResponseBody)
+	inner.setResponse("UserRepositories", userRepositoriesResponseBody)
+	// fails < 0: every UserRepositories call fails transiently forever.
+	tr := &flakyRepoTransport{inner: inner, fails: -1}
+	p := newProviderNoHTTPRetry(t, tr)
+
+	_, err := p.Repositories(context.Background())
+	if err == nil {
+		t.Fatal("Repositories: expected error when batch=1 never recovers")
+	}
+	if !strings.Contains(err.Error(), "batch=1 failed after 6 retries") {
+		t.Fatalf("error = %q, want it to report 6 batch=1 retries", err.Error())
+	}
+}
+
 // TestProvider_SkipPrivate_RepoModeBypassesFilter guards the carve-out
 // from the issue's Acceptance ("Repository-mode bypasses the filter —
 // the user explicitly chose this repo"). synthesizeRepoResult is the
