@@ -296,6 +296,55 @@ func TestNewInvocation_Token_NeitherSet_DelegatesToValidator(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// newInvocation: committer_message placeholder expansion (regression for #744)
+// ---------------------------------------------------------------------------
+
+// TestNewInvocation_CommitterMessagePlaceholders pins the upstream-parity
+// expansion: ${filename} resolves to the rendered output filename and ${run}
+// to GITHUB_RUN_ID. Before the fix these landed as literal text in commits.
+func TestNewInvocation_CommitterMessagePlaceholders(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]any{
+		"user":              "octocat",
+		"combined":          "yes",
+		"filename":          "card.svg",
+		"committer_message": "Update ${filename} for run #${run}",
+	}
+	env := map[string]string{
+		"GITHUB_REPOSITORY": "mjun0812/test",
+		"GITHUB_RUN_ID":     "987654",
+	}
+	inv, err := newInvocation(inputs, env, "/tmp/out")
+	if err != nil {
+		t.Fatalf("newInvocation: %v", err)
+	}
+	want := "Update card.svg for run #987654"
+	if inv.CommitterMessage != want {
+		t.Errorf("CommitterMessage = %q, want %q", inv.CommitterMessage, want)
+	}
+}
+
+// TestNewInvocation_CommitterMessageDefaultRunPlaceholder covers the CLI code
+// default ("Auto-generated metrics for run #${run}"): ${run} must expand even
+// when the message input is not supplied.
+func TestNewInvocation_CommitterMessageDefaultRunPlaceholder(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]any{"user": "octocat", "combined": "yes"}
+	env := map[string]string{
+		"GITHUB_REPOSITORY": "mjun0812/test",
+		"GITHUB_RUN_ID":     "42",
+	}
+	inv, err := newInvocation(inputs, env, "/tmp/out")
+	if err != nil {
+		t.Fatalf("newInvocation: %v", err)
+	}
+	want := "Auto-generated metrics for run #42"
+	if inv.CommitterMessage != want {
+		t.Errorf("CommitterMessage = %q, want %q", inv.CommitterMessage, want)
+	}
+}
+
+// ---------------------------------------------------------------------------
 // newInvocation: RetryPolicy defaults
 // ---------------------------------------------------------------------------
 

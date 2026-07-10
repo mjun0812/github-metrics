@@ -665,6 +665,12 @@ func newInvocation(inputs map[string]any, env map[string]string, outputDir strin
 	}
 	inv.RunID = env["GITHUB_RUN_ID"]
 
+	// Expand committer_message placeholders (upstream parity): ${filename}
+	// resolves to the rendered output filename, ${run} to the workflow run
+	// id (GITHUB_RUN_ID). Both defaults (action.yml + CLI) embed these, so
+	// without expansion commits would carry literal ${filename} / ${run}.
+	inv.CommitterMessage = expandCommitterMessage(inv.CommitterMessage, inv.OutputFilename, inv.RunID)
+
 	// Login fallback: GITHUB_ACTOR (set by the GitHub Actions runner).
 	// In local CLI invocations the env var is typically absent, so the
 	// fallback no-ops and the missing-user error below fires as before.
@@ -812,6 +818,16 @@ func durationSecInput(in map[string]any, key string, def time.Duration) time.Dur
 	}
 	secs := intInput(map[string]any{key: v}, key, int(def/time.Second))
 	return time.Duration(secs) * time.Second
+}
+
+// expandCommitterMessage substitutes the upstream committer_message
+// placeholders: every ${filename} becomes the resolved output filename
+// and every ${run} becomes the workflow run id. Both replacements are
+// global, matching upstream's regex-based substitution.
+func expandCommitterMessage(msg, filename, runID string) string {
+	msg = strings.ReplaceAll(msg, "${filename}", filename)
+	msg = strings.ReplaceAll(msg, "${run}", runID)
+	return msg
 }
 
 // writeOutputFile is the historical "mkdir -p + write 0o600" helper
