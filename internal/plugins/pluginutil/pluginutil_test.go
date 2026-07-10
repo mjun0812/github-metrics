@@ -197,3 +197,26 @@ func TestIsZeroSHA(t *testing.T) {
 		t.Errorf("real sha should be false")
 	}
 }
+
+func TestNextPageFromLink(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want int
+	}{
+		{"empty", "", 0},
+		{"next present", `<https://api.github.com/x?per_page=100&page=2>; rel="next", <https://api.github.com/x?per_page=100&page=9>; rel="last"`, 2},
+		{"only last", `<https://api.github.com/x?per_page=100&page=9>; rel="last", <https://api.github.com/x?per_page=100&page=1>; rel="first"`, 0},
+		{"per_page not mistaken for page", `<https://api.github.com/x?per_page=100>; rel="next"`, 0},
+		{"next with fragment", `<https://api.github.com/x?page=3#frag>; rel="next"`, 3},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := pluginutil.NextPageFromLink(tc.in); got != tc.want {
+				t.Errorf("NextPageFromLink(%q) = %d, want %d", tc.in, got, tc.want)
+			}
+		})
+	}
+}
