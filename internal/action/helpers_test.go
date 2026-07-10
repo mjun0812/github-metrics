@@ -156,31 +156,31 @@ func TestIntInput_StringNonNumeric(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// durationMsInput
+// durationSecInput
 // ---------------------------------------------------------------------------
 
-func TestDurationMsInput_Absent(t *testing.T) {
+func TestDurationSecInput_Absent(t *testing.T) {
 	t.Parallel()
 	def := 2 * time.Second
-	if got := durationMsInput(map[string]any{}, "d", def); got != def {
+	if got := durationSecInput(map[string]any{}, "d", def); got != def {
 		t.Errorf("absent: got %v, want %v", got, def)
 	}
 }
 
-func TestDurationMsInput_Int(t *testing.T) {
+func TestDurationSecInput_Int(t *testing.T) {
 	t.Parallel()
-	// 500 (ms) → 500ms duration
-	got := durationMsInput(map[string]any{"d": 500}, "d", time.Second)
-	if got != 500*time.Millisecond {
-		t.Errorf("int 500: got %v, want 500ms", got)
+	// 10 (seconds, per the action.yml contract) → 10s duration
+	got := durationSecInput(map[string]any{"d": 10}, "d", time.Second)
+	if got != 10*time.Second {
+		t.Errorf("int 10: got %v, want 10s", got)
 	}
 }
 
-func TestDurationMsInput_StringNumeric(t *testing.T) {
+func TestDurationSecInput_StringNumeric(t *testing.T) {
 	t.Parallel()
-	got := durationMsInput(map[string]any{"d": "1000"}, "d", time.Second)
-	if got != 1000*time.Millisecond {
-		t.Errorf("string \"1000\": got %v, want 1000ms", got)
+	got := durationSecInput(map[string]any{"d": "30"}, "d", time.Second)
+	if got != 30*time.Second {
+		t.Errorf("string \"30\": got %v, want 30s", got)
 	}
 }
 

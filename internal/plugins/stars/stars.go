@@ -92,6 +92,12 @@ func (p *starsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, 
 	if limit <= 0 {
 		limit = 4
 	}
+	// GitHub's GraphQL connections reject first > 100 with
+	// EXCESSIVE_PAGINATION, which fails the entire query and blanks
+	// the section, so clamp to the 100 ceiling (#472).
+	if limit > 100 {
+		limit = 100
+	}
 
 	resp, err := pc.GraphQL.UserStarredRepositories(ctx, login, limit)
 	if err != nil {

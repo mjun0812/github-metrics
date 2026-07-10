@@ -619,7 +619,7 @@ func newInvocation(inputs map[string]any, env map[string]string, outputDir strin
 	inv.Token = config.NewToken(tokenRaw)
 	inv.RetryPolicy = RetryPolicy{
 		Retries: intInput(inputs, "retries", DefaultRetries),
-		Delay:   durationMsInput(inputs, "retries_delay", DefaultRetryDelay),
+		Delay:   durationSecInput(inputs, "retries_delay", DefaultRetryDelay),
 	}
 
 	// Resolve filename wildcard.
@@ -802,13 +802,16 @@ func intInput(in map[string]any, key string, def int) int {
 	return def
 }
 
-func durationMsInput(in map[string]any, key string, def time.Duration) time.Duration {
+// durationSecInput reads an integer input declared in seconds
+// (action.yml: `retries_delay` — "Delay between each retry (in
+// seconds)") and converts it to a time.Duration.
+func durationSecInput(in map[string]any, key string, def time.Duration) time.Duration {
 	v, ok := in[key]
 	if !ok {
 		return def
 	}
-	ms := intInput(map[string]any{key: v}, key, int(def/time.Millisecond))
-	return time.Duration(ms) * time.Millisecond
+	secs := intInput(map[string]any{key: v}, key, int(def/time.Second))
+	return time.Duration(secs) * time.Second
 }
 
 // writeOutputFile is the historical "mkdir -p + write 0o600" helper

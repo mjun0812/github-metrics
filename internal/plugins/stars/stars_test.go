@@ -150,6 +150,28 @@ func TestRun_LimitInput(t *testing.T) {
 	}
 }
 
+// TestRun_LimitClampedTo100 guards the #472-class failure: GitHub
+// rejects a connection `first` above 100 with EXCESSIVE_PAGINATION,
+// which would fail the whole UserStarredRepositories query and blank
+// the section. plugin_stars_limit above 100 must clamp.
+func TestRun_LimitClampedTo100(t *testing.T) {
+	t.Parallel()
+	mux := &graphqlMux{body: `{"data":{"user":{"starredRepositories":{"totalCount":0,"edges":[]}}}}`}
+	pc := &plugins.PluginContext{
+		Data:    plugins.NewData(),
+		Inputs:  map[string]any{"user": "octocat", "plugin_stars": true, "plugin_stars_limit": 150},
+		GraphQL: newGQL(t, mux),
+	}
+	out, err := stars.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*stars.Result)
+	if r.Limit != 100 {
+		t.Errorf("Limit = %d, want 100 (clamped from 150)", r.Limit)
+	}
+}
+
 func TestRun_EmptyResult(t *testing.T) {
 	t.Parallel()
 	mux := &graphqlMux{body: `{"data":{"user":{"starredRepositories":{"totalCount":0,"edges":[]}}}}`}
