@@ -139,19 +139,56 @@ func (p *notablePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	// repo list), so the node-level isPrivate check happens locally.
 	skipPrivate := pluginutil.Truthy(pc.Inputs["repositories_skip_private"])
 
-	resp, err := pc.GraphQL.UserNotable(ctx, login, notablePageSize, nil, types, &self)
+	nodes, err := fetchNotableRepos(ctx, pc.GraphQL, login, types, &self)
 	if err != nil {
 		base.Skipped = true
 		base.SkippedReason = "GraphQL fetch failed"
 		pc.Data.AppendError(xerrors.NewRetryableError(err))
 		return base, nil
 	}
-	base.List = collectNotable(resp, indepth, from, useHandle, skipped, limit, skipPrivate)
+	base.List = collectNotable(nodes, indepth, from, useHandle, skipped, limit, skipPrivate)
 	return base, nil
 }
 
+// notableMaxPages caps how many repositoriesContributedTo pages the
+// plugin walks so a user with thousands of contributions cannot spin an
+// unbounded fetch loop. 10 pages * notablePageSize (100) = 1000 repos,
+// far beyond any realistic notable render (default limit 5).
+const notableMaxPages = 10
+
+// fetchNotableRepos walks repositoriesContributedTo (ordered by
+// STARGAZERS DESC) following pageInfo.hasNextPage / endCursor, mirroring
+// upstream source/plugins/notable/index.mjs's do-while paging. It stops
+// at the last page or notableMaxPages, whichever comes first.
+func fetchNotableRepos(
+	ctx context.Context,
+	gql *githubapi.GraphQL,
+	login string,
+	types []githubapi.RepositoryContributionType,
+	self *bool,
+) ([]*notableRepoNode, error) {
+	var nodes []*notableRepoNode
+	var cursor *string
+	for page := 0; page < notableMaxPages; page++ {
+		resp, err := gql.UserNotable(ctx, login, notablePageSize, cursor, types, self)
+		if err != nil {
+			return nil, err
+		}
+		if resp == nil || resp.User == nil || resp.User.RepositoriesContributedTo == nil {
+			break
+		}
+		conn := resp.User.RepositoriesContributedTo
+		nodes = append(nodes, conn.Nodes...)
+		if conn.PageInfo == nil || !conn.PageInfo.HasNextPage || conn.PageInfo.EndCursor == nil {
+			break
+		}
+		cursor = conn.PageInfo.EndCursor
+	}
+	return nodes, nil
+}
+
 func collectNotable(
-	resp *githubapi.UserNotableResponse,
+	nodes []*notableRepoNode,
 	indepth bool,
 	from string,
 	useHandle bool,
@@ -159,11 +196,6 @@ func collectNotable(
 	limit int,
 	skipPrivate bool,
 ) []NotableContrib {
-	if resp == nil || resp.User == nil || resp.User.RepositoriesContributedTo == nil {
-		return []NotableContrib{}
-	}
-	nodes := resp.User.RepositoriesContributedTo.Nodes
-
 	// Aggregate by chip key (owner segment by default, full handle when
 	// plugin_notable_repositories is enabled), mirroring upstream's
 	// Map-based dedup so multiple repositories under one owner collapse
