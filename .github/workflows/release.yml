@@ -47,7 +47,7 @@ env:
 jobs:
   docker-smoke:
     name: Smoke-test the production Docker image
-    runs-on: home-k3s-runner
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,8 +59,7 @@ jobs:
 
       - name: Run M10 docker-smoke (build + --help + ≤900MB assertion)
         # Inlined from the Makefile `docker-smoke` target so the step
-        # does not depend on `make` being installed on the
-        # `home-k3s-runner` ARC pod (minimal image).
+        # does not depend on the runner's preinstalled toolchain.
         run: go test -tags=docker_smoke -v ./tests/integration/...
 
   # Per-arch image build on a NATIVE runner (no QEMU emulation).
@@ -86,7 +85,7 @@ jobs:
       matrix:
         include:
           - platform: linux/amd64
-            runner: home-k3s-runner
+            runner: ubuntu-latest
             arch: amd64
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
@@ -176,7 +175,7 @@ jobs:
   merge-manifest:
     name: Merge multi-arch manifest + cosign sign
     needs: build-image
-    runs-on: home-k3s-runner
+    runs-on: ubuntu-latest
     if: ${{ github.event.inputs.dry_run != 'true' }}
     steps:
       - name: Extract semver tag
@@ -267,7 +266,7 @@ jobs:
   release-binary:
     name: Cross-compile + sign + publish CLI binaries
     needs: docker-smoke
-    runs-on: home-k3s-runner
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -278,11 +277,11 @@ jobs:
           go-version-file: go.mod
 
       - name: Install gh CLI
-        # The home-k3s-runner ARC pod is a minimal image without gh
-        # preinstalled. The "Publish to GitHub Release" step below
-        # depends on it (`gh release view/upload/create`). Drop the
-        # binary into ~/.local/bin and prepend that to PATH for
-        # subsequent steps.
+        # Pin a known gh version instead of relying on whatever the
+        # runner image preinstalls. The "Publish to GitHub Release"
+        # step below depends on it (`gh release view/upload/create`).
+        # Drop the binary into ~/.local/bin and prepend that to PATH
+        # for subsequent steps.
         env:
           GH_VERSION: '2.55.0'
         run: |
@@ -389,7 +388,7 @@ jobs:
   update-floating-tag:
     name: Advance vMAJOR floating tag (stable releases only)
     needs: [merge-manifest, release-binary]
-    runs-on: home-k3s-runner
+    runs-on: ubuntu-latest
     # Only run on tag pushes (not workflow_dispatch from a branch) and
     # only when not in dry-run mode. The decision step below also
     # filters pre-releases (FR-004) and back-port releases (FR-005).

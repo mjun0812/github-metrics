@@ -29,7 +29,7 @@ name: Regen doc samples
 # Why job-level containers instead of `docker run` (#523): the render
 # jobs run the production image (which now rasterizes via the resvg
 # binary, #409 Phase D) as a job-level container on the
-# `home-k3s-runner` scale set. This historically also sidestepped the
+# `ubuntu-latest` GitHub-hosted runners. This historically also sidestepped the
 # chromium-in-DinD breakage that predated the resvg switch; resvg is a
 # self-contained subprocess with none of those constraints.
 #
@@ -81,7 +81,7 @@ jobs:
   build-preview:
     name: Build preview image (branch mode)
     if: inputs.branch != ''
-    runs-on: home-k3s-runner
+    runs-on: ubuntu-latest
     outputs:
       # `forward` / `tagname` are the steps that actually emit these
       # values. The docker/build-push-action step (`publish`) exposes
@@ -124,7 +124,7 @@ jobs:
         with:
           context: .
           # Single-arch only: the regen render jobs all run on
-          # linux/amd64 home-k3s-runner pods, so the multi-arch manifest
+          # linux/amd64 ubuntu-latest runners, so the multi-arch manifest
           # build that release.yml does (~13min for arm64 + amd64) is
           # wasted cost here.
           platforms: linux/amd64
@@ -148,7 +148,7 @@ jobs:
   # ------------------------------------------------------------------ #
   setup:
     name: Build render matrix
-    runs-on: home-k3s-runner
+    runs-on: ubuntu-latest
     # Run even when build-preview was skipped (tag mode). Without the
     # `always() && !failure()` guard, GitHub Actions short-circuits
     # `setup` to "skipped" once any `needs:` entry was skipped — which
@@ -196,7 +196,7 @@ jobs:
     # skipped — without this guard every render job silently skips and
     # the run still ends green.
     if: always() && !failure() && !cancelled()
-    runs-on: home-k3s-runner
+    runs-on: ubuntu-latest
     container:
       image: ${{ needs.setup.outputs.image_ref }}
       credentials:
@@ -376,7 +376,7 @@ jobs:
   open-pr:
     name: Open draft PR
     needs: [setup, render]
-    runs-on: home-k3s-runner
+    runs-on: ubuntu-latest
     # Run even when some render matrix entries failed so that the
     # successful artifacts still land in a draft PR. download-artifact
     # silently skips missing names, and the diff check produces a PR
@@ -534,7 +534,7 @@ jobs:
     name: Cleanup preview image (branch mode)
     needs: [build-preview, open-pr]
     if: always() && inputs.branch != '' && needs.build-preview.result == 'success'
-    runs-on: home-k3s-runner
+    runs-on: ubuntu-latest
     steps:
       - name: Delete preview tag from GHCR
         env:
