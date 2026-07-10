@@ -61,7 +61,6 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error)
 ```go
 type Plugin interface {
     Name() string
-    Metadata() *config.PluginMetadata
     Requires() []DataKey
     Run(ctx context.Context, pc *PluginContext) (any, error)
 }

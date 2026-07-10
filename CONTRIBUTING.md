@@ -266,7 +266,7 @@ into the gen path).
 
 ```
 cmd/metrics-cli/   GitHub Action / CLI entry point
-internal/             All non-public packages (logger, errors, ctxutil,
+internal/             All non-public packages (logger, errors,
                       format, config, httpx, githubapi, plugins,
                       templates, plugins/core, ...)
 internal/testutil/    Shared mocks + golden file helpers (test-only)
