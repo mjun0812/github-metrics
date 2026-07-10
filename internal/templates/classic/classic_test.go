@@ -84,9 +84,6 @@ func TestClassic_Metadata_AdvertisesFormats(t *testing.T) {
 	if len(wantFormats) > 0 {
 		t.Errorf("metadata missing formats: %v", wantFormats)
 	}
-	if m.Name == "" {
-		t.Errorf("metadata Name is empty")
-	}
 }
 
 func TestClassic_Name(t *testing.T) {

@@ -22,7 +22,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
@@ -74,8 +73,7 @@ func init() {
 
 type achievementsPlugin struct{}
 
-func (p *achievementsPlugin) Name() string                     { return Name }
-func (p *achievementsPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *achievementsPlugin) Name() string { return Name }
 
 func (p *achievementsPlugin) Requires() []plugins.DataKey {
 	return []plugins.DataKey{

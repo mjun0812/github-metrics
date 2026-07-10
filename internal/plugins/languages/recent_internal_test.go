@@ -17,9 +17,6 @@ func TestRecentPluginIdentity(t *testing.T) {
 	if got := RecentPlugin.Name(); got != "languages.recent" {
 		t.Errorf("RecentPlugin.Name() = %q, want %q", got, "languages.recent")
 	}
-	if got := RecentPlugin.Metadata(); got != nil {
-		t.Errorf("RecentPlugin.Metadata() = %v, want nil", got)
-	}
 }
 
 func TestRecentResultIsSkipped(t *testing.T) {

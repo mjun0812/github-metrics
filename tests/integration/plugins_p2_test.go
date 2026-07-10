@@ -113,10 +113,9 @@ func newP2Deps(t *testing.T, scopes string) engine.Deps {
 		t.Fatalf("NewREST: %v", err)
 	}
 	return engine.Deps{
-		Settings: &config.Settings{Repositories: 100},
-		GraphQL:  gql,
-		REST:     rest,
-		Render:   &render.FakeRenderer{},
+		GraphQL: gql,
+		REST:    rest,
+		Render:  &render.FakeRenderer{},
 	}
 }
 

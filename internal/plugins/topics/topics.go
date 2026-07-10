@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
@@ -33,8 +32,7 @@ func init() {
 
 type topicsPlugin struct{}
 
-func (p *topicsPlugin) Name() string                     { return Name }
-func (p *topicsPlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *topicsPlugin) Name() string { return Name }
 
 func (p *topicsPlugin) Requires() []plugins.DataKey {
 	// topics reads from pc.Data fields populated by base; it does not

@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/engine"
 	"github.com/mjun0812/github-metrics/internal/render"
 
@@ -19,8 +18,7 @@ import (
 // no REST/GraphQL — per-plugin tests use use_mocked_data).
 func newPerPluginTestDeps() engine.Deps {
 	return engine.Deps{
-		Settings: &config.Settings{Repositories: 100},
-		Render:   render.NewFakeRenderer(),
+		Render: render.NewFakeRenderer(),
 	}
 }
 

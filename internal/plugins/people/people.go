@@ -15,7 +15,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
@@ -34,8 +33,7 @@ func init() {
 
 type peoplePlugin struct{}
 
-func (p *peoplePlugin) Name() string                     { return Name }
-func (p *peoplePlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *peoplePlugin) Name() string { return Name }
 
 func (p *peoplePlugin) Requires() []plugins.DataKey {
 	// people reads from pc.Data fields populated by base; it does not

@@ -10,7 +10,6 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/render"
@@ -23,8 +22,8 @@ import (
 type stubTemplate struct{}
 
 func (stubTemplate) Name() string { return "stub" }
-func (stubTemplate) Metadata() *config.TemplateMetadata {
-	return &config.TemplateMetadata{Formats: []string{"svg"}}
+func (stubTemplate) Metadata() *templates.TemplateMetadata {
+	return &templates.TemplateMetadata{Formats: []string{"svg"}}
 }
 func (stubTemplate) FS() fs.FS { return fstest.MapFS{} }
 func (stubTemplate) Check(_ map[string]any, _, _ string) error {

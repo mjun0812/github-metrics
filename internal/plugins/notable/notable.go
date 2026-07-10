@@ -12,7 +12,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
@@ -40,8 +39,7 @@ func init() {
 
 type notablePlugin struct{}
 
-func (p *notablePlugin) Name() string                     { return Name }
-func (p *notablePlugin) Metadata() *config.PluginMetadata { return nil }
+func (p *notablePlugin) Name() string { return Name }
 
 func (p *notablePlugin) Requires() []plugins.DataKey {
 	// notable reads from pc.Data fields populated by base; it does not

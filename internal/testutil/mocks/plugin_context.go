@@ -18,7 +18,6 @@ type PluginContextOption func(*pluginContextConfig)
 type pluginContextConfig struct {
 	graphQLMux *GraphQLMux
 	restMux    *RESTMux
-	settings   *config.Settings
 	inputs     map[string]any
 	data       *plugins.Data
 	logger     *slog.Logger
@@ -50,7 +49,6 @@ func WithData(d *plugins.Data) PluginContextOption {
 // NewPluginContext bundles a *GraphQLMux + *RESTMux into a
 // *plugins.PluginContext ready for `Plugin.Run`. Defaults:
 //
-//   - Settings: &config.Settings{Repositories: 100}
 //   - Inputs:   map[string]any{"user": "octocat"}
 //   - Data:     plugins.NewData()
 //   - Logger:   slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -62,21 +60,19 @@ func WithData(d *plugins.Data) PluginContextOption {
 func NewPluginContext(t *testing.T, opts ...PluginContextOption) *plugins.PluginContext {
 	t.Helper()
 	cfg := pluginContextConfig{
-		settings: &config.Settings{Repositories: 100},
-		inputs:   map[string]any{"user": "octocat"},
-		data:     plugins.NewData(),
-		logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
-		token:    config.NewToken("MOCKED_TOKEN"),
+		inputs: map[string]any{"user": "octocat"},
+		data:   plugins.NewData(),
+		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		token:  config.NewToken("MOCKED_TOKEN"),
 	}
 	for _, opt := range opts {
 		opt(&cfg)
 	}
 
 	pc := &plugins.PluginContext{
-		Settings: cfg.settings,
-		Inputs:   cfg.inputs,
-		Logger:   cfg.logger,
-		Data:     cfg.data,
+		Inputs: cfg.inputs,
+		Logger: cfg.logger,
+		Data:   cfg.data,
 	}
 	if cfg.graphQLMux != nil {
 		gql, err := githubapi.NewGraphQL(cfg.token, "http://mock.localhost/graphql",

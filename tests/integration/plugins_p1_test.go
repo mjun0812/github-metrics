@@ -281,10 +281,9 @@ func newP1Deps(t *testing.T) engine.Deps {
 	}
 
 	return engine.Deps{
-		Settings: &config.Settings{Repositories: 100},
-		GraphQL:  gql,
-		REST:     rest,
-		Render:   &render.FakeRenderer{},
+		GraphQL: gql,
+		REST:    rest,
+		Render:  &render.FakeRenderer{},
 	}
 }
 

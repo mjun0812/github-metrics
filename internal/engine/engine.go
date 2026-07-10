@@ -1,7 +1,7 @@
 // Package engine wires together the core plugin runner and the active
 // template into a single Compute call. The engine owns no business
 // logic of its own; it sequences pieces from internal/plugins,
-// internal/templates, internal/dataprovider, and internal/config.
+// internal/templates, and internal/dataprovider.
 package engine
 
 import (
@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/dataprovider"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
@@ -40,8 +39,8 @@ type Request struct {
 	// Account hints the kind we are computing for; engine falls back
 	// to AccountUser when empty.
 	Account plugins.AccountKind
-	// Inputs is the normalized input map produced by
-	// config.NewInputs(...).ForAction (or ForWeb / ForData).
+	// Inputs is the input map assembled by the action layer
+	// (internal/action ParseInputs + assembleInputs).
 	Inputs map[string]any
 	// Parallel caps the number of plugin goroutines core.RunPlugins
 	// spawns. Zero falls back to runtime.GOMAXPROCS.
@@ -98,8 +97,6 @@ type Result struct {
 // Deps groups the long-lived collaborators the engine reuses across
 // Compute calls. Construct one per process.
 type Deps struct {
-	Settings   *config.Settings
-	Metadata   *config.MetadataLoader
 	Logger     *slog.Logger
 	HTTPClient *httpx.Client
 	REST       *githubapi.REST
@@ -186,14 +183,12 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 	)
 
 	pc := &plugins.PluginContext{
-		Settings:   deps.Settings,
 		Inputs:     inputs,
 		Logger:     deps.Logger,
 		HTTPClient: deps.HTTPClient,
 		REST:       deps.REST,
 		GraphQL:    deps.GraphQL,
 		Data:       data,
-		Metadata:   deps.Metadata,
 		Imports:    plugins.NewImports(data),
 		Provider:   provider,
 		Render:     deps.Render,
@@ -246,11 +241,9 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error) {
 	// Provider is propagated so partials can resolve the user /
 	// organization / repository via the shared singleflight cache.
 	pcPartial := &templates.PartialContext{
-		Settings: deps.Settings,
 		Inputs:   pc.Inputs,
 		Logger:   deps.Logger,
 		Data:     data,
-		Metadata: deps.Metadata,
 		Provider: provider,
 	}
 	output, mime, err := dispatchOutput(ctx, req, deps, tmpl, data, pcPartial, res)

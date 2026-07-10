@@ -219,8 +219,7 @@ func newEngineDeps(t testing.TB, gqlBody map[string]string) (engine.Deps, *graph
 		t.Fatalf("NewGraphQL: %v", err)
 	}
 	return engine.Deps{
-		Settings: &config.Settings{Repositories: 100},
-		GraphQL:  gql,
+		GraphQL: gql,
 		// Inject a FakeRenderer so the M3 dispatch path can be
 		// exercised without starting a real browser.
 		Render: &render.FakeRenderer{},

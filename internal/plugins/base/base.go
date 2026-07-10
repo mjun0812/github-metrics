@@ -24,7 +24,6 @@ package base
 import (
 	"context"
 
-	"github.com/mjun0812/github-metrics/internal/config"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
@@ -40,8 +39,7 @@ func init() {
 
 type basePlugin struct{}
 
-func (*basePlugin) Name() string                     { return Name }
-func (*basePlugin) Metadata() *config.PluginMetadata { return nil }
+func (*basePlugin) Name() string { return Name }
 
 // Requires declares the Provider methods this plugin calls during Run.
 func (*basePlugin) Requires() []plugins.DataKey {
