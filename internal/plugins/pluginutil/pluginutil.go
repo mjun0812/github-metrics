@@ -196,6 +196,49 @@ func Plural(n int) string {
 	return "s"
 }
 
+// NextPageFromLink scans a GitHub RFC5988 Link header for the URL
+// tagged rel="next" and returns its `page` query value, or 0 when the
+// header is absent or carries no next relation. REST plugins that
+// paginate past the first page use it to drive their fetch loop. The
+// parser matches `page=` only when preceded by a `?` or `&` boundary so
+// the `per_page=` substring is never mistaken for the page cursor.
+func NextPageFromLink(link string) int {
+	for _, part := range strings.Split(link, ",") {
+		part = strings.TrimSpace(part)
+		if !strings.Contains(part, `rel="next"`) {
+			continue
+		}
+		open := strings.Index(part, "<")
+		closeIdx := strings.Index(part, ">")
+		if open < 0 || closeIdx <= open+1 {
+			continue
+		}
+		return pageQueryParam(part[open+1 : closeIdx])
+	}
+	return 0
+}
+
+// pageQueryParam returns the integer value of the `page` query
+// parameter in u, or 0 when absent or malformed.
+func pageQueryParam(u string) int {
+	q := strings.Index(u, "?")
+	if q < 0 {
+		return 0
+	}
+	for _, kv := range strings.Split(u[q+1:], "&") {
+		if !strings.HasPrefix(kv, "page=") {
+			continue
+		}
+		val := strings.TrimPrefix(kv, "page=")
+		if hash := strings.Index(val, "#"); hash >= 0 {
+			val = val[:hash]
+		}
+		n, _ := strconv.Atoi(val)
+		return n
+	}
+	return 0
+}
+
 func toString(v any) string {
 	switch x := v.(type) {
 	case string:

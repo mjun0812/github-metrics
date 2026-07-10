@@ -350,6 +350,95 @@ func TestRun_RepositoryTypesFetchREST(t *testing.T) {
 	}
 }
 
+// TestRun_RepositoryPeopleFollowsPagination pins the #743 fix: repo-mode
+// REST fetches must follow the Link rel="next" header until the limit is
+// met, so plugin_people_limit above 100 is honored across pages.
+func TestRun_RepositoryPeopleFollowsPagination(t *testing.T) {
+	t.Parallel()
+	rest := mocks.NewRESTMux(t)
+	rest.OnFunc("/repos/octocat/hello-world/stargazers", func(req *http.Request) (int, string, http.Header) {
+		if req.URL.Query().Get("page") == "2" {
+			return http.StatusOK, `[{"login":"carol","avatar_url":"c"}]`, nil
+		}
+		h := http.Header{"Link": []string{
+			`<https://api.github.com/repos/octocat/hello-world/stargazers?per_page=100&page=2>; rel="next"`,
+		}}
+		return http.StatusOK, `[{"login":"alice","avatar_url":"a"},{"login":"bob","avatar_url":"b"}]`, h
+	})
+	d := plugins.NewData()
+	d.SetRepo(&plugins.Repo{Owner: "octocat", Name: "hello-world", Stargazers: 3})
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithREST(rest),
+		mocks.WithData(d),
+		mocks.WithInputs(map[string]any{
+			"plugin_people":       true,
+			"plugin_people_types": "stargazers",
+			"plugin_people_limit": 150,
+		}),
+	)
+
+	out, err := people.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*people.Result)
+	if got := rest.Calls("/repos/octocat/hello-world/stargazers"); got != 2 {
+		t.Fatalf("stargazers calls = %d, want 2 (page 1 + page 2)", got)
+	}
+	if got := len(r.Types["stargazers"]); got != 3 {
+		t.Fatalf("stargazers len = %d, want 3 (both pages merged): %+v", got, r.Types["stargazers"])
+	}
+	// Natural exhaustion (no next Link) is not a degraded state: no
+	// truncation error may be recorded.
+	if errs := pc.Data.SnapshotErrors(); len(errs) != 0 {
+		t.Errorf("SnapshotErrors = %v, want none for a fully-walked list", errs)
+	}
+}
+
+// TestRun_RepositoryPeopleCapsPages pins the #743 defensive cap: an
+// endpoint that always advertises a next page must not loop forever —
+// the fetch stops at peopleMaxPages requests.
+func TestRun_RepositoryPeopleCapsPages(t *testing.T) {
+	t.Parallel()
+	rest := mocks.NewRESTMux(t)
+	rest.OnFunc("/repos/octocat/hello-world/stargazers", func(_ *http.Request) (int, string, http.Header) {
+		h := http.Header{"Link": []string{
+			`<https://api.github.com/repos/octocat/hello-world/stargazers?per_page=100&page=999>; rel="next"`,
+		}}
+		return http.StatusOK, `[{"login":"alice","avatar_url":"a"}]`, h
+	})
+	d := plugins.NewData()
+	d.SetRepo(&plugins.Repo{Owner: "octocat", Name: "hello-world", Stargazers: 9999})
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithREST(rest),
+		mocks.WithData(d),
+		mocks.WithInputs(map[string]any{
+			"plugin_people":       true,
+			"plugin_people_types": "stargazers",
+			"plugin_people_limit": 5000,
+		}),
+	)
+
+	if _, err := people.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if got := rest.Calls("/repos/octocat/hello-world/stargazers"); got != people.PeopleMaxPages {
+		t.Fatalf("stargazers calls = %d, want %d (page cap)", got, people.PeopleMaxPages)
+	}
+	// The cap-hit truncation must not be silent: one aggregated
+	// AppendError surfaces the degraded state (traffic/activity
+	// precedent).
+	errs := pc.Data.SnapshotErrors()
+	if len(errs) != 1 {
+		t.Fatalf("SnapshotErrors len = %d, want 1; errors: %v", len(errs), errs)
+	}
+	if !strings.Contains(errs[0].Error(), "page cap reached") {
+		t.Errorf("error message should mention page cap; got %q", errs[0].Error())
+	}
+}
+
 func TestRun_ShuffleDeterministic(t *testing.T) {
 	t.Parallel()
 	in := map[string]any{
