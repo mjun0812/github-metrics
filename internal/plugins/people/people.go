@@ -69,6 +69,12 @@ const (
 	maxPeopleSize     = 64
 )
 
+// peopleMaxPages caps repository-mode REST pagination so a repository
+// with thousands of stargazers / watchers / contributors cannot spin an
+// unbounded fetch loop when plugin_people_limit is very large. 10 pages
+// * per_page=100 = 1000 people.
+const peopleMaxPages = 10
+
 // readPeopleSize resolves plugin_people_size, applying the metadata
 // default (28) and clamping to [min 8, max 64].
 func readPeopleSize(in map[string]any) int {
@@ -229,40 +235,52 @@ func fetchRepositoryPeople(ctx context.Context, rest *githubapi.REST, owner, rep
 	if perPage <= 0 || perPage > 100 {
 		perPage = 100
 	}
-	path := fmt.Sprintf(
-		"/repos/%s/%s/%s?per_page=%d",
-		url.PathEscape(owner),
-		url.PathEscape(repo),
-		endpoint,
-		perPage,
-	)
-	body, resp, err := rest.Get(ctx, path, nil)
-	if err != nil {
-		return nil, fmt.Errorf("people: repository %s: %w", typ, err)
-	}
-	if resp == nil {
-		return nil, fmt.Errorf("people: repository %s: nil response", typ)
-	}
-	if resp.StatusCode == http.StatusNotFound {
-		return []Person{}, nil
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("people: repository %s: status %d: %s", typ, resp.StatusCode, strings.TrimSpace(string(body)))
-	}
-	var nodes []struct {
-		Login     string `json:"login"`
-		Name      string `json:"name"`
-		AvatarURL string `json:"avatar_url"`
-	}
-	if err := json.Unmarshal(body, &nodes); err != nil {
-		return nil, fmt.Errorf("people: repository %s: decode: %w", typ, err)
-	}
-	out := make([]Person, 0, len(nodes))
-	for _, n := range nodes {
-		if n.Login == "" {
-			continue
+	out := make([]Person, 0)
+	page := 1
+	for p := 0; p < peopleMaxPages; p++ {
+		path := fmt.Sprintf(
+			"/repos/%s/%s/%s?per_page=%d&page=%d",
+			url.PathEscape(owner),
+			url.PathEscape(repo),
+			endpoint,
+			perPage,
+			page,
+		)
+		body, resp, err := rest.Get(ctx, path, nil)
+		if err != nil {
+			return nil, fmt.Errorf("people: repository %s: %w", typ, err)
 		}
-		out = append(out, Person{Login: n.Login, Name: n.Name, AvatarURL: n.AvatarURL})
+		if resp == nil {
+			return nil, fmt.Errorf("people: repository %s: nil response", typ)
+		}
+		if resp.StatusCode == http.StatusNotFound {
+			return []Person{}, nil
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("people: repository %s: status %d: %s", typ, resp.StatusCode, strings.TrimSpace(string(body)))
+		}
+		var nodes []struct {
+			Login     string `json:"login"`
+			Name      string `json:"name"`
+			AvatarURL string `json:"avatar_url"`
+		}
+		if err := json.Unmarshal(body, &nodes); err != nil {
+			return nil, fmt.Errorf("people: repository %s: decode: %w", typ, err)
+		}
+		for _, n := range nodes {
+			if n.Login == "" {
+				continue
+			}
+			out = append(out, Person{Login: n.Login, Name: n.Name, AvatarURL: n.AvatarURL})
+		}
+		if limit > 0 && len(out) >= limit {
+			break
+		}
+		next := pluginutil.NextPageFromLink(resp.Header.Get("Link"))
+		if next <= 0 {
+			break
+		}
+		page = next
 	}
 	if limit > 0 && len(out) > limit {
 		out = out[:limit]
