@@ -112,16 +112,19 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 // iconFlow lays the topic icon images out left-to-right, wrapping to a
 // new row when the next 24px image would exceed maxRight. Each image is
 // a rounded-corner `<image>` the render pipeline's image-inline stage
-// folds into a data URI. Returns the markup and consumed height.
+// folds into a data URI. Returns the markup and consumed height, which
+// is 0 when every Topic.Icon is empty (nothing drawn).
 func iconFlow(list []Topic, x, top, maxRight float64) (string, float64) {
 	var b strings.Builder
-	cx, rowTop, rows := x, top, 1
+	cx, rowTop, rows := x, top, 0
 	idx := 0
 	for _, t := range list {
 		if t.Icon == "" {
 			continue
 		}
-		if cx+topicIconSize > maxRight && cx > x {
+		if idx == 0 {
+			rows = 1
+		} else if cx+topicIconSize > maxRight && cx > x {
 			cx, rowTop = x, rowTop+topicIconPitch
 			rows++
 		}
