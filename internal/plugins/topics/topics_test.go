@@ -266,6 +266,36 @@ func TestPartial_MasteredRendersIcons(t *testing.T) {
 	}
 }
 
+// TestPartial_IconsMode_AllIconsEmpty pins #747: when the topics page
+// scrape yields a non-empty list but every Topic.Icon is empty, iconFlow
+// must not reserve a 32px (topicIconPitch) blank row — the reported
+// height must match the icon-less list case (header height only).
+func TestPartial_IconsMode_AllIconsEmpty(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.SetPlugin(topics.Name, &topics.Result{
+		Mode: "icons",
+		List: []topics.Topic{{Name: "go"}, {Name: "rust"}},
+	})
+	got, height, err := topics.Partial(context.Background(), &templates.PartialContext{Data: data})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	if strings.Contains(got, "<image href=") {
+		t.Errorf("no icons should be drawn when all Topic.Icon are empty; got:\n%s", got)
+	}
+
+	emptyData := plugins.NewData()
+	emptyData.SetPlugin(topics.Name, &topics.Result{Mode: "icons", List: nil})
+	_, wantHeight, err := topics.Partial(context.Background(), &templates.PartialContext{Data: emptyData})
+	if err != nil {
+		t.Fatalf("Partial (empty list): %v", err)
+	}
+	if height != wantHeight {
+		t.Errorf("height = %d, want %d (header only, no reserved icon row); diff = %d", height, wantHeight, height-wantHeight)
+	}
+}
+
 // TestRun_TimeoutWrapped — Navigator returning an error wraps it as
 // *RetryableError so the engine surfaces it on Result.Errors.
 func TestRun_TimeoutWrapped(t *testing.T) {
