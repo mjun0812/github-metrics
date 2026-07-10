@@ -389,6 +389,11 @@ func TestRun_RepositoryPeopleFollowsPagination(t *testing.T) {
 	if got := len(r.Types["stargazers"]); got != 3 {
 		t.Fatalf("stargazers len = %d, want 3 (both pages merged): %+v", got, r.Types["stargazers"])
 	}
+	// Natural exhaustion (no next Link) is not a degraded state: no
+	// truncation error may be recorded.
+	if errs := pc.Data.SnapshotErrors(); len(errs) != 0 {
+		t.Errorf("SnapshotErrors = %v, want none for a fully-walked list", errs)
+	}
 }
 
 // TestRun_RepositoryPeopleCapsPages pins the #743 defensive cap: an
@@ -421,6 +426,16 @@ func TestRun_RepositoryPeopleCapsPages(t *testing.T) {
 	}
 	if got := rest.Calls("/repos/octocat/hello-world/stargazers"); got != people.PeopleMaxPages {
 		t.Fatalf("stargazers calls = %d, want %d (page cap)", got, people.PeopleMaxPages)
+	}
+	// The cap-hit truncation must not be silent: one aggregated
+	// AppendError surfaces the degraded state (traffic/activity
+	// precedent).
+	errs := pc.Data.SnapshotErrors()
+	if len(errs) != 1 {
+		t.Fatalf("SnapshotErrors len = %d, want 1; errors: %v", len(errs), errs)
+	}
+	if !strings.Contains(errs[0].Error(), "page cap reached") {
+		t.Errorf("error message should mention page cap; got %q", errs[0].Error())
 	}
 }
 

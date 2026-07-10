@@ -405,6 +405,11 @@ func TestRun_FollowsPagination(t *testing.T) {
 	if !names["org1"] || !names["org2"] {
 		t.Fatalf("second-page contribution missing; got %+v", r.List)
 	}
+	// Natural exhaustion (hasNextPage=false) is not a degraded state:
+	// no truncation error may be recorded.
+	if errs := pc.Data.SnapshotErrors(); len(errs) != 0 {
+		t.Errorf("SnapshotErrors = %v, want none for a fully-walked connection", errs)
+	}
 }
 
 // TestRun_PaginationCapsPages pins the #743 defensive cap: a response
@@ -429,6 +434,16 @@ func TestRun_PaginationCapsPages(t *testing.T) {
 	}
 	if got := gql.Calls("UserNotable"); got != notable.NotableMaxPages {
 		t.Fatalf("UserNotable calls = %d, want %d (page cap)", got, notable.NotableMaxPages)
+	}
+	// The cap-hit truncation must not be silent: one aggregated
+	// AppendError surfaces the degraded state (traffic/activity
+	// precedent).
+	errs := pc.Data.SnapshotErrors()
+	if len(errs) != 1 {
+		t.Fatalf("SnapshotErrors len = %d, want 1; errors: %v", len(errs), errs)
+	}
+	if !strings.Contains(errs[0].Error(), "page cap reached") {
+		t.Errorf("error message should mention page cap; got %q", errs[0].Error())
 	}
 }
 
