@@ -132,29 +132,46 @@ type rawContributor struct {
 	Contributions int    `json:"contributions"`
 }
 
+// contributorsMaxPages caps the /repos/{owner}/{repo}/contributors
+// fallback pagination so a repository with thousands of contributors
+// cannot spin an unbounded fetch loop. 10 pages * per_page=100 = 1000
+// contributors.
+const contributorsMaxPages = 10
+
 func fetchContributorList(ctx context.Context, pc *plugins.PluginContext, owner, repo string, ignored map[string]struct{}) ([]Contributor, bool) {
 	if pc == nil || pc.REST == nil {
 		return nil, false
 	}
-	path := fmt.Sprintf("/repos/%s/%s/contributors?per_page=100&anon=true", url.PathEscape(owner), url.PathEscape(repo))
-	body, resp, err := pc.REST.Get(ctx, path, nil)
-	if err != nil || resp == nil || resp.StatusCode != http.StatusOK {
-		return nil, false
-	}
-	var rows []rawContributor
-	if err := json.Unmarshal(body, &rows); err != nil {
-		return nil, false
-	}
-	out := make([]Contributor, 0, len(rows))
-	for _, row := range rows {
-		if row.Login == "" || ignoredLogin(row.Login, ignored) {
-			continue
+	out := make([]Contributor, 0)
+	page := 1
+	for p := 0; p < contributorsMaxPages; p++ {
+		path := fmt.Sprintf(
+			"/repos/%s/%s/contributors?per_page=100&anon=true&page=%d",
+			url.PathEscape(owner), url.PathEscape(repo), page,
+		)
+		body, resp, err := pc.REST.Get(ctx, path, nil)
+		if err != nil || resp == nil || resp.StatusCode != http.StatusOK {
+			return nil, false
 		}
-		out = append(out, Contributor{
-			Login:     row.Login,
-			AvatarURL: row.AvatarURL,
-			Commits:   row.Contributions,
-		})
+		var rows []rawContributor
+		if err := json.Unmarshal(body, &rows); err != nil {
+			return nil, false
+		}
+		for _, row := range rows {
+			if row.Login == "" || ignoredLogin(row.Login, ignored) {
+				continue
+			}
+			out = append(out, Contributor{
+				Login:     row.Login,
+				AvatarURL: row.AvatarURL,
+				Commits:   row.Contributions,
+			})
+		}
+		next := pluginutil.NextPageFromLink(resp.Header.Get("Link"))
+		if next <= 0 {
+			break
+		}
+		page = next
 	}
 	sort.SliceStable(out, func(i, j int) bool {
 		if out[i].Commits != out[j].Commits {
