@@ -170,6 +170,35 @@ func TestRun_DefaultSizeAndLimit(t *testing.T) {
 	}
 }
 
+// TestRun_LimitClampedTo100 guards the #472-class failure: GitHub
+// rejects a connection `first` above 100 with EXCESSIVE_PAGINATION,
+// which would fail the whole UserFollowers query and blank the
+// section. plugin_people_limit above 100 must clamp the GraphQL
+// connection size.
+func TestRun_LimitClampedTo100(t *testing.T) {
+	t.Parallel()
+	cap := &capturingMux{body: followersBody}
+	gql, err := githubapi.NewGraphQL(
+		config.NewToken("MOCKED_TOKEN"),
+		"http://mock.localhost/graphql",
+		httpx.Options{Transport: cap, MaxRetries: 0},
+	)
+	if err != nil {
+		t.Fatalf("NewGraphQL: %v", err)
+	}
+	pc := &plugins.PluginContext{
+		Data:    plugins.NewData(),
+		Inputs:  map[string]any{"user": "octocat", "plugin_people": true, "plugin_people_limit": 150},
+		GraphQL: gql,
+	}
+	if _, err := people.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if got := cap.lastVariables()["first"]; got != float64(100) {
+		t.Errorf("GraphQL first = %v, want 100 (clamped from 150)", got)
+	}
+}
+
 // TestRun_SizeInputClamped verifies plugin_people_size is honored and
 // clamped to the metadata.yml [min 8, max 64] range.
 func TestRun_SizeInputClamped(t *testing.T) {
