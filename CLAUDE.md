@@ -39,6 +39,7 @@ v4.0.0 で chromedp/Chromium を排除し、native SVG + resvg のパイプラ�
 - **テスト**: `make test` (unit)。golden 更新は `go test ./tests/integration/... -update` + 対象 package の `-update` + `UPDATE_GOLDEN=1 go test ./internal/render -run TestHash_GoldenOctocat`。**footer timestamp だけが変わった golden はコミットに含めず revert する**
 - **resvg 依存テスト**: `make test-resvg` (要 resvg バイナリ + `METRICS_RESVG_PATH`)。未設定なら自動 skip
 - **lint**: CI の golangci-lint は prealloc / unparam / revive / gosec が有効で、`make test` では検出できない。**push 前に必ずローカルで `golangci-lint run ./internal/... ./tests/...` を 0 issues にする**
+- **入力バリデーション**: metadata.yml の min/max を実行時に適用する層は存在しない。**新しい整数入力は読み取り箇所で必ず clamp する** (非正値はデフォルトへフォールバック、GraphQL connection の `first` は 100 上限。`habits.go` / `reactions.go` #472 が前例)
 - **視覚変更の検証**: golden SVG を resvg で PNG 化して目視すること。resvg は font-family が解決できないと `<text>` を全 skip するので、`--sans-serif-family "Liberation Sans"` 等の generic mapping を渡す
 - **doc サンプル**: `docs/examples/` は regen-doc-samples workflow (`gh workflow run regen-doc-samples.yml -f branch=main`) が draft PR で更新する。手元で編集しない
 - **リリース**: semver タグ (`vX.Y.Z`) の push だけで release.yml が全て行う (multi-arch イメージ + バイナリ + cosign + vMAJOR floating tag)
