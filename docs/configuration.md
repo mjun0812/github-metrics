@@ -8,9 +8,7 @@
 - [2. 入力の命名体系](#2-入力の命名体系)
 - [3. CLI フラグ](#3-cli-フラグ)
 - [4. `--config` YAML](#4---config-yaml)
-- [5. 型の正規化](#5-型の正規化)
-- [6. 動的プレースホルダ](#6-動的プレースホルダ)
-- [7. metadata.yml と action.yml](#7-metadatayml-と-actionyml)
+- [5. metadata.yml と action.yml](#5-metadatayml-と-actionyml)
 
 ---
 
@@ -21,7 +19,7 @@
 1. **CLI フラグ** (`--user` / `--plugin key=value` など)
 2. **`--config <path>.yaml`** で読み込んだ値
 3. **`INPUT_<UPPER>` 環境変数 / `INPUTS` JSON** (Action ランナーが `action.yml` から生成)
-4. **`metadata.yml` の `default`**
+4. **コード内のデフォルト値** (各プラグインの読み取り箇所と `newInvocation` が保持。Action 経由では `action.yml` の `default` が `INPUT_<UPPER>` として渡ってくる)
 
 `INPUT_<KEY>` は入力名を大文字化し `.` を `_` に置換したもの (例: `config_timezone` → `INPUT_CONFIG_TIMEZONE`)。`--no-env` を渡すと env レイヤをスキップし、CLI フラグのみで解決する。
 
@@ -78,29 +76,7 @@ committer:
 
 トップレベルのキーはそのまま渡される。
 
-## 5. 型の正規化
+## 5. metadata.yml と action.yml
 
-`config.NormalizeInput(def, raw)` が `metadata.yml` の `type` に従って値を変換する (`internal/config/inputs.go`):
-
-| `type`    | 規則                                                                                                                                                       |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `boolean` | `yes` / `true` / `on` / `1` → true。`no` / `false` / `off` / `0` → false。空文字は default にフォールバック。それ以外は false (trim + lower-case して判定) |
-| `number`  | `strconv.ParseFloat`。`min` / `max` で clamp                                                                                                               |
-| `string`  | trim                                                                                                                                                       |
-| `array`   | `format` (`comma-separated` / `space-separated` / `newline-separated`) に従って split し、trim + 重複除去                                                  |
-| `token`   | 秘匿文字列 (`Token` 型)                                                                                                                                    |
-| `json`    | `json.Unmarshal`。空は `null`                                                                                                                              |
-
-## 6. 動的プレースホルダ
-
-`default: .user.login` のように `.` で始まる値は、base データ取得後に実データで置換される (`dataResolver`)。対応するプレースホルダ:
-
-- `.user.login`
-- `.user.name`
-- `.repository.name`
-- `.repository.full_name`
-
-## 7. metadata.yml と action.yml
-
-- 各プラグイン / テンプレートの入力定義は `assets/plugins/<slug>/metadata.yml` にあり、`//go:embed` でバンドルされる。`config.MetadataLoader` が起動時に 1 回ロードする。
+- 各プラグイン / テンプレートの入力定義は `assets/plugins/<slug>/metadata.yml` にある。実行時に読むローダーは存在せず、入力の型変換・clamp は各読み取り箇所 (`pluginutil.ReadIntDefault` 等) が担う。テンプレートは自身の `metadata.yml` から `formats` / `supports` のみをロード時に読む (`templates.TemplateMetadata`)。
 - `action.yml` はこれらの `metadata.yml` から自動生成される (`internal/tools/gen-action-yml`)。lefthook の `action-yml-drift` フックがコミットごとに再生成し、ずれがあれば失敗する。再生成手順は [`CONTRIBUTING.md`](../CONTRIBUTING.md) を参照。
