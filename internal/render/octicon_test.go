@@ -130,6 +130,57 @@ func TestReplace_EmptyInput(t *testing.T) {
 	}
 }
 
+// TestReplace_TextNodePreservesLiteral asserts that an octicon token
+// inside a <text> node is left verbatim — user-provided display names
+// and bios must never trigger a nested <svg> injection.
+func TestReplace_TextNodePreservesLiteral(t *testing.T) {
+	t.Parallel()
+	in := `<text>:octicon-heart:</text>`
+	got, err := ReplaceOcticons(in)
+	if err != nil {
+		t.Fatalf("ReplaceOcticons: %v", err)
+	}
+	if got != in {
+		t.Errorf("token inside <text> should stay literal; got %q", got)
+	}
+}
+
+// TestReplace_TextNodeWithAttributes covers the same guarantee for a
+// <text> element carrying attributes, so the tag-boundary match is not
+// tripped up by attribute content.
+func TestReplace_TextNodeWithAttributes(t *testing.T) {
+	t.Parallel()
+	in := `<text x="1" y="2">Jane :octicon-heart: Doe</text>`
+	got, err := ReplaceOcticons(in)
+	if err != nil {
+		t.Fatalf("ReplaceOcticons: %v", err)
+	}
+	if got != in {
+		t.Errorf("token inside <text x=...> should stay literal; got %q", got)
+	}
+}
+
+// TestReplace_OutsideTextStillExpands confirms the fix is scoped: a
+// token outside any <text> node is still substituted even when a
+// literal-carrying <text> node is present in the same document.
+func TestReplace_OutsideTextStillExpands(t *testing.T) {
+	t.Parallel()
+	in := `:octicon-star:<text>:octicon-heart:</text>`
+	got, err := ReplaceOcticons(in)
+	if err != nil {
+		t.Fatalf("ReplaceOcticons: %v", err)
+	}
+	if !strings.Contains(got, `<text>:octicon-heart:</text>`) {
+		t.Errorf("token inside <text> should stay literal; got %q", got)
+	}
+	if strings.Contains(got, `>:octicon-star:`) || strings.HasPrefix(got, ":octicon-star:") {
+		t.Errorf("token outside <text> should be expanded; got %q", got)
+	}
+	if !strings.Contains(got, `class="octicon"`) {
+		t.Errorf("expanded token should carry the octicon class; got %q", got)
+	}
+}
+
 // TestInjectOcticonClass_PreservesExistingClass keeps the
 // class-merging invariant clear: a fragment that already declares a
 // class attribute should end up with `octicon` appended, not replaced.

@@ -17,6 +17,12 @@ import (
 // or 24 to match @primer/octicons' published sizes.
 var octiconRe = regexp.MustCompile(`:octicon-([a-z0-9-]+?)(?:-(16|24))?:`)
 
+// textSpanRe matches a `<text ...>...</text>` node (attributes optional,
+// content spanning newlines via the `s` flag). Its content is
+// user-provided (display names, bios) emitted through chrome.SVGText, so
+// octicon substitution must leave these spans untouched.
+var textSpanRe = regexp.MustCompile(`(?s)<text\b[^>]*>.*?</text>`)
+
 type octiconDoc struct {
 	Meta  map[string]string            `json:"_meta"`
 	Icons map[string]map[string]string `json:"icons"`
@@ -51,6 +57,10 @@ func loadOcticonData() (*octiconDoc, error) {
 // injecting `class="octicon"` so downstream CSS targets it. Unknown
 // (name, size) combinations pass through verbatim.
 //
+// Placeholders inside `<text>...</text>` nodes are left untouched: that
+// content is user-provided (display names, bios) and substituting there
+// would inject a nested `<svg>` inside `<text>`, which is invalid SVG.
+//
 // The function is idempotent: ReplaceOcticons(ReplaceOcticons(in))
 // equals ReplaceOcticons(in) because the rendered `<svg class="octicon">`
 // fragments no longer contain the source placeholder pattern.
@@ -63,7 +73,21 @@ func ReplaceOcticons(in string) (string, error) {
 		return in, err
 	}
 
-	out := octiconRe.ReplaceAllStringFunc(in, func(match string) string {
+	var b strings.Builder
+	last := 0
+	for _, span := range textSpanRe.FindAllStringIndex(in, -1) {
+		b.WriteString(replaceOcticonSegment(in[last:span[0]], data))
+		b.WriteString(in[span[0]:span[1]])
+		last = span[1]
+	}
+	b.WriteString(replaceOcticonSegment(in[last:], data))
+	return b.String(), nil
+}
+
+// replaceOcticonSegment expands every octicon placeholder in a segment
+// that lies outside any `<text>` node.
+func replaceOcticonSegment(segment string, data *octiconDoc) string {
+	return octiconRe.ReplaceAllStringFunc(segment, func(match string) string {
 		groups := octiconRe.FindStringSubmatch(match)
 		// groups[0]=match, [1]=name, [2]=size ("" or "16"/"24").
 		name := groups[1]
@@ -81,7 +105,6 @@ func ReplaceOcticons(in string) (string, error) {
 		}
 		return injectOcticonClass(fragment)
 	})
-	return out, nil
 }
 
 // injectOcticonClass adds `octicon` to the SVG root's class list. When
