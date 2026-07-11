@@ -1,222 +1,227 @@
-# lowlighter/metrics から github-metrics (Go 移植) への移行ガイド
+# Migration Guide from lowlighter/metrics to github-metrics (Go port)
 
-**対象バージョン**: `mjun0812/github-metrics` v1.0.0
-**最終更新**: 2026-05-24
+**Target version**: `mjun0812/github-metrics` v1.0.0
+**Last updated**: 2026-05-24
 
-## 1. 概要
+## 1. Overview
 
-本プロジェクトは [`lowlighter/metrics`](https://github.com/lowlighter/metrics)
-を Go に移植したものです。upstream の全機能を網羅するのではなく、
-よく使われる **21 plugin + 2 template + 4 出力形式** に絞った subset
-を提供しています。
+This project is a Go port of [`lowlighter/metrics`](https://github.com/lowlighter/metrics).
+Rather than covering all upstream features, it provides a subset focused on
+the commonly used **21 plugins + 2 templates + 4 output formats**.
 
-**このガイドの対象読者**: 現在 upstream `lowlighter/metrics` を
-使用しており、Go 移植版への移行を検討している方。
+**Intended audience for this guide**: Users currently running upstream
+`lowlighter/metrics` who are considering migrating to the Go port.
 
-**移行コストの大前提**:
+**Key premises on migration cost**:
 
-- **入力互換性**: サポート対象の `with:` input 名・既定値・型は
-  upstream と完全互換 (`uses:` 行だけを差し替えれば動作します)。
-- **出力互換性**: JSON は upstream とバイト互換、SVG は **DOM 構造単位** で
-  upstream と同等です (バージョン文字列・生成時刻の差分は許容)。
+- **Input compatibility**: The `with:` input names, default values, and
+  types for supported features are fully compatible with upstream (you only
+  need to replace the `uses:` line for it to work).
+- **Output compatibility**: JSON is byte-compatible with upstream, and SVG
+  is equivalent to upstream at the **DOM structure level** (differences in
+  version strings and generation timestamps are allowed).
 
-## 2. サポート対象機能
+## 2. Supported features
 
-### 2.1 Plugin (21)
+### 2.1 Plugins (21)
 
-すべての plugin は GitHub の API トークンと通常の HTTP 取得だけで
-動作します。`topics` / `starlists` は upstream では Headless Chromium で
-ページをスクレイプしますが、本移植では goquery による HTML パースに
-置き換えているためブラウザは不要です。
+All plugins work with just a GitHub API token and regular HTTP fetches.
+`topics` / `starlists` scrape pages using Headless Chromium in upstream, but
+in this port they have been replaced with HTML parsing via goquery, so no
+browser is required.
 
-| 名前              | upstream slug    | 注記                                |
-| ----------------- | ---------------- | ----------------------------------- |
-| base              | base             | プロファイル基本情報 (内部使用)     |
-| core              | core             | 設定注入 + 並列実行 (内部使用)      |
-| languages         | languages        | `recent` / `indepth` サブモード対応 |
-| activity          | activity         |                                     |
-| achievements      | achievements     |                                     |
-| repositories      | repositories     | Featured / Pinned / Starred / Random |
-| isocalendar       | isocalendar      | 3D 等尺カレンダー                   |
-| calendar          | calendar         | 多年カレンダー                      |
-| habits            | habits           | 曜日 / 時間帯傾向                   |
-| stars             | stars            | 最近スターしたリポジトリ            |
-| people            | people           | フォロワー / フォロイング           |
-| notable           | notable          |                                     |
-| contributors      | contributors     | repository テンプレート向け         |
-| reactions         | reactions        | リアクション集計                    |
-| projects          | projects         | GitHub Projects (`read:project` 必要) |
-| sponsors          | sponsors         | (`read:user` / `read:org` 必要)     |
-| sponsorships      | sponsorships     | (`read:user` / `read:org` 必要)     |
-| stargazers        | stargazers       | 累積 star チャート                  |
-| traffic           | traffic          | 閲覧数 (`repo` 必要)                |
-| topics            | topics           | HTML スクレイプ (goquery)           |
-| starlists         | starlists        | HTML スクレイプ (goquery)           |
+| Name         | upstream slug | Notes                                                |
+| ------------ | ------------- | ---------------------------------------------------- |
+| base         | base          | Basic profile information (internal use)             |
+| core         | core          | Config injection + parallel execution (internal use) |
+| languages    | languages     | Supports `recent` / `indepth` submodes               |
+| activity     | activity      |                                                      |
+| achievements | achievements  |                                                      |
+| repositories | repositories  | Featured / Pinned / Starred / Random                 |
+| isocalendar  | isocalendar   | 3D isometric calendar                                |
+| calendar     | calendar      | Multi-year calendar                                  |
+| habits       | habits        | Day-of-week / time-of-day trends                     |
+| stars        | stars         | Recently starred repositories                        |
+| people       | people        | Followers / following                                |
+| notable      | notable       |                                                      |
+| contributors | contributors  | For the repository template                          |
+| reactions    | reactions     | Reaction aggregation                                 |
+| projects     | projects      | GitHub Projects (requires `read:project`)            |
+| sponsors     | sponsors      | (requires `read:user` / `read:org`)                  |
+| sponsorships | sponsorships  | (requires `read:user` / `read:org`)                  |
+| stargazers   | stargazers    | Cumulative star chart                                |
+| traffic      | traffic       | View counts (requires `repo`)                        |
+| topics       | topics        | HTML scraping (goquery)                              |
+| starlists    | starlists     | HTML scraping (goquery)                              |
 
-### 2.2 Template (2)
+### 2.2 Templates (2)
 
-| 名前       | 注記                                              |
-| ---------- | ------------------------------------------------- |
-| classic    | ユーザー / 組織向けのデフォルトテンプレート       |
-| repository | リポジトリ単体メトリクス (`--user <owner> --repo <name>`) |
+| Name       | Notes                                                            |
+| ---------- | ---------------------------------------------------------------- |
+| classic    | Default template for users / organizations                       |
+| repository | Metrics for a single repository (`--user <owner> --repo <name>`) |
 
-### 2.3 出力形式 (4)
+### 2.3 Output formats (4)
 
-| 形式 | CLI flag        | 備考                          |
-| ---- | --------------- | ----------------------------- |
-| SVG  | `--output svg`  | デフォルト                    |
-| JSON | `--output json` | upstream とバイト互換         |
-| PNG  | `--output png`  | resvg でネイティブ SVG をラスタライズ |
-| JPEG | `--output jpeg` | resvg PNG を Go で JPEG 再エンコード |
+| Format | CLI flag        | Notes                                  |
+| ------ | --------------- | -------------------------------------- |
+| SVG    | `--output svg`  | Default                                |
+| JSON   | `--output json` | Byte-compatible with upstream          |
+| PNG    | `--output png`  | Rasterizes the native SVG with resvg   |
+| JPEG   | `--output jpeg` | Re-encodes the resvg PNG to JPEG in Go |
 
-> **レンダリングにブラウザは不要です。**
-> upstream は最終 SVG の高さ計測と PNG/JPEG 出力に Headless Chromium
-> (puppeteer) を使いますが、本移植では高さを Go 側のフォントメトリクスで
-> 計算し、PNG/JPEG は [resvg](https://github.com/linebender/resvg) で
-> ラスタライズします。この結果 chromium を Docker image から外し、
-> distro のパッケージ更新でブラウザが起動しなくなる障害クラスを
-> 構造的に排除しました (経緯は
-> [#409](https://github.com/mjun0812/github-metrics/issues/409))。
+> **No browser is required for rendering.**
+> Upstream uses Headless Chromium (puppeteer) to measure the final SVG
+> height and to produce PNG/JPEG output, but this port computes the height
+> using Go-side font metrics and rasterizes PNG/JPEG with
+> [resvg](https://github.com/linebender/resvg). As a result, chromium has
+> been removed from the Docker image, structurally eliminating the class of
+> failures where a distro package update breaks browser startup (background
+> in [#409](https://github.com/mjun0812/github-metrics/issues/409)).
 
-## 3. 未対応機能一覧
+## 3. Unsupported features
 
-下記は本 Go 移植では **実装されていません**。upstream で動作している
-機能がここに含まれる場合、移行は推奨しません。
+The following are **not implemented** in this Go port. If a feature you use
+in upstream falls under this list, migration is not recommended.
 
 ### 3.1 Runtime / Mode
 
-| 種別 | 名前                  | 不採用理由                                |
-| ---- | --------------------- | ----------------------------------------- |
-| Mode | Web インスタンス      | 運用コスト過大 (Action / CLI のみサポート) |
-| Mode | OAuth / Insights HTML | Web インスタンス前提 (上記とともに不採用) |
+| Type | Name                  | Reason for exclusion                                           |
+| ---- | --------------------- | -------------------------------------------------------------- |
+| Mode | Web instance          | Operational cost too high (only Action / CLI are supported)    |
+| Mode | OAuth / Insights HTML | Predicated on the web instance (excluded along with the above) |
 
-### 3.2 Template (community 系)
+### 3.2 Templates (community-based)
 
-| 名前      | 不採用理由                       |
-| --------- | -------------------------------- |
-| terminal  | 互換性価値 low、用途特殊          |
-| markdown  | Markdown / PDF 出力と一体        |
-| community | community 拡張機構未採用          |
+| Name      | Reason for exclusion                       |
+| --------- | ------------------------------------------ |
+| terminal  | Low compatibility value, niche use case    |
+| markdown  | Tightly coupled with Markdown / PDF output |
+| community | Community extension mechanism not adopted  |
 
-### 3.3 GitHub data 系 plugin (6)
+### 3.3 GitHub data plugins (6)
 
-| slug         | 不採用理由                        |
-| ------------ | --------------------------------- |
-| lines        | REST stats を多用するため負荷大   |
-| gists        | 優先度低                          |
-| followup     | 優先度低                          |
-| discussions  | 優先度低                          |
-| skyline      | 3D city / skyline — 重く優先度低  |
-| support      | upstream 終了済 (deprecated)      |
+| slug        | Reason for exclusion                          |
+| ----------- | --------------------------------------------- |
+| lines       | Heavy load due to extensive use of REST stats |
+| gists       | Low priority                                  |
+| followup    | Low priority                                  |
+| discussions | Low priority                                  |
+| skyline     | 3D city / skyline -- heavy, low priority      |
+| support     | Already discontinued upstream (deprecated)    |
 
-### 3.4 community 拡張 plugin (3)
+### 3.4 Community extension plugins (3)
 
-| slug         | 不採用理由               |
-| ------------ | ------------------------ |
-| code         | community 拡張機構経由   |
-| introduction | community 拡張機構経由   |
-| licenses     | community 拡張機構経由   |
+| slug         | Reason for exclusion                  |
+| ------------ | ------------------------------------- |
+| code         | Via the community extension mechanism |
+| introduction | Via the community extension mechanism |
+| licenses     | Via the community extension mechanism |
 
-### 3.5 ソーシャル / 外部 API 系 plugin (19)
+### 3.5 Social / external API plugins (19)
 
-| slug            | サイズ感 | 不採用理由 |
-| --------------- | -------- | ---------- |
-| anilist         | S        | 外部 API   |
-| chess           | -        | community  |
-| crypto          | -        | community  |
-| fortune         | -        | community  |
-| leetcode        | S        | 外部 API   |
-| music           | L        | OAuth 複雑 |
-| nightscout      | -        | community  |
-| pagespeed       | S        | 外部 API   |
-| poopmap         | -        | community  |
-| posts           | S        | 外部 API   |
-| rss             | S        | 任意 URL   |
-| screenshot      | -        | community  |
-| splatoon        | -        | community  |
-| stackoverflow   | S        | 外部 API   |
-| steam           | M        | 外部 API   |
-| stock           | -        | community  |
-| tweets          | -        | deprecated |
-| wakatime        | M        | 外部 API   |
-| 16personalities | -        | community  |
+| slug            | Size | Reason for exclusion |
+| --------------- | ---- | -------------------- |
+| anilist         | S    | External API         |
+| chess           | -    | Community            |
+| crypto          | -    | Community            |
+| fortune         | -    | Community            |
+| leetcode        | S    | External API         |
+| music           | L    | Complex OAuth        |
+| nightscout      | -    | Community            |
+| pagespeed       | S    | External API         |
+| poopmap         | -    | Community            |
+| posts           | S    | External API         |
+| rss             | S    | Arbitrary URL        |
+| screenshot      | -    | Community            |
+| splatoon        | -    | Community            |
+| stackoverflow   | S    | External API         |
+| steam           | M    | External API         |
+| stock           | -    | Community            |
+| tweets          | -    | Deprecated           |
+| wakatime        | M    | External API         |
+| 16personalities | -    | Community            |
 
-### 3.6 出力形式
+### 3.6 Output formats
 
-| 名前     | 不採用理由                                          |
-| -------- | --------------------------------------------------- |
-| pdf      | upstream は Puppeteer でブラウザ描画 — ブラウザ非依存の本移植では対象外 |
-| markdown | community template と一体のため                    |
+| Name     | Reason for exclusion                                                                |
+| -------- | ----------------------------------------------------------------------------------- |
+| pdf      | Upstream renders via Puppeteer (browser) -- out of scope for this browser-free port |
+| markdown | Tightly coupled with the community template                                         |
 
-## 4. 入力互換性
+## 4. Input compatibility
 
-- **サポート対象 input** (上表 §2 の plugin / template / output 関連入力)
-  は upstream と **完全互換** です。key 名・既定値・型は同一。
-- **未対応 input** (§3 に該当する plugin の `plugin_<slug>` ゲートおよび
-  付帯入力) は **silently no-op** です。ワークフローファイルは変更不要
-  のままで動作し、未対応 plugin の出力だけが生成されません。
-- 不正な input 名や型でも **ハードエラーにしません**。upstream と同じく
-  未知 key は素通しします。
+- **Supported inputs** (plugin / template / output-related inputs from §2
+  above) are **fully compatible** with upstream. Key names, default values,
+  and types are identical.
+- **Unsupported inputs** (the `plugin_<slug>` gates and associated inputs
+  for plugins covered in §3) are **silently no-ops**. Workflow files work
+  without any changes, and only the output of unsupported plugins is not
+  generated.
+- Invalid input names or types do **not** cause a hard error, either. As in
+  upstream, unknown keys are passed through untouched.
 
-### 4.1 動作例
+### 4.1 Example behavior
 
-下記の workflow は **そのまま** Go 移植版で動作します:
+The following workflow works **as-is** with the Go port:
 
 ```yaml
 - uses: mjun0812/github-metrics@v1
   with:
     user: octocat
-    plugin_languages: yes              # 採用 → 出力に反映
-    plugin_languages_limit: '5'         # 採用 → 反映
-    plugin_anilist: yes                 # 未対応 → silently no-op
-    plugin_anilist_medias: anime        # 未対応 → silently no-op
+    plugin_languages: yes # Supported -> reflected in output
+    plugin_languages_limit: "5" # Supported -> reflected
+    plugin_anilist: yes # Unsupported -> silently no-op
+    plugin_anilist_medias: anime # Unsupported -> silently no-op
 ```
 
-実行結果: SVG に languages パネルが描画され、anilist パネルは
-含まれません。警告もエラーも発生しません。
+Result: the languages panel is drawn in the SVG, and the anilist panel is
+not included. No warning or error occurs.
 
-## 5. 移行手順
+## 5. Migration steps
 
-### Step 1: `uses:` 行を差し替え
+### Step 1: Replace the `uses:` line
 
 ```diff
 - uses: lowlighter/metrics@v3.34
 + uses: mjun0812/github-metrics@v1
 ```
 
-`@v1` は最新の v1.x.y リリースに自動追従する floating tag です
-(patch / minor 更新が出ても workflow の変更不要)。バイト単位で
-ピン留めしたい場合は `@v1.0.0` 等の exact `vX.Y.Z` 形式を使えます。
+`@v1` is a floating tag that automatically tracks the latest v1.x.y release
+(no workflow changes are needed when patch / minor updates are released).
+If you want to pin to a byte-exact version, you can use the exact `vX.Y.Z`
+format, e.g. `@v1.0.0`.
 
-### Step 2: (任意) 未対応 input を削除
+### Step 2: (Optional) remove unsupported inputs
 
-未対応の `plugin_*` ゲートを workflow から削除すると可読性が
-向上します。**必須ではありません** (§4 の silently no-op が
-保証されているため)。
+Removing unsupported `plugin_*` gates from the workflow improves
+readability. This is **not required**, since silently no-op behavior is
+guaranteed per §4.
 
-### Step 3: 再実行
+### Step 3: Re-run
 
-`workflow_dispatch` でワークフローをトリガーするか、次回の
-scheduled run を待ちます。`output_action: commit` 等の出力ア
-クションも upstream と同じ semantics で動作します。
+Trigger the workflow via `workflow_dispatch`, or wait for the next
+scheduled run. Output actions such as `output_action: commit` also work
+with the same semantics as upstream.
 
-### Step 4: 出力検証
+### Step 4: Verify the output
 
-- **JSON 出力**: upstream とバイト互換のため、
-  `diff old.json new.json` が空であることを確認できます。
-- **SVG 出力**: DOM 構造単位での同等性。バージョン文字列
-  (`github-metrics@vX.Y.Z`) や生成時刻 (`Last updated ...`)
-  は差分が出ます。構造を確認するには `xmllint --format` で
-  整形してから diff してください。
+- **JSON output**: Since it is byte-compatible with upstream, you can
+  confirm that `diff old.json new.json` produces no output.
+- **SVG output**: Equivalence is at the DOM structure level. The version
+  string (`github-metrics@vX.Y.Z`) and generation timestamp
+  (`Last updated ...`) will differ. To check the structure, format with
+  `xmllint --format` before diffing.
 
-## 6. ロールバック
+## 6. Rollback
 
-`uses:` 行を 1 行戻すだけで完全ロールバックできます (サポート対象 input
-は drop-in 互換のため、設定ファイル側の調整は不要です):
+You can fully roll back by reverting the `uses:` line to its previous value
+(since supported inputs are drop-in compatible, no changes are needed to
+your configuration files):
 
 ```diff
 - uses: mjun0812/github-metrics@v1
 + uses: lowlighter/metrics@v3.34
 ```
 
-commit / push で完了。upstream の挙動が完全に復元されます。
+Commit / push to finish. Upstream behavior is fully restored.

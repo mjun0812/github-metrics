@@ -1,29 +1,31 @@
 # Upstream fixture cache
 
-このディレクトリは `internal/tools/sync-fixtures` が出力する upstream
-lowlighter/metrics の参照 JSON を保管します。
+This directory stores the upstream lowlighter/metrics reference JSON
+output by `internal/tools/sync-fixtures`.
 
 ## 21-plugin baseline (`octocat.json`)
 
-M4 Polish (T092) 時点では未生成です。生成手順:
+As of M4 Polish (T092), this has not yet been generated. Generation steps:
 
-1. `cd org_repo && npm install` (upstream の dev dependencies。約 1 GB)
-2. `org_repo/tests/cases/octocat.yml` を作成 — 21 採用 slug (P1 5 / P2 12 /
-   P3 4 = topics / starlists + languages.recent / languages.indepth)
-   すべてを有効化した case を定義。`languages.recent` /
-   `languages.indepth` は upstream では `plugins.languages` のサブモード
-   として serialize されるので、`plugin_languages_sections` に
-   `most-used,recently-used` を、`plugin_languages_indepth: yes` を
-   それぞれ指定する必要がある (top-level の独立 plugin slug ではない)。
-3. `go run ./internal/tools/sync-fixtures --user octocat --full` を実行
-4. 出力された `tests/fixtures/upstream/octocat.json` を vendor + commit
+1. `cd org_repo && npm install` (upstream's dev dependencies; about 1 GB)
+2. Create `org_repo/tests/cases/octocat.yml`. Define a case that enables
+   all 21 adopted slugs (P1 5 / P2 12 / P3 4 = topics / starlists +
+   languages.recent / languages.indepth). Since `languages.recent` /
+   `languages.indepth` are serialized upstream as submodes of
+   `plugins.languages`, you need to specify `most-used,recently-used`
+   for `plugin_languages_sections` and `plugin_languages_indepth: yes`
+   respectively (they are not independent top-level plugin slugs).
+3. Run `go run ./internal/tools/sync-fixtures --user octocat --full`
+4. Vendor + commit the output `tests/fixtures/upstream/octocat.json`
 
-未生成状態でも:
+While ungenerated:
 
-- `internal/tools/sync-fixtures` は `tests/cases/<user>.yml` 不在で
-  exit 1、ただし `org_repo` 自体が無い環境では exit 2 で soft pass
-- `tests/compatibility/json_test.go` の M4 互換テストは fixture 不在
-  時に `t.Skip` するためビルドは緑のまま
+- `internal/tools/sync-fixtures` exits 1 when `tests/cases/<user>.yml`
+  is absent, but exits 2 for a soft pass in environments without
+  `org_repo` itself
+- The M4 compatibility tests in `tests/compatibility/json_test.go`
+  `t.Skip` when the fixture is absent, so the build stays green
 
-上記 1-4 が手動完了するまで T092 / T093 は spec 上 "deferred" 扱い。
-完了 SC-004 evidence (key/型 diff = 0) は手動再現時に PR body で報告。
+Until steps 1-4 above are completed manually, T092 / T093 are treated as
+"deferred" per the spec. Once complete, SC-004 evidence (key/type diff = 0)
+is reported in the PR body when manually reproduced.
