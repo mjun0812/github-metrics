@@ -54,27 +54,15 @@ Same data source as the `calendar` plugin (the user's public contribution calend
 
 ## Notes
 
-- 表示上は "Commits per day" ですが、データソースは GitHub GraphQL の
-  `contributionsCollection.contributionCalendar` の日別 `contributionCount` であり、
-  commit 専用カウントではありません (issue / PR / review 等も含む)。upstream
-  `lowlighter/metrics` と同じ挙動です。
-- private contribution は、ユーザーの GitHub 設定
-  "Include private contributions on my profile" が有効な場合に GitHub 側で
-  `contributionCount` へ折り込まれます。プラグイン側で public/private の
-  フィルタリングは行いません。
-- 集計期間は upstream parity です: `half-year` は now−180 日、`full-year` は
-  now−1 年を、それぞれ直前の日曜 00:00 UTC へ丸めた日を起点とします。
-- カレンダーは upstream と同じく 4 週間単位のチャンクで取得します。GitHub は
-  ヒートマップ色 (`ContributionDay.color`) を**クエリ期間内の最大値**で正規化する
-  ため、チャンク取得によって upstream と同じ色のグラデーションになります
-  (1 年分を一括取得すると大半の日が最薄色に潰れる — #467)。
-- GraphQL クライアントが利用できない場合や取得に失敗した場合は、共有の
-  indepth カレンダー (過去 1 年) から末尾 26 週 / 53 週をスライスする
-  degraded path にフォールバックします。
+- The label reads "Commits per day", but the data source is the daily `contributionCount` from GitHub GraphQL's `contributionsCollection.contributionCalendar`, which is not a commit-only count (it also includes issues / PRs / reviews, etc.). This matches the behavior of upstream `lowlighter/metrics`.
+- Private contributions are folded into `contributionCount` on GitHub's side when the user's GitHub setting "Include private contributions on my profile" is enabled. The plugin does not perform any public/private filtering itself.
+- The aggregation period matches upstream: `half-year` starts at now−180 days, and `full-year` starts at now−1 year, each rounded down to the preceding Sunday 00:00 UTC.
+- The calendar is fetched in 4-week chunks, same as upstream. GitHub normalizes the heatmap color (`ContributionDay.color`) against the **maximum value within the queried period**, so fetching in chunks produces the same color gradient as upstream (fetching a full year in one request would collapse most days to the lightest shade — #467).
+- If the GraphQL client is unavailable or the fetch fails, it falls back to a degraded path that slices the trailing 26 weeks / 53 weeks from the shared indepth calendar (past 1 year).
 
 ## References
 
-- [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/isocalendar/metadata.yml`](../../assets/plugins/isocalendar/metadata.yml) — upstream metadata
+- [`action.yml`](../../action.yml): canonical input schema
+- [`assets/plugins/isocalendar/metadata.yml`](../../assets/plugins/isocalendar/metadata.yml): upstream metadata
 - Supported account types: user
 - Required scopes: public_access

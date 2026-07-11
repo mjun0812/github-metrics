@@ -51,16 +51,16 @@ metrics-cli --user <your-login> \
 
 ## Notes
 
-- **表示位置**: traffic 単体の partial は空文字列を返すスタブ実装で、SVG 出力には独自セクションを持ちません。views 合計 (`TotalViews`) は `plugin_base.RepositoriesPartial` の右列下端に `<N> view[s] in last two weeks` として inline されます (v2.0.2 / #638)。`plugin-traffic` サンプルは `chrome_repositories=yes` + `plugin_traffic=yes` の組合せで生成され、repositories パネル末尾に views 行が乗ります (v3.0 / #649 以降、`plugin_base_repositories` などの v2 alias は不要です)。
-- **Per-repo の breakdown は JSON output のみ**: `Result.Views` map は GraphQL/JSON 出力経由でのみ参照可能です。SVG 上で per-repo 行を見せたい場合は将来 `traffic.Partial` の実装が必要です (今は intentional stub)。
-- **0-view リポジトリの非表示**: `plugin_traffic_hide_empty` は既定で `yes` (true)。`v.Count == 0` のリポジトリは `Result.Views` map から除外されます (JSON 出力に影響)。SVG 表示は views 合計のみなので、この入力は SVG モードでは観測できません。
-- **Repository admin 権限が必要**: GitHub の traffic endpoints (`/repos/{owner}/{repo}/traffic/views`, `/repos/{owner}/{repo}/traffic/clones`) は repository administrator のみアクセス可能です。non-admin token では 403 になります。`--template=repository --repo owner/name` での実行を推奨します。
-- **Token scope の要件**: `repo` scope が必要です。scope が無いと plugin は Skipped (`Result.Skipped = true`、`SkippedReason = "missing repo scope"`) となり、views 行も rendered されません。
-- **403 の取り扱い**: 個別リポジトリで 403 (collaborator 権限不足など) が返った場合はそのリポジトリのみドロップし、aggregation は継続します。
+- **Display location**: The standalone traffic partial is a stub implementation that returns an empty string and has no dedicated section in the SVG output. The total view count (`TotalViews`) is inlined at the bottom of the right column of `plugin_base.RepositoriesPartial` as `<N> view[s] in last two weeks` (v2.0.2 / #638). The `plugin-traffic` sample is generated with the combination of `chrome_repositories=yes` + `plugin_traffic=yes`, and the views line appears at the end of the repositories panel (as of v3.0 / #649, v2 aliases such as `plugin_base_repositories` are no longer needed).
+- **Per-repo breakdown is JSON output only**: The `Result.Views` map is only accessible via GraphQL/JSON output. Showing per-repo rows in the SVG would require a future implementation of `traffic.Partial` (it is currently an intentional stub).
+- **Hiding zero-view repositories**: `plugin_traffic_hide_empty` defaults to `yes` (true). Repositories where `v.Count == 0` are excluded from the `Result.Views` map (this affects JSON output). Since the SVG display only shows the total view count, this input has no observable effect in SVG mode.
+- **Requires repository admin permission**: GitHub's traffic endpoints (`/repos/{owner}/{repo}/traffic/views`, `/repos/{owner}/{repo}/traffic/clones`) are only accessible to repository administrators. A non-admin token will receive a 403. Running with `--template=repository --repo owner/name` is recommended.
+- **Token scope requirement**: The `repo` scope is required. Without it, the plugin is Skipped (`Result.Skipped = true`, `SkippedReason = "missing repo scope"`) and the views line is not rendered either.
+- **Handling of 403s**: If an individual repository returns a 403 (e.g., insufficient collaborator permission), only that repository is dropped and aggregation continues.
 
 ## References
 
-- [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/traffic/metadata.yml`](../../assets/plugins/traffic/metadata.yml) — upstream metadata
+- [`action.yml`](../../action.yml): canonical input schema
+- [`assets/plugins/traffic/metadata.yml`](../../assets/plugins/traffic/metadata.yml): upstream metadata
 - Supported account types: user, organization, repository
 - Required scopes: repo
