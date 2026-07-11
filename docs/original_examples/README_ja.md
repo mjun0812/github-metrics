@@ -1,34 +1,34 @@
-# original_examples: upstream `lowlighter/metrics` output reference
+# original_examples: upstream `lowlighter/metrics` の出力リファレンス
 
-This directory stores **officially rendered SVGs from upstream** for reference during the Go reimplementation.
-Only outputs corresponding to the plugins / templates adopted by this project ([docs/scope.md](../scope.md) §2) are extracted.
+本ディレクトリは、Go 再実装の参照用に **upstream の公式レンダリング済み SVG** を保存したものである。
+本プロジェクトが採用している plugin / テンプレート ([docs/scope.md](../scope_ja.md) §2) に対応する出力だけを抜粋している。
 
-## Provenance
+## 出所 (provenance)
 
-- Repository: `lowlighter/metrics` (origin of `org_repo/`)
-- Branch: `examples`
-- Commit: `1dac69e` (`chore: update examples`, 2025-07-03)
-- Producer: artifacts rendered by upstream CI using lowlighter's own profile data
-  (= not re-run with our own token; these are the official samples published by upstream)
+- リポジトリ: `lowlighter/metrics` (`org_repo/` の origin)
+- ブランチ: `examples`
+- コミット: `1dac69e` (`chore: update examples`, 2025-07-03)
+- 生成主体: upstream が CI で lowlighter 本人のプロフィールデータをレンダリングした成果物
+  (= 自分でトークンを使って再実行したものではなく、upstream が公開している正規サンプル)
 
-How obtained (no network required, extracted from the locally fetched branch):
+取得方法 (ネットワーク不要 / ローカルの fetch 済みブランチから抽出):
 
 ```bash
 cd org_repo
 git show "origin/examples:metrics.plugin.languages.svg" > ../docs/original_examples/metrics.plugin.languages.svg
 ```
 
-## Templates / base
+## テンプレート / base
 
-| File                     | Content                                         |
+| ファイル                 | 内容                                            |
 | ------------------------ | ----------------------------------------------- |
-| `metrics.base.svg`       | classic output for base/core only (no plugins)  |
-| `metrics.classic.svg`    | comprehensive sample of the classic template    |
-| `metrics.repository.svg` | comprehensive sample of the repository template |
+| `metrics.base.svg`       | base/core のみ (プラグインなし) の classic 出力 |
+| `metrics.classic.svg`    | classic テンプレートの総合サンプル              |
+| `metrics.repository.svg` | repository テンプレートの総合サンプル           |
 
-## Output of adopted plugins (19 plugin dirs)
+## 採用 plugin (19 plugin dir) の出力
 
-| plugin         | files                                                                                                                   |
+| plugin         | ファイル                                                                                                                |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `languages`    | `metrics.plugin.languages.svg` / `.details.svg` / `.recent.svg` (languages.recent) / `.indepth.svg` (languages.indepth) |
 | `activity`     | `metrics.plugin.activity.svg`                                                                                           |
@@ -50,14 +50,14 @@ git show "origin/examples:metrics.plugin.languages.svg" > ../docs/original_examp
 | `stargazers`   | `metrics.plugin.stargazers.svg` / `.graph.svg` / `.worldmap.svg` / `.chartist.svg`                                      |
 | `traffic`      | `metrics.plugin.traffic.svg`                                                                                            |
 
-## Notes
+## 注意
 
-- **Unadopted plugins are not included**: `lines` / `gists` / `code` / `introduction` / `followup` /
-  `discussions` / `skyline` / `licenses` / `support`, as well as external API / community plugins (`wakatime` /
-  `anilist` / `chess`, etc.), exist in upstream's examples branch but were not extracted since they are out of adoption scope.
-- **Variants that are backlog items in the Go implementation** are also included for reference:
-  - `metrics.plugin.stargazers.worldmap.svg` ... the world map requires a Google Maps API key (currently a Skipped path)
-  - `metrics.plugin.stargazers.chartist.svg` ... a different chart renderer
-  - a comprehensive sample of organization mode (`metrics.organization.svg`) was not extracted, since only user mode is implemented
-- These are intended **for visual/layout reference (parity checking) only**. The data belongs to lowlighter,
-  so it cannot be used to verify a match against your own output.
+- **不採用 plugin は含めていない**: `lines` / `gists` / `code` / `introduction` / `followup` /
+  `discussions` / `skyline` / `licenses` / `support` および外部 API / community 系 (`wakatime` /
+  `anilist` / `chess` 等) は upstream の examples ブランチには存在するが、採用外のため抽出していない。
+- **Go 実装では backlog 扱いのバリアント** も参照用に含めている:
+  - `metrics.plugin.stargazers.worldmap.svg` … 世界地図は Google Maps API key 必須 (現状 Skipped path)
+  - `metrics.plugin.stargazers.chartist.svg` … 別 chart レンダラ
+  - organization mode の総合サンプル (`metrics.organization.svg`) は user-mode のみ実装のため未抽出
+- これらは **見た目 / レイアウトの参照 (パリティ確認) 用** である。データは lowlighter 本人のもので、
+  自分の出力と一致させる用途には使えない。

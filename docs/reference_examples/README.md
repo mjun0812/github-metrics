@@ -1,78 +1,81 @@
-# Reference examples (upstream, 実データ)
+# Reference examples (upstream, real data)
 
-このディレクトリは upstream [`lowlighter/metrics`](https://github.com/lowlighter/metrics)
-**本体**で生成した参照カードです。`mjun0812` 本人の GitHub データと、リポジトリ
-[`mjun0812/flash-attention-prebuild-wheels`](https://github.com/mjun0812/flash-attention-prebuild-wheels)
-を対象にしています。
+This directory contains reference cards generated with the upstream
+[`lowlighter/metrics`](https://github.com/lowlighter/metrics) **itself**. They target
+`mjun0812`'s own GitHub data and the repository
+[`mjun0812/flash-attention-prebuild-wheels`](https://github.com/mjun0812/flash-attention-prebuild-wheels).
 
-## なぜ別ディレクトリなのか
+## Why a separate directory
 
-- [`docs/org_examples`](../org_examples)（= `original_examples`）は upstream の
-  `examples` ブランチをそのまま取り込んだもので、**データ主体が lowlighter 本人**です。
-  構造比較には使えますが、データが違うため「同じ入力で upstream と Go 実装がどう違うか」
-  という apples-to-apples 比較はできません。
-- ここは **同じデータ（mjun0812 / flash-attention-prebuild-wheels）** を upstream に
-  流し込んだ出力です。[`docs/examples`](../examples)（本プロジェクトの Go 実装出力）と
-  並べることで、データを揃えた状態での見た目・DOM の差分を確認できます。
+- [`docs/org_examples`](../org_examples) (= `original_examples`) is a straight import of
+  upstream's `examples` branch, whose **data subject is lowlighter himself**. It can be
+  used for structural comparison, but since the data differs, it does not allow an
+  apples-to-apples comparison of "how do upstream and the Go implementation differ given
+  the same input."
+- This directory is the output of feeding **the same data (mjun0812 /
+  flash-attention-prebuild-wheels)** into upstream. Placing it side by side with
+  [`docs/examples`](../examples) (this project's Go implementation output) lets you
+  check the visual/DOM diff with the data held constant.
 
-## 生成条件
+## Generation conditions
 
-| 項目              | 値                                                                                                                                            |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| ツール            | `lowlighter/metrics@v3.34`（upstream 本体・GitHub Action）                                                                                    |
-| 実行方法          | 一時的な GitHub Actions ワークフローを GitHub-hosted runner (`ubuntu-latest`) で1度実行し、`github-actions[bot]` がこのディレクトリへコミット |
-| 対象 user         | `mjun0812`                                                                                                                                    |
-| 対象 repository   | `mjun0812/flash-attention-prebuild-wheels`（`template: repository`）                                                                          |
-| 対象プラグイン    | **本プロジェクトが Go 実装済みのプラグインのみ**（採用外 plugin は生成しない）                                                                |
-| `output_action`   | `none`（レンダリングのみ。コミットはワークフロー最終 step が別途実施）                                                                        |
-| `config_timezone` | `Asia/Tokyo`（一部カード）                                                                                                                    |
-| 生成日            | 2026-05-31                                                                                                                                    |
+| Item              | Value                                                                                                                                               |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tool              | `lowlighter/metrics@v3.34` (upstream itself, GitHub Action)                                                                                         |
+| Execution method  | A temporary GitHub Actions workflow was run once on a GitHub-hosted runner (`ubuntu-latest`), and `github-actions[bot]` committed to this directory |
+| Target user       | `mjun0812`                                                                                                                                          |
+| Target repository | `mjun0812/flash-attention-prebuild-wheels` (`template: repository`)                                                                                 |
+| Target plugins    | **Only plugins already implemented in Go by this project** (unadopted plugins are not generated)                                                    |
+| `output_action`   | `none` (render only; committing is done separately by the workflow's final step)                                                                    |
+| `config_timezone` | `Asia/Tokyo` (some cards)                                                                                                                           |
+| Generation date   | 2026-05-31                                                                                                                                          |
 
-> 追補: `metrics.plugin.people.svg` は `docs/examples` の再生成で follower 数が 60
-> に更新されたため、2026-06-05 に `ghcr.io/lowlighter/metrics:v3.34` のローカル
-> Docker 実行で単独再生成しました。
+> Addendum: `metrics.plugin.people.svg` was regenerated on its own on 2026-06-05 via a
+> local Docker run of `ghcr.io/lowlighter/metrics:v3.34`, because the follower count was
+> updated to 60 when `docs/examples` was regenerated.
 
-> ⚠️ これらは正規化していない **生の** upstream 出力です。フッターの生成タイムスタンプや
-> `Metrics` バージョン文字列など動的な部分は再生成ごとに変わります。`docs/examples`
-> 側 (本プロジェクトの Go 実装出力) も同様に生のタイムスタンプを保持しているため、
-> 比較時はこれらの動的部分を読み飛ばしてください。
+> Warning: these are **raw**, non-normalized upstream output. Dynamic parts such as the
+> footer's generation timestamp and the `Metrics` version string change on every
+> regeneration. The `docs/examples` side (this project's Go implementation output) also
+> retains raw timestamps in the same way, so skip over these dynamic parts when comparing.
 
-## 正しく描画できなかったカード（削除済み）
+## Cards that failed to render correctly (removed)
 
-以下のカードは生成時に **upstream v3.34 側のエラー**でカード本体に `Unexpected error`
-が描画される、または対象データが取得できず空になったため、**このディレクトリから削除**
-しました。いずれも本プロジェクトの Go 実装の不具合ではなく、upstream ツールのコードバグ・
-GitHub API 仕様変更・権限/データ起因です。
+The following cards were **removed from this directory** because, at generation time, an
+**error on the upstream v3.34 side** caused `Unexpected error` to be rendered on the card
+itself, or the target data could not be fetched and the card came out empty. None of
+these are bugs in this project's Go implementation; they are all code bugs in the
+upstream tool, GitHub API spec changes, or permission/data issues.
 
-| 削除したカード                            | 原因                                                                                                                                                                                                                                        |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `metrics.plugin.achievements.svg`         | GitHub が **Projects (classic) API を廃止**（[sunset 2024-05](https://github.blog/changelog/2024-05-23-sunset-notice-projects-classic/)）。achievements は内部で classic projects を参照するため GraphQL `NOT_FOUND` → `Unexpected error`。 |
-| `metrics.plugin.achievements.compact.svg` | 同上（achievements の compact 表示）。                                                                                                                                                                                                      |
-| `metrics.plugin.projects.svg`             | 同上。`projects` プラグインが Projects (classic) API を直接参照するため `NOT_FOUND` → `Unexpected error`。                                                                                                                                  |
-| `metrics.plugin.activity.svg`             | upstream のコードバグ。`TypeError: Cannot read properties of undefined (reading 'filter')`（`source/plugins/activity`）で `Unexpected error`。                                                                                              |
-| `metrics.repository.plugin.activity.svg`  | 同上（repository テンプレートの activity）。                                                                                                                                                                                                |
-| `metrics.plugin.habits.facts.svg`         | upstream のコードバグ。`TypeError: Cannot destructure property 'author' of 'undefined'`（`source/plugins/habits/index.mjs:51`）で `Unexpected error`。                                                                                      |
-| `metrics.plugin.habits.charts.svg`        | 同上（habits の charts 表示）。                                                                                                                                                                                                             |
-| `metrics.repository.plugin.traffic.svg`   | `traffic` API はリポジトリ push/admin 権限が必要で、データ取得できずセクションごとスキップ。コンテンツ無し（高さ ~8px）の空カードになるため削除。                                                                                           |
+| Removed card                              | Cause                                                                                                                                                                                                                                                |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `metrics.plugin.achievements.svg`         | GitHub **deprecated the Projects (classic) API** ([sunset 2024-05](https://github.blog/changelog/2024-05-23-sunset-notice-projects-classic/)). Since achievements internally references classic projects, GraphQL `NOT_FOUND` -> `Unexpected error`. |
+| `metrics.plugin.achievements.compact.svg` | Same as above (compact display of achievements).                                                                                                                                                                                                     |
+| `metrics.plugin.projects.svg`             | Same as above. The `projects` plugin directly references the Projects (classic) API, causing `NOT_FOUND` -> `Unexpected error`.                                                                                                                      |
+| `metrics.plugin.activity.svg`             | An upstream code bug. `TypeError: Cannot read properties of undefined (reading 'filter')` (`source/plugins/activity`) causes `Unexpected error`.                                                                                                     |
+| `metrics.repository.plugin.activity.svg`  | Same as above (activity in the repository template).                                                                                                                                                                                                 |
+| `metrics.plugin.habits.facts.svg`         | An upstream code bug. `TypeError: Cannot destructure property 'author' of 'undefined'` (`source/plugins/habits/index.mjs:51`) causes `Unexpected error`.                                                                                             |
+| `metrics.plugin.habits.charts.svg`        | Same as above (charts display of habits).                                                                                                                                                                                                            |
+| `metrics.repository.plugin.traffic.svg`   | The `traffic` API requires repository push/admin permission; data could not be fetched, so the section was skipped. Removed because it results in an empty card with no content (height ~8px).                                                       |
 
-### 未生成（最初から対象外）
+### Not generated (excluded from the start)
 
-| カード                                | 原因                                                                                                                                                                                                                                              |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `metrics.plugin.languages.recent.svg` | upstream v3.34 の `source/plugins/languages/analyzer/recent.mjs:70` が `mjun0812` のデータで例外（`Array.filter`）を投げて決定的に失敗。`plugin_languages_sections: recently-used` 指定時のみ発生するため、ワークフローの生成対象に含めていない。 |
+| Card                                  | Cause                                                                                                                                                                                                                                                                                       |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `metrics.plugin.languages.recent.svg` | Upstream v3.34's `source/plugins/languages/analyzer/recent.mjs:70` deterministically throws an exception (`Array.filter`) on `mjun0812`'s data. This only occurs when `plugin_languages_sections: recently-used` is specified, so it was not included in the workflow's generation targets. |
 
-> 補足:
+> Notes:
 >
-> - `metrics.plugin.stargazers.svg` / `.graph.svg` はエラー無し・実データ描画済みで**正常**です。
-> - `metrics.plugin.traffic.svg`（user テンプレート）は traffic セクションこそデータ無しですが、
->   カード自体は他要素を含めて描画されており保持しています。
-> - `languages` プラグイン本体・`.details` / `.indepth` の各カードは正常です。
-> - `metrics.plugin.reactions.svg` などテキスト量の少ないカードはエラーではなく、対象データが
->   少ないだけで正常です。
+> - `metrics.plugin.stargazers.svg` / `.graph.svg` have no errors and render real data; they are **normal**.
+> - `metrics.plugin.traffic.svg` (user template) has no data for the traffic section, but the
+>   card itself, including other elements, is rendered and is retained.
+> - The `languages` plugin itself and the `.details` / `.indepth` cards are all normal.
+> - Cards with little text, such as `metrics.plugin.reactions.svg`, are not errors; they are
+>   simply normal cards with little target data.
 
-## ファイル一覧
+## File list
 
-### User カード（`user: mjun0812`）
+### User cards (`user: mjun0812`)
 
 - `metrics.base.svg` / `metrics.classic.svg`
 - `metrics.plugin.calendar.svg` / `metrics.plugin.calendar.full.svg`
@@ -90,10 +93,10 @@ GitHub API 仕様変更・権限/データ起因です。
 - `metrics.plugin.traffic.svg`
 
 > achievements / achievements.compact / activity / habits.facts / habits.charts /
-> projects は upstream v3.34 のエラーで描画できず削除しました（上記「正しく描画できなかった
-> カード」参照）。
+> projects could not be rendered due to upstream v3.34 errors and were removed (see
+> "Cards that failed to render correctly" above).
 
-### Repository カード（`repo: flash-attention-prebuild-wheels`, `template: repository`）
+### Repository cards (`repo: flash-attention-prebuild-wheels`, `template: repository`)
 
 - `metrics.repository.svg`
 - `metrics.repository.plugin.languages.svg`
@@ -101,28 +104,30 @@ GitHub API 仕様変更・権限/データ起因です。
 - `metrics.repository.plugin.people.svg`
 - `metrics.repository.plugin.stargazers.svg`
 
-> activity / traffic は upstream v3.34 のエラー・データ不足で描画できず削除しました
-> （上記「正しく描画できなかったカード」参照）。
+> activity / traffic could not be rendered due to upstream v3.34 errors and insufficient
+> data, and were removed (see "Cards that failed to render correctly" above).
 
-## 再生成
+## Regeneration
 
-参照カードは一時的な GitHub Actions ワークフローで生成しました。リポジトリ secret
-`METRICS_TOKEN`（classic PAT）を設定し、対象ブランチへワークフローを push して
-GitHub-hosted runner で1度実行 → `github-actions[bot]` がこのディレクトリへコミット、
-という流れです。`github.token` ではリポジトリ外データが取得できずカードが空になるため、
-PAT secret が必須です。
+The reference cards were generated with a temporary GitHub Actions workflow. The flow is:
+set the repository secret `METRICS_TOKEN` (a classic PAT), push the workflow to the
+target branch, run it once on a GitHub-hosted runner -> `github-actions[bot]` commits to
+this directory. With `github.token`, data outside the repository cannot be fetched and
+the cards come out empty, so a PAT secret is required.
 
-> ⚠️ self-hosted runner では動きません。upstream action が `--volume $GITHUB_EVENT_PATH`
-> をマウントしますが host 側に実体が無く、コンテナ内で `@actions/github` が `EISDIR`
-> （`event.json` をディレクトリとして読む）で即死し、カードが1枚も生成されません。必ず
-> GitHub-hosted (`ubuntu-latest`) を使ってください。
+> Warning: this does not work on self-hosted runners. The upstream action mounts
+> `--volume $GITHUB_EVENT_PATH`, but since no actual file exists on the host side,
+> `@actions/github` inside the container dies immediately with `EISDIR` (reading
+> `event.json` as a directory), and not a single card gets generated. You must use a
+> GitHub-hosted runner (`ubuntu-latest`).
 
-### ローカル Docker での単発再生成
+### One-off regeneration with local Docker
 
-1枚だけ手元で再生成する場合は upstream イメージを直接実行できます。`GITHUB_TOKEN`
-（`repo` / `read:user` 程度のスコープを持つ PAT）を環境変数に設定し、upstream イメージへ
-`INPUT_*` を渡します。値は `jq @uri` で url-encode して渡す点に注意してください（upstream の
-`metadata.mjs` が `decodeURIComponent` で復号します）。例:
+To regenerate just one card locally, you can run the upstream image directly. Set
+`GITHUB_TOKEN` (a PAT with roughly `repo` / `read:user` scope) as an environment
+variable, and pass `INPUT_*` to the upstream image. Note that values must be url-encoded
+with `jq @uri` when passed (upstream's `metadata.mjs` decodes them with
+`decodeURIComponent`). Example:
 
 ```sh
 docker run --init --rm -v "$PWD/docs/reference_examples:/renders" \

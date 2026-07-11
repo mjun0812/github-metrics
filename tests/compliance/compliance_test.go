@@ -351,6 +351,11 @@ func TestCompliance_DocsPluginPagesMatchAdoptedSet(t *testing.T) {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
 			continue
 		}
+		// Japanese translations use the `_ja.md` suffix; they are
+		// hand-maintained companions, not generated slug pages.
+		if strings.HasSuffix(e.Name(), "_ja.md") {
+			continue
+		}
 		slug := strings.TrimSuffix(e.Name(), ".md")
 		have[slug] = struct{}{}
 	}

@@ -1,174 +1,174 @@
-# GitHub データ取得方法リファレンス
+# GitHub Data Retrieval Reference
 
-採用済み各プラグインが GitHub のどのデータを、どの取得方法 (REST / GraphQL / HTML スクレイピング / ローカル計算) で得ているかの一覧。採用プラグインの確定リストは [`scope.md`](scope.md) を参照。
+A list of which GitHub data each adopted plugin fetches, and via which retrieval method (REST / GraphQL / HTML scraping / local computation). See [`scope.md`](scope.md) for the finalized list of adopted plugins.
 
-> 初版調査日: 2026-06-04
-
----
-
-## 目次
-
-- [1. 共通APIクライアント](#1-共通apiクライアント)
-- [2. 取得方法別エンドポイント一覧](#2-取得方法別エンドポイント一覧)
-  - [2.1 REST API のみ](#21-rest-api-のみ)
-  - [2.2 GraphQL のみ](#22-graphql-のみ)
-  - [2.3 HTML スクレイピング](#23-html-スクレイピング)
-  - [2.4 ローカル計算（API呼び出しなし）](#24-ローカル計算api呼び出しなし)
-- [3. REST / GraphQL 両方で取得可能なデータ](#3-rest--graphql-両方で取得可能なデータ)
-- [4. 認証トークン](#4-認証トークン)
-- [5. 既知の制限・注意点](#5-既知の制限注意点)
+> Initial survey date: 2026-06-04
 
 ---
 
-## 1. 共通APIクライアント
+## Table of Contents
 
-| ファイル                        | 役割                                                                              |
+- [1. Common API Client](#1-common-api-client)
+- [2. Endpoints by Retrieval Method](#2-endpoints-by-retrieval-method)
+  - [2.1 REST API Only](#21-rest-api-only)
+  - [2.2 GraphQL Only](#22-graphql-only)
+  - [2.3 HTML Scraping](#23-html-scraping)
+  - [2.4 Local Computation (No API Calls)](#24-local-computation-no-api-calls)
+- [3. Data Available via Both REST and GraphQL](#3-data-available-via-both-rest-and-graphql)
+- [4. Authentication Tokens](#4-authentication-tokens)
+- [5. Known Limitations and Caveats](#5-known-limitations-and-caveats)
+
+---
+
+## 1. Common API Client
+
+| File                            | Role                                                                              |
 | ------------------------------- | --------------------------------------------------------------------------------- |
-| `internal/githubapi/graphql.go` | GraphQL クライアント（genqlient ラッパー）                                        |
-| `internal/githubapi/rest.go`    | REST クライアント（httpx ラッパー）                                               |
-| `internal/githubapi/scopes.go`  | `HEAD /` の `X-OAuth-Scopes` ヘッダーでトークンスコープを確認（Classic PAT 向け） |
+| `internal/githubapi/graphql.go` | GraphQL client (genqlient wrapper)                                                |
+| `internal/githubapi/rest.go`    | REST client (httpx wrapper)                                                       |
+| `internal/githubapi/scopes.go`  | Checks token scopes via the `X-OAuth-Scopes` header of `HEAD /` (for Classic PAT) |
 
 ---
 
-## 2. 取得方法別エンドポイント一覧
+## 2. Endpoints by Retrieval Method
 
-### 2.1 REST API のみ
+### 2.1 REST API Only
 
-GraphQL に相当するエンドポイントが存在しないため REST を使用。
+REST is used because no equivalent GraphQL endpoint exists.
 
-| エンドポイント                                        | 取得情報                                                        | 使用プラグイン                      |
-| ----------------------------------------------------- | --------------------------------------------------------------- | ----------------------------------- |
-| `GET /users/{login}/events?per_page=100&page={n}`     | ユーザーの公開イベント一覧（PushEvent・IssueEvent 等）          | activity, habits, languages(recent) |
-| `GET /repos/{owner}/{repo}/commits/{sha}`             | 単一コミットの変更ファイル一覧                                  | habits, languages(recent)           |
-| `GET /repos/{owner}/{repo}/compare/{before}...{head}` | コミット範囲の差分ファイル一覧                                  | habits, languages(recent)           |
-| `GET /repos/{owner}/{repo}/stats/contributors`        | コントリビューター別コミット数・追加/削除行数（202 ポーリング） | contributors                        |
-| `GET /repos/{owner}/{repo}/contributors?per_page={n}` | リポジトリコントリビューター一覧（名前・コミット数）            | people(repo)                        |
-| `GET /repos/{owner}/{repo}/stargazers?per_page={n}`   | リポジトリスターガザー一覧                                      | people(repo)                        |
-| `GET /repos/{owner}/{repo}/subscribers?per_page={n}`  | リポジトリウォッチャー一覧                                      | people(repo)                        |
-| `GET /users/{login}/starred?per_page=100&page={n}`    | ユーザーがスターしたリポジトリ一覧                              | repositories(starred)               |
-| `GET /repos/{owner}/{repo}/traffic/views`             | リポジトリの PV・ユニーク訪問者数（`repo` スコープ必須）        | traffic                             |
-| `HEAD /`（`X-OAuth-Scopes` ヘッダー）                 | トークンのスコープ確認                                          | traffic                             |
+| Endpoint                                              | Data Retrieved                                                                | Plugins Using It                    |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------- |
+| `GET /users/{login}/events?per_page=100&page={n}`     | List of the user's public events (PushEvent, IssueEvent, etc.)                | activity, habits, languages(recent) |
+| `GET /repos/{owner}/{repo}/commits/{sha}`             | List of changed files for a single commit                                     | habits, languages(recent)           |
+| `GET /repos/{owner}/{repo}/compare/{before}...{head}` | List of changed files for a commit range                                      | habits, languages(recent)           |
+| `GET /repos/{owner}/{repo}/stats/contributors`        | Commit counts and addition/deletion line counts per contributor (202 polling) | contributors                        |
+| `GET /repos/{owner}/{repo}/contributors?per_page={n}` | List of repository contributors (name, commit count)                          | people(repo)                        |
+| `GET /repos/{owner}/{repo}/stargazers?per_page={n}`   | List of repository stargazers                                                 | people(repo)                        |
+| `GET /repos/{owner}/{repo}/subscribers?per_page={n}`  | List of repository watchers                                                   | people(repo)                        |
+| `GET /users/{login}/starred?per_page=100&page={n}`    | List of repositories starred by the user                                      | repositories(starred)               |
+| `GET /repos/{owner}/{repo}/traffic/views`             | Repository page view and unique visitor counts (requires `repo` scope)        | traffic                             |
+| `HEAD /` (`X-OAuth-Scopes` header)                    | Token scope check                                                             | traffic                             |
 
-### 2.2 GraphQL のみ
+### 2.2 GraphQL Only
 
-REST に相当するエンドポイントが存在しないため GraphQL を使用。
+GraphQL is used because no equivalent REST endpoint exists.
 
-| フィールド / クエリ                                        | 取得情報                                                              | 使用プラグイン                         |
-| ---------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------- |
-| `User(login)`                                              | ユーザー基本情報（名前・bio・アバター・フォロワー数等）               | base                                   |
-| `Organization(login)`                                      | 組織基本情報                                                          | base                                   |
-| `Repository(owner, repo)`                                  | 単一リポジトリ詳細                                                    | base                                   |
-| `UserRepositories(login, first, after)`                    | ユーザーのリポジトリ一覧（ページネーション付き）                      | base                                   |
-| `user.contributionsCollection.contributionCalendar`        | コントリビューションカレンダー（週別・日別カウント）— REST に非公開   | base → calendar / isocalendar で再利用 |
-| `user.contributionsCollection.*`                           | コミット / Issue / PR / Review の年別統計                             | base                                   |
-| `user.repositoriesContributedTo(orderBy: STARGAZERS_DESC)` | コントリビュートした他者リポジトリ一覧                                | notable                                |
-| `user.followers(first: limit)`                             | フォロワー一覧                                                        | people                                 |
-| `user.following(first: limit)`                             | フォロー中一覧                                                        | people                                 |
-| `user.issues.reactions.content`                            | Issue のリアクション集計                                              | reactions                              |
-| `user.issueComments.reactions.content`                     | Issue コメントのリアクション集計                                      | reactions                              |
-| `user.sponsorshipsAsMaintainer(first: limit)`              | スポンサー一覧（tier・開始日）                                        | sponsors                               |
-| `viewer.sponsorshipsAsSponsor(first: limit)`               | スポンサーしている維持者一覧（tier・総額）                            | sponsorships                           |
-| `repository.stargazers(orderBy: STARRED_AT)`               | リポジトリのスターガザー時系列                                        | stargazers                             |
-| `user.lists` / `list.items.repository`                     | Star Lists 一覧＋各リスト内リポジトリ — REST に対応エンドポイントなし | starlists                              |
-| `user.starredRepositories(orderBy: STARRED_AT_DESC)`       | スターしたリポジトリ一覧（言語・ライセンス・統計付き）                | stars                                  |
+| Field / Query                                              | Data Retrieved                                                             | Plugins Using It                        |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------- |
+| `User(login)`                                              | Basic user information (name, bio, avatar, follower count, etc.)           | base                                    |
+| `Organization(login)`                                      | Basic organization information                                             | base                                    |
+| `Repository(owner, repo)`                                  | Details of a single repository                                             | base                                    |
+| `UserRepositories(login, first, after)`                    | List of the user's repositories (with pagination)                          | base                                    |
+| `user.contributionsCollection.contributionCalendar`        | Contribution calendar (counts by week and day) — not exposed via REST      | base → reused by calendar / isocalendar |
+| `user.contributionsCollection.*`                           | Yearly statistics for commits / issues / PRs / reviews                     | base                                    |
+| `user.repositoriesContributedTo(orderBy: STARGAZERS_DESC)` | List of other people's repositories the user has contributed to            | notable                                 |
+| `user.followers(first: limit)`                             | List of followers                                                          | people                                  |
+| `user.following(first: limit)`                             | List of accounts the user is following                                     | people                                  |
+| `user.issues.reactions.content`                            | Aggregated reactions on issues                                             | reactions                               |
+| `user.issueComments.reactions.content`                     | Aggregated reactions on issue comments                                     | reactions                               |
+| `user.sponsorshipsAsMaintainer(first: limit)`              | List of sponsors (tier, start date)                                        | sponsors                                |
+| `viewer.sponsorshipsAsSponsor(first: limit)`               | List of maintainers the user sponsors (tier, total amount)                 | sponsorships                            |
+| `repository.stargazers(orderBy: STARRED_AT)`               | Time series of a repository's stargazers                                   | stargazers                              |
+| `user.lists` / `list.items.repository`                     | List of Star Lists plus the repositories in each list — no REST equivalent | starlists                               |
+| `user.starredRepositories(orderBy: STARRED_AT_DESC)`       | List of starred repositories (with language, license, stats)               | stars                                   |
 
-### 2.3 HTML スクレイピング
+### 2.3 HTML Scraping
 
-GitHub API が対応していないため HTML を直接パース。
+HTML is parsed directly because the GitHub API does not support this data.
 
-| URL                                      | 取得情報                                          | 使用プラグイン |
-| ---------------------------------------- | ------------------------------------------------- | -------------- |
-| `https://github.com/stars/{user}/topics` | スターした topics（topic 名・説明・アイコン URL） | topics         |
+| URL                                      | Data Retrieved                                     | Plugin Using It |
+| ---------------------------------------- | -------------------------------------------------- | --------------- |
+| `https://github.com/stars/{user}/topics` | Starred topics (topic name, description, icon URL) | topics          |
 
-実装: `goquery` で `a[href^="/topics/"]` セレクターにマッチするアンカーを収集。
+Implementation: uses `goquery` to collect anchors matching the `a[href^="/topics/"]` selector.
 
-### 2.4 ローカル計算（API呼び出しなし）
+### 2.4 Local Computation (No API Calls)
 
-base プラグインが取得済みのデータを加工するだけで追加 API 呼び出しなし。
+Simply processes data already fetched by the base plugin, with no additional API calls.
 
-| データソース                         | 生成情報                                 | 使用プラグイン            |
-| ------------------------------------ | ---------------------------------------- | ------------------------- |
-| base の `ContributionCalendar.Weeks` | 月別コントリビューションヒストグラム     | calendar                  |
-| base の `ContributionCalendar.Weeks` | ISO 週カレンダー・streak・統計           | isocalendar               |
-| base の `RepositoryList.Languages`   | 言語別バイト分布（standard mode）        | languages                 |
-| base の各種統計値                    | 段階別アチーブメントバッジ               | achievements              |
-| PushEvent 変更ファイル + go-enry     | 言語判定（ファイル拡張子・内容から推定） | habits, languages(recent) |
-
----
-
-## 3. REST / GraphQL 両方で取得可能なデータ
-
-以下のデータは REST・GraphQL どちらでも取得できるが、現在の実装は一方を選択している。
-
-| データ                                         | 現在の実装 | REST の代替                              | GraphQL の代替                               |
-| ---------------------------------------------- | ---------- | ---------------------------------------- | -------------------------------------------- |
-| リポジトリ一覧                                 | GraphQL    | `GET /users/{login}/repos`               | `user.repositories`                          |
-| フォロワー / フォロー中                        | GraphQL    | `GET /users/{login}/followers` 等        | `user.followers` / `user.following`          |
-| スターしたリポジトリ                           | GraphQL    | `GET /users/{login}/starred`             | `user.starredRepositories`                   |
-| リポジトリのスターガザー一覧                   | GraphQL    | `GET /repos/{owner}/{repo}/stargazers`   | `repository.stargazers`                      |
-| リポジトリのコントリビューター一覧（名前のみ） | REST       | `GET /repos/{owner}/{repo}/contributors` | `repository.defaultBranchRef.target.history` |
-| リポジトリのウォッチャー一覧                   | REST       | `GET /repos/{owner}/{repo}/subscribers`  | `repository.watchers`                        |
+| Data Source                         | Generated Information                                     | Plugins Using It          |
+| ----------------------------------- | --------------------------------------------------------- | ------------------------- |
+| base's `ContributionCalendar.Weeks` | Monthly contribution histogram                            | calendar                  |
+| base's `ContributionCalendar.Weeks` | ISO week calendar, streaks, statistics                    | isocalendar               |
+| base's `RepositoryList.Languages`   | Byte distribution by language (standard mode)             | languages                 |
+| base's various statistics values    | Tiered achievement badges                                 | achievements              |
+| PushEvent changed files + go-enry   | Language detection (inferred from file extension/content) | habits, languages(recent) |
 
 ---
 
-## 4. 認証トークン
+## 3. Data Available via Both REST and GraphQL
 
-### Classic PAT（現在使用）
+The following data can be retrieved via either REST or GraphQL, but the current implementation picks one.
 
-- スコープ検出: `HEAD /` の `X-OAuth-Scopes` レスポンスヘッダー（`scopes.go`）
-- 全プラグインが正常動作する
-- 最低限必要なスコープ:
-  - 基本（公開情報のみ）: `public_repo`
-  - traffic プラグイン: `repo`
-
-### Fine-grained PAT（将来対応が必要）
-
-- `X-OAuth-Scopes` ヘッダーを返さないため、現在のスコープ検出が機能しない
-- `traffic` プラグインが常にスキップされる
-- 必要な権限: traffic → `Metadata: read`
-- Classic PAT の廃止アナウンスが出た時点で対応予定
+| Data                                            | Current Implementation | REST Alternative                         | GraphQL Alternative                          |
+| ----------------------------------------------- | ---------------------- | ---------------------------------------- | -------------------------------------------- |
+| Repository list                                 | GraphQL                | `GET /users/{login}/repos`               | `user.repositories`                          |
+| Followers / following                           | GraphQL                | `GET /users/{login}/followers` etc.      | `user.followers` / `user.following`          |
+| Starred repositories                            | GraphQL                | `GET /users/{login}/starred`             | `user.starredRepositories`                   |
+| List of a repository's stargazers               | GraphQL                | `GET /repos/{owner}/{repo}/stargazers`   | `repository.stargazers`                      |
+| List of a repository's contributors (name only) | REST                   | `GET /repos/{owner}/{repo}/contributors` | `repository.defaultBranchRef.target.history` |
+| List of a repository's watchers                 | REST                   | `GET /repos/{owner}/{repo}/subscribers`  | `repository.watchers`                        |
 
 ---
 
-## 5. 既知の制限・注意点
+## 4. Authentication Tokens
 
-### REST: コントリビューター統計が大規模リポジトリで 0 を返す
+### Classic PAT (currently used)
 
-- `GET /repos/{owner}/{repo}/stats/contributors` は **10,000 コミット超**のリポジトリで `additions` / `deletions` が全件 0 を返す
-- GitHub API の仕様上の制限（回避不可）
-- contributors プラグインで全件 0 の場合は警告ログを出力することを推奨
+- Scope detection: the `X-OAuth-Scopes` response header of `HEAD /` (`scopes.go`)
+- All plugins function normally
+- Minimum required scopes:
+  - Basic (public information only): `public_repo`
+  - traffic plugin: `repo`
 
-### REST: イベント API はリアルタイムではない
+### Fine-grained PAT (support needed in the future)
 
-- `GET /users/{login}/events` は最大 **6 時間の遅延**が発生する場合がある
-- 「This API is not built to serve real-time use cases」と GitHub ドキュメントに明記
-- activity / habits / languages(recent) プラグインで影響を受ける可能性がある
+- Does not return the `X-OAuth-Scopes` header, so current scope detection does not work
+- The `traffic` plugin is always skipped
+- Required permission: traffic → `Metadata: read`
+- Support is planned once the deprecation of Classic PAT is announced
 
-### HTML スクレイピング: topics のクラス名が変化している
+---
 
-- 現在の GitHub HTML では `.topic-name` / `h3` / `p.f3` / `p.f4` クラスが存在しない
-- topic 名はアンカー直下のテキストノードとして存在する
-- 現在のコードはスラッグへのフォールバックで動作するが、表示名の取得には `a.Text()` を中間フォールバックに追加するべき（`http_navigator.go:109` 付近）
+## 5. Known Limitations and Caveats
+
+### REST: contributor statistics return 0 for large repositories
+
+- `GET /repos/{owner}/{repo}/stats/contributors` returns `additions` / `deletions` as 0 for all entries on repositories with **more than 10,000 commits**
+- This is a limitation of the GitHub API's specification (cannot be worked around)
+- The contributors plugin should log a warning when all entries return 0
+
+### REST: the events API is not real-time
+
+- `GET /users/{login}/events` can have a delay of up to **6 hours**
+- The GitHub documentation explicitly states "This API is not built to serve real-time use cases"
+- The activity / habits / languages(recent) plugins may be affected
+
+### HTML scraping: the topics class names have changed
+
+- The current GitHub HTML no longer has the `.topic-name` / `h3` / `p.f3` / `p.f4` classes
+- The topic name now exists as a text node directly under the anchor
+- The current code works via a fallback to the slug, but retrieving the display name should add `a.Text()` as an intermediate fallback (around `http_navigator.go:109`)
 
 ```go
-// 推奨修正
+// Suggested fix
 name := firstNonEmptyText(a, "h3", ".topic-name", "p.f3", "p.f4", "p.lh-condensed", "p")
 if name == "" {
-    name = strings.TrimSpace(a.Text()) // アンカー直下テキストから取得
+    name = strings.TrimSpace(a.Text()) // fetch from the text directly under the anchor
 }
 if name == "" {
     name = slug
 }
 ```
 
-### Fine-grained PAT: スコープ検出が機能しない
+### Fine-grained PAT: scope detection does not work
 
-- `scopes.go` の `X-OAuth-Scopes` ヘッダー読み取りは Classic PAT 専用
-- Fine-grained PAT では `X-Accepted-GitHub-Permissions` ヘッダーを使う必要がある
-- 対策: スコープ事前チェックの代わりに楽観的呼び出し＋ 403 を graceful skip に変更する
+- The `X-OAuth-Scopes` header read in `scopes.go` is Classic PAT-only
+- Fine-grained PAT requires using the `X-Accepted-GitHub-Permissions` header instead
+- Workaround: replace the upfront scope check with an optimistic call plus graceful skip on 403
 
 ```go
-// 推奨修正（traffic プラグイン例）
+// Suggested fix (traffic plugin example)
 result, err := rest.TrafficViews(ctx, owner, repo)
 if err != nil {
     var apiErr *githubapi.HTTPError
