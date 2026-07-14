@@ -34,8 +34,8 @@ on:
 
 jobs:
   smoke-x86:
-    name: x86_64 smoke (home-k3s-runner)
-    runs-on: home-k3s-runner
+    name: x86_64 smoke (ubuntu-latest)
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
