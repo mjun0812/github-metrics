@@ -10,7 +10,7 @@ require (
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/tdewolff/minify/v2 v2.24.13
-	github.com/tdewolff/parse/v2 v2.8.12
+	github.com/tdewolff/parse/v2 v2.8.13
 	golang.org/x/image v0.43.0
 	golang.org/x/sync v0.21.0
 	gopkg.in/yaml.v3 v3.0.1
