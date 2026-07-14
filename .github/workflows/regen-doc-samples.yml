@@ -479,7 +479,7 @@ jobs:
       # `gh: command not found`).
       - name: Create pull request
         if: steps.diff.outputs.changed == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           PR_TAG: ${{ inputs.tag }}
           PR_BRANCH: ${{ inputs.branch }}
