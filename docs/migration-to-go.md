@@ -180,6 +180,29 @@ not included. No warning or error occurs.
 
 ## 5. Migration steps
 
+### (Optional) Automated first pass with `migrate-from-lowlighter.sh`
+
+The repo ships a helper script that mechanically rewrites `uses:` lines
+for you and, on request, strips `plugin_*` gates for plugins listed in
+§3.3 -- §3.5 above. It is a convenience wrapper for the mechanical parts
+of steps 1 and 2 below; there is no requirement to use it.
+
+```bash
+# Preview the changes without touching any file.
+bash scripts/migrate-from-lowlighter.sh --dry-run
+
+# Rewrite in place. Each modified file gets a <file>.bak backup.
+bash scripts/migrate-from-lowlighter.sh
+
+# Also strip `plugin_*` gates for unported plugins (see §3.3 -- §3.5).
+bash scripts/migrate-from-lowlighter.sh --strip-unported
+```
+
+By default the script scans `.github/workflows`; pass an explicit file
+or directory to override. See `bash scripts/migrate-from-lowlighter.sh --help`
+for the full option list. The script only rewrites `uses:` lines; the
+`with:` compatibility rules in §4 still apply.
+
 ### Step 1: Replace the `uses:` line
 
 ```diff

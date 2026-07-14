@@ -177,6 +177,30 @@
 
 ## 5. 移行手順
 
+### (任意) `migrate-from-lowlighter.sh` による自動化
+
+本リポジトリには、`uses:` 行の書き換えと (オプションで) §3.3 --
+§3.5 に挙げた未対応 plugin の `plugin_*` gate の除去を機械的に
+行うヘルパースクリプトが同梱されている。以下の Step 1 / Step 2
+のうち機械的な部分を代行する便利ラッパーであり、使用は必須ではない。
+
+```bash
+# 変更内容を差分プレビューする (ファイルは書き換えない)。
+bash scripts/migrate-from-lowlighter.sh --dry-run
+
+# 実際に書き換える。変更されたファイルごとに <file>.bak が作られる。
+bash scripts/migrate-from-lowlighter.sh
+
+# 未対応 plugin (§3.3 -- §3.5) の `plugin_*` gate も削除する。
+bash scripts/migrate-from-lowlighter.sh --strip-unported
+```
+
+デフォルトでは `.github/workflows` を走査する。明示的にファイル
+またはディレクトリを渡して対象を上書きできる。全オプションは
+`bash scripts/migrate-from-lowlighter.sh --help` を参照。書き換え
+対象は `uses:` 行のみで、`with:` の互換性ルール (§4) はそのまま
+適用される。
+
 ### Step 1: `uses:` 行を差し替え
 
 ```diff
