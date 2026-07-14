@@ -1,57 +1,57 @@
 # lowlighter/metrics から github-metrics (Go 移植) への移行ガイド
 
-**対象バージョン**: `mjun0812/github-metrics` v1.0.0
+**対象バージョン**: `mjun0812/github-metrics` latest
 **最終更新**: 2026-05-24
 
 ## 1. 概要
 
 本プロジェクトは [`lowlighter/metrics`](https://github.com/lowlighter/metrics)
-を Go に移植したものである。upstream の全機能を網羅するのではなく、
+を Go に移植したものである。`lowlighter/metrics` の全機能を網羅するのではなく、
 よく使われる **21 plugin + 2 template + 4 出力形式** に絞った subset
 を提供している。
 
-**このガイドの対象読者**: 現在 upstream `lowlighter/metrics` を
+**このガイドの対象読者**: 現在 `lowlighter/metrics` を
 使用しており、Go 移植版への移行を検討している方。
 
 **移行コストの大前提**:
 
 - **入力互換性**: サポート対象の `with:` input 名 / 既定値 / 型は
-  upstream と完全互換 (`uses:` 行だけを差し替えれば動作する)。
-- **出力互換性**: JSON は upstream とバイト互換、SVG は **DOM 構造単位** で
-  upstream と同等である (バージョン文字列 / 生成時刻の差分は許容)。
+  `lowlighter/metrics` と完全互換 (`uses:` 行だけを差し替えれば動作する)。
+- **出力互換性**: JSON は `lowlighter/metrics` とバイト互換、SVG は **DOM 構造単位** で
+  `lowlighter/metrics` と同等である (バージョン文字列 / 生成時刻の差分は許容)。
 
 ## 2. サポート対象機能
 
 ### 2.1 Plugin (21)
 
 すべての plugin は GitHub の API トークンと通常の HTTP 取得だけで
-動作する。`topics` / `starlists` は upstream では Headless Chromium で
+動作する。`topics` / `starlists` は `lowlighter/metrics` では Headless Chromium で
 ページをスクレイプするが、本移植では goquery による HTML パースに
 置き換えているためブラウザは不要である。
 
-| 名前         | upstream slug | 注記                                  |
-| ------------ | ------------- | ------------------------------------- |
-| base         | base          | プロファイル基本情報 (内部使用)       |
-| core         | core          | 設定注入 + 並列実行 (内部使用)        |
-| languages    | languages     | `recent` / `indepth` サブモード対応   |
-| activity     | activity      |                                       |
-| achievements | achievements  |                                       |
-| repositories | repositories  | Featured / Pinned / Starred / Random  |
-| isocalendar  | isocalendar   | 3D 等尺カレンダー                     |
-| calendar     | calendar      | 多年カレンダー                        |
-| habits       | habits        | 曜日 / 時間帯傾向                     |
-| stars        | stars         | 最近スターしたリポジトリ              |
-| people       | people        | フォロワー / フォロイング             |
-| notable      | notable       |                                       |
-| contributors | contributors  | repository テンプレート向け           |
-| reactions    | reactions     | リアクション集計                      |
-| projects     | projects      | GitHub Projects (`read:project` 必要) |
-| sponsors     | sponsors      | (`read:user` / `read:org` 必要)       |
-| sponsorships | sponsorships  | (`read:user` / `read:org` 必要)       |
-| stargazers   | stargazers    | 累積 star チャート                    |
-| traffic      | traffic       | 閲覧数 (`repo` 必要)                  |
-| topics       | topics        | HTML スクレイプ (goquery)             |
-| starlists    | starlists     | HTML スクレイプ (goquery)             |
+| 名前         | `lowlighter/metrics` slug | 注記                                  |
+| ------------ | ------------------------- | ------------------------------------- |
+| base         | base                      | プロファイル基本情報 (内部使用)       |
+| core         | core                      | 設定注入 + 並列実行 (内部使用)        |
+| languages    | languages                 | `recent` / `indepth` サブモード対応   |
+| activity     | activity                  |                                       |
+| achievements | achievements              |                                       |
+| repositories | repositories              | Featured / Pinned / Starred / Random  |
+| isocalendar  | isocalendar               | 3D 等尺カレンダー                     |
+| calendar     | calendar                  | 多年カレンダー                        |
+| habits       | habits                    | 曜日 / 時間帯傾向                     |
+| stars        | stars                     | 最近スターしたリポジトリ              |
+| people       | people                    | フォロワー / フォロイング             |
+| notable      | notable                   |                                       |
+| contributors | contributors              | repository テンプレート向け           |
+| reactions    | reactions                 | リアクション集計                      |
+| projects     | projects                  | GitHub Projects (`read:project` 必要) |
+| sponsors     | sponsors                  | (`read:user` / `read:org` 必要)       |
+| sponsorships | sponsorships              | (`read:user` / `read:org` 必要)       |
+| stargazers   | stargazers                | 累積 star チャート                    |
+| traffic      | traffic                   | 閲覧数 (`repo` 必要)                  |
+| topics       | topics                    | HTML スクレイプ (goquery)             |
+| starlists    | starlists                 | HTML スクレイプ (goquery)             |
 
 ### 2.2 Template (2)
 
@@ -65,12 +65,12 @@
 | 形式 | CLI flag        | 備考                                  |
 | ---- | --------------- | ------------------------------------- |
 | SVG  | `--output svg`  | デフォルト                            |
-| JSON | `--output json` | upstream とバイト互換                 |
+| JSON | `--output json` | `lowlighter/metrics` とバイト互換     |
 | PNG  | `--output png`  | resvg でネイティブ SVG をラスタライズ |
 | JPEG | `--output jpeg` | resvg PNG を Go で JPEG 再エンコード  |
 
 > **レンダリングにブラウザは不要である。**
-> upstream は最終 SVG の高さ計測と PNG/JPEG 出力に Headless Chromium
+> `lowlighter/metrics` は最終 SVG の高さ計測と PNG/JPEG 出力に Headless Chromium
 > (puppeteer) を使うが、本移植では高さを Go 側のフォントメトリクスで
 > 計算し、PNG/JPEG は [resvg](https://github.com/linebender/resvg) で
 > ラスタライズする。この結果 chromium を Docker image から外し、
@@ -80,7 +80,7 @@
 
 ## 3. 未対応機能一覧
 
-下記は本 Go 移植では **実装されていない**。upstream で動作している
+下記は本 Go 移植では **実装されていない**。`lowlighter/metrics` で動作している
 機能がここに含まれる場合、移行は推奨しない。
 
 ### 3.1 Runtime / Mode
@@ -100,14 +100,14 @@
 
 ### 3.3 GitHub data 系 plugin (6)
 
-| slug        | 不採用理由                      |
-| ----------- | ------------------------------- |
-| lines       | REST stats を多用するため負荷大 |
-| gists       | 優先度低                        |
-| followup    | 優先度低                        |
-| discussions | 優先度低                        |
-| skyline     | 3D city / skyline: 重く優先度低 |
-| support     | upstream 終了済 (deprecated)    |
+| slug        | 不採用理由                               |
+| ----------- | ---------------------------------------- |
+| lines       | REST stats を多用するため負荷大          |
+| gists       | 優先度低                                 |
+| followup    | 優先度低                                 |
+| discussions | 優先度低                                 |
+| skyline     | 3D city / skyline: 重く優先度低          |
+| support     | `lowlighter/metrics` 終了済 (deprecated) |
 
 ### 3.4 community 拡張 plugin (3)
 
@@ -143,19 +143,19 @@
 
 ### 3.6 出力形式
 
-| 名前     | 不採用理由                                                                     |
-| -------- | ------------------------------------------------------------------------------ |
-| pdf      | upstream は Puppeteer でブラウザ描画するため、ブラウザ非依存の本移植では対象外 |
-| markdown | community template と一体のため                                                |
+| 名前     | 不採用理由                                                                                 |
+| -------- | ------------------------------------------------------------------------------------------ |
+| pdf      | `lowlighter/metrics` は Puppeteer でブラウザ描画するため、ブラウザ非依存の本移植では対象外 |
+| markdown | community template と一体のため                                                            |
 
 ## 4. 入力互換性
 
 - **サポート対象 input** (上表 §2 の plugin / template / output 関連入力)
-  は upstream と **完全互換** である。key 名 / 既定値 / 型は同一。
+  は `lowlighter/metrics` と **完全互換** である。key 名 / 既定値 / 型は同一。
 - **未対応 input** (§3 に該当する plugin の `plugin_<slug>` ゲートおよび
   付帯入力) は **silently no-op** である。ワークフローファイルは変更不要
   のままで動作し、未対応 plugin の出力だけが生成されない。
-- 不正な input 名や型でも **ハードエラーにしない**。upstream と同じく
+- 不正な input 名や型でも **ハードエラーにしない**。`lowlighter/metrics` と同じく
   未知 key は素通しする。
 
 ### 4.1 動作例
@@ -163,7 +163,7 @@
 下記の workflow は **そのまま** Go 移植版で動作する:
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: octocat
     plugin_languages: yes # 採用 → 出力に反映
@@ -205,12 +205,13 @@ bash scripts/migrate-from-lowlighter.sh --strip-unported
 
 ```diff
 - uses: lowlighter/metrics@v3.34
-+ uses: mjun0812/github-metrics@v1
++ uses: mjun0812/github-metrics@latest
 ```
 
-`@v1` は最新の v1.x.y リリースに自動追従する floating tag である
-(patch / minor 更新が出ても workflow の変更不要)。バイト単位で
-ピン留めしたい場合は `@v1.0.0` 等の exact `vX.Y.Z` 形式を使える。
+`@latest` は常に最新のリリースに解決される (新しいリリースが出ても
+workflow の変更不要)。バイト単位でピン留めしたい場合は `@v4.1.3`
+等の exact `vX.Y.Z` 形式、または `@v4` のような major floating tag
+(最新の `v4.x.y` に追従) を使える。
 
 ### Step 2: (任意) 未対応 input を削除
 
@@ -222,11 +223,11 @@ bash scripts/migrate-from-lowlighter.sh --strip-unported
 
 `workflow_dispatch` でワークフローをトリガーするか、次回の
 scheduled run を待つ。`output_action: commit` 等の出力ア
-クションも upstream と同じ semantics で動作する。
+クションも `lowlighter/metrics` と同じ semantics で動作する。
 
 ### Step 4: 出力検証
 
-- **JSON 出力**: upstream とバイト互換のため、
+- **JSON 出力**: `lowlighter/metrics` とバイト互換のため、
   `diff old.json new.json` が空であることを確認できる。
 - **SVG 出力**: DOM 構造単位での同等性。バージョン文字列
   (`github-metrics@vX.Y.Z`) や生成時刻 (`Last updated ...`)
@@ -239,8 +240,8 @@ scheduled run を待つ。`output_action: commit` 等の出力ア
 は drop-in 互換のため、設定ファイル側の調整は不要である):
 
 ```diff
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
 + uses: lowlighter/metrics@v3.34
 ```
 
-commit / push で完了。upstream の挙動が完全に復元される。
+commit / push で完了。`lowlighter/metrics` の挙動が完全に復元される。

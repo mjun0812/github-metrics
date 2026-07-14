@@ -31,7 +31,7 @@ This plugin displays the number of page views across affiliated repositories.
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -61,6 +61,6 @@ metrics-cli --user <your-login> \
 ## References
 
 - [`action.yml`](../../action.yml): canonical input schema
-- [`assets/plugins/traffic/metadata.yml`](../../assets/plugins/traffic/metadata.yml): upstream metadata
+- [`assets/plugins/traffic/metadata.yml`](../../assets/plugins/traffic/metadata.yml): `lowlighter/metrics` metadata
 - Supported account types: user, organization, repository
 - Required scopes: repo

@@ -30,7 +30,7 @@
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -56,17 +56,17 @@ metrics-cli --user <your-login> \
 
 - 表示上は "Commits per day" だが、データソースは GitHub GraphQL の
   `contributionsCollection.contributionCalendar` の日別 `contributionCount` であり、
-  commit 専用カウントではない (issue / PR / review 等も含む)。upstream
+  commit 専用カウントではない (issue / PR / review 等も含む)。
   `lowlighter/metrics` と同じ挙動である。
 - private contribution は、ユーザーの GitHub 設定
   "Include private contributions on my profile" が有効な場合に GitHub 側で
   `contributionCount` へ折り込まれる。プラグイン側で public/private の
   フィルタリングは行わない。
-- 集計期間は upstream parity である: `half-year` は now−180 日、`full-year` は
+- 集計期間は `lowlighter/metrics` parity である: `half-year` は now−180 日、`full-year` は
   now−1 年を、それぞれ直前の日曜 00:00 UTC へ丸めた日を起点とする。
-- カレンダーは upstream と同じく 4 週間単位のチャンクで取得する。GitHub は
+- カレンダーは `lowlighter/metrics` と同じく 4 週間単位のチャンクで取得する。GitHub は
   ヒートマップ色 (`ContributionDay.color`) を**クエリ期間内の最大値**で正規化する
-  ため、チャンク取得によって upstream と同じ色のグラデーションになる。1 年分を
+  ため、チャンク取得によって `lowlighter/metrics` と同じ色のグラデーションになる。1 年分を
   一括取得すると、大半の日が最薄色に潰れてしまう (#467)。
 - GraphQL クライアントが利用できない場合や取得に失敗した場合は、共有の
   indepth カレンダー (過去 1 年) から末尾 26 週 / 53 週をスライスする
@@ -75,6 +75,6 @@ metrics-cli --user <your-login> \
 ## References
 
 - [`action.yml`](../../action.yml): 正式な input schema
-- [`assets/plugins/isocalendar/metadata.yml`](../../assets/plugins/isocalendar/metadata.yml): upstream のメタデータ
+- [`assets/plugins/isocalendar/metadata.yml`](../../assets/plugins/isocalendar/metadata.yml): `lowlighter/metrics` のメタデータ
 - サポートされるアカウント種別: user
 - 必要なスコープ: public_access

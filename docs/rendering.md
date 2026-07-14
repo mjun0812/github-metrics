@@ -25,11 +25,11 @@ After plugin execution, `engine.Compute` outputs according to `format` via `disp
   3. **svg**: The height is already finalized at generation time, so it is returned as-is (no rasterizer is called). padding is applied optionally ([SS5](#5-padding)).
   4. **png / jpeg**: The finalized SVG is rasterized by `render.Renderer.Resize` (resvg by default) ([SS4](#4-resvg-rasterization)).
 
-Templates are implemented in Go code, not EJS. Some places retain the upstream `.ejs` filenames in comments, but these are just for tracking the porting source; no EJS engine exists at runtime.
+Templates are implemented in Go code, not EJS. Some places retain the `lowlighter/metrics` `.ejs` filenames in comments, but these are just for tracking the porting source; no EJS engine exists at runtime.
 
 ## 2. Partials and height finalization
 
-Upstream measured the rendered height using headless Chromium, measuring the HTML inside `foreignObject`. This port does not use a browser; instead, **each partial reports its own consumed height**:
+`lowlighter/metrics` measured the rendered height using headless Chromium, measuring the HTML inside `foreignObject`. This port does not use a browser; instead, **each partial reports its own consumed height**:
 
 ```go
 // internal/templates/template.go
@@ -75,11 +75,11 @@ Prebuilt resvg binaries are bundled in the Docker image. Local testing uses `mak
 
 ## 5. padding
 
-`config_padding` supports the upstream-compatible `"<absolute> + <relative>%"` format (`internal/render/padding.go`). It was originally meant to absorb browser measurement error, but now that measurement is gone, the default is effectively a no-op. Only when a non-trivial padding is specified does it arithmetically rewrite the root `<svg>`'s width / height / viewBox.
+`config_padding` supports the `lowlighter/metrics`-compatible `"<absolute> + <relative>%"` format (`internal/render/padding.go`). It was originally meant to absorb browser measurement error, but now that measurement is gone, the default is effectively a no-op. Only when a non-trivial padding is specified does it arithmetically rewrite the root `<svg>`'s width / height / viewBox.
 
 ## 6. JSON output
 
-Serializes and returns `data` (MIME `application/json`). The JSON keys of plugin results are fixed via each plugin's struct tags to match upstream (`data.plugins.<name>`).
+Serializes and returns `data` (MIME `application/json`). The JSON keys of plugin results are fixed via each plugin's struct tags to match `lowlighter/metrics` (`data.plugins.<name>`).
 
 ## 7. SVG hash (data-changed detection)
 

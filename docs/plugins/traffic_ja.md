@@ -31,7 +31,7 @@
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -61,6 +61,6 @@ metrics-cli --user <your-login> \
 ## References
 
 - [`action.yml`](../../action.yml): 入力スキーマの正本
-- [`assets/plugins/traffic/metadata.yml`](../../assets/plugins/traffic/metadata.yml): upstream のメタデータ
+- [`assets/plugins/traffic/metadata.yml`](../../assets/plugins/traffic/metadata.yml): `lowlighter/metrics` のメタデータ
 - 対応アカウント種別: user, organization, repository
 - 必要スコープ: repo

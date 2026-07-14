@@ -31,7 +31,7 @@ This plugin displays sponsorships funded through [GitHub sponsors](https://githu
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -52,6 +52,6 @@ metrics-cli --user <your-login> \
 ## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/sponsorships/metadata.yml`](../../assets/plugins/sponsorships/metadata.yml) — upstream metadata
+- [`assets/plugins/sponsorships/metadata.yml`](../../assets/plugins/sponsorships/metadata.yml) — `lowlighter/metrics` metadata
 - Supported account types: user, organization
 - Required scopes: read:user, read:org

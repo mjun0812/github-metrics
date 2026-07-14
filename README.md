@@ -5,176 +5,13 @@
 [![Go version](https://shieldcn.dev/badge/go-1.26-blue.svg)](https://github.com/mjun0812/github-metrics/blob/main/go.mod)
 [![License](https://shieldcn.dev/github/mjun0812/github-metrics/license.svg)](LICENSE)
 
-Generate SVG / PNG / JPEG / JSON metrics for your GitHub profile or a single
-repository — as a **GitHub Action**, a **standalone CLI**, or a **Docker
-container**. Single Go binary, no Node runtime required.
+This project is a Go reimplementation of [lowlighter/metrics](https://github.com/lowlighter/metrics).
+It is a single Go binary that generates GitHub profile or repository metrics as SVG / PNG / JPEG / JSON,
+without the Node runtime or headless Chrome that `lowlighter/metrics` requires.
+It runs as a **GitHub Action**, a **standalone CLI**, or a **Docker** container.
 
-This project is a Go reimplementation of a curated subset of
-[lowlighter/metrics](https://github.com/lowlighter/metrics). Adopted inputs
-are drop-in compatible: existing upstream workflows continue to run by
-swapping one `uses:` line. See
-[`docs/migration-to-go.md`](docs/migration-to-go.md) for the full migration
-guide and unported-feature list.
-
----
-
-## Highlights
-
-- **Drop-in Action upgrade** — `uses: mjun0812/github-metrics@v1` reads the
-  same `with:` inputs as `lowlighter/metrics@v3` for every adopted feature.
-  Unported feature gates (`plugin_anilist: yes` etc.) are silently no-op'd
-  so workflow files migrate without edits.
-- **21 plugins** across two templates — see [Plugins](#plugins) below.
-- **4 output formats** — SVG, PNG, JPEG, JSON (upstream byte-compatible).
-- **Multi-arch container** — `linux/amd64` + `linux/arm64` on
-  `ghcr.io/mjun0812/github-metrics`, signed with Sigstore cosign keyless
-  OIDC (transparency log).
-- **Cross-compiled binaries** — Linux / macOS × amd64 / arm64 attached to
-  every release with `SHA256SUMS` and per-artifact cosign sign-blob
-  bundles.
-- **Hardened runtime** — non-root user (uid 10001), the resvg rasterizer
-  + Noto fonts bundled, no Node toolchain, no headless browser.
-
-## Profile README
-
-The default output mode writes one SVG per enabled plugin into `output_dir` (default `./metrics-renders/`).
-Compose your profile README by embedding the per-plugin SVGs:
-
-```markdown
-<img src="metrics-renders/header.svg" width="100%">
-
-<img src="metrics-renders/languages.svg" align="left" width="48%">
-<img src="metrics-renders/stars.svg" align="right" width="48%">
-
-<br clear="both">
-
-<img src="metrics-renders/activity.svg" width="100%">
-```
-
-See [docs/examples/profile-readme.md](docs/examples/profile-readme.md) for a complete workflow example.
-
-For a single combined SVG (legacy behavior), pass `combined: 'yes'` in your workflow.
-
-## Quick start
-
-### GitHub Action
-
-```yaml
-# .github/workflows/metrics.yml
-name: Metrics
-on:
-  schedule: [{ cron: "0 0 * * *" }]
-  workflow_dispatch:
-
-jobs:
-  github-metrics:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: mjun0812/github-metrics@v1
-        with:
-          user: octocat
-          token: ${{ secrets.METRICS_TOKEN }}
-          template: classic
-          combined: "yes"
-          plugin_languages: "yes"
-          plugin_languages_limit: "5"
-          committer_branch: main
-          output_action: commit
-          output_condition: data-changed
-```
-
-> `combined: 'yes'` opts into the single-SVG committer path. The new
-> default (`combined: 'no'`) emits one SVG per plugin into
-> `output_dir` instead and is incompatible with `output_action: commit`
-> — pick whichever workflow matches your README embed shape.
-
-`@v1` is the recommended pin — it resolves to the latest `v1.x.y`
-release so consumers automatically receive bug-fix and feature
-patches without edits. For immutable bytes pin to `@v1.0.0` (or any
-exact `vX.Y.Z` form). `@latest` is also published for convenience but
-is not recommended for production workflows.
-
-### Repository template
-
-`template: repository` re-centers the rendered SVG on a single repository
-instead of a user profile:
-
-```yaml
-- uses: mjun0812/github-metrics@v1
-  with:
-    user: ${{ github.repository_owner }}
-    repo: ${{ github.event.repository.name }}
-    template: repository
-    token: ${{ secrets.METRICS_TOKEN }}
-    combined: "yes" # repository template renders a single combined SVG
-```
-
-The JSON output adds a `data.repo` field next to the existing `data.user`;
-the SVG features the repo's avatar, description, community health and
-recent activity.
-
-### CLI
-
-```sh
-# Install from a GitHub Release (linux/darwin × amd64/arm64).
-# Replace `linux_amd64` with your platform tag.
-curl -L -o metrics-cli \
-  https://github.com/mjun0812/github-metrics/releases/download/v1.0.0/metrics-cli_v1.0.0_linux_amd64
-chmod +x metrics-cli
-
-# …or via go install (requires Go 1.26+):
-go install github.com/mjun0812/github-metrics/cmd/metrics-cli@v1.0.0
-
-# Render an SVG to stdout. GITHUB_TOKEN must be set in your shell.
-GITHUB_TOKEN=$(gh auth token) metrics-cli --user octocat \
-  --output svg --dryrun --filename -
-```
-
-### Docker
-
-```sh
-docker run --rm \
-  -v "$PWD/out:/renders" \
-  -w /renders \
-  -e GITHUB_TOKEN \
-  ghcr.io/mjun0812/github-metrics:v1.0.0 \
-  --user octocat --template classic \
-  --output svg --filename github-metrics.svg
-```
-
-`-e GITHUB_TOKEN` forwards the env var into the container; the unified
-pipeline reads it through its token fallback chain (`INPUT_TOKEN` →
-`GITHUB_TOKEN`). Set `GITHUB_TOKEN` in the host shell first, e.g.
-`export GITHUB_TOKEN=$(gh auth token)`.
-
-The image is multi-arch — `docker pull` automatically resolves to your
-host architecture.
-
-## Authentication
-
-Every invocation needs a GitHub token. The binary has a single
-unified input pipeline (v3.0, [#646](https://github.com/mjun0812/github-metrics/issues/646)) — it always reads INPUT\_<UPPER> / INPUTS env vars first and then layers CLI flags on top (flags win on conflict):
-
-- **GitHub Action**: pass via `with.token` — typically
-  `${{ secrets.METRICS_TOKEN }}` (a Personal Access Token) for full
-  metrics, or `${{ github.token }}` for public-only data. The runner
-  exposes `with:` keys as `INPUT_<UPPER>` env vars which the unified
-  pipeline reads automatically.
-- **CLI / Docker**: export `GITHUB_TOKEN` in the environment
-  (e.g. `GITHUB_TOKEN=$(gh auth token)`); the binary reads it
-  automatically. The `--token` / `--token-env` flags were removed in
-  v3.0.
-- **Hybrid**: a workflow can layer CLI overrides on top of `with:`
-  inputs — `INPUT_TOKEN=$SECRET metrics-cli --debug --user octocat`
-  resolves token from the env layer and the rest from flags. Pass
-  `--no-env` to suppress the INPUT\_/INPUTS env layer entirely for
-  local debug runs where stray `INPUT_FOO=bar` from the shell would
-  interfere.
-
-The token needs at minimum `public_repo` (classic PAT) or the read scopes
-for each enabled plugin's data (issues, pulls, projects, etc.) for
-fine-grained tokens. The shared dataprovider always fetches the target
-user's profile, so a missing token fails immediately.
+Existing `lowlighter/metrics` workflows continue to work by swapping only the `uses:` line.
+See [`docs/migration-to-go.md`](docs/migration-to-go.md) for the migration guide and the list of unported features.
 
 ## Plugins
 
@@ -199,100 +36,166 @@ user's profile, so a missing token fails immediately.
 
 <!-- AUTOGEN_END: plugins-gallery -->
 
-The 20 user-facing plugins above are always available; enable each via
-`plugin_<slug>: yes` and click a tile for the full per-plugin doc
-page. One additional internal plugin (`core`) powers the metadata
-pipeline and runs automatically.
+Refer to [`action.yml`](action.yml) for the full list of inputs. They are identical to the corresponding `lowlighter/metrics` inputs.
+There are currently two templates, `classic` and `repository`: `classic` renders a user profile, and `repository` renders repository information.
 
-The `languages` plugin ships `recent` and `indepth` sub-modes via
-`plugin_languages_sections`. `topics` and `starlists` require the
-Action / Docker runtime — the standalone Go binary skips them with a
-warning.
+## Usage
 
-Every input is documented in [`action.yml`](action.yml) and is identical
-to the corresponding upstream input. Inputs gating unported plugins
-(e.g., `plugin_anilist`, `plugin_leetcode`) are accepted and silently
-ignored — no migration of existing workflows is required.
+### Authentication
 
-## Output formats
+Every invocation requires a GitHub token.
 
-| Format         | MIME               | Rendering pipeline                |
-| -------------- | ------------------ | --------------------------------- |
-| `svg`          | `image/svg+xml`    | Go templates (height computed in Go) |
+- **GitHub Action**: pass it via `with.token`. Use `${{ secrets.METRICS_TOKEN }}` (a Personal Access Token) for full metrics, or `${{ github.token }}` when public data is enough. The runner exposes `with:` keys as `INPUT_<UPPER>` environment variables, which the unified pipeline reads automatically.
+- **CLI / Docker**: export `GITHUB_TOKEN` in the environment (e.g. `GITHUB_TOKEN=$(gh auth token)`). The binary reads it automatically.
+
+The token needs at minimum `public_repo` (classic PAT). For fine-grained tokens it needs the read scopes for the data each enabled plugin accesses (issues, pulls, projects, and so on).
+
+### GitHub Action
+
+```yaml
+# .github/workflows/metrics.yml
+name: Metrics
+on:
+  schedule: [{ cron: "0 0 * * *" }]
+  workflow_dispatch:
+
+jobs:
+  github-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: mjun0812/github-metrics@latest
+        with:
+          user: octocat
+          token: ${{ secrets.METRICS_TOKEN }}
+          template: classic
+          combined: "yes"
+          plugin_languages: "yes"
+          plugin_languages_limit: "5"
+          committer_branch: main
+          output_action: commit
+          output_condition: data-changed
+
+      # Repository
+      - uses: mjun0812/github-metrics@latest
+        with:
+          user: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+          template: repository
+          token: ${{ secrets.METRICS_TOKEN }}
+          combined: "yes" # the repository template renders a single combined SVG
+```
+
+Pass `combined: 'yes'` in the workflow to get a single combined SVG.
+See [docs/examples/profile-readme.md](docs/examples/profile-readme.md) for a complete workflow example.
+
+### CLI
+
+```sh
+# Install from a GitHub Release (linux/darwin × amd64/arm64).
+# Fetch the latest version from the GitHub API and assign it to the VERSION environment variable.
+VERSION=$(curl -s https://api.github.com/repos/mjun0812/github-metrics/releases/latest | grep -oE '"tag_name": "[^"]+"' | cut -d'"' -f4)
+
+# Linux (amd64)
+curl -L -o metrics-cli \
+  "https://github.com/mjun0812/github-metrics/releases/download/${VERSION}/metrics-cli_${VERSION}_linux_amd64"
+chmod +x metrics-cli
+
+# macOS (Apple Silicon / arm64)
+curl -L -o metrics-cli \
+  "https://github.com/mjun0812/github-metrics/releases/download/${VERSION}/metrics-cli_${VERSION}_darwin_arm64"
+chmod +x metrics-cli
+
+# Or via go install (requires Go 1.26+):
+go install github.com/mjun0812/github-metrics/cmd/metrics-cli@latest
+
+# Render an SVG to stdout. Set GITHUB_TOKEN in your shell beforehand.
+GITHUB_TOKEN=$(gh auth token) metrics-cli --user octocat \
+  --output svg --dryrun --filename -
+```
+
+### Docker
+
+```sh
+docker run --rm \
+  -v "$PWD/out:/renders" \
+  -w /renders \
+  -e GITHUB_TOKEN \
+  ghcr.io/mjun0812/github-metrics:latest \
+  --user octocat --template classic \
+  --output svg --filename github-metrics.svg
+```
+
+### Output formats
+
+| Format         | MIME               | Rendering pipeline                             |
+| -------------- | ------------------ | ---------------------------------------------- |
+| `svg`          | `image/svg+xml`    | Go templates (height computed in Go)           |
 | `png` / `jpeg` | `image/png/jpeg`   | SVG → resvg rasterizer (jpeg re-encoded in Go) |
-| `json`         | `application/json` | Upstream byte-compatible envelope |
+| `json`         | `application/json` | Byte-compatible with `lowlighter/metrics`      |
 
-JSON output is **byte-compatible** with upstream `lowlighter/metrics` for
-the adopted plugins; downstream tools that consume the JSON envelope work
-unchanged. SVG output is **DOM-structurally equivalent** — element /
-attribute / class structure matches upstream, but dynamic strings
-(version footer, generated timestamp) differ.
+The JSON output is **byte-compatible** with `lowlighter/metrics` for the adopted plugins.
+The SVG output is **DOM-structurally equivalent**: element / attribute / class structure matches `lowlighter/metrics`,
+though dynamic strings (version footer, generated timestamp) differ.
+
+### Profile README
+
+The default output mode writes one SVG per enabled plugin into `output_dir` (default `./metrics-renders/`).
+Compose your profile README by embedding the per-plugin SVGs.
+
+```markdown
+<img src="metrics-renders/header.svg" width="100%">
+
+<img src="metrics-renders/languages.svg" align="left" width="48%">
+<img src="metrics-renders/stars.svg" align="right" width="48%">
+
+<br clear="both">
+
+<img src="metrics-renders/activity.svg" width="100%">
+```
 
 ## Migrating from `lowlighter/metrics`
 
-1. Swap the `uses:` line:
+1. Swap the `uses:` line.
 
    ```diff
    - uses: lowlighter/metrics@v3.34
-   + uses: mjun0812/github-metrics@v1
+   + uses: mjun0812/github-metrics@v4
    ```
 
-   `@v1` automatically resolves to the latest `v1.x.y` release; use
-   `@v1.0.0` (or any exact `vX.Y.Z`) if you prefer to pin immutable
-   bytes.
+2. Re-run the workflow. Unported plugin gates can remain in the `with:` block; remove them whenever convenient.
 
-2. Re-run the workflow. Unported plugin gates remain in your `with:`
-   block silently; remove them at your leisure.
+3. Compare the output. JSON should diff cleanly. SVG should match structurally (run `xmllint --format` before diffing).
 
-3. Compare output: JSON should diff cleanly; SVG should match
-   structurally (`xmllint --format` before diffing).
-
-[`docs/migration-to-go.md`](docs/migration-to-go.md) walks through the
-full matrix — adopted vs unported plugins, templates, output formats,
-and the one-line rollback procedure.
+[`docs/migration-to-go.md`](docs/migration-to-go.md) contains the full matrix: adopted vs. unported plugins, templates, output formats, and the one-line rollback procedure.
 
 ## Release verification
 
-Every release is signed with cosign keyless OIDC against the GitHub
-Actions issuer. To verify the image manifest:
+Every release is signed with cosign keyless OIDC against the GitHub Actions issuer. To verify an image manifest, run:
 
 ```sh
-cosign verify ghcr.io/mjun0812/github-metrics:v1.0.0 \
+cosign verify ghcr.io/mjun0812/github-metrics:v4.1.3 \
   --certificate-identity-regexp \
     'https://github.com/mjun0812/github-metrics/.github/workflows/release.yml@refs/tags/v.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-Binaries on the GitHub Release ship with a `SHA256SUMS` file plus
-per-artifact `.sig`, `.cert`, and `.cosign.bundle` files. Verify a
-binary with `cosign verify-blob`:
+Binaries attached to each GitHub Release ship with a `SHA256SUMS` file plus per-artifact `.sig`, `.cert`, and `.cosign.bundle` files.
+Use `cosign verify-blob` to verify a binary.
 
 ```sh
-cosign verify-blob metrics-cli_v1.0.0_linux_amd64 \
-  --bundle metrics-cli_v1.0.0_linux_amd64.cosign.bundle \
+cosign verify-blob metrics-cli_v4.1.3_linux_amd64 \
+  --bundle metrics-cli_v4.1.3_linux_amd64.cosign.bundle \
   --certificate-identity-regexp \
     'https://github.com/mjun0812/github-metrics/.github/workflows/release.yml@refs/tags/v.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-The helper [`scripts/release-verify.sh`](scripts/release-verify.sh) wraps
-the manifest, checksum, signature, and `action.yml` reference checks
-into a single command for maintainer post-release validation.
+## Contribute
 
-## Contributing
-
-Bug reports and pull requests welcome. Before opening a PR, please read
-[`CONTRIBUTING.md`](CONTRIBUTING.md) for the development workflow
-(toolchain, hooks, test categories) and the project's scope discipline.
-The unported-feature list lives in
-[`docs/migration-to-go.md`](docs/migration-to-go.md) §3 — proposals that
-extend that scope are welcome via a discussion issue first.
+Bug reports and pull requests are welcome. Before opening a PR, please read [`CONTRIBUTING.md`](CONTRIBUTING.md) for the development workflow (toolchain, hooks, test categories) and the project's scope discipline. The list of unported features lives in [`docs/migration-to-go.md`](docs/migration-to-go.md).
 
 ## License
 
-[MIT](LICENSE). This project is a Go reimplementation derived from
-[lowlighter/metrics](https://github.com/lowlighter/metrics) (MIT-licensed);
-upstream attribution is preserved per the MIT license terms.
+[MIT](LICENSE). This project is a Go reimplementation derived from [lowlighter/metrics](https://github.com/lowlighter/metrics) (MIT-licensed). The `lowlighter/metrics` attribution is preserved per the MIT license terms.
 
-GitHub Octicons assets (under `assets/octicons/`) are MIT-licensed by
-GitHub, Inc. and embedded via `//go:embed`.
+The GitHub Octicons assets (under `assets/octicons/`) are MIT-licensed by GitHub, Inc. and embedded via `//go:embed`.

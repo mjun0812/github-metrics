@@ -35,7 +35,7 @@ This plugin displays several highlights about what an account has achieved on Gi
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -56,6 +56,6 @@ metrics-cli --user <your-login> \
 ## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/achievements/metadata.yml`](../../assets/plugins/achievements/metadata.yml) — upstream metadata
+- [`assets/plugins/achievements/metadata.yml`](../../assets/plugins/achievements/metadata.yml) — `lowlighter/metrics` metadata
 - Supported account types: user, organization
 - Required scopes: public_access

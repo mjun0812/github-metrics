@@ -33,7 +33,7 @@ This plugin displays sponsors and introduction text from [GitHub sponsors](https
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -62,6 +62,6 @@ The user must be **sponsored via GitHub Sponsors** (incoming sponsorships) for a
 ## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/sponsors/metadata.yml`](../../assets/plugins/sponsors/metadata.yml) — upstream metadata
+- [`assets/plugins/sponsors/metadata.yml`](../../assets/plugins/sponsors/metadata.yml) — `lowlighter/metrics` metadata
 - Supported account types: user, organization, repository
 - Required scopes: read:user, read:org

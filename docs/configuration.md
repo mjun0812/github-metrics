@@ -1,6 +1,6 @@
 # Configuration / Inputs
 
-Inputs are expressed in a flat key space compatible with the upstream `action.yml`. Parsing is handled by `internal/action.ParseInputs` (env) and `internal/action.CLIFlags` (flags).
+Inputs are expressed in a flat key space compatible with the `lowlighter/metrics` `action.yml`. Parsing is handled by `internal/action.ParseInputs` (env) and `internal/action.CLIFlags` (flags).
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ Because a single binary serves both the Action and the CLI (#646), both go throu
 
 `INPUT_<KEY>` is the input name uppercased with `.` replaced by `_` (e.g. `config_timezone` -> `INPUT_CONFIG_TIMEZONE`). Passing `--no-env` skips the env layer, resolving inputs from CLI flags only.
 
-> The upstream `config_presets` (`--preset`) and the bulk `--plugins` flag do not exist in the current implementation. Plugins are enabled individually via `plugin_<slug>`.
+> The `lowlighter/metrics` `config_presets` (`--preset`) and the bulk `--plugins` flag do not exist in the current implementation. Plugins are enabled individually via `plugin_<slug>`.
 
 ## 2. Input naming scheme
 
@@ -34,7 +34,7 @@ Because a single binary serves both the Action and the CLI (#646), both go throu
 | `chrome_<section>`       | Card chrome section gate (boolean) | `chrome_header`, `chrome_activity`, `chrome_community`, `chrome_repositories`, `chrome_metadata`, `chrome_introduction`                        |
 | `config_<name>`          | Global settings                    | `config_display`, `config_animations`, `config_timezone`, `config_base64`, `config_order`, `config_octicon`, `config_output`, `config_padding` |
 
-> The "chrome" in `chrome_*` is **a UI term for the card's frame**, unrelated to browsers. The upstream `base=<csv>` / `plugin_base_<section>` forms were removed in v3.0 (#649 / #652) and are no longer accepted.
+> The "chrome" in `chrome_*` is **a UI term for the card's frame**, unrelated to browsers. The `lowlighter/metrics` `base=<csv>` / `plugin_base_<section>` forms were removed in v3.0 (#649 / #652) and are no longer accepted.
 
 Other major core inputs (`assets/plugins/core/metadata.yml`): `token` (GitHub PAT), `user`, `repo`, `template`, `filename`, `output_dir`, `combined`, `output_action` (commit / pull-request), `output_condition` (`data-changed`, etc.), `committer_*`, `repositories_skip_private`, `optimize`, `debug_flags`, `github_api_rest` / `github_api_graphql` (endpoints for GitHub Enterprise).
 

@@ -30,7 +30,7 @@ This plugin can display commit calendar across several years.
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -51,6 +51,6 @@ metrics-cli --user <your-login> \
 ## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/calendar/metadata.yml`](../../assets/plugins/calendar/metadata.yml) — upstream metadata
+- [`assets/plugins/calendar/metadata.yml`](../../assets/plugins/calendar/metadata.yml) — `lowlighter/metrics` metadata
 - Supported account types: user
 - Required scopes: public_access
