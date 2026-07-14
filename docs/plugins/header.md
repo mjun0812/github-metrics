@@ -30,7 +30,7 @@ follower count, and a 2-week contribution calendar mini-bar.
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -64,6 +64,6 @@ The classic dispatcher de-duplicates `plugin.header` when `chrome_header=yes` is
 ## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/header/metadata.yml`](../../assets/plugins/header/metadata.yml) — upstream metadata
+- [`assets/plugins/header/metadata.yml`](../../assets/plugins/header/metadata.yml) — `lowlighter/metrics` metadata
 - Supported account types: user, organization
 - Required scopes: public_access

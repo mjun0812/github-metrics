@@ -25,11 +25,11 @@
   3. **svg**: 高さは生成時に確定済みなので、そのまま返す (ラスタライザを呼ばない)。任意で padding を適用する ([§5](#5-padding))。
   4. **png / jpeg**: 確定済み SVG を `render.Renderer.Resize` (既定は resvg) でラスタライズする ([§4](#4-resvg-ラスタライズ))。
 
-テンプレートは EJS ではなく Go コードで実装されている。upstream の `.ejs` ファイル名がコメントに残る箇所があるが、これは移植元の追跡用であり、実行時に EJS エンジンは存在しない。
+テンプレートは EJS ではなく Go コードで実装されている。`lowlighter/metrics` の `.ejs` ファイル名がコメントに残る箇所があるが、これは移植元の追跡用であり、実行時に EJS エンジンは存在しない。
 
 ## 2. partial と高さの確定
 
-upstream は headless Chromium で描画後の高さを実測し、`foreignObject` 内の HTML を測っていた。本移植ではブラウザを使わず、**各 partial が自分の消費高さを申告する**:
+`lowlighter/metrics` は headless Chromium で描画後の高さを実測し、`foreignObject` 内の HTML を測っていた。本移植ではブラウザを使わず、**各 partial が自分の消費高さを申告する**:
 
 ```go
 // internal/templates/template.go
@@ -75,11 +75,11 @@ resvg のプレビルドバイナリは Docker イメージに同梱される。
 
 ## 5. padding
 
-`config_padding` は upstream 互換の `"<絶対> + <相対>%"` 形式をサポートする (`internal/render/padding.go`)。元はブラウザ計測誤差の吸収用だったが、計測が無くなった現在の既定は実質 no-op。非自明な padding が指定された場合のみ、ルート `<svg>` の width / height / viewBox を算術で書き換える。
+`config_padding` は `lowlighter/metrics` 互換の `"<絶対> + <相対>%"` 形式をサポートする (`internal/render/padding.go`)。元はブラウザ計測誤差の吸収用だったが、計測が無くなった現在の既定は実質 no-op。非自明な padding が指定された場合のみ、ルート `<svg>` の width / height / viewBox を算術で書き換える。
 
 ## 6. JSON 出力
 
-`data` をシリアライズして返す (MIME `application/json`)。プラグイン結果の JSON キーは upstream (`data.plugins.<name>`) と一致するよう各プラグインの struct タグで固定してある。
+`data` をシリアライズして返す (MIME `application/json`)。プラグイン結果の JSON キーは `lowlighter/metrics` (`data.plugins.<name>`) と一致するよう各プラグインの struct タグで固定してある。
 
 ## 7. SVG ハッシュ (data-changed 判定)
 

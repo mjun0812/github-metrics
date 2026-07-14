@@ -1,6 +1,6 @@
 # Architecture
 
-`github-metrics` is a tool that aggregates statistics for a GitHub user / organization / repository and outputs a profile card as SVG / PNG / JPEG / JSON. It is a Go port of a subset of the upstream [`lowlighter/metrics`](https://github.com/lowlighter/metrics), and the adopted scope is defined in [`scope.md`](scope.md).
+`github-metrics` is a tool that aggregates statistics for a GitHub user / organization / repository and outputs a profile card as SVG / PNG / JPEG / JSON. It is a Go port of a subset of the [`lowlighter/metrics`](https://github.com/lowlighter/metrics), and the adopted scope is defined in [`scope.md`](scope.md).
 
 ## Table of Contents
 

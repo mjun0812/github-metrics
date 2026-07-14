@@ -30,7 +30,7 @@ This plugin displays an isometric view of a user commit calendar along with a fe
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -54,15 +54,15 @@ Same data source as the `calendar` plugin (the user's public contribution calend
 
 ## Notes
 
-- The label reads "Commits per day", but the data source is the daily `contributionCount` from GitHub GraphQL's `contributionsCollection.contributionCalendar`, which is not a commit-only count (it also includes issues / PRs / reviews, etc.). This matches the behavior of upstream `lowlighter/metrics`.
+- The label reads "Commits per day", but the data source is the daily `contributionCount` from GitHub GraphQL's `contributionsCollection.contributionCalendar`, which is not a commit-only count (it also includes issues / PRs / reviews, etc.). This matches the behavior of `lowlighter/metrics`.
 - Private contributions are folded into `contributionCount` on GitHub's side when the user's GitHub setting "Include private contributions on my profile" is enabled. The plugin does not perform any public/private filtering itself.
-- The aggregation period matches upstream: `half-year` starts at now−180 days, and `full-year` starts at now−1 year, each rounded down to the preceding Sunday 00:00 UTC.
-- The calendar is fetched in 4-week chunks, same as upstream. GitHub normalizes the heatmap color (`ContributionDay.color`) against the **maximum value within the queried period**, so fetching in chunks produces the same color gradient as upstream (fetching a full year in one request would collapse most days to the lightest shade — #467).
+- The aggregation period matches `lowlighter/metrics`: `half-year` starts at now−180 days, and `full-year` starts at now−1 year, each rounded down to the preceding Sunday 00:00 UTC.
+- The calendar is fetched in 4-week chunks, same as `lowlighter/metrics`. GitHub normalizes the heatmap color (`ContributionDay.color`) against the **maximum value within the queried period**, so fetching in chunks produces the same color gradient as `lowlighter/metrics` (fetching a full year in one request would collapse most days to the lightest shade — #467).
 - If the GraphQL client is unavailable or the fetch fails, it falls back to a degraded path that slices the trailing 26 weeks / 53 weeks from the shared indepth calendar (past 1 year).
 
 ## References
 
 - [`action.yml`](../../action.yml): canonical input schema
-- [`assets/plugins/isocalendar/metadata.yml`](../../assets/plugins/isocalendar/metadata.yml): upstream metadata
+- [`assets/plugins/isocalendar/metadata.yml`](../../assets/plugins/isocalendar/metadata.yml): `lowlighter/metrics` metadata
 - Supported account types: user
 - Required scopes: public_access

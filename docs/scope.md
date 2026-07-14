@@ -1,6 +1,6 @@
 # Adopted Scope and Decisions
 
-This project is a Go port of only a **subset** of the upstream [`lowlighter/metrics`](https://github.com/lowlighter/metrics) (Node.js / EJS). This document records the finalized decisions on "what was adopted and what was not adopted." CLAUDE.md references this document as the source of truth for adoption decisions.
+This project is a Go port of only a **subset** of the [`lowlighter/metrics`](https://github.com/lowlighter/metrics) (Node.js / EJS). This document records the finalized decisions on "what was adopted and what was not adopted." CLAUDE.md references this document as the source of truth for adoption decisions.
 
 Before starting work on a new feature, always check this document to confirm whether the target is within the adopted scope. The presence of unadopted features is detected in CI by `tests/compliance/compliance_test.go` (see [§4](#4-compliance-gate)).
 
@@ -59,13 +59,13 @@ The group of plugins that require the user to prepare tokens / keys for external
 
 ### 3.3 Other non-adopted items
 
-| Feature                                                                        | Reason for non-adoption                                               |
-| ------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| `lines` / `gists` / `followup` / `discussions` / `skyline` / `support` plugins | Low necessity, heavy API rate consumption, or deprecated upstream     |
-| `code` plugin                                                                  | Risk of private code leakage                                          |
-| Markdown / Markdown-PDF output                                                 | Low demand, and PDF generation would reintroduce a browser dependency |
-| Community plugin / dynamic template fetching                                   | Safety / maintenance cost                                             |
-| SVGO-equivalent SVG optimization                                               | CSS purge + XML formatting is sufficient                              |
+| Feature                                                                        | Reason for non-adoption                                                       |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `lines` / `gists` / `followup` / `discussions` / `skyline` / `support` plugins | Low necessity, heavy API rate consumption, or deprecated `lowlighter/metrics` |
+| `code` plugin                                                                  | Risk of private code leakage                                                  |
+| Markdown / Markdown-PDF output                                                 | Low demand, and PDF generation would reintroduce a browser dependency         |
+| Community plugin / dynamic template fetching                                   | Safety / maintenance cost                                                     |
+| SVGO-equivalent SVG optimization                                               | CSS purge + XML formatting is sufficient                                      |
 
 The only adopted output formats are **SVG / PNG / JPEG / JSON**. See [`rendering.md`](rendering.md) for details.
 
@@ -81,9 +81,9 @@ The following automated tests enforce the adopted scope in CI. A failure signals
 
 ## 5. Completion history
 
-| Milestone | Content                                                                                                                                                  | Release             |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| M1-M10    | Go port MVP from upstream (foundation → classic / JSON → rendering → 19 plugins → Action/CLI → repository template → test infrastructure → distribution) | v1.0.0 (2026-05-18) |
-| #409      | Full migration to browser-free rendering with native SVG + resvg, eliminating chromedp / Chromium                                                        | v4.0.0 (2026-07-09) |
+| Milestone | Content                                                                                                                                                              | Release             |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| M1-M10    | Go port MVP from `lowlighter/metrics` (foundation → classic / JSON → rendering → 19 plugins → Action/CLI → repository template → test infrastructure → distribution) | v1.0.0 (2026-05-18) |
+| #409      | Full migration to browser-free rendering with native SVG + resvg, eliminating chromedp / Chromium                                                                    | v4.0.0 (2026-07-09) |
 
 The original order of the porting phases was `M1 → M2 → M3 → M4 → M6 → M7 → M9 → M10` (M5 / M8 are missing numbers because they were not adopted). The decision log for #409 is recorded in issue #409 and sub-issues #682-#695.

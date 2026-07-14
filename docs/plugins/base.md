@@ -3,7 +3,7 @@
 # Plugin: base
 
 Restores the activity / community / repositories summary panels that
-were originally bundled into the upstream `base` chrome. The panels
+were originally bundled into the `lowlighter/metrics` `base` chrome. The panels
 read aggregated data from the shared `dataprovider.Provider`
 (Profile + RepositorySummary) — no GraphQL or REST fetching duplication.
 
@@ -32,7 +32,7 @@ read aggregated data from the shared `dataprovider.Provider`
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -57,6 +57,6 @@ Base reads `Provider.Profile(ctx)` and `Provider.RepositorySummary(ctx)` from th
 ## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/base/metadata.yml`](../../assets/plugins/base/metadata.yml) — upstream metadata
+- [`assets/plugins/base/metadata.yml`](../../assets/plugins/base/metadata.yml) — `lowlighter/metrics` metadata
 - Supported account types: user, organization
 - Required scopes: public_access

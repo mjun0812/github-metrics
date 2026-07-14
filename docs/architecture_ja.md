@@ -1,6 +1,6 @@
 # アーキテクチャ
 
-`github-metrics` は GitHub ユーザー / 組織 / リポジトリの統計を集約し、プロフィールカードを SVG / PNG / JPEG / JSON で出力するツールである。upstream [`lowlighter/metrics`](https://github.com/lowlighter/metrics) の subset を Go に移植したもので、採用範囲は [`scope.md`](scope_ja.md) に定義する。
+`github-metrics` は GitHub ユーザー / 組織 / リポジトリの統計を集約し、プロフィールカードを SVG / PNG / JPEG / JSON で出力するツールである。[`lowlighter/metrics`](https://github.com/lowlighter/metrics) の subset を Go に移植したもので、採用範囲は [`scope.md`](scope_ja.md) に定義する。
 
 ## 目次
 

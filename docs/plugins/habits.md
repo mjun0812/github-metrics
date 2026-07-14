@@ -38,7 +38,7 @@ This plugin displays coding habits based on recent activity, such as active hour
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -59,6 +59,6 @@ metrics-cli --user <your-login> \
 ## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/habits/metadata.yml`](../../assets/plugins/habits/metadata.yml) — upstream metadata
+- [`assets/plugins/habits/metadata.yml`](../../assets/plugins/habits/metadata.yml) — `lowlighter/metrics` metadata
 - Supported account types: user, organization
 - Required scopes: public_access
