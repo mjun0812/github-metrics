@@ -1,9 +1,9 @@
 # github-metrics
 
-[![CI](https://github.com/mjun0812/github-metrics/actions/workflows/go-ci.yml/badge.svg)](https://github.com/mjun0812/github-metrics/actions/workflows/go-ci.yml)
-[![Release](https://img.shields.io/github/v/release/mjun0812/github-metrics?sort=semver)](https://github.com/mjun0812/github-metrics/releases)
-[![Go version](https://img.shields.io/github/go-mod/go-version/mjun0812/github-metrics)](https://github.com/mjun0812/github-metrics/blob/main/go.mod)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://shieldcn.dev/github/mjun0812/github-metrics/ci.svg)](https://github.com/mjun0812/github-metrics/actions/workflows/go-ci.yml)
+[![Release](https://shieldcn.dev/github/mjun0812/github-metrics/release.svg)](https://github.com/mjun0812/github-metrics/releases)
+[![Go version](https://shieldcn.dev/badge/go-1.26-blue.svg)](https://github.com/mjun0812/github-metrics/blob/main/go.mod)
+[![License](https://shieldcn.dev/github/mjun0812/github-metrics/license.svg)](LICENSE)
 
 GitHub プロフィールまたは単一リポジトリのメトリクスを SVG / PNG / JPEG / JSON で生成する。**GitHub Action**、**スタンドアロン CLI**、**Docker コンテナ** のいずれの形態でも動作する。単一の Go バイナリで、Node ランタイムは不要である。
 
