@@ -35,7 +35,7 @@ This plugin displays stargazers evolution across affiliated repositories.
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -56,6 +56,6 @@ metrics-cli --user <your-login> \
 ## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/stargazers/metadata.yml`](../../assets/plugins/stargazers/metadata.yml) — upstream metadata
+- [`assets/plugins/stargazers/metadata.yml`](../../assets/plugins/stargazers/metadata.yml) — `lowlighter/metrics` metadata
 - Supported account types: user, organization, repository
 - Required scopes: public_access

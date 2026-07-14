@@ -36,7 +36,7 @@ This plugin displays badges for notable contributions on repositories.
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -57,6 +57,6 @@ metrics-cli --user <your-login> \
 ## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/notable/metadata.yml`](../../assets/plugins/notable/metadata.yml) — upstream metadata
+- [`assets/plugins/notable/metadata.yml`](../../assets/plugins/notable/metadata.yml) — `lowlighter/metrics` metadata
 - Supported account types: user
 - Required scopes: public_access

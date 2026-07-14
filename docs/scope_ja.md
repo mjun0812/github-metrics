@@ -1,6 +1,6 @@
 # 採用スコープと決定事項
 
-本プロジェクトは upstream [`lowlighter/metrics`](https://github.com/lowlighter/metrics) (Node.js / EJS) の **subset** のみを Go に移植したものである。本書は「何を採用し、何を採用しなかったか」の確定した決定事項を記録する。CLAUDE.md はこの文書を採用判断の source of truth として参照する。
+本プロジェクトは [`lowlighter/metrics`](https://github.com/lowlighter/metrics) (Node.js / EJS) の **subset** のみを Go に移植したものである。本書は「何を採用し、何を採用しなかったか」の確定した決定事項を記録する。CLAUDE.md はこの文書を採用判断の source of truth として参照する。
 
 新機能に着手する前に、対象が採用スコープに含まれるかを必ず本書で確認すること。採用外機能の混入は `tests/compliance/compliance_test.go` が CI で検出する ([§4](#4-compliance-ゲート) 参照)。
 
@@ -59,13 +59,13 @@ HTTP サーバ / OAuth / Insights HTML / rate limiter / control endpoint など�
 
 ### 3.3 その他の不採用
 
-| 機能                                                                              | 不採用の理由                                                        |
-| --------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `lines` / `gists` / `followup` / `discussions` / `skyline` / `support` プラグイン | 必要性が低い、API レート消費が大きい、または upstream で deprecated |
-| `code` プラグイン                                                                 | プライベートコード漏洩リスク                                        |
-| Markdown / Markdown-PDF 出力                                                      | 需要が低く、PDF 化はブラウザ依存を再導入する                        |
-| community プラグイン / テンプレートの動的取得                                     | 安全性 / メンテナンスコスト                                         |
-| SVGO 相当の SVG 最適化                                                            | CSS purge + XML 整形で十分                                          |
+| 機能                                                                              | 不採用の理由                                                                    |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `lines` / `gists` / `followup` / `discussions` / `skyline` / `support` プラグイン | 必要性が低い、API レート消費が大きい、または `lowlighter/metrics` で deprecated |
+| `code` プラグイン                                                                 | プライベートコード漏洩リスク                                                    |
+| Markdown / Markdown-PDF 出力                                                      | 需要が低く、PDF 化はブラウザ依存を再導入する                                    |
+| community プラグイン / テンプレートの動的取得                                     | 安全性 / メンテナンスコスト                                                     |
+| SVGO 相当の SVG 最適化                                                            | CSS purge + XML 整形で十分                                                      |
 
 採用する出力形式は **SVG / PNG / JPEG / JSON** のみ。詳細は [`rendering.md`](rendering_ja.md) を参照。
 
@@ -81,9 +81,9 @@ HTTP サーバ / OAuth / Insights HTML / rate limiter / control endpoint など�
 
 ## 5. 完了履歴
 
-| マイルストン | 内容                                                                                                                                          | リリース            |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| M1–M10       | upstream からの Go 移植 MVP (基盤 → classic / JSON → レンダリング → 19 プラグイン → Action/CLI → repository テンプレート → テスト基盤 → 配布) | v1.0.0 (2026-05-18) |
-| #409         | chromedp / Chromium を排除し、native SVG + resvg のブラウザレスなレンダリングへ全面移行                                                       | v4.0.0 (2026-07-09) |
+| マイルストン | 内容                                                                                                                                                      | リリース            |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| M1–M10       | `lowlighter/metrics` からの Go 移植 MVP (基盤 → classic / JSON → レンダリング → 19 プラグイン → Action/CLI → repository テンプレート → テスト基盤 → 配布) | v1.0.0 (2026-05-18) |
+| #409         | chromedp / Chromium を排除し、native SVG + resvg のブラウザレスなレンダリングへ全面移行                                                                   | v4.0.0 (2026-07-09) |
 
 移植フェーズの当初順序は `M1 → M2 → M3 → M4 → M6 → M7 → M9 → M10` (M5 / M8 は不採用のため欠番)。#409 の意思決定ログは issue #409 と sub issue #682–#695 に記録されている。

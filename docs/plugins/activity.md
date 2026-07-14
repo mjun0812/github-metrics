@@ -37,7 +37,7 @@ This plugin displays recent activity on GitHub.
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -58,6 +58,6 @@ metrics-cli --user <your-login> \
 ## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/activity/metadata.yml`](../../assets/plugins/activity/metadata.yml) — upstream metadata
+- [`assets/plugins/activity/metadata.yml`](../../assets/plugins/activity/metadata.yml) — `lowlighter/metrics` metadata
 - Supported account types: user, organization, repository
 - Required scopes: public_access

@@ -1,6 +1,6 @@
-# original_examples: upstream `lowlighter/metrics` output reference
+# original_examples: `lowlighter/metrics` output reference
 
-This directory stores **officially rendered SVGs from upstream** for reference during the Go reimplementation.
+This directory stores **officially rendered SVGs from `lowlighter/metrics`** for reference during the Go reimplementation.
 Only outputs corresponding to the plugins / templates adopted by this project ([docs/scope.md](../scope.md) §2) are extracted.
 
 ## Provenance
@@ -8,8 +8,8 @@ Only outputs corresponding to the plugins / templates adopted by this project ([
 - Repository: `lowlighter/metrics` (origin of `org_repo/`)
 - Branch: `examples`
 - Commit: `1dac69e` (`chore: update examples`, 2025-07-03)
-- Producer: artifacts rendered by upstream CI using lowlighter's own profile data
-  (= not re-run with our own token; these are the official samples published by upstream)
+- Producer: artifacts rendered by `lowlighter/metrics` CI using lowlighter's own profile data
+  (= not re-run with our own token; these are the official samples published by `lowlighter/metrics`)
 
 How obtained (no network required, extracted from the locally fetched branch):
 
@@ -54,7 +54,7 @@ git show "origin/examples:metrics.plugin.languages.svg" > ../docs/original_examp
 
 - **Unadopted plugins are not included**: `lines` / `gists` / `code` / `introduction` / `followup` /
   `discussions` / `skyline` / `licenses` / `support`, as well as external API / community plugins (`wakatime` /
-  `anilist` / `chess`, etc.), exist in upstream's examples branch but were not extracted since they are out of adoption scope.
+  `anilist` / `chess`, etc.), exist in `lowlighter/metrics`'s examples branch but were not extracted since they are out of adoption scope.
 - **Variants that are backlog items in the Go implementation** are also included for reference:
   - `metrics.plugin.stargazers.worldmap.svg` ... the world map requires a Google Maps API key (currently a Skipped path)
   - `metrics.plugin.stargazers.chartist.svg` ... a different chart renderer

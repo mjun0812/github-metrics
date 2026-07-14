@@ -1,6 +1,6 @@
 # 設定と入力
 
-入力は upstream `action.yml` と互換のフラットなキー空間で表現される。パースは `internal/action.ParseInputs` (env) と `internal/action.CLIFlags` (フラグ) が担う。
+入力は `lowlighter/metrics` `action.yml` と互換のフラットなキー空間で表現される。パースは `internal/action.ParseInputs` (env) と `internal/action.CLIFlags` (フラグ) が担う。
 
 ## 目次
 
@@ -23,7 +23,7 @@
 
 `INPUT_<KEY>` は入力名を大文字化し `.` を `_` に置換したもの (例: `config_timezone` → `INPUT_CONFIG_TIMEZONE`)。`--no-env` を渡すと env レイヤをスキップし、CLI フラグのみで解決する。
 
-> upstream にあった `config_presets` (`--preset`) と一括 `--plugins` フラグは現在の実装には存在しない。プラグインは `plugin_<slug>` で個別に有効化する。
+> `lowlighter/metrics` にあった `config_presets` (`--preset`) と一括 `--plugins` フラグは現在の実装には存在しない。プラグインは `plugin_<slug>` で個別に有効化する。
 
 ## 2. 入力の命名体系
 
@@ -34,7 +34,7 @@
 | `chrome_<section>`       | カード枠のセクションゲート (boolean) | `chrome_header`, `chrome_activity`, `chrome_community`, `chrome_repositories`, `chrome_metadata`, `chrome_introduction`                        |
 | `config_<name>`          | 全体設定                             | `config_display`, `config_animations`, `config_timezone`, `config_base64`, `config_order`, `config_octicon`, `config_output`, `config_padding` |
 
-> `chrome_*` の「chrome」は **カードの枠 (UI 用語)** で、ブラウザとは無関係。upstream の `base=<csv>` / `plugin_base_<section>` 形式は v3.0 (#649 / #652) で廃止され、受理されない。
+> `chrome_*` の「chrome」は **カードの枠 (UI 用語)** で、ブラウザとは無関係。`lowlighter/metrics` の `base=<csv>` / `plugin_base_<section>` 形式は v3.0 (#649 / #652) で廃止され、受理されない。
 
 その他の主要な core 入力 (`assets/plugins/core/metadata.yml`): `token` (GitHub PAT), `user`, `repo`, `template`, `filename`, `output_dir`, `combined`, `output_action` (commit / pull-request), `output_condition` (`data-changed` 等), `committer_*`, `repositories_skip_private`, `optimize`, `debug_flags`, `github_api_rest` / `github_api_graphql` (GitHub Enterprise 用エンドポイント)。
 

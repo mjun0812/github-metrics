@@ -1,6 +1,6 @@
-# original_examples: upstream `lowlighter/metrics` の出力リファレンス
+# original_examples: `lowlighter/metrics` の出力リファレンス
 
-本ディレクトリは、Go 再実装の参照用に **upstream の公式レンダリング済み SVG** を保存したものである。
+本ディレクトリは、Go 再実装の参照用に **`lowlighter/metrics` の公式レンダリング済み SVG** を保存したものである。
 本プロジェクトが採用している plugin / テンプレート ([docs/scope.md](../scope_ja.md) §2) に対応する出力だけを抜粋している。
 
 ## 出所 (provenance)
@@ -8,8 +8,8 @@
 - リポジトリ: `lowlighter/metrics` (`org_repo/` の origin)
 - ブランチ: `examples`
 - コミット: `1dac69e` (`chore: update examples`, 2025-07-03)
-- 生成主体: upstream が CI で lowlighter 本人のプロフィールデータをレンダリングした成果物
-  (= 自分でトークンを使って再実行したものではなく、upstream が公開している正規サンプル)
+- 生成主体: `lowlighter/metrics` が CI で lowlighter 本人のプロフィールデータをレンダリングした成果物
+  (= 自分でトークンを使って再実行したものではなく、`lowlighter/metrics` が公開している正規サンプル)
 
 取得方法 (ネットワーク不要 / ローカルの fetch 済みブランチから抽出):
 
@@ -54,7 +54,7 @@ git show "origin/examples:metrics.plugin.languages.svg" > ../docs/original_examp
 
 - **不採用 plugin は含めていない**: `lines` / `gists` / `code` / `introduction` / `followup` /
   `discussions` / `skyline` / `licenses` / `support` および外部 API / community 系 (`wakatime` /
-  `anilist` / `chess` 等) は upstream の examples ブランチには存在するが、採用外のため抽出していない。
+  `anilist` / `chess` 等) は `lowlighter/metrics` の examples ブランチには存在するが、採用外のため抽出していない。
 - **Go 実装では backlog 扱いのバリアント** も参照用に含めている:
   - `metrics.plugin.stargazers.worldmap.svg` … 世界地図は Google Maps API key 必須 (現状 Skipped path)
   - `metrics.plugin.stargazers.chartist.svg` … 別 chart レンダラ

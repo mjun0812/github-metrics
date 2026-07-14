@@ -79,7 +79,7 @@ This plugin emits no standalone SVG; its inputs are documented below.
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@latest
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -124,5 +124,5 @@ The token is resolved from `inputs["token"]` (= `INPUT_TOKEN`) first, then falls
 ## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/core/metadata.yml`](../../assets/plugins/core/metadata.yml) — upstream metadata
+- [`assets/plugins/core/metadata.yml`](../../assets/plugins/core/metadata.yml) — `lowlighter/metrics` metadata
 - Supported account types: user, organization, repository
