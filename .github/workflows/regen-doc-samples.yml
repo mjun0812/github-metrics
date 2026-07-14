@@ -255,7 +255,7 @@ jobs:
           # happen in the shell).
           export HTTP_PROXY="" HTTPS_PROXY="" http_proxy="" https_proxy=""
           export NO_PROXY="*" no_proxy="*"
-          # Non-hidden directory name so actions/upload-artifact@v4
+          # Non-hidden directory name so actions/upload-artifact@v7
           # picks it up: v4's default include-hidden-files: false
           # silently excludes any path containing a dot-prefixed
           # component (GHSA-mq8m-8jpp-vmrh mitigation), which had been
@@ -364,7 +364,7 @@ jobs:
           echo "OK: ${SAMPLE_NAME}.png ($(wc -c < "$png_out" | tr -d ' ') bytes)"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sample-${{ matrix.name }}
           path: ${{ github.workspace }}/sample-out/
