@@ -1,0 +1,54 @@
+version: 2
+updates:
+  # Go modules — bump direct dependencies weekly. Indirect deps flow via
+  # `go mod tidy` as part of each PR.
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Tokyo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - go
+    commit-message:
+      prefix: "chore(deps)"
+      include: scope
+
+  # GitHub Actions — keep third-party actions SHA-pinned and refresh
+  # weekly. Dependabot updates both the SHA and the trailing `# vX.Y.Z`
+  # comment when a new release ships.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Tokyo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "chore(ci)"
+      include: scope
+
+  # Dockerfile base images (golang / rust / debian). Weekly so security
+  # patches for the runtime image land within a week without manual
+  # tracking.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Tokyo
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: "chore(docker)"
+      include: scope

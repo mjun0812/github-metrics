@@ -19,6 +19,21 @@ coverage.out
 # assets/octicons/data.json is committed).
 node_modules/
 
+# Secrets / env (defensive — never commit local overrides).
+.env
+.env.*
+*.local
+.envrc
+.direnv/
+
+# Editor / IDE
+.idea/
+.vscode/
+
+# Misc runtime output
+*.log
+tmp/
+
 # Editor / OS
 .DS_Store
 *.swp
