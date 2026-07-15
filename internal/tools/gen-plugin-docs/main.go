@@ -4,6 +4,11 @@
 // (regenerated on every run) and human-authored zones (preserved
 // byte-identical when the markers are intact).
 //
+// Two locales are supported: English (canonical, always emitted) and
+// Japanese (emitted only when a sibling
+// `assets/plugins/<slug>/metadata_ja.yml` translation file exists;
+// see `translationLocales` and `loadJATranslation`).
+//
 // Usage:
 //
 //	go run ./internal/tools/gen-plugin-docs
@@ -14,6 +19,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -115,14 +121,17 @@ func fail(format string, args ...any) {
 }
 
 func run(root string) error {
-	for _, slug := range adoptedSlugs {
-		if err := generatePluginPage(root, slug); err != nil {
-			return fmt.Errorf("plugin %s: %w", slug, err)
+	allSlugs := append(append([]string(nil), adoptedSlugs...), foundationalSlugs...)
+	for _, slug := range allSlugs {
+		if err := generatePluginPage(root, slug, enStrings); err != nil {
+			return fmt.Errorf("plugin %s (en): %w", slug, err)
 		}
-	}
-	for _, slug := range foundationalSlugs {
-		if err := generatePluginPage(root, slug); err != nil {
-			return fmt.Errorf("plugin %s: %w", slug, err)
+		// Japanese page is emitted only when a hand-authored
+		// translation exists. See design decision #2 in issue #761:
+		// half-translated pages are worse than none, so a missing
+		// metadata_ja.yml means the JA page is intentionally skipped.
+		if err := generatePluginPage(root, slug, jaStrings); err != nil {
+			return fmt.Errorf("plugin %s (ja): %w", slug, err)
 		}
 	}
 	return updateReadme(root)
@@ -169,6 +178,61 @@ func loadMetadata(root, slug string) (pluginMetadata, []string, error) {
 	return m, keys, nil
 }
 
+// loadJATranslation reads the optional Japanese translation overlay for
+// a plugin. Returns (empty, false, nil) when the file is absent — that
+// is the documented signal to skip the JA page entirely (design
+// decision #2 in issue #761). Any other error (unreadable, malformed
+// YAML) is propagated.
+func loadJATranslation(root, slug string) (pluginMetadata, bool, error) {
+	path := filepath.Join(root, "assets", "plugins", slug, "metadata_ja.yml")
+	raw, err := os.ReadFile(path) //nolint:gosec // operator-controlled paths inside the project tree
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return pluginMetadata{}, false, nil
+		}
+		return pluginMetadata{}, false, fmt.Errorf("read %s: %w", path, err)
+	}
+	var m pluginMetadata
+	if err := yaml.Unmarshal(raw, &m); err != nil {
+		return pluginMetadata{}, false, fmt.Errorf("unmarshal %s: %w", path, err)
+	}
+	return m, true, nil
+}
+
+// applyTranslation merges a translation overlay onto the base metadata.
+// Only human-facing prose fields are overlayed: `description` (page
+// intro) and the per-input `description` (config-table rows). Machine
+// fields (`type`, `default`, `required`, `supports`, `scopes`) always
+// come from the base to stay upstream-compatible. Empty fields in the
+// overlay fall through to the base (partial translations are allowed).
+func applyTranslation(base, overlay pluginMetadata) pluginMetadata {
+	out := base
+	if s := strings.TrimSpace(overlay.Description); s != "" {
+		out.Description = overlay.Description
+	}
+	if len(overlay.Inputs) > 0 {
+		merged := make(map[string]pluginInput, len(base.Inputs))
+		for k, v := range base.Inputs {
+			merged[k] = v
+		}
+		for k, ov := range overlay.Inputs {
+			bv, ok := merged[k]
+			if !ok {
+				// Overlay may include entries for inputs that no
+				// longer exist in the base — ignore to keep the
+				// generator upstream-compatible.
+				continue
+			}
+			if s := strings.TrimSpace(ov.Description); s != "" {
+				bv.Description = ov.Description
+			}
+			merged[k] = bv
+		}
+		out.Inputs = merged
+	}
+	return out
+}
+
 // extractInputKeys returns the input map keys in declaration order.
 func extractInputKeys(doc *yaml.Node) []string {
 	if doc == nil || doc.Kind != yaml.DocumentNode || len(doc.Content) == 0 {
@@ -192,38 +256,69 @@ func extractInputKeys(doc *yaml.Node) []string {
 	return nil
 }
 
-// generatePluginPage writes docs/plugins/<slug>.md. Existing
-// human-authored zones (outside AUTOGEN markers) are preserved.
-func generatePluginPage(root, slug string) error {
+// pluginPagePath returns the docs/plugins/<slug>[<suffix>].md path for
+// the requested locale. English uses no suffix (canonical); Japanese
+// uses the `_ja` suffix.
+func pluginPagePath(root, slug string, ls localeStrings) string {
+	return filepath.Join(root, "docs", "plugins", slug+ls.FileSuffix+".md")
+}
+
+// generatePluginPage writes docs/plugins/<slug>[_ja].md for the given
+// locale. Existing human-authored zones (outside AUTOGEN markers) are
+// preserved. For non-English locales, if no translation overlay exists
+// the page is skipped entirely (see loadJATranslation for the rule).
+func generatePluginPage(root, slug string, ls localeStrings) error {
 	meta, inputKeys, err := loadMetadata(root, slug)
 	if err != nil {
 		return err
 	}
 
-	out := filepath.Join(root, "docs", "plugins", slug+".md")
+	if ls.Code == "ja" {
+		overlay, ok, err := loadJATranslation(root, slug)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			// Design decision #2: skip when no translation exists.
+			return nil
+		}
+		meta = applyTranslation(meta, overlay)
+	}
+
+	out := pluginPagePath(root, slug, ls)
 	existing, _ := os.ReadFile(out) //nolint:gosec // missing file is fine — first-gen path
 
-	page := renderPluginPage(slug, meta, inputKeys, existing)
+	page := renderPluginPageLocale(slug, meta, inputKeys, existing, ls)
 	if err := os.MkdirAll(filepath.Dir(out), 0o750); err != nil {
 		return err
 	}
 	return os.WriteFile(out, []byte(page), 0o600)
 }
 
-// renderPluginPage emits the full markdown for one plugin. When
-// `existing` is non-empty, the human-authored zones (the three prose
-// sections between AUTOGEN blocks: "When to use", "Requirements",
-// "Notes") are pulled forward.
+// renderPluginPage is the English-locale entry point used by tests and
+// callers that do not need locale awareness. It preserves the historic
+// 4-arg signature (`slug`, `meta`, `inputKeys`, `existing`) so existing
+// unit tests continue to compile unchanged.
 func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existing []byte) string {
-	whenSection, requirementsSection, pitfallsSection := extractHumanZones(string(existing))
+	return renderPluginPageLocale(slug, m, inputKeys, existing, enStrings)
+}
+
+// renderPluginPageLocale emits the full markdown for one plugin in the
+// requested locale. When `existing` is non-empty, the human-authored
+// zones (the three prose sections between AUTOGEN blocks: "When to
+// use", "Requirements", "Notes") are pulled forward. Section headings
+// are drawn from `ls`, so the same preserve-around-AUTOGEN flow works
+// for both English and Japanese pages.
+func renderPluginPageLocale(slug string, m pluginMetadata, inputKeys []string, existing []byte, ls localeStrings) string {
+	whenSection, requirementsSection, pitfallsSection := extractHumanZonesLocale(string(existing), ls)
 
 	var b strings.Builder
 	// AUTOGEN: title + description
 	b.WriteString("<!-- AUTOGEN_START: title-and-description -->\n")
-	fmt.Fprintf(&b, "# Plugin: %s\n\n", slug)
+	fmt.Fprintf(&b, "# %s: %s\n\n", ls.PluginHeading, slug)
 	desc := firstParagraph(m.Description)
 	if desc == "" {
-		desc = defaultDescription(slug)
+		desc = defaultDescription(slug, ls)
 	}
 	b.WriteString(desc)
 	b.WriteString("\n<!-- AUTOGEN_END: title-and-description -->\n\n")
@@ -231,48 +326,50 @@ func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existin
 	// Sample image (skipped for slugs that produce no standalone visual
 	// output, e.g. `core` — it implements configuration parsing and the
 	// parallel plugin runner, with no card of its own).
+	fmt.Fprintf(&b, "## %s\n\n", ls.SampleHeading)
 	if _, skip := slugsWithoutSample[slug]; skip {
-		b.WriteString("## Sample\n\n")
-		b.WriteString("This plugin emits no standalone SVG; its inputs are documented below.\n\n")
+		b.WriteString(ls.NoStandaloneSampleNotice)
+		b.WriteString("\n\n")
 	} else {
-		b.WriteString("## Sample\n\n")
 		fmt.Fprintf(&b, "![%s sample](../examples/%s.svg)\n\n", slug, sampleImageBase(slug))
-		b.WriteString("> Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.\n\n")
+		fmt.Fprintf(&b, "> %s\n\n", ls.SampleCaption)
 	}
 
 	// Human-authored: when-to-use. Skip the header entirely when no
 	// prose exists so the page does not show an empty heading.
 	if whenSection != "" {
-		b.WriteString("## When to use\n\n")
+		fmt.Fprintf(&b, "## %s\n\n", ls.WhenToUseHeading)
 		b.WriteString(whenSection)
 		b.WriteString("\n\n")
 	}
 
 	// AUTOGEN: config table
 	b.WriteString("<!-- AUTOGEN_START: config-table -->\n")
-	b.WriteString("## Configuration (inputs)\n\n")
+	fmt.Fprintf(&b, "## %s\n\n", ls.InputsHeading)
 	if len(inputKeys) == 0 {
-		b.WriteString("(This plugin has no dedicated inputs.)\n")
+		b.WriteString(ls.NoInputsNotice)
+		b.WriteString("\n")
 	} else {
-		b.WriteString("| Input | Description | Default | Required | Type |\n")
+		fmt.Fprintf(&b, "| %s | %s | %s | %s | %s |\n",
+			ls.InputColName, ls.InputColDesc, ls.InputColDefault, ls.InputColRequired, ls.InputColType)
 		b.WriteString("| ----- | ----------- | ------- | -------- | ---- |\n")
 		for _, k := range inputKeys {
 			in := m.Inputs[k]
-			b.WriteString(formatInputRow(k, in))
+			b.WriteString(formatInputRow(k, in, ls))
 		}
 	}
 	b.WriteString("<!-- AUTOGEN_END: config-table -->\n\n")
 
 	// AUTOGEN: usage snippet
 	b.WriteString("<!-- AUTOGEN_START: usage-snippet -->\n")
-	b.WriteString("## Usage\n\n")
+	fmt.Fprintf(&b, "## %s\n\n", ls.UsageHeading)
 	switch slug {
 	case "core":
 		// `core` is the configuration / parallel-runner plugin. It is
 		// never toggled on/off; users interact with it by supplying the
 		// global inputs documented in the table above (`template`,
 		// `config_*`, `optimize`, etc.).
-		b.WriteString("### GitHub Action\n\n")
+		fmt.Fprintf(&b, "### %s\n\n", ls.GHActionSubheading)
 		b.WriteString("```yaml\n")
 		b.WriteString("- uses: mjun0812/github-metrics@v1\n")
 		b.WriteString("  with:\n")
@@ -282,7 +379,7 @@ func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existin
 		b.WriteString("    config_timezone: Asia/Tokyo\n")
 		b.WriteString("    config_output: svg\n")
 		b.WriteString("```\n\n")
-		b.WriteString("### CLI\n\n")
+		fmt.Fprintf(&b, "### %s\n\n", ls.CLISubheading)
 		b.WriteString("```sh\n")
 		b.WriteString("# export GITHUB_TOKEN=$(gh auth token)\n")
 		b.WriteString("metrics-cli --user <your-login> \\\n")
@@ -291,7 +388,7 @@ func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existin
 		b.WriteString("  --plugin config_timezone=Asia/Tokyo\n")
 		b.WriteString("```\n")
 	default:
-		b.WriteString("### GitHub Action\n\n")
+		fmt.Fprintf(&b, "### %s\n\n", ls.GHActionSubheading)
 		b.WriteString("```yaml\n")
 		b.WriteString("- uses: mjun0812/github-metrics@v1\n")
 		b.WriteString("  with:\n")
@@ -299,7 +396,7 @@ func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existin
 		b.WriteString("    token: ${{ secrets.METRICS_TOKEN }}\n")
 		fmt.Fprintf(&b, "    plugin_%s: yes\n", slug)
 		b.WriteString("```\n\n")
-		b.WriteString("### CLI\n\n")
+		fmt.Fprintf(&b, "### %s\n\n", ls.CLISubheading)
 		b.WriteString("```sh\n")
 		b.WriteString("# export GITHUB_TOKEN=$(gh auth token)\n")
 		b.WriteString("metrics-cli --user <your-login> \\\n")
@@ -315,43 +412,43 @@ func renderPluginPage(slug string, m pluginMetadata, inputKeys []string, existin
 	// and `core` plugins we inject a canonical first-gen paragraph so
 	// the page is self-explanatory without manual editing.
 	if requirementsSection != "" {
-		b.WriteString("## Requirements\n\n")
+		fmt.Fprintf(&b, "## %s\n\n", ls.RequirementsHeading)
 		b.WriteString(requirementsSection)
 		b.WriteString("\n\n")
-	} else if req := defaultRequirements(slug); req != "" {
-		b.WriteString("## Requirements\n\n")
+	} else if req := defaultRequirements(slug, ls); req != "" {
+		fmt.Fprintf(&b, "## %s\n\n", ls.RequirementsHeading)
 		b.WriteString(req)
 		b.WriteString("\n\n")
 	}
 
 	// Human-authored: notes. Skip the header entirely when empty.
 	if pitfallsSection != "" {
-		b.WriteString("## Notes\n\n")
+		fmt.Fprintf(&b, "## %s\n\n", ls.NotesHeading)
 		b.WriteString(pitfallsSection)
 		b.WriteString("\n\n")
 	}
 
 	// References
-	b.WriteString("## References\n\n")
-	b.WriteString("- [`action.yml`](../../action.yml) — canonical input schema\n")
-	fmt.Fprintf(&b, "- [`assets/plugins/%s/metadata.yml`](../../assets/plugins/%s/metadata.yml) — upstream metadata\n", slug, slug)
+	fmt.Fprintf(&b, "## %s\n\n", ls.ReferencesHeading)
+	fmt.Fprintf(&b, "- [`action.yml`](../../action.yml) — %s\n", ls.RefActionYml)
+	fmt.Fprintf(&b, "- [`assets/plugins/%s/metadata.yml`](../../assets/plugins/%s/metadata.yml) — %s\n", slug, slug, ls.RefMetadataYml)
 	if len(m.Supports) > 0 {
-		fmt.Fprintf(&b, "- Supported account types: %s\n", strings.Join(m.Supports, ", "))
+		fmt.Fprintf(&b, "- %s: %s\n", ls.RefSupports, strings.Join(m.Supports, ", "))
 	}
 	if len(m.Scopes) > 0 {
-		fmt.Fprintf(&b, "- Required scopes: %s\n", strings.Join(m.Scopes, ", "))
+		fmt.Fprintf(&b, "- %s: %s\n", ls.RefScopes, strings.Join(m.Scopes, ", "))
 	}
 
 	return b.String()
 }
 
 // formatInputRow renders a single row in the input config table.
-func formatInputRow(key string, in pluginInput) string {
+func formatInputRow(key string, in pluginInput, ls localeStrings) string {
 	desc := firstParagraph(in.Description)
 	desc = strings.ReplaceAll(desc, "\n", " ")
 	desc = strings.ReplaceAll(desc, "|", `\|`)
 	if desc == "" {
-		desc = "(no description)"
+		desc = ls.NoDescriptionPlaceholder
 	}
 
 	def := formatDefault(in.Default)
@@ -361,9 +458,9 @@ func formatInputRow(key string, in pluginInput) string {
 	// folding.
 	def = strings.Join(strings.Fields(def), " ")
 	def = strings.ReplaceAll(def, "|", `\|`)
-	req := "no"
+	req := ls.NoLabel
 	if in.Required {
-		req = "yes"
+		req = ls.YesLabel
 	}
 	typ := in.Type
 	if typ == "" {
@@ -394,10 +491,16 @@ func formatDefault(d any) string {
 
 // defaultRequirements returns the first-gen Requirements paragraph for
 // the foundational `core` / `base` plugins. Returns "" for every other
-// slug — the 19 adopted plugins have Requirements text that landed
-// hand-written in PR #410 and is pulled forward from the existing file
-// via extractHumanZones rather than emitted here.
-func defaultRequirements(slug string) string {
+// slug and for locales other than English — the 19 adopted plugins
+// have Requirements text that landed hand-written in PR #410 and is
+// pulled forward from the existing file via extractHumanZones rather
+// than emitted here. Japanese translations of these paragraphs will be
+// added when a metadata_ja.yml exists for base / core; until then the
+// Requirements section stays blank on JA pages (see #761).
+func defaultRequirements(slug string, ls localeStrings) string {
+	if ls.Code != "en" {
+		return ""
+	}
 	switch slug {
 	case "core":
 		return "Core has no standalone visual output; this page documents its inputs only. The plugin implements global configuration parsing (template selection, timezone, animations, output format, etc.) and the parallel plugin runner that drives every other plugin. There are no API scopes or render prerequisites of its own — every other plugin in this repository depends on `core` having populated `data.Config` before it runs."
@@ -413,8 +516,13 @@ func defaultRequirements(slug string) string {
 // this path because its upstream metadata leaves `description` empty;
 // the generic fallback ("`<slug>` plugin output for GitHub metrics.")
 // would be misleading for it, so we provide a purpose-written summary
-// instead.
-func defaultDescription(slug string) string {
+// instead. For non-English locales, only a minimal generic fallback is
+// emitted — locale-specific hand-written descriptions live in
+// `assets/plugins/<slug>/metadata_ja.yml` when available.
+func defaultDescription(slug string, ls localeStrings) string {
+	if ls.Code != "en" {
+		return fmt.Sprintf("`%s` %s", slug, ls.GenericPluginBlurb)
+	}
 	switch slug {
 	case "core":
 		return "`core` is the configuration plugin: it parses the global `config_*` / `template` / `optimize` inputs into `data.Config` and drives the parallel runner that fans every other plugin out across workers. It has no card of its own — every visible output comes from another plugin running on top of the state `core` produces."
@@ -434,37 +542,59 @@ func firstParagraph(s string) string {
 	return strings.TrimSpace(s)
 }
 
-// humanZoneRe matches text between the marker pair that immediately
-// precedes/follows the human-authored heading. We use this on the
-// existing file to pull forward the maintainer's prose.
+// humanZoneRegex bundles the three compiled regexes used to extract
+// the human-authored zones from a previously-generated page. Each
+// locale gets its own set because the heading text is localized (e.g.
+// `## Requirements` vs `## 前提条件`).
+type humanZoneRegex struct {
+	when         *regexp.Regexp
+	requirements *regexp.Regexp
+	pitfalls     *regexp.Regexp
+}
+
+// newHumanZoneRegex compiles the three human-zone regexes for the
+// given locale. The AUTOGEN marker text is locale-invariant; only the
+// heading names vary.
 //
 // Three human-authored zones live in a previously-generated page:
-//  1. ## When to use   — between title-and-description and the
+//  1. When-to-use   — between title-and-description and the
 //     config-table AUTOGEN block.
-//  2. ## Requirements  — between the usage-snippet AUTOGEN block and
-//     the next heading (## Notes or ## References when Notes is
-//     absent). Optional.
-//  3. ## Notes         — between Requirements (or the usage-snippet
-//     block when Requirements is absent) and "## References".
-var (
-	whenSectionRe         = regexp.MustCompile(`(?s)## When to use\s*\n+(.*?)\n+<!-- AUTOGEN_START: config-table -->`)
-	requirementsSectionRe = regexp.MustCompile(`(?s)## Requirements\s*\n+(.*?)\n+## (?:Notes|References)`)
-	pitfallsSectionRe     = regexp.MustCompile(`(?s)## Notes\s*\n+(.*?)\n+## References`)
-)
+//  2. Requirements  — between the usage-snippet AUTOGEN block and
+//     the next heading (Notes or References when Notes is absent).
+//     Optional.
+//  3. Notes         — between Requirements (or the usage-snippet
+//     block when Requirements is absent) and References.
+func newHumanZoneRegex(ls localeStrings) humanZoneRegex {
+	when := regexp.MustCompile(`(?s)## ` +
+		regexp.QuoteMeta(ls.WhenToUseHeading) +
+		`\s*\n+(.*?)\n+<!-- AUTOGEN_START: config-table -->`)
+	requirements := regexp.MustCompile(`(?s)## ` +
+		regexp.QuoteMeta(ls.RequirementsHeading) +
+		`\s*\n+(.*?)\n+## (?:` +
+		regexp.QuoteMeta(ls.NotesHeading) + `|` +
+		regexp.QuoteMeta(ls.ReferencesHeading) + `)`)
+	pitfalls := regexp.MustCompile(`(?s)## ` +
+		regexp.QuoteMeta(ls.NotesHeading) +
+		`\s*\n+(.*?)\n+## ` +
+		regexp.QuoteMeta(ls.ReferencesHeading))
+	return humanZoneRegex{when: when, requirements: requirements, pitfalls: pitfalls}
+}
 
-// extractHumanZones returns the prose that lives in the three
-// human-authored sections of a previously-generated page.
-func extractHumanZones(existing string) (when, requirements, pitfalls string) {
+// extractHumanZonesLocale returns the prose that lives in the three
+// human-authored sections of a previously-generated page, using
+// locale-aware heading regexes.
+func extractHumanZonesLocale(existing string, ls localeStrings) (when, requirements, pitfalls string) {
 	if existing == "" {
 		return "", "", ""
 	}
-	if m := whenSectionRe.FindStringSubmatch(existing); len(m) == 2 {
+	rx := newHumanZoneRegex(ls)
+	if m := rx.when.FindStringSubmatch(existing); len(m) == 2 {
 		when = strings.TrimSpace(m[1])
 	}
-	if m := requirementsSectionRe.FindStringSubmatch(existing); len(m) == 2 {
+	if m := rx.requirements.FindStringSubmatch(existing); len(m) == 2 {
 		requirements = strings.TrimSpace(m[1])
 	}
-	if m := pitfallsSectionRe.FindStringSubmatch(existing); len(m) == 2 {
+	if m := rx.pitfalls.FindStringSubmatch(existing); len(m) == 2 {
 		pitfalls = strings.TrimSpace(m[1])
 	}
 	return when, requirements, pitfalls

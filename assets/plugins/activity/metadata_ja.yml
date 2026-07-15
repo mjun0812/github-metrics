@@ -1,0 +1,63 @@
+# 日本語訳のオーバーレイ。metadata.yml のうち、人間向け prose である
+# `description` と `inputs.*.description` のみを上書きします。
+# `type` / `default` / `required` / `supports` / `scopes` などの
+# 機械可読フィールドはベースの metadata.yml をそのまま使用します。
+description: |
+  このプラグインは GitHub 上での最近の活動を表示します。
+
+inputs:
+
+  plugin_activity:
+    description: |
+      `activity` プラグインを有効化します。
+
+  plugin_activity_limit:
+    description: |
+      表示する件数の上限。
+
+  plugin_activity_load:
+    description: |
+      読み込むイベント数。
+
+  plugin_activity_days:
+    description: |
+      対象とするイベントの最大日数。
+
+  plugin_activity_visibility:
+    description: |
+      表示するイベントの公開範囲。
+
+      `repo` スコープを含むトークンを使用している場合、非公開活動の表示を切り替えるために利用できます。
+
+  plugin_activity_timestamps:
+    description: |
+      イベントごとのタイムスタンプ表示。
+
+  plugin_activity_skipped:
+    description: |
+      集計から除外するリポジトリ。
+
+  plugin_activity_ignored:
+    description: |
+      集計から除外するユーザー。
+
+      Bot の活動を除外する用途に利用できます。
+
+  plugin_activity_filter:
+    description: |
+      対象とするイベント種別。
+
+      [GitHub events API](https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/github-event-types) から取得され、現在は以下の種別に対応しています。
+      - `push`: コミットの push
+      - `issue`: issue の作成 / 再開 / クローズ
+      - `pr`: pull request の作成 / クローズ
+      - `ref/create`: タグやブランチの作成
+      - `ref/delete`: タグやブランチの削除
+      - `release`: リリースの公開
+      - `review`: pull request のレビュー
+      - `comment`: コミット / issue / pull request へのコメント
+      - `wiki`: wiki ページの変更
+      - `fork`: リポジトリの fork
+      - `star`: リポジトリへの star
+      - `public`: リポジトリの公開化
+      - `member`: リポジトリへの collaborator 追加
