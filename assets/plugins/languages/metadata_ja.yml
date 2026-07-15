@@ -1,0 +1,100 @@
+# 日本語訳のオーバーレイ。metadata.yml のうち、人間向け prose である
+# `description` と `inputs.*.description` のみを上書きします。
+# `type` / `default` / `required` / `supports` / `scopes` などの
+# 機械可読フィールドはベースの metadata.yml をそのまま使用します。
+description: |
+  このプラグインは、あなたがコントリビュートした全リポジトリで使用されている言語を表示します。
+
+inputs:
+
+  plugin_languages:
+    description: |
+      `languages` プラグインを有効化します。
+
+  plugin_languages_ignored:
+    description: |
+      集計から除外する言語。
+
+  plugin_languages_skipped:
+    description: |
+      集計から除外するリポジトリ。
+
+  plugin_languages_limit:
+    description: |
+      表示する言語数の上限。
+
+  plugin_languages_threshold:
+    description: |
+      表示する割合の下限 (パーセント指定)。
+
+  plugin_languages_other:
+    description: |
+      不明・除外対象・上限超過の言語を "Other" カテゴリにまとめます。
+
+      有効化した場合、"Other" カテゴリは [`plugin_languages_threshold`](/source/plugins/languages/README.md#plugin_languages_threshold) の対象外となります。
+      集計対象が空の場合は自動的に非表示になります。
+
+  plugin_languages_colors:
+    description: |
+      言語ごとに使用する色のカスタマイズ。
+
+  plugin_languages_aliases:
+    description: |
+      言語表示名のカスタマイズ。
+
+  plugin_languages_sections:
+    description: |
+      表示するセクション。
+
+      `recently-used` は [`plugin_languages_indepth`](/source/plugins/languages/README.md#plugin_languages_indepth) が有効な場合のみ利用できます。
+
+  plugin_languages_details:
+    description: |
+      表示する追加情報。
+
+      `lines` は [`plugin_languages_indepth`](/source/plugins/languages/README.md#plugin_languages_indepth) が有効な場合のみ利用できます。
+
+  plugin_languages_indepth:
+    description: |
+      Indepth モードを有効化します。
+
+      > ⚠️ 先にドキュメントを確認してください。
+
+  plugin_languages_indepth_custom:
+    description: |
+      Indepth モード — 追加で解析するリポジトリ。
+
+      追加したいリポジトリを指定します。以下の書式が使用できます。
+      - `owner/repo` (例: `lowlighter/metrics`)
+      - `owner/repo@branch` (例: `lowlighter/metrics@main`)
+      - `owner/repo@branch:commits` (例: `lowlighter/metrics@main:v1.0..v1.1`)
+        - `commits` の書式は [`git rev-list`](https://git-scm.com/docs/git-rev-list#_description) を参照してください。
+
+      `github.com` 以外でホストされているリポジトリを指定する場合は、完全な URL を渡してください。
+      その場合、そのリポジトリに直接アクセスできる必要があります。
+
+      > ℹ️ このオプションで指定したリポジトリは [`plugin_languages_skipped`](/source/plugins/languages/README.md#plugin_languages_skipped) の対象外です。
+
+  plugin_languages_analysis_timeout:
+    description: |
+      Indepth モード — 解析のタイムアウト。
+
+  plugin_languages_analysis_timeout_repositories:
+    description: |
+      Indepth モード — 解析のタイムアウト (リポジトリ単位)。
+
+  plugin_languages_categories:
+    description: |
+      Indepth モード — `most-used` セクションで表示するカテゴリ。
+
+  plugin_languages_recent_categories:
+    description: |
+      Indepth モード — `recently-used` セクションで表示するカテゴリ。
+
+  plugin_languages_recent_load:
+    description: |
+      Indepth モード — `recently-used` セクションで読み込むイベント数。
+
+  plugin_languages_recent_days:
+    description: |
+      Indepth モード — `recently-used` セクションでイベントを遡る最大日数。

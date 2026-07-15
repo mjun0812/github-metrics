@@ -206,6 +206,27 @@ updates the README plugins-gallery AUTOGEN block. Human-authored
 zones between `<!-- AUTOGEN_START: ... -->` markers are preserved
 byte-identically across re-runs.
 
+**Japanese translations (`docs/plugins/<slug>_ja.md`)**
+
+`make docs` also emits a Japanese companion page for every plugin
+that ships a translation overlay at
+`assets/plugins/<slug>/metadata_ja.yml`. To add one:
+
+1. Copy the shape of an existing overlay
+   (e.g. `assets/plugins/languages/metadata_ja.yml`). Only translate
+   what needs translating — `description` (the page intro) and the
+   per-input `description` fields. Machine fields (`type`, `default`,
+   `required`, `supports`, `scopes`) always come from the base
+   `metadata.yml` and MUST NOT be duplicated in the overlay.
+2. Run `make docs` — the generator writes
+   `docs/plugins/<slug>_ja.md`, mirroring the English page structure
+   with translated headings.
+
+If no `metadata_ja.yml` exists for a plugin, the JA page is
+intentionally skipped. Half-translated pages (mixed English and
+Japanese prose) are worse than none, so the generator will never
+emit a fallback page filled with English text.
+
 **Sample SVGs (needs token + docker)**
 
 ```sh
