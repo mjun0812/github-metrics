@@ -1,12 +1,10 @@
 <!-- AUTOGEN_START: title-and-description -->
-
 # Plugin: base
 
 Restores the activity / community / repositories summary panels that
-were originally bundled into the `lowlighter/metrics` `base` chrome. The panels
+were originally bundled into the upstream `base` chrome. The panels
 read aggregated data from the shared `dataprovider.Provider`
 (Profile + RepositorySummary) — no GraphQL or REST fetching duplication.
-
 <!-- AUTOGEN_END: title-and-description -->
 
 ## Sample
@@ -16,23 +14,20 @@ read aggregated data from the shared `dataprovider.Provider`
 > Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
-
 ## Configuration (inputs)
 
-| Input         | Description                                                                            | Default | Required | Type    |
-| ------------- | -------------------------------------------------------------------------------------- | ------- | -------- | ------- |
-| `plugin_base` | Enable base plugin (compat master switch; prefer the per-section `chrome_*` booleans). | `no`    | no       | boolean |
-
+| Input | Description | Default | Required | Type |
+| ----- | ----------- | ------- | -------- | ---- |
+| `plugin_base` | Enable base plugin (compat master switch; prefer the per-section `chrome_*` booleans). | `no` | no | boolean |
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
-
 ## Usage
 
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@latest
+- uses: mjun0812/github-metrics@v1
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -47,7 +42,6 @@ metrics-cli --user <your-login> \
   --output svg --filename - \
   --plugin plugin_base=yes
 ```
-
 <!-- AUTOGEN_END: usage-snippet -->
 
 ## Requirements
@@ -57,6 +51,6 @@ Base reads `Provider.Profile(ctx)` and `Provider.RepositorySummary(ctx)` from th
 ## References
 
 - [`action.yml`](../../action.yml) — canonical input schema
-- [`assets/plugins/base/metadata.yml`](../../assets/plugins/base/metadata.yml) — `lowlighter/metrics` metadata
+- [`assets/plugins/base/metadata.yml`](../../assets/plugins/base/metadata.yml) — upstream metadata
 - Supported account types: user, organization
 - Required scopes: public_access
