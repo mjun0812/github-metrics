@@ -98,8 +98,7 @@ RUN apt-get update \
 COPY --from=resvg-build /usr/local/cargo/bin/resvg /usr/local/bin/resvg
 ENV METRICS_RESVG_PATH=/usr/local/bin/resvg
 
-# Binaries land at /usr/local/bin/, owned by root and mode 0755 so
-# the non-root runtime user can execute but not modify.
+# Binaries land at /usr/local/bin/, owned by root and mode 0755.
 COPY --from=build /out/metrics-cli /usr/local/bin/metrics-cli
 
 # svg2png is a developer/CI aid (regen-doc-samples render job, #527), not
@@ -107,12 +106,9 @@ COPY --from=build /out/metrics-cli /usr/local/bin/metrics-cli
 # binary through METRICS_RESVG_PATH.
 COPY --from=build /out/svg2png /usr/local/bin/svg2png
 
-# Non-root user. uid 10001 sits outside the system range (0-999) and
-# the GitHub Actions runner range (1000-1999), avoiding collisions
-# when the container is invoked outside Actions context.
-RUN groupadd --system --gid 10001 metrics \
-    && useradd  --system --uid 10001 --gid metrics --no-create-home --shell /sbin/nologin metrics
-
-USER metrics
-
+# Run as root so `output_action: commit` / `filename:` writes into
+# GitHub Actions' `/github/workspace` mount succeed. That directory is
+# owned by the runner user (uid 1001) and refuses writes from any other
+# uid, so a non-root container UID cannot land the output file (#779).
+# `lowlighter/metrics` runs as root for the same reason.
 ENTRYPOINT ["/usr/local/bin/metrics-cli"]

@@ -53,6 +53,27 @@ jobs:
           config_output: svg
           dryrun: 'yes'
 
+      # Real file-write smoke. `dryrun: yes` above skips the
+      # `output_action` write-back, so this second invocation is what
+      # actually catches regressions like #779 (permission denied on
+      # /github/workspace). `output_action: none` returns the SVG as an
+      # action output only and does not push to git, so no secrets or
+      # committer_token are required.
+      - uses: ./
+        id: smoke-write
+        with:
+          user: octocat
+          token: ${{ secrets.METRICS_TOKEN }}
+          template: classic
+          filename: smoke-write.svg
+          config_output: svg
+          output_action: none
+      - name: Assert smoke-write.svg landed in workspace
+        run: |
+          test -s "${GITHUB_WORKSPACE}/smoke-write.svg" \
+            || { echo "smoke-write.svg missing or empty — action cannot write to workspace"; exit 1; }
+          head -c 200 "${GITHUB_WORKSPACE}/smoke-write.svg"
+
   # smoke-arm is temporarily disabled to conserve GitHub-hosted Actions
   # usage (ubuntu-24.04-arm is a GitHub-hosted runner). Re-enable by
   # uncommenting once the rate-limit pressure subsides.
