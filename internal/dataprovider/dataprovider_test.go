@@ -51,7 +51,12 @@ func (c *countingTransport) RoundTrip(req *http.Request) (*http.Response, error)
 	c.mu.Unlock()
 	atomic.AddInt64(counter, 1)
 	if !hasResp {
-		respBody = `{"data": null}`
+		// Empty envelope keeps the decoded response struct zero-valued
+		// (all field pointers stay nil) without tripping the #732
+		// emptyDataGuardClient, which rejects an explicit "data": null.
+		// Tests that want the guard's error path override this via
+		// setResponse.
+		respBody = `{"data":{}}`
 	}
 	if status == 0 {
 		status = http.StatusOK

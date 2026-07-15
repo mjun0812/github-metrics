@@ -3,6 +3,7 @@ package githubapi_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -282,5 +283,80 @@ func TestGraphQL_ServerErrorPropagates(t *testing.T) {
 
 	if _, err := g.User(context.Background(), "noone"); err == nil {
 		t.Fatalf("expected error for 400 response")
+	}
+}
+
+// TestGraphQL_EmptyDataNullReturnsError guards #732: GitHub's secondary
+// rate limit path can reply with HTTP 200 and `{"data": null}` and no
+// errors envelope. The stock genqlient client treats that as a
+// successful zero-valued response, which downstream renders as an empty
+// card. emptyDataGuardClient must surface the swallowed condition as
+// ErrEmptyGraphQLResponse.
+func TestGraphQL_EmptyDataNullReturnsError(t *testing.T) {
+	t.Parallel()
+
+	transport := &graphqlMockTransport{body: `{"data":null}`}
+	g := newGraphQLWithMock(t, transport)
+
+	_, err := g.User(context.Background(), "octocat")
+	if err == nil {
+		t.Fatalf("expected ErrEmptyGraphQLResponse for {\"data\":null}, got nil")
+	}
+	if !errors.Is(err, githubapi.ErrEmptyGraphQLResponse) {
+		t.Fatalf("errors.Is(ErrEmptyGraphQLResponse) = false; err=%v", err)
+	}
+	// The wrapper should mention the operation name so log lines
+	// pinpoint which query was swallowed.
+	if !strings.Contains(err.Error(), "User") {
+		t.Errorf("error message missing op name; err=%q", err.Error())
+	}
+}
+
+// TestGraphQL_EmptyDataWithErrorsSurfacesGraphQLErrors verifies that
+// when GitHub responds with `{"data": null, "errors": [...]}` (the
+// typical GraphQL error envelope, including secondary rate limits that
+// do populate a structured error), genqlient's default handling wins
+// and the wrapper does not swallow the more informative message.
+func TestGraphQL_EmptyDataWithErrorsSurfacesGraphQLErrors(t *testing.T) {
+	t.Parallel()
+
+	transport := &graphqlMockTransport{
+		body: `{"data":null,"errors":[{"message":"API rate limit exceeded","type":"RATE_LIMITED"}]}`,
+	}
+	g := newGraphQLWithMock(t, transport)
+
+	_, err := g.User(context.Background(), "octocat")
+	if err == nil {
+		t.Fatalf("expected error for rate-limited response")
+	}
+	// The genqlient errors path must win over the empty-data guard so
+	// the operator sees the GitHub message (and not a generic sentinel).
+	if !strings.Contains(err.Error(), "API rate limit exceeded") {
+		t.Errorf("error should surface GitHub message; err=%q", err.Error())
+	}
+	if errors.Is(err, githubapi.ErrEmptyGraphQLResponse) {
+		t.Errorf("guard should not wrap when genqlient already returns errors; err=%v", err)
+	}
+}
+
+// TestGraphQL_ExplicitDataUserNullIsNotAnError guards the legitimate
+// "user does not exist" GraphQL shape (`{"data": {"user": null}}`).
+// The Data envelope is a non-null object, so emptyDataGuardClient must
+// keep its hands off and let the caller observe the null user field.
+func TestGraphQL_ExplicitDataUserNullIsNotAnError(t *testing.T) {
+	t.Parallel()
+
+	transport := &graphqlMockTransport{body: `{"data":{"user":null}}`}
+	g := newGraphQLWithMock(t, transport)
+
+	resp, err := g.User(context.Background(), "nonexistent")
+	if err != nil {
+		t.Fatalf("unexpected error for {\"data\":{\"user\":null}}: %v", err)
+	}
+	if resp == nil {
+		t.Fatalf("resp should be non-nil (envelope decoded successfully)")
+	}
+	if resp.User != nil {
+		t.Errorf("resp.User should be nil, got %+v", resp.User)
 	}
 }

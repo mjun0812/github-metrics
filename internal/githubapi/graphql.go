@@ -56,8 +56,12 @@ func NewGraphQL(token config.Token, customBaseURL string, opts httpx.Options) (*
 		Timeout: inner.Timeout,
 	}
 
+	// Wrap the stock genqlient client in emptyDataGuardClient so a
+	// GitHub reply of `{"data": null}` (secondary rate limit / abuse
+	// heuristic) surfaces as ErrEmptyGraphQLResponse instead of being
+	// swallowed as a zero-valued success (#732).
 	return &GraphQL{
-		client:    graphql.NewClient(base, authedClient),
+		client:    newEmptyDataGuardClient(graphql.NewClient(base, authedClient)),
 		baseURL:   base,
 		tokenKind: kind,
 	}, nil
