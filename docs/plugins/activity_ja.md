@@ -51,7 +51,7 @@ metrics-cli --user <your-login> \
 
 ## 参考
 
-- [`action.yml`](../../action.yml) — 入力スキーマの正本
-- [`assets/plugins/activity/metadata.yml`](../../assets/plugins/activity/metadata.yml) — upstream の metadata
+- [`action.yml`](../../action.yml) — 入力スキーマのリファレンス
+- [`assets/plugins/activity/metadata.yml`](../../assets/plugins/activity/metadata.yml) — upstream 由来の metadata
 - 対応アカウント種別: user, organization, repository
 - 必要なスコープ: public_access

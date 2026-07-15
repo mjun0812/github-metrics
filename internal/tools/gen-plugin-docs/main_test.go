@@ -390,7 +390,8 @@ func TestPluginPagePath_LocaleSuffix(t *testing.T) {
 // TestApplyTranslation_MergesDescriptionAndInputs verifies the JA
 // overlay merge: description and per-input description are pulled from
 // the overlay when present; unmodified fields fall through to the
-// base; overlay entries for non-existent inputs are ignored.
+// base. Overlay entries for non-existent inputs are now rejected as
+// translator typos — see TestApplyTranslation_UnknownInputIsError.
 func TestApplyTranslation_MergesDescriptionAndInputs(t *testing.T) {
 	t.Parallel()
 	base := pluginMetadata{
@@ -403,11 +404,13 @@ func TestApplyTranslation_MergesDescriptionAndInputs(t *testing.T) {
 	overlay := pluginMetadata{
 		Description: "日本語の説明",
 		Inputs: map[string]pluginInput{
-			"a":       {Description: "日本語 A"},
-			"missing": {Description: "ignored"},
+			"a": {Description: "日本語 A"},
 		},
 	}
-	got := applyTranslation(base, overlay)
+	got, err := applyTranslation(base, overlay)
+	if err != nil {
+		t.Fatalf("applyTranslation: %v", err)
+	}
 	if got.Description != "日本語の説明" {
 		t.Errorf("description not overridden: %q", got.Description)
 	}
@@ -422,9 +425,33 @@ func TestApplyTranslation_MergesDescriptionAndInputs(t *testing.T) {
 	if got.Inputs["b"].Description != "English B" {
 		t.Errorf("input b description clobbered: %q", got.Inputs["b"].Description)
 	}
-	// Overlay entry for an input that does not exist in base is ignored.
-	if _, ok := got.Inputs["missing"]; ok {
-		t.Errorf("overlay-only input leaked into merged output")
+}
+
+// TestApplyTranslation_UnknownInputIsError guards SHOULD FIX #1 (map-key
+// leg): an overlay entry for an input slug that does not exist in the
+// base is treated as a translator typo. Silently dropping it would ship
+// JA pages missing the intended translation without any warning — the
+// exact fail-silent trap the review flagged.
+func TestApplyTranslation_UnknownInputIsError(t *testing.T) {
+	t.Parallel()
+	base := pluginMetadata{
+		Description: "English",
+		Inputs: map[string]pluginInput{
+			"plugin_languages": {Description: "Enable", Type: "boolean"},
+		},
+	}
+	overlay := pluginMetadata{
+		Inputs: map[string]pluginInput{
+			// Typo — intended `plugin_languages`.
+			"pluin_languages": {Description: "有効化"},
+		},
+	}
+	_, err := applyTranslation(base, overlay)
+	if err == nil {
+		t.Fatalf("expected error for unknown overlay input, got nil")
+	}
+	if !strings.Contains(err.Error(), "pluin_languages") {
+		t.Errorf("error should name the offending key, got: %v", err)
 	}
 }
 
@@ -457,8 +484,8 @@ func TestRenderPluginPageLocale_JAUsesTranslatedHeadings(t *testing.T) {
 		"<!-- AUTOGEN_END: config-table -->",
 		"<!-- AUTOGEN_START: usage-snippet -->",
 		"<!-- AUTOGEN_END: usage-snippet -->",
-		"入力スキーマの正本",
-		"upstream の metadata",
+		"入力スキーマのリファレンス",
+		"upstream 由来の metadata",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("JA page missing %q in:\n%s", want, got)
@@ -560,6 +587,141 @@ func TestGeneratePluginPage_JASkipsWhenTranslationAbsent(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, "docs", "plugins", "untranslated_ja.md")); !os.IsNotExist(err) {
 		t.Errorf("expected no _ja.md file when metadata_ja.yml is absent, stat err: %v", err)
+	}
+}
+
+// TestGeneratePluginPage_JAUnknownTopLevelKeyErrors guards SHOULD FIX
+// #1 (struct-key leg): a metadata_ja.yml with a mis-spelled top-level
+// key (e.g. `descripton:` for `description:`) must fail loud rather
+// than silently ship a page that falls through to English. The error
+// must name the offending key and the source file so a translator can
+// find the typo without spelunking.
+func TestGeneratePluginPage_JAUnknownTopLevelKeyErrors(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+
+	assetsDir := filepath.Join(root, "assets", "plugins", "typoed")
+	if err := os.MkdirAll(assetsDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	baseYAML := "name: test\ndescription: |\n  English.\ninputs:\n  plugin_typoed:\n    description: |\n      Enable\n    type: boolean\n    default: no\n"
+	if err := os.WriteFile(filepath.Join(assetsDir, "metadata.yml"), []byte(baseYAML), 0o600); err != nil {
+		t.Fatalf("write metadata.yml: %v", err)
+	}
+	// `descripton:` is a plausible typo for `description:`.
+	jaYAML := "descripton: |\n  日本語の説明。\n"
+	if err := os.WriteFile(filepath.Join(assetsDir, "metadata_ja.yml"), []byte(jaYAML), 0o600); err != nil {
+		t.Fatalf("write metadata_ja.yml: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "docs", "plugins"), 0o755); err != nil {
+		t.Fatalf("mkdir docs: %v", err)
+	}
+
+	err := generatePluginPage(root, "typoed", jaStrings)
+	if err == nil {
+		t.Fatalf("expected typoed top-level key to fail generation, got nil")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "descripton") {
+		t.Errorf("error should mention the offending key, got: %v", err)
+	}
+	if !strings.Contains(msg, "metadata_ja.yml") {
+		t.Errorf("error should mention the source file, got: %v", err)
+	}
+	// The malformed overlay must NOT produce a page on disk.
+	if _, statErr := os.Stat(filepath.Join(root, "docs", "plugins", "typoed_ja.md")); !os.IsNotExist(statErr) {
+		t.Errorf("expected no _ja.md written on decode error, stat err: %v", statErr)
+	}
+}
+
+// TestGeneratePluginPage_JAMalformedYAMLErrors guards SHOULD FIX #3:
+// syntactically invalid YAML propagates as an error rather than being
+// swallowed. This is the "fail-loud" contract the PR body promises.
+func TestGeneratePluginPage_JAMalformedYAMLErrors(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+
+	assetsDir := filepath.Join(root, "assets", "plugins", "broken")
+	if err := os.MkdirAll(assetsDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	baseYAML := "name: test\ndescription: |\n  English.\ninputs: {}\n"
+	if err := os.WriteFile(filepath.Join(assetsDir, "metadata.yml"), []byte(baseYAML), 0o600); err != nil {
+		t.Fatalf("write metadata.yml: %v", err)
+	}
+	// Deliberately malformed: unclosed flow mapping.
+	if err := os.WriteFile(filepath.Join(assetsDir, "metadata_ja.yml"), []byte("description: { unterminated\n"), 0o600); err != nil {
+		t.Fatalf("write metadata_ja.yml: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "docs", "plugins"), 0o755); err != nil {
+		t.Fatalf("mkdir docs: %v", err)
+	}
+
+	err := generatePluginPage(root, "broken", jaStrings)
+	if err == nil {
+		t.Fatalf("expected malformed YAML to fail generation, got nil")
+	}
+	if !strings.Contains(err.Error(), "metadata_ja.yml") {
+		t.Errorf("error should reference the malformed file, got: %v", err)
+	}
+}
+
+// TestGeneratePluginPage_JAEmptyOverlaySkipsPage guards SHOULD FIX #3
+// (empty-overlay leg): a metadata_ja.yml that carries only comments and
+// whitespace is treated the same as an absent file — no JA page is
+// written. The alternative (silently emitting a page whose prose is
+// entirely English) violates the "half-translated is worse than none"
+// design goal.
+func TestGeneratePluginPage_JAEmptyOverlaySkipsPage(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+
+	assetsDir := filepath.Join(root, "assets", "plugins", "emptyoverlay")
+	if err := os.MkdirAll(assetsDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	baseYAML := "name: test\ndescription: |\n  English only.\ninputs:\n  plugin_emptyoverlay:\n    description: |\n      Enable\n    type: boolean\n    default: no\n"
+	if err := os.WriteFile(filepath.Join(assetsDir, "metadata.yml"), []byte(baseYAML), 0o600); err != nil {
+		t.Fatalf("write metadata.yml: %v", err)
+	}
+	// Overlay carries only a comment and whitespace — no translation.
+	if err := os.WriteFile(filepath.Join(assetsDir, "metadata_ja.yml"), []byte("# TODO: translate\n\n"), 0o600); err != nil {
+		t.Fatalf("write metadata_ja.yml: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "docs", "plugins"), 0o755); err != nil {
+		t.Fatalf("mkdir docs: %v", err)
+	}
+
+	if err := generatePluginPage(root, "emptyoverlay", jaStrings); err != nil {
+		t.Fatalf("generatePluginPage(ja): %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "docs", "plugins", "emptyoverlay_ja.md")); !os.IsNotExist(err) {
+		t.Errorf("expected no _ja.md file for content-empty overlay, stat err: %v", err)
+	}
+}
+
+// TestDefaultRequirements_JAEmitsBaseAndCore guards SHOULD FIX #2:
+// when a JA overlay lands for the foundational `base` / `core` slugs,
+// the JA page must ship its canonical Requirements paragraph — not a
+// silently-blank section. This test pins that the JA branch of
+// defaultRequirements is populated for both foundational slugs and
+// stays empty for other locales / other slugs.
+func TestDefaultRequirements_JAEmitsBaseAndCore(t *testing.T) {
+	t.Parallel()
+	for _, slug := range []string{"base", "core"} {
+		if got := defaultRequirements(slug, jaStrings); got == "" {
+			t.Errorf("defaultRequirements(%q, ja) returned empty — JA overlays would ship without Requirements", slug)
+		}
+		if got := defaultRequirements(slug, enStrings); got == "" {
+			t.Errorf("defaultRequirements(%q, en) returned empty — regression against pre-PR behavior", slug)
+		}
+	}
+	// Non-foundational slug: nothing to emit in either locale.
+	if got := defaultRequirements("languages", jaStrings); got != "" {
+		t.Errorf("defaultRequirements(languages, ja) should be empty, got: %q", got)
+	}
+	if got := defaultRequirements("languages", enStrings); got != "" {
+		t.Errorf("defaultRequirements(languages, en) should be empty, got: %q", got)
 	}
 }
 

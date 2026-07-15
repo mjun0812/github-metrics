@@ -19,8 +19,10 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -179,10 +181,16 @@ func loadMetadata(root, slug string) (pluginMetadata, []string, error) {
 }
 
 // loadJATranslation reads the optional Japanese translation overlay for
-// a plugin. Returns (empty, false, nil) when the file is absent — that
-// is the documented signal to skip the JA page entirely (design
-// decision #2 in issue #761). Any other error (unreadable, malformed
-// YAML) is propagated.
+// a plugin. Returns (empty, false, nil) when the file is absent OR
+// empty — either is the documented signal to skip the JA page entirely
+// (design decision #2 in issue #761: half-translated pages are worse
+// than none, and an empty overlay would fall through to English).
+//
+// Decoding is strict: unknown top-level keys (typos such as
+// `descripton:` or a stray `type:` at the file root) fail the run with
+// a clear error pointing at the offending key and file. This is the
+// fail-loud counterpart to the skip-when-absent policy — a mis-spelled
+// overlay must never silently ship an English-content JA page.
 func loadJATranslation(root, slug string) (pluginMetadata, bool, error) {
 	path := filepath.Join(root, "assets", "plugins", slug, "metadata_ja.yml")
 	raw, err := os.ReadFile(path) //nolint:gosec // operator-controlled paths inside the project tree
@@ -192,11 +200,40 @@ func loadJATranslation(root, slug string) (pluginMetadata, bool, error) {
 		}
 		return pluginMetadata{}, false, fmt.Errorf("read %s: %w", path, err)
 	}
+	// An overlay containing only whitespace / comments carries no
+	// translation. Treat it the same as an absent file so the JA page
+	// is skipped rather than emitted with English prose.
+	if len(bytes.TrimSpace(stripYAMLComments(raw))) == 0 {
+		return pluginMetadata{}, false, nil
+	}
+	dec := yaml.NewDecoder(bytes.NewReader(raw))
+	dec.KnownFields(true)
 	var m pluginMetadata
-	if err := yaml.Unmarshal(raw, &m); err != nil {
+	if err := dec.Decode(&m); err != nil {
+		if errors.Is(err, io.EOF) {
+			return pluginMetadata{}, false, nil
+		}
 		return pluginMetadata{}, false, fmt.Errorf("unmarshal %s: %w", path, err)
 	}
 	return m, true, nil
+}
+
+// stripYAMLComments removes `#`-prefixed comment lines from a YAML
+// document so an "empty overlay" (comments only + whitespace) can be
+// detected without asking the YAML parser. Simple line-oriented scan
+// is sufficient because we only need to distinguish "carries no
+// translation content" from "carries something to decode".
+func stripYAMLComments(raw []byte) []byte {
+	var out bytes.Buffer
+	for _, line := range bytes.Split(raw, []byte("\n")) {
+		trimmed := bytes.TrimLeft(line, " \t")
+		if len(trimmed) > 0 && trimmed[0] == '#' {
+			continue
+		}
+		out.Write(line)
+		out.WriteByte('\n')
+	}
+	return out.Bytes()
 }
 
 // applyTranslation merges a translation overlay onto the base metadata.
@@ -205,7 +242,13 @@ func loadJATranslation(root, slug string) (pluginMetadata, bool, error) {
 // fields (`type`, `default`, `required`, `supports`, `scopes`) always
 // come from the base to stay upstream-compatible. Empty fields in the
 // overlay fall through to the base (partial translations are allowed).
-func applyTranslation(base, overlay pluginMetadata) pluginMetadata {
+//
+// An overlay entry keyed on an input slug that does not exist in the
+// base is treated as a translator typo and reported as an error. This
+// is the map-key counterpart to the strict decoder in
+// `loadJATranslation`: the struct decoder rejects typos in top-level
+// keys, and this pass rejects typos inside the `inputs:` map.
+func applyTranslation(base, overlay pluginMetadata) (pluginMetadata, error) {
 	out := base
 	if s := strings.TrimSpace(overlay.Description); s != "" {
 		out.Description = overlay.Description
@@ -215,14 +258,20 @@ func applyTranslation(base, overlay pluginMetadata) pluginMetadata {
 		for k, v := range base.Inputs {
 			merged[k] = v
 		}
-		for k, ov := range overlay.Inputs {
-			bv, ok := merged[k]
-			if !ok {
-				// Overlay may include entries for inputs that no
-				// longer exist in the base — ignore to keep the
-				// generator upstream-compatible.
-				continue
+		// Sort unknown keys before reporting so the error is
+		// deterministic under Go's randomized map iteration.
+		var unknown []string
+		for k := range overlay.Inputs {
+			if _, ok := merged[k]; !ok {
+				unknown = append(unknown, k)
 			}
+		}
+		if len(unknown) > 0 {
+			sort.Strings(unknown)
+			return pluginMetadata{}, fmt.Errorf("overlay references unknown input(s) %v not present in the base metadata.yml", unknown)
+		}
+		for k, ov := range overlay.Inputs {
+			bv := merged[k]
 			if s := strings.TrimSpace(ov.Description); s != "" {
 				bv.Description = ov.Description
 			}
@@ -230,7 +279,7 @@ func applyTranslation(base, overlay pluginMetadata) pluginMetadata {
 		}
 		out.Inputs = merged
 	}
-	return out
+	return out, nil
 }
 
 // extractInputKeys returns the input map keys in declaration order.
@@ -282,7 +331,10 @@ func generatePluginPage(root, slug string, ls localeStrings) error {
 			// Design decision #2: skip when no translation exists.
 			return nil
 		}
-		meta = applyTranslation(meta, overlay)
+		meta, err = applyTranslation(meta, overlay)
+		if err != nil {
+			return fmt.Errorf("apply %s translation: %w", ls.Code, err)
+		}
 	}
 
 	out := pluginPagePath(root, slug, ls)
@@ -490,22 +542,34 @@ func formatDefault(d any) string {
 }
 
 // defaultRequirements returns the first-gen Requirements paragraph for
-// the foundational `core` / `base` plugins. Returns "" for every other
-// slug and for locales other than English — the 19 adopted plugins
-// have Requirements text that landed hand-written in PR #410 and is
-// pulled forward from the existing file via extractHumanZones rather
-// than emitted here. Japanese translations of these paragraphs will be
-// added when a metadata_ja.yml exists for base / core; until then the
-// Requirements section stays blank on JA pages (see #761).
+// the foundational `core` / `base` plugins in the given locale. Returns
+// "" for every other slug — the 19 adopted plugins have Requirements
+// text that landed hand-written in PR #410 and is pulled forward from
+// the existing file via extractHumanZones rather than emitted here.
+//
+// The function is locale-aware on purpose: if a JA overlay lands for
+// `base` / `core`, the JA page for these two foundational slugs still
+// picks up its canonical Requirements paragraph (in Japanese) on the
+// first regeneration. Without the JA branch below, PR #774's overlay
+// pipeline would silently ship JA pages for `base` / `core` with the
+// Requirements section blank — the exact latent trap the code review
+// flagged.
 func defaultRequirements(slug string, ls localeStrings) string {
-	if ls.Code != "en" {
-		return ""
-	}
-	switch slug {
-	case "core":
-		return "Core has no standalone visual output; this page documents its inputs only. The plugin implements global configuration parsing (template selection, timezone, animations, output format, etc.) and the parallel plugin runner that drives every other plugin. There are no API scopes or render prerequisites of its own — every other plugin in this repository depends on `core` having populated `data.Config` before it runs."
-	case "base":
-		return "Base reads `Provider.Profile(ctx)` and `Provider.RepositorySummary(ctx)` from the shared `internal/dataprovider`. Both are populated lazily by the standard GraphQL user/organization + repositories paging queries — no extra API scopes beyond `public_access` are required. The plugin emits no standalone card on its own; its two panels (gated by `chrome_activity` / `chrome_community` and `chrome_repositories` from `assets/plugins/chrome/metadata.yml`, #640) compose with any other plugin selection to restore the legacy `base` chrome look."
+	switch ls.Code {
+	case "en":
+		switch slug {
+		case "core":
+			return "Core has no standalone visual output; this page documents its inputs only. The plugin implements global configuration parsing (template selection, timezone, animations, output format, etc.) and the parallel plugin runner that drives every other plugin. There are no API scopes or render prerequisites of its own — every other plugin in this repository depends on `core` having populated `data.Config` before it runs."
+		case "base":
+			return "Base reads `Provider.Profile(ctx)` and `Provider.RepositorySummary(ctx)` from the shared `internal/dataprovider`. Both are populated lazily by the standard GraphQL user/organization + repositories paging queries — no extra API scopes beyond `public_access` are required. The plugin emits no standalone card on its own; its two panels (gated by `chrome_activity` / `chrome_community` and `chrome_repositories` from `assets/plugins/chrome/metadata.yml`, #640) compose with any other plugin selection to restore the legacy `base` chrome look."
+		}
+	case "ja":
+		switch slug {
+		case "core":
+			return "`core` は単独の視覚出力を持たず、このページはその入力設定を記載するためのものです。テンプレート選択・タイムゾーン・アニメーション・出力形式などのグローバル設定の解析と、他のすべてのプラグインを駆動する並列プラグインランナーを実装しています。API スコープや描画上の前提はありません。ただし、他のすべてのプラグインは `core` が `data.Config` を構築済みであることを前提に動作します。"
+		case "base":
+			return "`base` は共有の `internal/dataprovider` から `Provider.Profile(ctx)` と `Provider.RepositorySummary(ctx)` を参照します。いずれも標準の GraphQL user/organization + repositories ページングクエリで遅延的に構築されるため、`public_access` を超える API スコープは不要です。単独のカードは描画せず、2 つのパネル (`assets/plugins/chrome/metadata.yml` の `chrome_activity` / `chrome_community` および `chrome_repositories` で切り替え、#640) が他のプラグインの選択結果に合成され、従来の `base` chrome の見た目を復元します。"
+		}
 	}
 	return ""
 }
