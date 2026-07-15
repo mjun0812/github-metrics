@@ -8,9 +8,12 @@ package isocalendar
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 	"strings"
 
+	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
@@ -95,11 +98,27 @@ func (p *isocalendarPlugin) Run(ctx context.Context, pc *plugins.PluginContext) 
 	// 4-week chunks so GitHub's per-range color normalization matches
 	// upstream's gradient (#467).
 	weeks, fetchErr := fetchWindowedWeeks(ctx, pc, duration)
-	if fetchErr != nil && pc.Logger != nil {
-		pc.Logger.Warn(
-			"isocalendar: windowed calendar fetch failed; falling back to shared calendar",
-			slog.String("error", fetchErr.Error()),
-		)
+	if fetchErr != nil {
+		if pc.Logger != nil {
+			pc.Logger.Warn(
+				"isocalendar: windowed calendar fetch failed; falling back to shared calendar",
+				slog.String("error", fetchErr.Error()),
+			)
+		}
+		// Thread the primary-path failure to Data.Errors so operators
+		// can see why the windowed fetch dropped even when the
+		// shared-calendar fallback also comes back empty (#732 /
+		// #773). The fallback path is still taken below because the
+		// shared calendar was fetched independently earlier in the
+		// pipeline and may have succeeded before the secondary rate
+		// limit kicked in.
+		if pc.Data != nil {
+			if errors.Is(fetchErr, githubapi.ErrEmptyGraphQLResponse) {
+				pc.Data.AppendError(fmt.Errorf("isocalendar: windowed calendar fetch returned empty GraphQL response: %w", fetchErr))
+			} else {
+				pc.Data.AppendError(fmt.Errorf("isocalendar: windowed calendar fetch failed: %w", fetchErr))
+			}
+		}
 	}
 	if len(weeks) == 0 {
 		// Degraded path (no GraphQL client / fetch failure): slice the

@@ -51,7 +51,12 @@ func (c *countingTransport) RoundTrip(req *http.Request) (*http.Response, error)
 	c.mu.Unlock()
 	atomic.AddInt64(counter, 1)
 	if !hasResp {
-		respBody = `{"data": null}`
+		// Empty envelope keeps the decoded response struct zero-valued
+		// (all field pointers stay nil) without tripping the #732
+		// emptyDataGuardClient, which rejects an explicit "data": null.
+		// Tests that want the guard's error path override this via
+		// setResponse.
+		respBody = `{"data":{}}`
 	}
 	if status == 0 {
 		status = http.StatusOK
@@ -351,9 +356,8 @@ func TestProvider_Profile_DoesNotCacheContextCanceled(t *testing.T) {
 	if errB != nil {
 		t.Fatalf("caller B: expected fresh fetch to succeed, got %v", errB)
 	}
-	if prof == nil {
-		t.Fatalf("caller B: expected non-nil profile after retry")
-	}
+	// errB == nil guarantees a non-nil profile on the happy path, so
+	// the fields can be observed directly.
 	if prof.Kind != plugins.ProfileKindUser || prof.User == nil {
 		t.Fatalf("caller B: expected user profile, got kind=%q user=%v", prof.Kind, prof.User)
 	}
@@ -395,9 +399,8 @@ func TestProvider_Profile_DoesNotCacheContextDeadlineExceeded(t *testing.T) {
 	if errB != nil {
 		t.Fatalf("caller B: expected fresh fetch to succeed, got %v", errB)
 	}
-	if prof == nil {
-		t.Fatalf("caller B: expected non-nil profile after retry")
-	}
+	// errB == nil guarantees a non-nil profile on the happy path, so
+	// the fields can be observed directly.
 	if prof.Kind != plugins.ProfileKindUser || prof.User == nil {
 		t.Fatalf("caller B: expected user profile, got kind=%q user=%v", prof.Kind, prof.User)
 	}
@@ -497,9 +500,7 @@ func TestProvider_RepositorySummary_IncludesIssuesAndPullRequests(t *testing.T) 
 	if err != nil {
 		t.Fatalf("RepositorySummary: %v", err)
 	}
-	if summary == nil {
-		t.Fatal("RepositorySummary returned nil summary")
-	}
+	// err == nil guarantees a non-nil summary on the happy path.
 	if got, want := summary.Issues, 7; got != want {
 		t.Errorf("Issues: got %d, want %d (sum of per-node issues.totalCount)", got, want)
 	}
@@ -930,5 +931,28 @@ func TestProvider_SkipPrivate_RepoModeBypassesFilter(t *testing.T) {
 	}
 	if got, want := summary.Count, 1; got != want {
 		t.Errorf("Count = %d, want %d (single synthesized repo)", got, want)
+	}
+}
+
+// TestProvider_Repositories_EmptyDataNullReturnsError locks in the
+// #732 fix at the dataprovider level: when GitHub's secondary rate
+// limit path replies with HTTP 200 and `{"data": null}` (no errors
+// envelope) to the UserRepositories paging query, the guard must
+// surface it as ErrEmptyGraphQLResponse instead of the pre-fix
+// behaviour of returning an empty repository list. This is the
+// original victim call site from run 29016423801.
+func TestProvider_Repositories_EmptyDataNullReturnsError(t *testing.T) {
+	t.Parallel()
+	tr := newCountingTransport()
+	tr.setResponse("User", userResponseBody)
+	tr.setResponse("UserRepositories", `{"data":null}`)
+	p := newProviderWith(t, tr)
+
+	_, err := p.Repositories(context.Background())
+	if err == nil {
+		t.Fatalf("expected error for {\"data\":null} UserRepositories, got nil")
+	}
+	if !errors.Is(err, githubapi.ErrEmptyGraphQLResponse) {
+		t.Fatalf("errors.Is(ErrEmptyGraphQLResponse) = false; err=%v", err)
 	}
 }

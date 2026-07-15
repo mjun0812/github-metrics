@@ -3,6 +3,7 @@ package isocalendar
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -208,5 +209,49 @@ func TestFetchWindowedWeeks_DisabledPluginSkipsFetch(t *testing.T) {
 	}
 	if len(transport.froms) != 0 {
 		t.Errorf("GraphQL calls = %d, want 0 for a disabled plugin", len(transport.froms))
+	}
+}
+
+// TestRun_ThreadsEmptyGraphQLResponseToDataErrors guards #732 /
+// PR #773: when the windowed contribution-calendar fetch returns
+// githubapi.ErrEmptyGraphQLResponse (secondary rate limit path),
+// isocalendar.Run must thread the failure to Data.Errors so operators
+// can see the primary-path pushback even if the shared-calendar
+// fallback also comes back empty and the plugin renders Skipped.
+func TestRun_ThreadsEmptyGraphQLResponseToDataErrors(t *testing.T) {
+	t.Parallel()
+	transport := &chunkRecorderTransport{body: `{"data":null}`}
+	gql, err := githubapi.NewGraphQL(config.NewToken("ghp_test"), "", httpx.Options{
+		Transport:  transport,
+		MaxRetries: 0,
+	})
+	if err != nil {
+		t.Fatalf("NewGraphQL: %v", err)
+	}
+	data := plugins.NewData()
+	data.Account = plugins.AccountUser
+	data.User = &plugins.User{Login: "octocat"}
+	pc := &plugins.PluginContext{
+		Data:    data,
+		GraphQL: gql,
+		Inputs:  map[string]any{"plugin_isocalendar": true, "user": "octocat"},
+	}
+
+	if _, runErr := Plugin.Run(context.Background(), pc); runErr != nil {
+		t.Fatalf("Run: %v", runErr)
+	}
+	errsSnap := data.SnapshotErrors()
+	if len(errsSnap) == 0 {
+		t.Fatalf("Data.Errors is empty; ErrEmptyGraphQLResponse should be threaded through")
+	}
+	var matched bool
+	for _, e := range errsSnap {
+		if errors.Is(e, githubapi.ErrEmptyGraphQLResponse) {
+			matched = true
+			break
+		}
+	}
+	if !matched {
+		t.Errorf("Data.Errors does not carry ErrEmptyGraphQLResponse; got %v", errsSnap)
 	}
 }

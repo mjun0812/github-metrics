@@ -430,6 +430,13 @@ func (p *Provider) fetchCommitCalendar(ctx context.Context) (*plugins.Contributi
 
 // isTransient mirrors base.isTransient so dataprovider can apply the
 // same batch-halving heuristic without depending on the base package.
+//
+// Note: githubapi.ErrEmptyGraphQLResponse is deliberately excluded from
+// the transient set. GitHub emits the `{"data": null}` shape from its
+// secondary rate limit path (see #732); the block self-heals on the
+// server side and additional retries (batch-halving or otherwise) only
+// add load to the exact quota that just rejected us. Propagate the
+// error instead so the plugin can surface a real signal.
 func isTransient(err error) bool {
 	if err == nil {
 		return false

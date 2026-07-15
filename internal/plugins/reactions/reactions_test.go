@@ -3,6 +3,7 @@ package reactions_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"io"
 	"net/http"
@@ -204,6 +205,28 @@ func TestRun_NilUser(t *testing.T) {
 	r := out.(*reactions.Result)
 	if r.Skipped {
 		t.Errorf("nil user response should yield empty (non-Skipped) result")
+	}
+}
+
+// TestRun_EmptyGraphQLResponsePropagatesError guards #732: when GitHub
+// hits a secondary rate limit and replies with `{"data": null}` at 200
+// OK, the GraphQL client must surface the swallowed condition as an
+// error and reactions must propagate it (wrapped in RetryableError)
+// instead of rendering an empty card from a zero-valued response.
+func TestRun_EmptyGraphQLResponsePropagatesError(t *testing.T) {
+	t.Parallel()
+	body := `{"data":null}`
+	pc := &plugins.PluginContext{
+		Data:    plugins.NewData(),
+		Inputs:  map[string]any{"user": "octocat", "plugin_reactions": true},
+		GraphQL: newGQL(t, body),
+	}
+	_, err := reactions.Plugin.Run(context.Background(), pc)
+	if err == nil {
+		t.Fatalf("expected error from empty GraphQL response, got nil")
+	}
+	if !errors.Is(err, githubapi.ErrEmptyGraphQLResponse) {
+		t.Errorf("errors.Is(ErrEmptyGraphQLResponse) = false; err=%v", err)
 	}
 }
 
