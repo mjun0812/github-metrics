@@ -1,9 +1,7 @@
 <!-- AUTOGEN_START: title-and-description -->
-
 # Plugin: traffic
 
 This plugin displays the number of page views across affiliated repositories.
-
 <!-- AUTOGEN_END: title-and-description -->
 
 ## Sample
@@ -13,25 +11,22 @@ This plugin displays the number of page views across affiliated repositories.
 > Rendered with `--user mjun0812` data, with only this plugin enabled. Regenerate with `make docs-examples`.
 
 <!-- AUTOGEN_START: config-table -->
-
 ## Configuration (inputs)
 
-| Input                       | Description                                                   | Default | Required | Type    |
-| --------------------------- | ------------------------------------------------------------- | ------- | -------- | ------- |
-| `plugin_traffic`            | Enable traffic plugin                                         | `no`    | no       | boolean |
-| `plugin_traffic_skipped`    | Skipped repositories                                          | ``      | no       | array   |
-| `plugin_traffic_hide_empty` | Hide repositories with zero views from the per-repo breakdown | `yes`   | no       | boolean |
-
+| Input | Description | Default | Required | Type |
+| ----- | ----------- | ------- | -------- | ---- |
+| `plugin_traffic` | Enable traffic plugin | `no` | no | boolean |
+| `plugin_traffic_skipped` | Skipped repositories | `` | no | array |
+| `plugin_traffic_hide_empty` | Hide repositories with zero views from the per-repo breakdown | `yes` | no | boolean |
 <!-- AUTOGEN_END: config-table -->
 
 <!-- AUTOGEN_START: usage-snippet -->
-
 ## Usage
 
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@latest
+- uses: mjun0812/github-metrics@v1
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
@@ -46,7 +41,6 @@ metrics-cli --user <your-login> \
   --output svg --filename - \
   --plugin plugin_traffic=yes
 ```
-
 <!-- AUTOGEN_END: usage-snippet -->
 
 ## Notes
@@ -60,7 +54,7 @@ metrics-cli --user <your-login> \
 
 ## References
 
-- [`action.yml`](../../action.yml): canonical input schema
-- [`assets/plugins/traffic/metadata.yml`](../../assets/plugins/traffic/metadata.yml): `lowlighter/metrics` metadata
+- [`action.yml`](../../action.yml) — canonical input schema
+- [`assets/plugins/traffic/metadata.yml`](../../assets/plugins/traffic/metadata.yml) — upstream metadata
 - Supported account types: user, organization, repository
 - Required scopes: repo

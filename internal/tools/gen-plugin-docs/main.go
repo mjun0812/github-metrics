@@ -98,6 +98,24 @@ var sampleOverrides = map[string]string{
 	"contributors": "plugin-contributors-repo-contributions",
 }
 
+// variantTile represents a plugin variant that ships a visually distinct
+// render worth its own tile in the README gallery. Variants do not have
+// their own doc page — the caption links back to the parent plugin's
+// page.
+type variantTile struct {
+	parentSlug  string // e.g. "stargazers"
+	variantName string // e.g. "worldmap"
+	sampleBase  string // e.g. "plugin-stargazers-worldmap"
+}
+
+// galleryVariants are the extra gallery tiles rendered after the main
+// per-plugin thumbnails. Kept in a small list so the README gallery
+// stays readable while still surfacing high-signal variants (currently
+// only `stargazers` worldmap, #396).
+var galleryVariants = []variantTile{
+	{parentSlug: "stargazers", variantName: "worldmap", sampleBase: "plugin-stargazers-worldmap"},
+}
+
 // sampleImageBase returns the example SVG basename (without `.svg`) used
 // for the given plugin slug in docs pages and the README gallery.
 func sampleImageBase(slug string) string {
@@ -672,26 +690,35 @@ var (
 	galleryBlockRe     = regexp.MustCompile(`(?s)` + regexp.QuoteMeta(galleryMarkerStart) + `.*?` + regexp.QuoteMeta(galleryMarkerEnd))
 )
 
-// updateReadme rewrites the plugins-gallery AUTOGEN block in the repo's
-// README.md. If the block is missing, it is inserted at the canonical
-// anchor.
+// readmeFiles are the top-level README files whose plugins-gallery
+// AUTOGEN block is regenerated. Both files ship the same gallery table
+// (the surrounding prose is per-locale).
+var readmeFiles = []string{"README.md", "README_ja.md"}
+
+// updateReadme rewrites the plugins-gallery AUTOGEN block in every
+// entry of `readmeFiles`. If a file's block is missing, it is inserted
+// at the canonical anchor.
 func updateReadme(root string) error {
-	path := filepath.Join(root, "README.md")
-	raw, err := os.ReadFile(path) //nolint:gosec // operator-controlled paths inside the project tree
-	if err != nil {
-		return fmt.Errorf("read README.md: %w", err)
-	}
-
 	gallery := renderGallery()
+	for _, name := range readmeFiles {
+		path := filepath.Join(root, name)
+		raw, err := os.ReadFile(path) //nolint:gosec // operator-controlled paths inside the project tree
+		if err != nil {
+			return fmt.Errorf("read %s: %w", name, err)
+		}
 
-	updated, err := mergeReadme(string(raw), gallery)
-	if err != nil {
-		return err
+		updated, err := mergeReadme(string(raw), gallery)
+		if err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+		if updated == string(raw) {
+			continue
+		}
+		if err := os.WriteFile(path, []byte(updated), 0o600); err != nil { //nolint:gosec // operator-controlled README path
+			return fmt.Errorf("write %s: %w", name, err)
+		}
 	}
-	if updated == string(raw) {
-		return nil
-	}
-	return os.WriteFile(path, []byte(updated), 0o600) //nolint:gosec // operator-controlled README path
+	return nil
 }
 
 func mergeReadme(content, gallery string) (string, error) {
@@ -700,7 +727,8 @@ func mergeReadme(content, gallery string) (string, error) {
 		content = galleryBlockRe.ReplaceAllStringFunc(content, func(_ string) string { return gallery })
 	} else {
 		// Insert directly under the "## Plugins" heading, before the
-		// existing Data source table.
+		// existing Data source table. Language-agnostic: both README.md
+		// and README_ja.md keep "## Plugins" as the anchor heading.
 		anchor := "## Plugins\n"
 		idx := strings.Index(content, anchor)
 		if idx < 0 {
@@ -713,36 +741,71 @@ func mergeReadme(content, gallery string) (string, error) {
 	return content, nil
 }
 
+// galleryTile is one cell of the README plugin gallery. Populated once
+// per adopted plugin plus once per entry in `galleryVariants`, then
+// chunked into three-column rows.
+type galleryTile struct {
+	// altText is the img alt attribute; also the anchor text of the
+	// thumbnail link.
+	altText string
+	// sampleBase is the docs/examples/<sampleBase>.svg thumbnail source.
+	sampleBase string
+	// caption is the markdown-formatted cell label rendered under the
+	// thumbnail (e.g. `` [`stargazers`](docs/plugins/stargazers.md) `` or
+	// `` [`stargazers` — worldmap](docs/plugins/stargazers.md) ``).
+	caption string
+	// href is the click target for both the thumbnail and the caption.
+	href string
+}
+
 func renderGallery() string {
 	slugs := append([]string(nil), adoptedSlugs...)
 	sort.Strings(slugs)
+
+	tiles := make([]galleryTile, 0, len(slugs)+len(galleryVariants))
+	for _, s := range slugs {
+		tiles = append(tiles, galleryTile{
+			altText:    s,
+			sampleBase: sampleImageBase(s),
+			caption:    fmt.Sprintf("[`%s`](docs/plugins/%s.md)", s, s),
+			href:       fmt.Sprintf("docs/plugins/%s.md", s),
+		})
+	}
+	for _, v := range galleryVariants {
+		tiles = append(tiles, galleryTile{
+			altText:    fmt.Sprintf("%s %s", v.parentSlug, v.variantName),
+			sampleBase: v.sampleBase,
+			caption:    fmt.Sprintf("[`%s` — %s](docs/plugins/%s.md)", v.parentSlug, v.variantName, v.parentSlug),
+			href:       fmt.Sprintf("docs/plugins/%s.md", v.parentSlug),
+		})
+	}
+
 	var b strings.Builder
 	b.WriteString(galleryMarkerStart)
 	b.WriteString("\n")
 	b.WriteString("| | | |\n")
 	b.WriteString("|:---:|:---:|:---:|\n")
 
-	for i := 0; i < len(slugs); i += 3 {
+	for i := 0; i < len(tiles); i += 3 {
 		// Thumbnail row.
 		b.WriteString("|")
 		for c := 0; c < 3; c++ {
-			if i+c >= len(slugs) {
+			if i+c >= len(tiles) {
 				b.WriteString(" |")
 				continue
 			}
-			s := slugs[i+c]
-			fmt.Fprintf(&b, " [![%s](docs/examples/%s.svg)](docs/plugins/%s.md) |", s, sampleImageBase(s), s)
+			t := tiles[i+c]
+			fmt.Fprintf(&b, " [![%s](docs/examples/%s.svg)](%s) |", t.altText, t.sampleBase, t.href)
 		}
 		b.WriteString("\n")
 		// Caption row.
 		b.WriteString("|")
 		for c := 0; c < 3; c++ {
-			if i+c >= len(slugs) {
+			if i+c >= len(tiles) {
 				b.WriteString(" |")
 				continue
 			}
-			s := slugs[i+c]
-			fmt.Fprintf(&b, " [`%s`](docs/plugins/%s.md) |", s, s)
+			fmt.Fprintf(&b, " %s |", tiles[i+c].caption)
 		}
 		b.WriteString("\n")
 	}
