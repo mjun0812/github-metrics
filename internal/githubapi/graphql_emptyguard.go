@@ -3,6 +3,7 @@ package githubapi
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/Khan/genqlient/graphql"
 )
@@ -18,7 +19,7 @@ import (
 // Callers may match with errors.Is; the wrapper in emptyDataGuardClient
 // returns *emptyGraphQLResponseError whose Unwrap chains to this
 // sentinel.
-var ErrEmptyGraphQLResponse = errors.New("github graphql: empty response (data: null with no errors)")
+var ErrEmptyGraphQLResponse = errors.New("github graphql: empty response, data: null with no errors")
 
 // emptyGraphQLResponseError carries the operation name alongside the
 // sentinel so log lines identify which query was swallowed.
@@ -30,7 +31,7 @@ func (e *emptyGraphQLResponseError) Error() string {
 	if e.OpName == "" {
 		return ErrEmptyGraphQLResponse.Error()
 	}
-	return ErrEmptyGraphQLResponse.Error() + " (op=" + e.OpName + ")"
+	return fmt.Sprintf("github graphql: empty response for op %q, data: null with no errors", e.OpName)
 }
 
 func (e *emptyGraphQLResponseError) Unwrap() error { return ErrEmptyGraphQLResponse }
@@ -57,11 +58,13 @@ func newEmptyDataGuardClient(inner graphql.Client) graphql.Client {
 
 // MakeRequest delegates to the inner client and then inspects
 // resp.Data. genqlient's stock client sets Response.Data (typed `any`)
-// to nil when the JSON envelope holds `"data": null`; the caller's
-// original pointer stays intact because Go passes interface values by
-// copy. We restore that pointer and return a wrapped
-// ErrEmptyGraphQLResponse so plugins receive a real error instead of a
-// silently-zeroed response.
+// to nil when the JSON envelope holds `"data": null`. Every generated
+// call site keeps its own reference to the typed response struct (see
+// graphql_gen.go `data_ := &Response{}` + `resp := &graphql.Response{
+// Data: data_}` pattern) so callers already observe a non-nil pointer;
+// restoring resp.Data is defensive, not load-bearing. We still return a
+// wrapped ErrEmptyGraphQLResponse so plugins receive a real error
+// instead of a silently-zeroed response.
 func (g *emptyDataGuardClient) MakeRequest(ctx context.Context, req *graphql.Request, resp *graphql.Response) error {
 	original := resp.Data
 	if err := g.inner.MakeRequest(ctx, req, resp); err != nil {

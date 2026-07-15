@@ -353,9 +353,10 @@ func TestGraphQL_ExplicitDataUserNullIsNotAnError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error for {\"data\":{\"user\":null}}: %v", err)
 	}
-	if resp == nil {
-		t.Fatalf("resp should be non-nil (envelope decoded successfully)")
-	}
+	// The guard's contract guarantees a non-nil resp when err == nil
+	// (the envelope decoded successfully and the guard restored the
+	// caller's Data pointer), so the User field can be observed
+	// directly.
 	if resp.User != nil {
 		t.Errorf("resp.User should be nil, got %+v", resp.User)
 	}
