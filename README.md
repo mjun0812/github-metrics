@@ -39,6 +39,12 @@ See [`docs/migration-to-go.md`](docs/migration-to-go.md) for the migration guide
 Refer to [`action.yml`](action.yml) for the full list of inputs. They are identical to the corresponding `lowlighter/metrics` inputs.
 There are currently two templates, `classic` and `repository`: `classic` renders a user profile, and `repository` renders repository information.
 
+Some plugins expose additional variants. The `stargazers` plugin can render a world map of stargazer locations with `plugin_stargazers_worldmap: yes`. Geocoding is fully offline (embedded GeoNames + Natural Earth data), so no Google Maps API key is required.
+
+<p align="center">
+  <img src="docs/examples/plugin-stargazers-worldmap.svg" width="100%" alt="stargazers worldmap variant">
+</p>
+
 ## Usage
 
 ### Authentication

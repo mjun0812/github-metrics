@@ -39,6 +39,12 @@ GitHub プロフィールまたはリポジトリのメトリクスを SVG / PNG
 すべての入力は [`action.yml`](action.yml) を参考にしてください。対応する `lowlighter/metrics` の入力と同一です。  
 templateは現在`classic` と `repository` の 2 種類があり、`classic` はユーザープロフィールを`repository` はリポジトリの情報を生成します。
 
+一部の plugin にはバリアントがあります。`stargazers` plugin は `plugin_stargazers_worldmap: yes` を指定するとスターギャザーの所在地を世界地図上にプロットします。geocoding は完全にオフライン (GeoNames + Natural Earth データを埋め込み) のため、Google Maps API キーは不要です。
+
+<p align="center">
+  <img src="docs/examples/plugin-stargazers-worldmap.svg" width="100%" alt="stargazers worldmap variant">
+</p>
+
 ## Usage
 
 ### 認証
