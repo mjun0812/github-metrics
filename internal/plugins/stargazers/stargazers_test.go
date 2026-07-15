@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -58,26 +57,96 @@ func TestRun_AlwaysSkippedInM4(t *testing.T) {
 	}
 }
 
-func TestRun_WorldmapNilEvenWhenRequested(t *testing.T) {
+// TestRun_WorldmapNilWhenNotRequested verifies that omitting or
+// disabling `plugin_stargazers_worldmap` keeps Worldmap = nil so
+// stargazers.Result serializes without the field (the JSON omitempty
+// contract downstream partials rely on).
+func TestRun_WorldmapNilWhenNotRequested(t *testing.T) {
 	t.Parallel()
-	r := runWith(t, map[string]any{"plugin_stargazers_worldmap": true})
+	r := runWith(t, nil)
 	if r.Worldmap != nil {
-		t.Errorf("worldmap should remain nil in M4; got %+v", r.Worldmap)
+		t.Errorf("worldmap should be nil when input absent; got %+v", r.Worldmap)
+	}
+	r = runWith(t, map[string]any{"plugin_stargazers_worldmap": false})
+	if r.Worldmap != nil {
+		t.Errorf("worldmap should be nil when input false; got %+v", r.Worldmap)
 	}
 }
 
-func TestRun_WorldmapWarnLogEmitted(t *testing.T) {
+// TestRun_WorldmapPopulatedFromStargazerLocations exercises the
+// end-to-end offline pipeline: the GraphQL mock supplies stargazers
+// with declared locations, the geocoder resolves them, and the
+// resulting Worldmap.Points slice carries one entry per unique
+// coordinate with counts aggregated. Includes an unresolvable location
+// to guarantee misses are dropped silently rather than crashing.
+func TestRun_WorldmapPopulatedFromStargazerLocations(t *testing.T) {
 	t.Parallel()
-	var buf bytes.Buffer
-	logger := slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelWarn}))
-	pc := &plugins.PluginContext{
-		Data:   plugins.NewData(),
-		Inputs: map[string]any{"plugin_stargazers_worldmap": true},
-		Logger: logger,
+	mux := mocks.NewGraphQLMux(t)
+	mux.OnBody("ViewerStargazersRepos", http.StatusOK, `{
+		"data": {"viewer": {"repositories": {"totalCount": 1, "nodes": [
+			{"nameWithOwner": "octo/hello", "stargazerCount": 5,
+			 "stargazers": {"totalCount": 5, "edges": [
+				{"starredAt": "2026-05-02T00:00:00Z", "node": {"login": "alice", "location": "Tokyo, Japan"}},
+				{"starredAt": "2026-05-03T00:00:00Z", "node": {"login": "bob",   "location": "Tokyo"}},
+				{"starredAt": "2026-05-04T00:00:00Z", "node": {"login": "carol", "location": "London"}},
+				{"starredAt": "2026-05-05T00:00:00Z", "node": {"login": "dave",  "location": "qqqqzzzz-not-a-place"}},
+				{"starredAt": "2026-05-06T00:00:00Z", "node": {"login": "eve",   "location": ""}}
+			 ]}}
+		]}}}
+	}`)
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithGraphQL(mux),
+		mocks.WithInputs(map[string]any{
+			"plugin_stargazers":          true,
+			"plugin_stargazers_worldmap": true,
+		}),
+	)
+	out, err := stargazers.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
 	}
-	_, _ = stargazers.Plugin.Run(context.Background(), pc)
-	if !strings.Contains(buf.String(), "worldmap is not yet implemented") {
-		t.Errorf("expected worldmap WARN log; got %q", buf.String())
+	r := out.(*stargazers.Result)
+	if r.Worldmap == nil {
+		t.Fatalf("Worldmap should be populated when plugin_stargazers_worldmap=true")
+	}
+	if len(r.Worldmap.Points) != 2 {
+		t.Fatalf("expected 2 deduped points (Tokyo, London); got %d: %+v", len(r.Worldmap.Points), r.Worldmap.Points)
+	}
+	// Sorted by descending Count, so Tokyo (2) comes before London (1).
+	tokyo := r.Worldmap.Points[0]
+	if tokyo.Count != 2 {
+		t.Errorf("Tokyo count = %d, want 2 (alice + bob)", tokyo.Count)
+	}
+	if tokyo.Lat < 30 || tokyo.Lat > 40 || tokyo.Lng < 130 || tokyo.Lng > 145 {
+		t.Errorf("Tokyo coords out of range: %+v", tokyo)
+	}
+	london := r.Worldmap.Points[1]
+	if london.Count != 1 {
+		t.Errorf("London count = %d, want 1", london.Count)
+	}
+}
+
+// TestRun_WorldmapAcceptsLegacyInputsSilently confirms that
+// `plugin_stargazers_worldmap_token` and `plugin_stargazers_worldmap_sample`
+// (both no-ops now that geocoding is offline) do not affect Run's
+// outcome or produce errors.
+func TestRun_WorldmapAcceptsLegacyInputsSilently(t *testing.T) {
+	t.Parallel()
+	mux := mocks.NewGraphQLMux(t)
+	mux.OnBody("ViewerStargazersRepos", http.StatusOK, `{"data":{"viewer":{"repositories":{"totalCount":0,"nodes":[]}}}}`)
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithGraphQL(mux),
+		mocks.WithInputs(map[string]any{
+			"plugin_stargazers":                 true,
+			"plugin_stargazers_worldmap":        true,
+			"plugin_stargazers_worldmap_token":  "irrelevant-legacy-key",
+			"plugin_stargazers_worldmap_sample": 100,
+		}),
+	)
+	if _, err := stargazers.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("Run: %v", err)
 	}
 }
 
@@ -287,6 +356,44 @@ func TestRun_GraphGoldenShape(t *testing.T) {
 	}
 	if string(want) != string(got) {
 		t.Fatalf("golden mismatch\nwant:\n%s\ngot:\n%s", string(want), string(got))
+	}
+}
+
+// TestPartial_WorldmapRendersBaseMapAndMarkers exercises the worldmap
+// section end-to-end at the partial level: base country paths appear,
+// markers appear, no CSS var() references leak (resvg cannot resolve
+// them), and the section reports a positive height so StackSections
+// places it deterministically.
+func TestPartial_WorldmapRendersBaseMapAndMarkers(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.SetPlugin("stargazers", &stargazers.Result{
+		Mode:   plugins.ModeUser,
+		List:   []stargazers.Stargazer{},
+		Charts: stargazers.StargazersCharts{Type: "classic", Series: []stargazers.ChartPoint{}},
+		Worldmap: &stargazers.StargazersWorldmap{Points: []stargazers.WorldmapPoint{
+			{Location: "Tokyo", Lat: 35.68, Lng: 139.75, Count: 3},
+			{Location: "London", Lat: 51.5, Lng: -0.13, Count: 1},
+		}},
+	})
+	got, h, err := stargazers.Partial(context.Background(), &templates.PartialContext{Data: data})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	if h <= 0 {
+		t.Fatalf("worldmap partial must report a positive height; got %d", h)
+	}
+	if !strings.Contains(got, "worldmap-countries") {
+		t.Errorf("worldmap partial missing country base map:\n%s", got)
+	}
+	if !strings.Contains(got, "worldmap-markers") {
+		t.Errorf("worldmap partial missing markers group:\n%s", got)
+	}
+	if !strings.Contains(got, "Stargazers origins") {
+		t.Errorf("worldmap partial missing sub-header:\n%s", got)
+	}
+	if strings.Contains(got, "var(") {
+		t.Errorf("worldmap partial must not emit CSS var() references")
 	}
 }
 

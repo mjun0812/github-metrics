@@ -1,18 +1,20 @@
-// Package stargazers owns the M4 "stargazers" plugin. Per the contract
-// this plugin targets the repository-template account kind, which M4
-// does not support yet. Worldmap (`_worldmap=true`) is explicitly
-// deferred per research note R-012 — the M4 implementation always
-// returns Skipped=true with an explanatory reason.
+// Package stargazers owns the "stargazers" plugin.
+//
+// It surfaces two variants: the base cumulative / daily-increment
+// chart (classic / graph), and the "worldmap" origins map that plots
+// each stargazer's declared location on a Natural Earth base map. The
+// worldmap uses the offline geocoder in internal/geo — no external API
+// is contacted at render time.
 package stargazers
 
 import (
 	"context"
-	"log/slog"
 	"strings"
 	"sync"
 	"time"
 
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
+	"github.com/mjun0812/github-metrics/internal/geo"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
@@ -44,7 +46,8 @@ func (p *stargazersPlugin) Requires() []plugins.DataKey {
 }
 
 // Result is the JSON payload published under data.Plugins["stargazers"].
-// Worldmap is always nil in M4 (R-012).
+// Worldmap is populated when plugin_stargazers_worldmap is truthy and
+// nil otherwise.
 type Result struct {
 	Skipped       bool                `json:"skipped,omitempty"`
 	SkippedReason string              `json:"-"`
@@ -104,26 +107,45 @@ func currentNow() time.Time {
 	return fn()
 }
 
-// StargazersWorldmap is a placeholder that always serializes to null
-// in M4 per R-012.
-type StargazersWorldmap struct{}
+// StargazersWorldmap carries the geocoded stargazer origins used by
+// the worldmap variant. Points are deduplicated by (lat,lng) — each
+// entry represents a unique location and its Count is the number of
+// stargazers whose profile resolved there.
+type StargazersWorldmap struct {
+	Points []WorldmapPoint `json:"points"`
+}
 
-// Run wires viewer-mode stargazers chart (spec 013). Worldmap input is
-// observed and a WARN log is emitted to make the deferred state explicit.
-// Repo-mode returns the existing M7 stub. User-mode aggregates each
-// owned repo's stargazers (latest 100) into month buckets.
+// WorldmapPoint is one aggregated marker on the worldmap.
+type WorldmapPoint struct {
+	// Location is the resolved place label (city or country name)
+	// preserved for tooltip / debugging use. Not necessarily unique.
+	Location string `json:"location"`
+	// Lat / Lng are the geocoded coordinates. Two stargazers that
+	// resolved to the same coordinates share one WorldmapPoint.
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
+	// Count is the number of stargazers mapped to this point.
+	Count int `json:"count"`
+}
+
+// Run wires the viewer-mode stargazers chart (spec 013) and, when
+// requested, the worldmap variant. Repo-mode returns the existing M7
+// stub. User-mode aggregates each owned repo's stargazers (latest 100)
+// into daily buckets for the chart, and geocodes each stargazer's
+// declared location for the worldmap.
+//
+// Two legacy inputs are silently accepted for backward compatibility
+// with upstream configs: `plugin_stargazers_worldmap_token` (a Google
+// Maps API key upstream — irrelevant here since the geocoder is
+// offline) and `plugin_stargazers_worldmap_sample` (a subsampling knob
+// upstream that only mattered for API cost — no-op here because
+// geocoding is free and deterministic).
 func (p *stargazersPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
 	chartsType := selectedChartsType(pc.Inputs)
-	if v, ok := pc.Inputs["plugin_stargazers_worldmap"]; ok && isTruthy(v) {
-		if pc.Logger != nil {
-			pc.Logger.Warn("stargazers: worldmap is not yet implemented in M4 (planned as N-task)")
-		} else {
-			slog.Default().Warn("stargazers: worldmap is not yet implemented in M4 (planned as N-task)")
-		}
-	}
+	worldmapEnabled := isTruthy(pc.Inputs["plugin_stargazers_worldmap"])
 	if r := pc.Data.RepoRef(); r != nil {
 		// M7 repo-mode: surface the totals already populated by
 		// base.FetchRepo. Per-stargazer time-series (Charts.Series)
@@ -155,7 +177,125 @@ func (p *stargazersPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (
 	}
 	series := buildSeries(resp)
 	base.Charts.Series = series
+	if worldmapEnabled {
+		base.Worldmap = buildWorldmap(resp, pc)
+	}
 	return base, nil
+}
+
+// LookupLocationForSample is an internal helper exposed only so the
+// gen-worldmap-sample tool can resolve fixture locations through the
+// exact same offline geocoder the plugin uses at runtime. It should
+// not be called by other plugins.
+func LookupLocationForSample(location string) (geo.Location, bool) {
+	return geo.Default().Lookup(location)
+}
+
+// buildWorldmap turns the raw stargazer response into a deduplicated
+// list of WorldmapPoints. Each stargazer's location is normalized and
+// resolved through the offline geocoder; unresolvable entries are
+// dropped silently (they are the majority — most GitHub users leave
+// location empty).
+func buildWorldmap(resp *githubapi.ViewerStargazersReposResponse, pc *plugins.PluginContext) *StargazersWorldmap {
+	if resp == nil || resp.Viewer == nil || resp.Viewer.Repositories == nil {
+		return &StargazersWorldmap{Points: []WorldmapPoint{}}
+	}
+	g := geo.Default()
+	// Dedupe by rounded lat/lng so nearby markers merge — the map is
+	// 480×240 px and sub-degree precision is invisible at that scale.
+	type key struct{ lat, lng float64 }
+	agg := map[key]*WorldmapPoint{}
+	// Dedupe by unique stargazer login within a single run so a user
+	// starring several of the viewer's repos still contributes exactly
+	// one marker weight — otherwise a mildly popular repo owner would
+	// see spurious clustering.
+	seenLogin := map[string]struct{}{}
+	for _, repo := range resp.Viewer.Repositories.Nodes {
+		if repo == nil || repo.Stargazers == nil {
+			continue
+		}
+		for _, edge := range repo.Stargazers.Edges {
+			if edge == nil || edge.Node == nil {
+				continue
+			}
+			login := edge.Node.Login
+			if login != "" {
+				if _, ok := seenLogin[login]; ok {
+					continue
+				}
+				seenLogin[login] = struct{}{}
+			}
+			if edge.Node.Location == nil {
+				continue
+			}
+			loc := strings.TrimSpace(*edge.Node.Location)
+			if loc == "" {
+				continue
+			}
+			resolved, ok := g.Lookup(loc)
+			if !ok {
+				if pc != nil && pc.Logger != nil {
+					pc.Logger.Debug("stargazers.worldmap: geocode miss", "location", loc)
+				}
+				continue
+			}
+			k := key{
+				lat: roundCoord(resolved.Lat),
+				lng: roundCoord(resolved.Lng),
+			}
+			if p, exists := agg[k]; exists {
+				p.Count++
+				continue
+			}
+			agg[k] = &WorldmapPoint{
+				Location: loc,
+				Lat:      k.lat,
+				Lng:      k.lng,
+				Count:    1,
+			}
+		}
+	}
+	out := make([]WorldmapPoint, 0, len(agg))
+	for _, p := range agg {
+		out = append(out, *p)
+	}
+	sortWorldmapPoints(out)
+	return &StargazersWorldmap{Points: out}
+}
+
+// roundCoord rounds a coordinate to two decimals so slightly different
+// city entries collapse into one marker.
+func roundCoord(v float64) float64 {
+	return float64(int(v*100+sign(v)*0.5)) / 100
+}
+
+func sign(v float64) float64 {
+	if v < 0 {
+		return -1
+	}
+	return 1
+}
+
+// sortWorldmapPoints orders points by descending Count, then by lat and
+// lng, so a stable JSON serialization is produced.
+func sortWorldmapPoints(pts []WorldmapPoint) {
+	// Small N, insertion sort keeps output deterministic without
+	// pulling in sort.SliceStable's allocations.
+	for i := 1; i < len(pts); i++ {
+		for j := i; j > 0 && worldmapLess(pts[j], pts[j-1]); j-- {
+			pts[j-1], pts[j] = pts[j], pts[j-1]
+		}
+	}
+}
+
+func worldmapLess(a, b WorldmapPoint) bool {
+	if a.Count != b.Count {
+		return a.Count > b.Count
+	}
+	if a.Lat != b.Lat {
+		return a.Lat < b.Lat
+	}
+	return a.Lng < b.Lng
 }
 
 // buildSeries flattens stargazers across all owned repos into the

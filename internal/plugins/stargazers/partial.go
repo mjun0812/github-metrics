@@ -77,7 +77,9 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 		return "", 0, nil
 	}
 	series := r.Charts.Series
-	if len(series) == 0 && len(r.List) == 0 {
+	hasChart := len(series) > 0
+	hasWorldmap := r.Worldmap != nil
+	if !hasChart && !hasWorldmap && len(r.List) == 0 {
 		return "", 0, nil
 	}
 
@@ -86,15 +88,18 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 	var body strings.Builder
 	body.WriteString(header)
 
-	height := int(hh)
-	if len(series) > 0 {
+	height := hh
+	if hasChart {
 		if r.Charts.Type == chartsTypeGraph {
-			height = int(writeGraphSection(&body, series, hh))
+			height = writeGraphSection(&body, series, hh)
 		} else {
-			height = int(writeClassicSection(&body, series, hh))
+			height = writeClassicSection(&body, series, hh)
 		}
 	}
-	return chrome.WrapSection("stargazers", height, body.String()), height, nil
+	if hasWorldmap {
+		height = writeWorldmapSection(&body, r.Worldmap, height)
+	}
+	return chrome.WrapSection("stargazers", int(height), body.String()), int(height), nil
 }
 
 // writeClassicSection lays the two chart-bars columns out side by side
