@@ -98,6 +98,30 @@ The `resvg` SVG rasterizer is installed at Docker image build time (`cargo insta
 
 ---
 
+## GeoNames cities15000 — CC BY 4.0
+
+Upstream: <https://download.geonames.org/export/dump/> · License: <https://creativecommons.org/licenses/by/4.0/>
+
+The stargazers-worldmap variant embeds a trimmed derivative of the GeoNames `cities15000.txt` dataset (populated cities of 15 000+ inhabitants). The file lives at [`internal/geo/cities15000.tsv`](internal/geo/cities15000.tsv) and is loaded via `//go:embed`. The trim keeps only the primary UTF-8 name, ASCII fold, latitude, longitude, ISO 3166-1 alpha-2 country code, and population columns — dropping the multi-language alternate names to reduce the binary footprint.
+
+Attribution (required by CC BY 4.0):
+
+> This work is based on data from GeoNames — <https://www.geonames.org/> — licensed under CC BY 4.0.
+
+No modifications are made to the coordinates or country codes; the trim is a lossless column selection.
+
+---
+
+## Natural Earth 1:110m Admin 0 Countries — Public domain (PDDL)
+
+Upstream: <https://github.com/nvkelso/natural-earth-vector> · <https://www.naturalearthdata.com/about/terms-of-use/>
+
+The stargazers-worldmap variant embeds an equirectangular SVG rendering of Natural Earth's 1:110m Admin 0 Countries polygons at [`internal/geo/worldmap/worldmap.svg`](internal/geo/worldmap/worldmap.svg). The SVG is generated from `ne_110m_admin_0_countries.geojson` with a coordinate-precision trim (one decimal place) and small-island filter to keep the file compact.
+
+Natural Earth is released into the public domain via the [Public Domain Dedication and License](https://opendatacommons.org/licenses/pddl/1-0/); no attribution is required, but we credit the maintainers as a courtesy.
+
+---
+
 ## Go module dependencies
 
 Every direct and transitive Go dependency listed in [`go.mod`](go.mod) is licensed under a permissive OSI license (MIT, BSD-2/3, Apache-2.0). No GPL / AGPL / LGPL / MPL licensed code is linked into the binary. The upstream repository of each dependency ships its own `LICENSE` file; consult [`pkg.go.dev`](https://pkg.go.dev) for individual notices.

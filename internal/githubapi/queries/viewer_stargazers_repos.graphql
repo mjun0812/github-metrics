@@ -16,6 +16,10 @@ query ViewerStargazersRepos($repoFirst: Int!, $starFirst: Int!) {
           totalCount
           edges {
             starredAt
+            node {
+              login
+              location
+            }
           }
         }
       }
