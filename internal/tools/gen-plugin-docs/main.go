@@ -441,7 +441,7 @@ func renderPluginPageLocale(slug string, m pluginMetadata, inputKeys []string, e
 		// `config_*`, `optimize`, etc.).
 		fmt.Fprintf(&b, "### %s\n\n", ls.GHActionSubheading)
 		b.WriteString("```yaml\n")
-		b.WriteString("- uses: mjun0812/github-metrics@v1\n")
+		b.WriteString("- uses: mjun0812/github-metrics@v5\n")
 		b.WriteString("  with:\n")
 		b.WriteString("    user: <your-login>\n")
 		b.WriteString("    token: ${{ secrets.METRICS_TOKEN }}\n")
@@ -460,7 +460,7 @@ func renderPluginPageLocale(slug string, m pluginMetadata, inputKeys []string, e
 	default:
 		fmt.Fprintf(&b, "### %s\n\n", ls.GHActionSubheading)
 		b.WriteString("```yaml\n")
-		b.WriteString("- uses: mjun0812/github-metrics@v1\n")
+		b.WriteString("- uses: mjun0812/github-metrics@v5\n")
 		b.WriteString("  with:\n")
 		b.WriteString("    user: <your-login>\n")
 		b.WriteString("    token: ${{ secrets.METRICS_TOKEN }}\n")

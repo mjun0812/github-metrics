@@ -16,24 +16,22 @@ See [`docs/migration-to-go.md`](docs/migration-to-go.md) for the migration guide
 ## Plugins
 
 <!-- AUTOGEN_START: plugins-gallery -->
-
-|                                                                                                           |                                                                                                    |                                                                                        |
-| :-------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------: |
-|          [![achievements](docs/examples/plugin-achievements.svg)](docs/plugins/achievements.md)           |             [![activity](docs/examples/plugin-activity.svg)](docs/plugins/activity.md)             |       [![calendar](docs/examples/plugin-calendar.svg)](docs/plugins/calendar.md)       |
-|                              [`achievements`](docs/plugins/achievements.md)                               |                               [`activity`](docs/plugins/activity.md)                               |                         [`calendar`](docs/plugins/calendar.md)                         |
-| [![contributors](docs/examples/plugin-contributors-repo-contributions.svg)](docs/plugins/contributors.md) |                [![habits](docs/examples/plugin-habits.svg)](docs/plugins/habits.md)                |          [![header](docs/examples/plugin-header.svg)](docs/plugins/header.md)          |
-|                              [`contributors`](docs/plugins/contributors.md)                               |                                 [`habits`](docs/plugins/habits.md)                                 |                           [`header`](docs/plugins/header.md)                           |
-|            [![isocalendar](docs/examples/plugin-isocalendar.svg)](docs/plugins/isocalendar.md)            |           [![languages](docs/examples/plugin-languages.svg)](docs/plugins/languages.md)            |        [![notable](docs/examples/plugin-notable.svg)](docs/plugins/notable.md)         |
-|                               [`isocalendar`](docs/plugins/isocalendar.md)                                |                              [`languages`](docs/plugins/languages.md)                              |                          [`notable`](docs/plugins/notable.md)                          |
-|                   [![people](docs/examples/plugin-people.svg)](docs/plugins/people.md)                    |           [![reactions](docs/examples/plugin-reactions.svg)](docs/plugins/reactions.md)            | [![repositories](docs/examples/plugin-repositories.svg)](docs/plugins/repositories.md) |
-|                                    [`people`](docs/plugins/people.md)                                     |                              [`reactions`](docs/plugins/reactions.md)                              |                     [`repositories`](docs/plugins/repositories.md)                     |
-|                [![sponsors](docs/examples/plugin-sponsors.svg)](docs/plugins/sponsors.md)                 |       [![sponsorships](docs/examples/plugin-sponsorships.svg)](docs/plugins/sponsorships.md)       |    [![stargazers](docs/examples/plugin-stargazers.svg)](docs/plugins/stargazers.md)    |
-|                                  [`sponsors`](docs/plugins/sponsors.md)                                   |                           [`sponsorships`](docs/plugins/sponsorships.md)                           |                       [`stargazers`](docs/plugins/stargazers.md)                       |
-|               [![starlists](docs/examples/plugin-starlists.svg)](docs/plugins/starlists.md)               |                 [![stars](docs/examples/plugin-stars.svg)](docs/plugins/stars.md)                  |          [![topics](docs/examples/plugin-topics.svg)](docs/plugins/topics.md)          |
-|                                 [`starlists`](docs/plugins/starlists.md)                                  |                                  [`stars`](docs/plugins/stars.md)                                  |                           [`topics`](docs/plugins/topics.md)                           |
-|                  [![traffic](docs/examples/plugin-traffic.svg)](docs/plugins/traffic.md)                  | [![stargazers worldmap](docs/examples/plugin-stargazers-worldmap.svg)](docs/plugins/stargazers.md) |                                                                                        |
-|                                   [`traffic`](docs/plugins/traffic.md)                                    |                       [`stargazers` — worldmap](docs/plugins/stargazers.md)                        |                                                                                        |
-
+| | | |
+|:---:|:---:|:---:|
+| [![achievements](docs/examples/plugin-achievements.svg)](docs/plugins/achievements.md) | [![activity](docs/examples/plugin-activity.svg)](docs/plugins/activity.md) | [![calendar](docs/examples/plugin-calendar.svg)](docs/plugins/calendar.md) |
+| [`achievements`](docs/plugins/achievements.md) | [`activity`](docs/plugins/activity.md) | [`calendar`](docs/plugins/calendar.md) |
+| [![contributors](docs/examples/plugin-contributors-repo-contributions.svg)](docs/plugins/contributors.md) | [![habits](docs/examples/plugin-habits.svg)](docs/plugins/habits.md) | [![header](docs/examples/plugin-header.svg)](docs/plugins/header.md) |
+| [`contributors`](docs/plugins/contributors.md) | [`habits`](docs/plugins/habits.md) | [`header`](docs/plugins/header.md) |
+| [![isocalendar](docs/examples/plugin-isocalendar.svg)](docs/plugins/isocalendar.md) | [![languages](docs/examples/plugin-languages.svg)](docs/plugins/languages.md) | [![notable](docs/examples/plugin-notable.svg)](docs/plugins/notable.md) |
+| [`isocalendar`](docs/plugins/isocalendar.md) | [`languages`](docs/plugins/languages.md) | [`notable`](docs/plugins/notable.md) |
+| [![people](docs/examples/plugin-people.svg)](docs/plugins/people.md) | [![reactions](docs/examples/plugin-reactions.svg)](docs/plugins/reactions.md) | [![repositories](docs/examples/plugin-repositories.svg)](docs/plugins/repositories.md) |
+| [`people`](docs/plugins/people.md) | [`reactions`](docs/plugins/reactions.md) | [`repositories`](docs/plugins/repositories.md) |
+| [![sponsors](docs/examples/plugin-sponsors.svg)](docs/plugins/sponsors.md) | [![sponsorships](docs/examples/plugin-sponsorships.svg)](docs/plugins/sponsorships.md) | [![stargazers](docs/examples/plugin-stargazers.svg)](docs/plugins/stargazers.md) |
+| [`sponsors`](docs/plugins/sponsors.md) | [`sponsorships`](docs/plugins/sponsorships.md) | [`stargazers`](docs/plugins/stargazers.md) |
+| [![starlists](docs/examples/plugin-starlists.svg)](docs/plugins/starlists.md) | [![stars](docs/examples/plugin-stars.svg)](docs/plugins/stars.md) | [![topics](docs/examples/plugin-topics.svg)](docs/plugins/topics.md) |
+| [`starlists`](docs/plugins/starlists.md) | [`stars`](docs/plugins/stars.md) | [`topics`](docs/plugins/topics.md) |
+| [![traffic](docs/examples/plugin-traffic.svg)](docs/plugins/traffic.md) | [![stargazers worldmap](docs/examples/plugin-stargazers-worldmap.svg)](docs/plugins/stargazers.md) | |
+| [`traffic`](docs/plugins/traffic.md) | [`stargazers` — worldmap](docs/plugins/stargazers.md) | |
 <!-- AUTOGEN_END: plugins-gallery -->
 
 Refer to [`action.yml`](action.yml) for the full list of inputs. They are identical to the corresponding `lowlighter/metrics` inputs.
@@ -159,7 +157,7 @@ Compose your profile README by embedding the per-plugin SVGs.
 
    ```diff
    - uses: lowlighter/metrics@v3.34
-   + uses: mjun0812/github-metrics@v4
+   + uses: mjun0812/github-metrics@v5
    ```
 
 2. Re-run the workflow. Unported plugin gates can remain in the `with:` block; remove them whenever convenient.
@@ -173,7 +171,7 @@ Compose your profile README by embedding the per-plugin SVGs.
 Every release is signed with cosign keyless OIDC against the GitHub Actions issuer. To verify an image manifest, run:
 
 ```sh
-cosign verify ghcr.io/mjun0812/github-metrics:v4.1.3 \
+cosign verify ghcr.io/mjun0812/github-metrics:v5.0.0 \
   --certificate-identity-regexp \
     'https://github.com/mjun0812/github-metrics/.github/workflows/release.yml@refs/tags/v.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
@@ -183,8 +181,8 @@ Binaries attached to each GitHub Release ship with a `SHA256SUMS` file plus per-
 Use `cosign verify-blob` to verify a binary.
 
 ```sh
-cosign verify-blob metrics-cli_v4.1.3_linux_amd64 \
-  --bundle metrics-cli_v4.1.3_linux_amd64.cosign.bundle \
+cosign verify-blob metrics-cli_v5.0.0_linux_amd64 \
+  --bundle metrics-cli_v5.0.0_linux_amd64.cosign.bundle \
   --certificate-identity-regexp \
     'https://github.com/mjun0812/github-metrics/.github/workflows/release.yml@refs/tags/v.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
