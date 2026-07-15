@@ -212,8 +212,8 @@ for the full option list. The script only rewrites `uses:` lines; the
 
 `@latest` always resolves to the newest published release (no workflow
 changes are needed when new releases ship). If you want to pin to a
-byte-exact version, use the exact `vX.Y.Z` form (e.g. `@v4.1.3`), or a
-floating major-tag such as `@v4` which tracks the latest `v4.x.y`.
+byte-exact version, use the exact `vX.Y.Z` form (e.g. `@v5.0.0`), or a
+floating major-tag such as `@v5` which tracks the latest `v5.x.y`.
 
 ### Step 2: (Optional) remove unsupported inputs
 

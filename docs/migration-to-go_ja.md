@@ -209,9 +209,9 @@ bash scripts/migrate-from-lowlighter.sh --strip-unported
 ```
 
 `@latest` は常に最新のリリースに解決される (新しいリリースが出ても
-workflow の変更不要)。バイト単位でピン留めしたい場合は `@v4.1.3`
-等の exact `vX.Y.Z` 形式、または `@v4` のような major floating tag
-(最新の `v4.x.y` に追従) を使える。
+workflow の変更不要)。バイト単位でピン留めしたい場合は `@v5.0.0`
+等の exact `vX.Y.Z` 形式、または `@v5` のような major floating tag
+(最新の `v5.x.y` に追従) を使える。
 
 ### Step 2: (任意) 未対応 input を削除
 

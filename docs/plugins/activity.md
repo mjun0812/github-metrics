@@ -32,7 +32,7 @@ This plugin displays recent activity on GitHub.
 ### GitHub Action
 
 ```yaml
-- uses: mjun0812/github-metrics@v1
+- uses: mjun0812/github-metrics@v5
   with:
     user: <your-login>
     token: ${{ secrets.METRICS_TOKEN }}
