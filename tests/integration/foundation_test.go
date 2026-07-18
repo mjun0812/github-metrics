@@ -55,6 +55,26 @@ func newGraphQLFixture() *graphQLFixture { return &graphQLFixture{responses: map
 
 func (g *graphQLFixture) On(op, body string) { g.responses[op] = body }
 
+// onContributionDefaults registers canned responses for the split
+// contributionsCollection queries (four single-field aggregates + the
+// windowed mini calendar) so profile hydration succeeds. Each op is only
+// filled when a test has not already registered its own response, so
+// callers keep full control over the values they assert on.
+func (g *graphQLFixture) onContributionDefaults() {
+	for op, body := range map[string]string{
+		"UserCommitContributions":            userCommitContributionsZero,
+		"UserContributionCommits":            userContributionCommitsOctocat,
+		"UserContributionPullRequestReviews": userContributionPullRequestReviewsOcto,
+		"UserContributionPullRequests":       userContributionPullRequestsOctocat,
+		"UserContributionIssues":             userContributionIssuesOctocat,
+		"UserIsocalendar":                    userIsocalendarEmpty,
+	} {
+		if _, ok := g.responses[op]; !ok {
+			g.On(op, body)
+		}
+	}
+}
+
 func (g *graphQLFixture) RoundTrip(req *http.Request) (*http.Response, error) {
 	g.calls.Add(1)
 	body, _ := io.ReadAll(req.Body)
@@ -153,6 +173,21 @@ const (
 		}
 	}`
 
+	// The activity aggregates now travel in their own single-field
+	// queries (GitHub rejects two or more under one contributionsCollection
+	// request). These reproduce the octocat totals that used to live inline
+	// in userOctocat so the goldens stay stable.
+	userContributionCommitsOctocat         = `{"data":{"user":{"contributionsCollection":{"totalCommitContributions":7293}}}}`
+	userContributionPullRequestReviewsOcto = `{"data":{"user":{"contributionsCollection":{"totalPullRequestReviewContributions":68}}}}`
+	userContributionPullRequestsOctocat    = `{"data":{"user":{"contributionsCollection":{"totalPullRequestContributions":290}}}}`
+	userContributionIssuesOctocat          = `{"data":{"user":{"contributionsCollection":{"totalIssueContributions":443}}}}`
+
+	// The trailing mini calendar is reconstructed from windowed
+	// contributionsCollection(from,to) queries. An empty week list keeps
+	// RecentContributions / commit_calendar null, matching the previous
+	// empty inline calendar.
+	userIsocalendarEmpty = `{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[]}}}}}`
+
 	orgGithub = `{
 		"data": {
 			"organization": {
@@ -206,9 +241,9 @@ func newEngineDeps(t testing.TB, gqlBody map[string]string) (engine.Deps, *graph
 	for op, body := range gqlBody {
 		fixture.On(op, body)
 	}
-	if _, ok := gqlBody["UserCommitContributions"]; !ok {
-		fixture.On("UserCommitContributions", userCommitContributionsZero)
-	}
+	// Auto-register the split contributionsCollection queries so profile
+	// hydration succeeds; callers may override any of them via gqlBody.
+	fixture.onContributionDefaults()
 
 	gql, err := githubapi.NewGraphQL(
 		config.NewToken("MOCKED_TOKEN"),

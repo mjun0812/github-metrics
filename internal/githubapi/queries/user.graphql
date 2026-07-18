@@ -63,45 +63,5 @@ query User($login: String!) {
     discussionAnswers: repositoryDiscussionComments(first: 0, onlyAnswers: true) {
       totalCount
     }
-    # 429 Phase 2: "Contributed to N repositories" counter rendered by
-    # upstream base.header.ejs. Explicit contributionTypes mirrors
-    # upstream's set so the number matches the GitHub profile page.
-    repositoriesContributedTo(
-      first: 0
-      contributionTypes: [COMMIT, PULL_REQUEST, ISSUE, REPOSITORY]
-    ) {
-      totalCount
-    }
-    # 429 Phase 3: contribution calendar fetched unconditionally so the
-    # BaseHeader mini grid renders even when no indepth-dependent plugin
-    # (calendar / isocalendar / habits / repositories.pinned) is
-    # enabled. The full year (~53 weeks) is returned; the BaseHeader
-    # partial slices the last 11 weeks for the mini grid. Kept separate
-    # from `runIndepth` so base no longer needs another plugin enabled
-    # to surface this field.
-    contributionsCollection {
-      # 442: Activity-section aggregate counters rendered by upstream
-      # base.activity+community.ejs ("N Commits / N Pull requests
-      # reviewed / N Pull requests opened / N Issues opened"). These
-      # are the lifetime contributionsCollection totals (the default
-      # window with no from/to is the trailing year on the GitHub API,
-      # matching upstream's base run which omits from/to as well).
-      totalCommitContributions
-      totalPullRequestReviewContributions
-      totalPullRequestContributions
-      totalIssueContributions
-      contributionCalendar {
-        totalContributions
-        weeks {
-          firstDay
-          contributionDays {
-            date
-            contributionCount
-            weekday
-            color
-          }
-        }
-      }
-    }
   }
 }

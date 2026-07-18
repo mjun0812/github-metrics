@@ -62,6 +62,53 @@ func TestEngine_DieTrueShortCircuits(t *testing.T) {
 	}
 }
 
+// TestEngine_BaseProviderFailureSurfaces verifies the #781 error-
+// visibility fix end-to-end: when a split contributionsCollection query
+// fails, the base plugin's Provider error is threaded onto Data (not
+// swallowed on Result.Error) so it appears in Result.Errors and, under
+// plugins_errors_fatal, aborts the run.
+func TestEngine_BaseProviderFailureSurfaces(t *testing.T) {
+	baseInputs := map[string]any{
+		"user":                "octocat",
+		"chrome_activity":     "yes",
+		"chrome_repositories": "yes",
+	}
+	failingAggregate := map[string]string{
+		"User":                    userOctocat,
+		"UserRepositories":        userRepositories250,
+		"UserContributionCommits": `{"errors":[{"message":"RESOURCE_LIMITS_EXCEEDED"}]}`,
+	}
+
+	t.Run("collected", func(t *testing.T) {
+		deps, _ := newEngineDeps(t, failingAggregate)
+		res, err := engine.Compute(context.Background(), engine.Request{
+			Login:    "octocat",
+			Template: "noop",
+			Inputs:   baseInputs,
+			Die:      false,
+		}, deps)
+		if err != nil {
+			t.Fatalf("Die=false should not surface plugin errors: %v", err)
+		}
+		if len(res.Errors) == 0 {
+			t.Fatalf("Result.Errors should carry the base Provider failure")
+		}
+	})
+
+	t.Run("fatal", func(t *testing.T) {
+		deps, _ := newEngineDeps(t, failingAggregate)
+		_, err := engine.Compute(context.Background(), engine.Request{
+			Login:    "octocat",
+			Template: "noop",
+			Inputs:   baseInputs,
+			Die:      true,
+		}, deps)
+		if err == nil {
+			t.Fatalf("plugins_errors_fatal should abort the run on a base Provider failure")
+		}
+	})
+}
+
 // TestEngine_DieFalseCollectsErrors mirrors the opposite contract:
 // Die == false (the default) leaves the request successful and stashes
 // the error in Result.Errors for the caller to inspect.

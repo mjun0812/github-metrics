@@ -156,7 +156,7 @@ func TestComputeSVG_P3HeavyAllPlugins(t *testing.T) {
 	gqlFix := newGraphQLFixture()
 	gqlFix.On("User", p1UserOctocat)
 	gqlFix.On("UserRepositories", p1UserRepositories)
-	gqlFix.On("UserIndepth", p1UserIndepth)
+	gqlFix.onContributionDefaults()
 	gql, err := githubapi.NewGraphQL(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost/graphql",
@@ -234,7 +234,7 @@ func TestComputeJSON_P3HeavyAllPlugins(t *testing.T) {
 	gqlFix := newGraphQLFixture()
 	gqlFix.On("User", p1UserOctocat)
 	gqlFix.On("UserRepositories", p1UserRepositories)
-	gqlFix.On("UserIndepth", p1UserIndepth)
+	gqlFix.onContributionDefaults()
 	gql, err := githubapi.NewGraphQL(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost/graphql",

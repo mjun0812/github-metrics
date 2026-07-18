@@ -393,7 +393,17 @@ func resolveRepositoryList(ctx context.Context, pc *plugins.PluginContext) []plu
 		return nil
 	}
 	if pc.Provider != nil {
-		if repos, err := pc.Provider.Repositories(ctx); err == nil && repos != nil {
+		repos, err := pc.Provider.Repositories(ctx)
+		switch {
+		case err != nil:
+			// Surface the failure instead of silently degrading to an
+			// empty card: record it on the shared accumulator so
+			// engine.collectPluginErrors logs it and honours
+			// plugins_errors_fatal (mirrors the base/header contract).
+			if pc.Data != nil {
+				pc.Data.AppendError(fmt.Errorf("languages: repositories fetch: %w", err))
+			}
+		case repos != nil:
 			return repos
 		}
 	}

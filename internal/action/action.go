@@ -234,6 +234,11 @@ func runWith(ctx context.Context, opts runOptions) error {
 		return nil
 	}
 
+	// plugins_errors_fatal (default no): when enabled, a plugin error
+	// aborts the run; otherwise the errors are surfaced on the result and
+	// logged as warnings while rendering continues.
+	errorsFatal := boolInput(inv.Inputs, "plugins_errors_fatal", false)
+
 	var res *engine.Result
 	cerr := inv.RetryPolicy.Do(ctx, func() error {
 		var e error
@@ -244,6 +249,7 @@ func runWith(ctx context.Context, opts runOptions) error {
 			Template: inv.Template,
 			Format:   inv.Format,
 			Inputs:   inv.Inputs,
+			Die:      errorsFatal,
 		}, deps)
 		return e
 	})
@@ -252,6 +258,11 @@ func runWith(ctx context.Context, opts runOptions) error {
 	}
 	if res == nil {
 		return errors.New("action: engine.Compute returned nil result")
+	}
+	// Non-fatal plugin errors (plugins_errors_fatal: no) reach here on the
+	// result; log each so a degraded card is not silently shipped.
+	for _, perr := range res.Errors {
+		slog.Warn("plugin error (render continued)", "err", perr)
 	}
 
 	// 13. Write output. ResolveOutputWriter handles both file targets and

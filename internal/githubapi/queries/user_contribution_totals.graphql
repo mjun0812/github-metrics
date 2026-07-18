@@ -1,0 +1,54 @@
+# Each activity aggregate lives in its own query operation because GitHub
+# applies a per-request resource limit to the contributionsCollection
+# subtree: selecting two or more aggregate fields under a single
+# contributionsCollection (even via aliases) makes the whole `user` node
+# resolve to null. Firing one aggregate per request keeps each query
+# under the limit. All four omit from/to so they report the trailing
+# year, matching the profile figures GitHub shows.
+
+query UserContributionCommits($login: String!) {
+  user(login: $login) {
+    contributionsCollection {
+      totalCommitContributions
+    }
+  }
+}
+
+query UserContributionPullRequestReviews($login: String!) {
+  user(login: $login) {
+    contributionsCollection {
+      totalPullRequestReviewContributions
+    }
+  }
+}
+
+query UserContributionPullRequests($login: String!) {
+  user(login: $login) {
+    contributionsCollection {
+      totalPullRequestContributions
+    }
+  }
+}
+
+query UserContributionIssues($login: String!) {
+  user(login: $login) {
+    contributionsCollection {
+      totalIssueContributions
+    }
+  }
+}
+
+# "Contributed to N repositories" counter rendered by upstream
+# base.header.ejs. Isolated into its own request because on high-activity
+# accounts this single field also trips GitHub's per-request resource
+# limit; the caller degrades gracefully (hides the counter) when it does.
+query UserRepositoriesContributedTo($login: String!) {
+  user(login: $login) {
+    repositoriesContributedTo(
+      first: 0
+      contributionTypes: [COMMIT, PULL_REQUEST, ISSUE, REPOSITORY]
+    ) {
+      totalCount
+    }
+  }
+}
