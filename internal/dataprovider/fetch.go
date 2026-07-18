@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
@@ -132,8 +130,10 @@ func userFromGraphQL(u *githubapi.UserUser) *plugins.User {
 // selection that combines two or more aggregate fields
 // (RESOURCE_LIMITS_EXCEEDED nulls the whole user), so each aggregate is
 // fetched as its own single-field query and the calendar is
-// reconstructed from windowed slices. The requests are issued in
-// parallel.
+// reconstructed from windowed slices. The requests are issued
+// sequentially: concurrent GraphQL requests on a single token trip
+// GitHub's secondary rate limit (observed deterministically on Actions
+// runners), and GitHub's guidance is to keep GraphQL calls serial.
 //
 // The four aggregates and the calendar are load-bearing: any failure
 // aborts the profile fetch so the caller surfaces a real error rather
@@ -146,75 +146,51 @@ func (p *Provider) hydrateContributions(ctx context.Context, user *plugins.User)
 	if user == nil {
 		return nil
 	}
-	g, gctx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		resp, err := p.gql.UserContributionCommits(gctx, p.login)
-		if err != nil {
-			return err
-		}
-		if resp != nil && resp.User != nil && resp.User.ContributionsCollection != nil {
-			user.Commits = resp.User.ContributionsCollection.TotalCommitContributions
-		}
+	commits, err := p.gql.UserContributionCommits(ctx, p.login)
+	if err != nil {
+		return err
+	}
+	if commits != nil && commits.User != nil && commits.User.ContributionsCollection != nil {
+		user.Commits = commits.User.ContributionsCollection.TotalCommitContributions
+	}
+	reviews, err := p.gql.UserContributionPullRequestReviews(ctx, p.login)
+	if err != nil {
+		return err
+	}
+	if reviews != nil && reviews.User != nil && reviews.User.ContributionsCollection != nil {
+		user.PullRequestsReviewed = reviews.User.ContributionsCollection.TotalPullRequestReviewContributions
+	}
+	prs, err := p.gql.UserContributionPullRequests(ctx, p.login)
+	if err != nil {
+		return err
+	}
+	if prs != nil && prs.User != nil && prs.User.ContributionsCollection != nil {
+		user.PullRequestsOpened = prs.User.ContributionsCollection.TotalPullRequestContributions
+	}
+	issues, err := p.gql.UserContributionIssues(ctx, p.login)
+	if err != nil {
+		return err
+	}
+	if issues != nil && issues.User != nil && issues.User.ContributionsCollection != nil {
+		user.IssuesOpened = issues.User.ContributionsCollection.TotalIssueContributions
+	}
+	cal, err := p.CommitCalendar(ctx)
+	if err != nil {
+		return err
+	}
+	if cal != nil {
+		user.RecentContributions = recentDaysFromWeeks(cal.Weeks, recentContributionDays)
+	}
+	contributedTo, err := p.gql.UserRepositoriesContributedTo(ctx, p.login)
+	if err != nil {
+		p.logger.Warn("dataprovider: repositoriesContributedTo unavailable; hiding contributed-to counter",
+			"login", p.login, "err", err)
 		return nil
-	})
-	g.Go(func() error {
-		resp, err := p.gql.UserRepositoriesContributedTo(gctx, p.login)
-		if err != nil {
-			// Best effort: only trips on high-activity accounts, and the
-			// counter is decorative. Skip the warning when the group is
-			// already unwinding from a load-bearing sibling failure.
-			if gctx.Err() == nil {
-				p.logger.Warn("dataprovider: repositoriesContributedTo unavailable; hiding contributed-to counter",
-					"login", p.login, "err", err)
-			}
-			return nil
-		}
-		if resp != nil && resp.User != nil && resp.User.RepositoriesContributedTo != nil {
-			user.ContributedTo = resp.User.RepositoriesContributedTo.TotalCount
-		}
-		return nil
-	})
-	g.Go(func() error {
-		resp, err := p.gql.UserContributionPullRequestReviews(gctx, p.login)
-		if err != nil {
-			return err
-		}
-		if resp != nil && resp.User != nil && resp.User.ContributionsCollection != nil {
-			user.PullRequestsReviewed = resp.User.ContributionsCollection.TotalPullRequestReviewContributions
-		}
-		return nil
-	})
-	g.Go(func() error {
-		resp, err := p.gql.UserContributionPullRequests(gctx, p.login)
-		if err != nil {
-			return err
-		}
-		if resp != nil && resp.User != nil && resp.User.ContributionsCollection != nil {
-			user.PullRequestsOpened = resp.User.ContributionsCollection.TotalPullRequestContributions
-		}
-		return nil
-	})
-	g.Go(func() error {
-		resp, err := p.gql.UserContributionIssues(gctx, p.login)
-		if err != nil {
-			return err
-		}
-		if resp != nil && resp.User != nil && resp.User.ContributionsCollection != nil {
-			user.IssuesOpened = resp.User.ContributionsCollection.TotalIssueContributions
-		}
-		return nil
-	})
-	g.Go(func() error {
-		cal, err := p.CommitCalendar(gctx)
-		if err != nil {
-			return err
-		}
-		if cal != nil {
-			user.RecentContributions = recentDaysFromWeeks(cal.Weeks, recentContributionDays)
-		}
-		return nil
-	})
-	return g.Wait()
+	}
+	if contributedTo != nil && contributedTo.User != nil && contributedTo.User.RepositoriesContributedTo != nil {
+		user.ContributedTo = contributedTo.User.RepositoriesContributedTo.TotalCount
+	}
+	return nil
 }
 
 // organizationFromGraphQL converts the org payload into plugins.Organization.

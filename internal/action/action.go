@@ -712,6 +712,10 @@ func newInvocation(inputs map[string]any, env map[string]string, outputDir strin
 }
 
 func defaultBuildDeps(_ context.Context, inv *Invocation) (engine.Deps, error) {
+	// REST keeps the inner retryablehttp loop off: the action-level
+	// RetryPolicy owns retries there, and the committer issues
+	// non-idempotent writes (duplicate commits on a 5xx after a
+	// successful server-side write would be worse than failing).
 	rest, err := githubapi.NewREST(
 		inv.Token,
 		inv.GitHubAPIRest,
@@ -720,10 +724,16 @@ func defaultBuildDeps(_ context.Context, inv *Invocation) (engine.Deps, error) {
 	if err != nil {
 		return engine.Deps{}, fmt.Errorf("new REST: %w", err)
 	}
+	// GraphQL keeps the inner retries on: every operation is a
+	// read-only query (no mutations exist in internal/githubapi/
+	// queries), so retrying is always safe, and httpx's rate-limit
+	// aware backoff honors Retry-After — bursts of contributionsCollection
+	// requests routinely trip GitHub's secondary rate limit for
+	// ~30-60s, which would otherwise blank the affected cards.
 	gql, err := githubapi.NewGraphQL(
 		inv.Token,
 		inv.GitHubAPIGraphQL,
-		httpx.Options{DisableRetries: true},
+		httpx.Options{},
 	)
 	if err != nil {
 		return engine.Deps{}, fmt.Errorf("new GraphQL: %w", err)
