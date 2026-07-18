@@ -104,77 +104,6 @@ const p1UserRepositories = `{
 	}
 }`
 
-// p1UserIndepth populates ContributionCalendar (for isocalendar) and
-// totals (for achievements). The defaultBranchRef commit totals push
-// commits to the C rank (>100).
-const p1UserIndepth = `{
-	"data": {
-		"user": {
-			"contributionsCollection": {
-				"contributionCalendar": {
-					"totalContributions": 365,
-					"weeks": [
-						{
-							"firstDay": "2026-W18",
-							"contributionDays": [
-								{"date": "2026-05-04", "contributionCount": 1, "weekday": 0, "color": "#aaa"},
-								{"date": "2026-05-05", "contributionCount": 2, "weekday": 1, "color": "#aaa"},
-								{"date": "2026-05-06", "contributionCount": 0, "weekday": 2, "color": "#fff"},
-								{"date": "2026-05-07", "contributionCount": 3, "weekday": 3, "color": "#aaa"},
-								{"date": "2026-05-08", "contributionCount": 4, "weekday": 4, "color": "#aaa"},
-								{"date": "2026-05-09", "contributionCount": 2, "weekday": 5, "color": "#aaa"},
-								{"date": "2026-05-10", "contributionCount": 1, "weekday": 6, "color": "#aaa"}
-							]
-						}
-					]
-				}
-			},
-			"repositories": {
-				"totalCount": 3,
-				"pageInfo": {"hasNextPage": false, "endCursor": null},
-				"nodes": [
-					{
-						"defaultBranchRef": {
-							"name": "main",
-							"target": {
-								"__typename": "Commit",
-								"id": "C_a",
-								"history": {"totalCount": 120}
-							}
-						},
-						"issues": {"totalCount": 12},
-						"pullRequests": {"totalCount": 80}
-					},
-					{
-						"defaultBranchRef": {
-							"name": "main",
-							"target": {
-								"__typename": "Commit",
-								"id": "C_b",
-								"history": {"totalCount": 30}
-							}
-						},
-						"issues": {"totalCount": 3},
-						"pullRequests": {"totalCount": 25}
-					},
-					{
-						"defaultBranchRef": {
-							"name": "main",
-							"target": {
-								"__typename": "Commit",
-								"id": "C_c",
-								"history": {"totalCount": 10}
-							}
-						},
-						"issues": {"totalCount": 0},
-						"pullRequests": {"totalCount": 5}
-					}
-				]
-			}
-		}
-	}
-}`
-
 // p1UserIsocalendar answers the isocalendar plugin's windowed
 // contributionsCollection(from,to) query (#467). The fixture serves the
 // same single week for every 4-week chunk the plugin requests (7 chunks
@@ -243,9 +172,8 @@ func newP1Deps(t *testing.T) engine.Deps {
 	gqlFixture := newGraphQLFixture()
 	gqlFixture.On("User", p1UserOctocat)
 	gqlFixture.On("UserRepositories", p1UserRepositories)
-	gqlFixture.On("UserIndepth", p1UserIndepth)
-	gqlFixture.On("UserCommitContributions", userCommitContributionsZero)
 	gqlFixture.On("UserIsocalendar", p1UserIsocalendar)
+	gqlFixture.onContributionDefaults()
 
 	gql, err := githubapi.NewGraphQL(
 		config.NewToken("MOCKED_TOKEN"),

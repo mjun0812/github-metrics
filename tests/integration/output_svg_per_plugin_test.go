@@ -112,21 +112,18 @@ var perPluginCases = []perPluginCase{
 	{
 		name: "calendar",
 		slug: "calendar",
-		// calendar and isocalendar trigger the base.UserIndepth query (for the
-		// contribution calendar); habits triggers it too (for commit history).
-		// repositories triggers it when plugin_repositories_pinned is set.
+		// calendar and isocalendar reconstruct the contribution calendar
+		// from windowed UserIsocalendar queries; an empty week list keeps
+		// the golden's degraded/skipped path.
 		fixtures: map[string]string{
 			"UserIsocalendar": `{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[]}}}}}`,
-			"UserIndepth":     `{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"totalContributions":0,"weeks":[]}},"repositories":{"totalCount":0,"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}`,
 		},
 		goldenPath: "classic/plugin-calendar.svg",
 	},
 	{
-		name: "habits",
-		slug: "habits",
-		fixtures: map[string]string{
-			"UserIndepth": `{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"totalContributions":0,"weeks":[]}},"repositories":{"totalCount":0,"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}`,
-		},
+		name:     "habits",
+		slug:     "habits",
+		fixtures: map[string]string{},
 		restSetup: func(m *mocks.RESTMux) {
 			// habits pages /users/{login}/events; empty first page terminates loop.
 			m.OnBody("/users/octocat/events", 200, "[]")
@@ -138,7 +135,6 @@ var perPluginCases = []perPluginCase{
 		slug: "isocalendar",
 		fixtures: map[string]string{
 			"UserIsocalendar": `{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[]}}}}}`,
-			"UserIndepth":     `{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"totalContributions":0,"weeks":[]}},"repositories":{"totalCount":0,"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}`,
 		},
 		goldenPath: "classic/plugin-isocalendar.svg",
 	},
@@ -176,8 +172,6 @@ var perPluginCases = []perPluginCase{
 		name: "repositories",
 		slug: "repositories",
 		fixtures: map[string]string{
-			// plugin_repositories_pinned triggers base.UserIndepth (see base/indepth.go).
-			"UserIndepth":       `{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"totalContributions":0,"weeks":[]}},"repositories":{"totalCount":0,"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}`,
 			"ViewerPinnedItems": `{"data":{"viewer":{"pinnedItems":{"totalCount":0,"nodes":[]}}}}`,
 		},
 		extraInputs: map[string]any{

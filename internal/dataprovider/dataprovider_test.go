@@ -1,9 +1,11 @@
 package dataprovider_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -415,8 +417,8 @@ func TestProvider_Profile_DoesNotCacheContextDeadlineExceeded(t *testing.T) {
 // with issues=2 / PRs=7. Both branches of fetchOneRepoPage must accumulate
 // these per-node totals into ComputedRepositories.Issues / .PullRequests
 // (otherwise the JSON wire keys computed.repositories.issues /
-// .pullRequests stay 0 — the wire-format regression the deleted base
-// plugin used to prevent via its UserIndepth-based hydration).
+// .pullRequests stay 0 — the wire-format regression RepositorySummary is
+// responsible for preventing).
 const userRepositoriesResponseBody = `{
   "data": {
     "user": {
@@ -482,12 +484,9 @@ const userRepositoriesResponseBody = `{
 
 // TestProvider_RepositorySummary_IncludesIssuesAndPullRequests guards the
 // JSON wire format keys computed.repositories.issues /
-// computed.repositories.pullRequests, which the deleted base plugin used
-// to populate (via its UserIndepth hydration into
-// pc.Data.Computed.Repositories.{Issues,PullRequests}). After base's
-// removal RepositorySummary is the sole producer of those keys, so the
-// paging accumulator must sum the per-node issues.totalCount /
-// pullRequests.totalCount that the UserRepositories /
+// computed.repositories.pullRequests. RepositorySummary is the sole
+// producer of those keys, so the paging accumulator must sum the per-node
+// issues.totalCount / pullRequests.totalCount that the UserRepositories /
 // OrganizationRepositories GraphQL queries already return.
 func TestProvider_RepositorySummary_IncludesIssuesAndPullRequests(t *testing.T) {
 	t.Parallel()
@@ -954,5 +953,141 @@ func TestProvider_Repositories_EmptyDataNullReturnsError(t *testing.T) {
 	}
 	if !errors.Is(err, githubapi.ErrEmptyGraphQLResponse) {
 		t.Fatalf("errors.Is(ErrEmptyGraphQLResponse) = false; err=%v", err)
+	}
+}
+
+const oneDayWindowBody = `{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[{"firstDay":"2026-01-01","contributionDays":[{"date":"2026-01-01","contributionCount":5,"weekday":4,"color":"#40c463"}]}]}}}}}`
+
+// TestProvider_Profile_HydratesSplitContributionAggregates verifies the
+// activity aggregates and the mini calendar are assembled from the split
+// single-field queries (#781) rather than one combined
+// contributionsCollection selection.
+func TestProvider_Profile_HydratesSplitContributionAggregates(t *testing.T) {
+	t.Parallel()
+	tr := newCountingTransport()
+	tr.setResponse("User", userResponseBody)
+	tr.setResponse("UserContributionCommits", `{"data":{"user":{"contributionsCollection":{"totalCommitContributions":7293}}}}`)
+	tr.setResponse("UserContributionPullRequestReviews", `{"data":{"user":{"contributionsCollection":{"totalPullRequestReviewContributions":68}}}}`)
+	tr.setResponse("UserContributionPullRequests", `{"data":{"user":{"contributionsCollection":{"totalPullRequestContributions":290}}}}`)
+	tr.setResponse("UserContributionIssues", `{"data":{"user":{"contributionsCollection":{"totalIssueContributions":443}}}}`)
+	tr.setResponse("UserIsocalendar", oneDayWindowBody)
+	p := newProviderWith(t, tr)
+
+	u, err := p.User(context.Background())
+	if err != nil {
+		t.Fatalf("User: %v", err)
+	}
+	if u.Commits != 7293 {
+		t.Errorf("Commits = %d, want 7293", u.Commits)
+	}
+	if u.PullRequestsReviewed != 68 {
+		t.Errorf("PullRequestsReviewed = %d, want 68", u.PullRequestsReviewed)
+	}
+	if u.PullRequestsOpened != 290 {
+		t.Errorf("PullRequestsOpened = %d, want 290", u.PullRequestsOpened)
+	}
+	if u.IssuesOpened != 443 {
+		t.Errorf("IssuesOpened = %d, want 443", u.IssuesOpened)
+	}
+	// The trailing year is fetched as multiple week-aligned calendar
+	// windows (not one full-year request that would trip the limit).
+	if got := tr.count("UserIsocalendar"); got < 2 {
+		t.Errorf("UserIsocalendar windows = %d, want the trailing year split into >=2 windows", got)
+	}
+	if len(u.RecentContributions) == 0 {
+		t.Errorf("RecentContributions empty; want the trailing calendar days")
+	}
+}
+
+// TestProvider_Profile_ContributedToDegradesGracefully verifies the
+// best-effort contract for repositoriesContributedTo: that single field
+// also trips the resource limit on high-activity accounts, so its failure
+// must leave the rest of the profile intact, zero the ContributedTo
+// counter (the header hides the row) and log a warning — never abort the
+// whole profile.
+func TestProvider_Profile_ContributedToDegradesGracefully(t *testing.T) {
+	t.Parallel()
+	tr := newCountingTransport()
+	tr.setResponse("User", userResponseBody)
+	tr.setResponse("UserContributionCommits", `{"data":{"user":{"contributionsCollection":{"totalCommitContributions":7293}}}}`)
+	tr.setResponse("UserContributionPullRequestReviews", `{"data":{"user":{"contributionsCollection":{"totalPullRequestReviewContributions":68}}}}`)
+	tr.setResponse("UserContributionPullRequests", `{"data":{"user":{"contributionsCollection":{"totalPullRequestContributions":290}}}}`)
+	tr.setResponse("UserContributionIssues", `{"data":{"user":{"contributionsCollection":{"totalIssueContributions":443}}}}`)
+	tr.setResponse("UserIsocalendar", oneDayWindowBody)
+	tr.setResponse("UserRepositoriesContributedTo", `{"errors":[{"message":"RESOURCE_LIMITS_EXCEEDED"}]}`)
+
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	gql, err := githubapi.NewGraphQL(config.NewToken("ghp_test"), "", httpx.Options{
+		Transport:  tr,
+		MaxRetries: 0,
+	})
+	if err != nil {
+		t.Fatalf("NewGraphQL: %v", err)
+	}
+	p := dataprovider.New("octocat", "", gql, nil, logger, dataprovider.Options{})
+
+	u, err := p.User(context.Background())
+	if err != nil {
+		t.Fatalf("User should succeed despite contributed-to failure: %v", err)
+	}
+	// Load-bearing aggregates are still populated.
+	if u.Commits != 7293 || u.PullRequestsOpened != 290 {
+		t.Errorf("aggregates lost: Commits=%d PullRequestsOpened=%d", u.Commits, u.PullRequestsOpened)
+	}
+	// The degraded counter is zero so the header hides the row (never "0").
+	if u.ContributedTo != 0 {
+		t.Errorf("ContributedTo = %d, want 0 (degraded/hidden)", u.ContributedTo)
+	}
+	if !strings.Contains(buf.String(), "repositoriesContributedTo unavailable") {
+		t.Errorf("expected a degradation warning in the log, got %q", buf.String())
+	}
+}
+
+// TestProvider_Profile_AggregateFailureAbortsProfile verifies that a
+// split aggregate query failure surfaces as a profile error instead of a
+// silently zeroed counter.
+func TestProvider_Profile_AggregateFailureAbortsProfile(t *testing.T) {
+	t.Parallel()
+	tr := newCountingTransport()
+	tr.setResponse("User", userResponseBody)
+	tr.setResponse("UserContributionCommits", `{"data":null}`)
+	tr.setResponse("UserIsocalendar", oneDayWindowBody)
+	p := newProviderWith(t, tr)
+
+	if _, err := p.User(context.Background()); err == nil {
+		t.Fatalf("expected profile error when an aggregate query fails")
+	}
+}
+
+// TestProvider_CommitCalendar_MergesWindows verifies the trailing-year
+// calendar is stitched together from the windowed queries and the total
+// is reconstructed as the sum of the per-day counts.
+func TestProvider_CommitCalendar_MergesWindows(t *testing.T) {
+	t.Parallel()
+	tr := newCountingTransport()
+	tr.setResponse("UserIsocalendar", oneDayWindowBody)
+	p := newProviderWith(t, tr)
+
+	cal, err := p.CommitCalendar(context.Background())
+	if err != nil {
+		t.Fatalf("CommitCalendar: %v", err)
+	}
+	if cal == nil {
+		t.Fatal("CommitCalendar returned nil")
+	}
+	// The trailing year is fetched as multiple week-aligned windows; the
+	// mock returns one week (one day, count 5) per window, so the merged
+	// calendar concatenates one week per window and the total is the sum
+	// of the per-day counts.
+	n := int(tr.count("UserIsocalendar"))
+	if n < 2 {
+		t.Fatalf("UserIsocalendar windows = %d, want the trailing year split into >=2 windows", n)
+	}
+	if len(cal.Weeks) != n {
+		t.Errorf("merged weeks = %d, want %d (one per window)", len(cal.Weeks), n)
+	}
+	if cal.TotalContributions != 5*n {
+		t.Errorf("TotalContributions = %d, want %d (sum of per-day counts)", cal.TotalContributions, 5*n)
 	}
 }

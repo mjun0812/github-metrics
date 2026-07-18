@@ -162,6 +162,13 @@ func TestRun_ProfileErrorRecordsAndReturnsNilErr(t *testing.T) {
 	if r.Profile != nil || r.RepositorySummary != nil {
 		t.Errorf("Result should be unpopulated on early failure, got %+v", r)
 	}
+	// #781: the plugin-local failure must also reach the shared Data
+	// accumulator so engine.collectPluginErrors surfaces it (logs +
+	// plugins_errors_fatal) instead of it living only on Result.Error.
+	errs := pc.Data.SnapshotErrors()
+	if len(errs) != 1 || !errors.Is(errs[0], sentinel) {
+		t.Errorf("Data.SnapshotErrors() = %v, want one entry wrapping sentinel", errs)
+	}
 }
 
 // TestRun_RepositorySummaryErrorRecorded — Profile succeeds but

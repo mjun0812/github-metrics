@@ -16,13 +16,16 @@
 //     watchers).
 //
 // Failure model: errors from Provider are plugin-local. A failed Profile
-// or RepositorySummary call records the error on Result.Error and the
-// populated Result is returned (with nil error) so the engine continues
-// rendering other plugins while the failure stays inspectable.
+// or RepositorySummary call records the error on both Result.Error (for
+// inspection) and the shared Data accumulator via recordError, then
+// returns the Result with a nil error so the engine keeps rendering other
+// plugins. Threading it onto Data is what lets engine.collectPluginErrors
+// log the failure and honour plugins_errors_fatal.
 package base
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
@@ -93,16 +96,30 @@ func (*basePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, err
 	profile, err := pc.Provider.Profile(ctx)
 	if err != nil {
 		res.Error = err
-		return res, nil //nolint:nilerr // plugin-local failure: surface via res.Error so RunPlugins records it and the partial can degrade gracefully without aborting the render.
+		recordError(pc, err)
+		return res, nil //nolint:nilerr // plugin-local failure: recordError threads it onto Data.Errors; returning nil lets the partial degrade without aborting the render.
 	}
 	res.Profile = profile
 
 	summary, err := pc.Provider.RepositorySummary(ctx)
 	if err != nil {
 		res.Error = err
+		recordError(pc, err)
 		return res, nil //nolint:nilerr // same plugin-local failure contract; do not propagate so other plugins still render.
 	}
 	res.RepositorySummary = summary
 
 	return res, nil
+}
+
+// recordError threads a plugin-local Provider failure onto the shared
+// Data error accumulator so engine.collectPluginErrors surfaces it in the
+// run log and honours plugins_errors_fatal. Without this the failure
+// would live only on Result.Error (json:"-"), invisible to logs, the
+// error list, and the exit code.
+func recordError(pc *plugins.PluginContext, err error) {
+	if pc == nil || pc.Data == nil || err == nil {
+		return
+	}
+	pc.Data.AppendError(fmt.Errorf("%s: %w", Name, err))
 }

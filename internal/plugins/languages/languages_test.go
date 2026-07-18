@@ -2,8 +2,10 @@ package languages_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/mjun0812/github-metrics/internal/dataprovider/dataprovidertest"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/languages"
 )
@@ -55,6 +57,41 @@ func runWith(t *testing.T, repos []plugins.Repository, inputs map[string]any) *l
 		t.Fatalf("Run returned %T, want *languages.Result", out)
 	}
 	return r
+}
+
+// TestRun_RepositoriesErrorRecorded verifies the #781 error-visibility
+// fix: a Provider.Repositories failure is recorded on the shared Data
+// accumulator (so engine.collectPluginErrors logs it and honours
+// plugins_errors_fatal) instead of being silently swallowed into an empty
+// card.
+func TestRun_RepositoriesErrorRecorded(t *testing.T) {
+	sentinel := errors.New("resource limit")
+	mock := dataprovidertest.NewCountingMock()
+	mock.RepositoriesFn = func(context.Context) ([]plugins.Repository, error) {
+		return nil, sentinel
+	}
+	data := plugins.NewData()
+	pc := &plugins.PluginContext{
+		Inputs:   map[string]any{"plugin_languages": true, "user": "octocat"},
+		Data:     data,
+		Provider: mock,
+	}
+	if _, err := languages.Plugin.Run(context.Background(), pc); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	errs := data.SnapshotErrors()
+	if len(errs) == 0 {
+		t.Fatalf("Data.SnapshotErrors() empty; want the languages repositories error recorded")
+	}
+	found := false
+	for _, e := range errs {
+		if errors.Is(e, sentinel) {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("Data.SnapshotErrors() = %v, want one wrapping the repositories error", errs)
+	}
 }
 
 // TestRun_Normal covers the octocat 正常系: top 3 favorites in

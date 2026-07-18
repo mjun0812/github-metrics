@@ -88,41 +88,6 @@ func connTotalSponsorMaintainer(u *githubapi.UserUser) int {
 	return u.SponsorshipsAsMaintainer.TotalCount
 }
 
-func connTotalContributedTo(u *githubapi.UserUser) int {
-	if u == nil || u.RepositoriesContributedTo == nil {
-		return 0
-	}
-	return u.RepositoriesContributedTo.TotalCount
-}
-
-func contributionCommits(u *githubapi.UserUser) int {
-	if u == nil || u.ContributionsCollection == nil {
-		return 0
-	}
-	return u.ContributionsCollection.TotalCommitContributions
-}
-
-func contributionPullRequestReviews(u *githubapi.UserUser) int {
-	if u == nil || u.ContributionsCollection == nil {
-		return 0
-	}
-	return u.ContributionsCollection.TotalPullRequestReviewContributions
-}
-
-func contributionPullRequests(u *githubapi.UserUser) int {
-	if u == nil || u.ContributionsCollection == nil {
-		return 0
-	}
-	return u.ContributionsCollection.TotalPullRequestContributions
-}
-
-func contributionIssues(u *githubapi.UserUser) int {
-	if u == nil || u.ContributionsCollection == nil {
-		return 0
-	}
-	return u.ContributionsCollection.TotalIssueContributions
-}
-
 func connTotalIssueComments(u *githubapi.UserUser) int {
 	if u == nil || u.IssueComments == nil {
 		return 0
@@ -179,33 +144,16 @@ func connTotalDiscussionAnswers(u *githubapi.UserUser) int {
 	return u.DiscussionAnswers.TotalCount
 }
 
-// recentContributionDays flattens the contribution calendar weeks into
-// a chronological day list and returns the trailing n days (mirrors
+// recentDaysFromWeeks flattens the merged contribution-calendar weeks
+// into a chronological day list and returns the trailing n days (mirrors
 // upstream `core/index.mjs` `slice(-14)`).
-func recentContributionDays(u *githubapi.UserUser, n int) []plugins.ContributionDay {
-	if u == nil || u.ContributionsCollection == nil || u.ContributionsCollection.ContributionCalendar == nil {
-		return nil
-	}
-	weeks := u.ContributionsCollection.ContributionCalendar.Weeks
+func recentDaysFromWeeks(weeks []plugins.ContributionWeek, n int) []plugins.ContributionDay {
 	if len(weeks) == 0 {
 		return nil
 	}
 	days := make([]plugins.ContributionDay, 0, len(weeks)*7)
 	for _, w := range weeks {
-		if w == nil {
-			continue
-		}
-		for _, d := range w.ContributionDays {
-			if d == nil {
-				continue
-			}
-			days = append(days, plugins.ContributionDay{
-				Date:              d.Date,
-				ContributionCount: d.ContributionCount,
-				Weekday:           d.Weekday,
-				Color:             d.Color,
-			})
-		}
+		days = append(days, w.Days...)
 	}
 	if len(days) == 0 {
 		return nil
@@ -216,9 +164,10 @@ func recentContributionDays(u *githubapi.UserUser, n int) []plugins.Contribution
 	return days
 }
 
-// weeksFromIndepth mirrors base.weeksFromIndepth for the indepth
-// GraphQL contribution calendar payload.
-func weeksFromIndepth(weeks []*githubapi.UserIndepthUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek) []plugins.ContributionWeek {
+// weeksFromIsocalendar converts a windowed UserIsocalendar calendar
+// payload into the plugins.ContributionWeek shape the shared calendar
+// accumulator collects.
+func weeksFromIsocalendar(weeks []*githubapi.UserIsocalendarUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek) []plugins.ContributionWeek {
 	if len(weeks) == 0 {
 		return nil
 	}

@@ -159,7 +159,8 @@ var benchGraphQLResponses = map[string]string{
 	"UserRepositories": `{"data":{"user":{"repositories":{"totalCount":2,"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[
 		{"databaseId":1,"id":"r1","name":"alpha","nameWithOwner":"octocat/alpha","url":"https://github.com/octocat/alpha","isPrivate":false,"isFork":false,"stargazerCount":100,"forkCount":10,"watchers":{"totalCount":5},"primaryLanguage":{"name":"Go","color":"#00ADD8"},"languages":{"totalCount":1,"totalSize":5000,"edges":[{"size":5000,"node":{"name":"Go","color":"#00ADD8"}}]}}
 	]}}}}`,
-	"UserIndepth": `{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"totalContributions":10,"weeks":[]}},"repositories":{"totalCount":1,"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"defaultBranchRef":{"name":"main","target":{"__typename":"Commit","id":"c","history":{"totalCount":10}}},"issues":{"totalCount":0},"pullRequests":{"totalCount":0}}]}}}}`,
+	"UserContributionCommits": `{"data":{"user":{"contributionsCollection":{"totalCommitContributions":10}}}}`,
+	"UserIsocalendar":         `{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[]}}}}}`,
 }
 
 // benchRESTMux returns empty arrays for /events and /traffic-ish

@@ -11,7 +11,7 @@ import (
 	"github.com/mjun0812/github-metrics/internal/httpx"
 )
 
-//go:generate go run ../../tools/gen-graphql
+//go:generate go run ../tools/gen-graphql
 
 // DefaultGraphQLURL is the production GraphQL endpoint.
 const DefaultGraphQLURL = "https://api.github.com/graphql"
@@ -116,12 +116,42 @@ func (g *GraphQL) OrganizationMembers(ctx context.Context, login string, first i
 	return OrganizationMembers(ctx, g.client, login, first, after)
 }
 
-// UserIndepth issues the "indepth" GraphQL query that augments the base
-// payload with per-repository commit/issue/PR totals and the user's
-// contribution calendar. Triggered only when at least one indepth-
-// dependent plugin is enabled.
-func (g *GraphQL) UserIndepth(ctx context.Context, login string, from, to *time.Time, reposFirst int, reposAfter *string) (*UserIndepthResponse, error) {
-	return UserIndepth(ctx, g.client, login, from, to, reposFirst, reposAfter)
+// UserContributionCommits fetches the trailing-year commit-contribution
+// total. Split into its own query operation because GitHub's per-request
+// resource limit on the contributionsCollection subtree rejects two or
+// more aggregate fields in a single request.
+func (g *GraphQL) UserContributionCommits(ctx context.Context, login string) (*UserContributionCommitsResponse, error) {
+	return UserContributionCommits(ctx, g.client, login)
+}
+
+// UserContributionPullRequestReviews fetches the trailing-year
+// pull-request-review-contribution total. Isolated for the same reason
+// as [GraphQL.UserContributionCommits].
+func (g *GraphQL) UserContributionPullRequestReviews(ctx context.Context, login string) (*UserContributionPullRequestReviewsResponse, error) {
+	return UserContributionPullRequestReviews(ctx, g.client, login)
+}
+
+// UserContributionPullRequests fetches the trailing-year
+// pull-request-contribution total. Isolated for the same reason as
+// [GraphQL.UserContributionCommits].
+func (g *GraphQL) UserContributionPullRequests(ctx context.Context, login string) (*UserContributionPullRequestsResponse, error) {
+	return UserContributionPullRequests(ctx, g.client, login)
+}
+
+// UserContributionIssues fetches the trailing-year issue-contribution
+// total. Isolated for the same reason as
+// [GraphQL.UserContributionCommits].
+func (g *GraphQL) UserContributionIssues(ctx context.Context, login string) (*UserContributionIssuesResponse, error) {
+	return UserContributionIssues(ctx, g.client, login)
+}
+
+// UserRepositoriesContributedTo fetches the "contributed to N
+// repositories" counter. Isolated into its own request because on
+// high-activity accounts this single field also trips GitHub's
+// per-request resource limit; callers treat a failure as a hidden
+// counter rather than a profile-wide error.
+func (g *GraphQL) UserRepositoriesContributedTo(ctx context.Context, login string) (*UserRepositoriesContributedToResponse, error) {
+	return UserRepositoriesContributedTo(ctx, g.client, login)
 }
 
 // UserIsocalendar fetches the contribution calendar for an explicit

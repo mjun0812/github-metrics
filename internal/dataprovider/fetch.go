@@ -6,10 +6,29 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
+
+// recentContributionDays is the trailing-day window the header / repository
+// mini calendar renders (upstream core/index.mjs slice(-14)).
+const recentContributionDays = 14
+
+// calendarWindowDays bounds each contributionsCollection(from,to) calendar
+// slice used to reconstruct the trailing year. GitHub applies a
+// per-request resource limit to the contributionsCollection subtree, so
+// the full-year calendar is fetched as consecutive windows of at most
+// this width and the returned weeks are concatenated. 13 weeks
+// (~3 months) leaves generous headroom under the observed node limit,
+// which is undocumented and may shrink further. It is a whole number of
+// weeks so — combined with a Sunday-aligned start — every window boundary
+// lands on a week edge and no calendar week is split across two windows
+// (which would render as a broken mid-year column).
+const calendarWindowDays = 13 * 7
 
 // defaultRepoBatch matches the upstream `plugin_repositories_batch`
 // default and is used as the initial paging size when no per-Provider
@@ -44,9 +63,13 @@ func (p *Provider) fetchProfile(ctx context.Context) (*plugins.Profile, error) {
 
 	userResp, userErr := p.gql.User(ctx, p.login)
 	if userErr == nil && userResp != nil && userResp.User != nil {
+		user := userFromGraphQL(userResp.User)
+		if err := p.hydrateContributions(ctx, user); err != nil {
+			return nil, fmt.Errorf("dataprovider: user(%q) contributions: %w", p.login, err)
+		}
 		return &plugins.Profile{
 			Kind: plugins.ProfileKindUser,
-			User: userFromGraphQL(userResp.User),
+			User: user,
 		}, nil
 	}
 
@@ -74,7 +97,11 @@ func (p *Provider) fetchProfile(ctx context.Context) (*plugins.Profile, error) {
 }
 
 // userFromGraphQL converts the genqlient-generated user payload into
-// the plugins.User shape downstream code consumes.
+// the plugins.User shape downstream code consumes. The activity
+// aggregates (Commits / PullRequestsReviewed / PullRequestsOpened /
+// IssuesOpened), ContributedTo and RecentContributions are filled
+// separately by hydrateContributions from the split contributionsCollection
+// queries.
 func userFromGraphQL(u *githubapi.UserUser) *plugins.User {
 	if u == nil {
 		return nil
@@ -88,12 +115,6 @@ func userFromGraphQL(u *githubapi.UserUser) *plugins.User {
 		Following:                connTotalFollowing(u),
 		Watching:                 connTotalWatching(u),
 		SponsorshipsAsMaintainer: connTotalSponsorMaintainer(u),
-		ContributedTo:            connTotalContributedTo(u),
-		RecentContributions:      recentContributionDays(u, 14),
-		Commits:                  contributionCommits(u),
-		PullRequestsReviewed:     contributionPullRequestReviews(u),
-		PullRequestsOpened:       contributionPullRequests(u),
-		IssuesOpened:             contributionIssues(u),
 		IssueComments:            connTotalIssueComments(u),
 		Organizations:            connTotalOrganizations(u),
 		Sponsoring:               connTotalSponsorshipsAsSponsor(u),
@@ -103,6 +124,97 @@ func userFromGraphQL(u *githubapi.UserUser) *plugins.User {
 		DiscussionsComments:      connTotalDiscussionsComments(u),
 		DiscussionAnswers:        connTotalDiscussionAnswers(u),
 	}
+}
+
+// hydrateContributions fills the activity aggregates (commits / reviews /
+// PRs / issues), the "contributed to" counter and the trailing
+// mini-calendar days on user. GitHub rejects a contributionsCollection
+// selection that combines two or more aggregate fields
+// (RESOURCE_LIMITS_EXCEEDED nulls the whole user), so each aggregate is
+// fetched as its own single-field query and the calendar is
+// reconstructed from windowed slices. The requests are issued in
+// parallel.
+//
+// The four aggregates and the calendar are load-bearing: any failure
+// aborts the profile fetch so the caller surfaces a real error rather
+// than silently zeroed counters. repositoriesContributedTo is best
+// effort — that single field also trips the resource limit on
+// high-activity accounts, so a failure only logs a warning and leaves
+// ContributedTo at zero (the header hides the counter row) instead of
+// blanking the whole card.
+func (p *Provider) hydrateContributions(ctx context.Context, user *plugins.User) error {
+	if user == nil {
+		return nil
+	}
+	g, gctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		resp, err := p.gql.UserContributionCommits(gctx, p.login)
+		if err != nil {
+			return err
+		}
+		if resp != nil && resp.User != nil && resp.User.ContributionsCollection != nil {
+			user.Commits = resp.User.ContributionsCollection.TotalCommitContributions
+		}
+		return nil
+	})
+	g.Go(func() error {
+		resp, err := p.gql.UserRepositoriesContributedTo(gctx, p.login)
+		if err != nil {
+			// Best effort: only trips on high-activity accounts, and the
+			// counter is decorative. Skip the warning when the group is
+			// already unwinding from a load-bearing sibling failure.
+			if gctx.Err() == nil {
+				p.logger.Warn("dataprovider: repositoriesContributedTo unavailable; hiding contributed-to counter",
+					"login", p.login, "err", err)
+			}
+			return nil
+		}
+		if resp != nil && resp.User != nil && resp.User.RepositoriesContributedTo != nil {
+			user.ContributedTo = resp.User.RepositoriesContributedTo.TotalCount
+		}
+		return nil
+	})
+	g.Go(func() error {
+		resp, err := p.gql.UserContributionPullRequestReviews(gctx, p.login)
+		if err != nil {
+			return err
+		}
+		if resp != nil && resp.User != nil && resp.User.ContributionsCollection != nil {
+			user.PullRequestsReviewed = resp.User.ContributionsCollection.TotalPullRequestReviewContributions
+		}
+		return nil
+	})
+	g.Go(func() error {
+		resp, err := p.gql.UserContributionPullRequests(gctx, p.login)
+		if err != nil {
+			return err
+		}
+		if resp != nil && resp.User != nil && resp.User.ContributionsCollection != nil {
+			user.PullRequestsOpened = resp.User.ContributionsCollection.TotalPullRequestContributions
+		}
+		return nil
+	})
+	g.Go(func() error {
+		resp, err := p.gql.UserContributionIssues(gctx, p.login)
+		if err != nil {
+			return err
+		}
+		if resp != nil && resp.User != nil && resp.User.ContributionsCollection != nil {
+			user.IssuesOpened = resp.User.ContributionsCollection.TotalIssueContributions
+		}
+		return nil
+	})
+	g.Go(func() error {
+		cal, err := p.CommitCalendar(gctx)
+		if err != nil {
+			return err
+		}
+		if cal != nil {
+			user.RecentContributions = recentDaysFromWeeks(cal.Weeks, recentContributionDays)
+		}
+		return nil
+	})
+	return g.Wait()
 }
 
 // organizationFromGraphQL converts the org payload into plugins.Organization.
@@ -406,26 +518,83 @@ func (p *Provider) fetchOneRepoPage(ctx context.Context, isUser bool, state *rep
 	return pi.HasNextPage, pi.EndCursor, nil
 }
 
-// fetchCommitCalendar issues the indepth GraphQL query and returns the
-// aggregated contribution calendar. nil with a nil error when the
-// payload is absent (organization profile, fresh user account).
+// fetchCommitCalendar reconstructs the trailing-year contribution
+// calendar from windowed contributionsCollection(from,to) queries and
+// returns it. nil with a nil error when the payload is absent
+// (organization profile, fresh user account). A single whole-year
+// selection is rejected by GitHub's per-request resource limit, so the
+// year is split into consecutive windows of at most calendarWindowDays
+// and the returned weeks are concatenated. TotalContributions is
+// reconstructed as the sum of the per-day counts (no day appears in two
+// windows because each window ends one millisecond before the next
+// begins).
 func (p *Provider) fetchCommitCalendar(ctx context.Context) (*plugins.ContributionCalendar, error) {
-	resp, err := p.gql.UserIndepth(ctx, p.login, nil, nil, defaultRepoBatch, nil)
+	weeks, err := p.fetchCalendarWeeks(ctx, time.Now().UTC())
 	if err != nil {
-		return nil, fmt.Errorf("dataprovider: indepth(%q): %w", p.login, err)
+		return nil, fmt.Errorf("dataprovider: calendar(%q): %w", p.login, err)
 	}
-	if resp == nil || resp.User == nil {
+	if len(weeks) == 0 {
 		return nil, nil
 	}
-	cc := resp.User.ContributionsCollection
-	if cc == nil || cc.ContributionCalendar == nil {
-		return nil, nil
+	total := 0
+	for _, w := range weeks {
+		for _, d := range w.Days {
+			total += d.ContributionCount
+		}
 	}
-	cal := cc.ContributionCalendar
 	return &plugins.ContributionCalendar{
-		TotalContributions: cal.TotalContributions,
-		Weeks:              weeksFromIndepth(cal.Weeks),
+		TotalContributions: total,
+		Weeks:              weeks,
 	}, nil
+}
+
+// fetchCalendarWeeks pages the trailing year ending at now in
+// calendarWindowDays-wide windows and concatenates the returned weeks.
+func (p *Provider) fetchCalendarWeeks(ctx context.Context, now time.Time) ([]plugins.ContributionWeek, error) {
+	var weeks []plugins.ContributionWeek
+	for _, w := range calendarWindows(now) {
+		resp, err := p.gql.UserIsocalendar(ctx, p.login, w[0], w[1])
+		if err != nil {
+			return nil, err
+		}
+		if resp == nil || resp.User == nil || resp.User.ContributionsCollection == nil ||
+			resp.User.ContributionsCollection.ContributionCalendar == nil {
+			continue
+		}
+		weeks = append(weeks, weeksFromIsocalendar(resp.User.ContributionsCollection.ContributionCalendar.Weeks)...)
+	}
+	return weeks, nil
+}
+
+// calendarWindows splits the trailing year ending at now into
+// consecutive [from, to] ranges of calendarWindowDays each. The start is
+// snapped back to the previous Sunday at UTC midnight (mirroring GitHub's
+// Sunday-first calendar weeks, as isocalendar does) and each window is a
+// whole number of weeks, so every window boundary falls on a Sunday and
+// no calendar week is split across two windows. Each range ends one
+// millisecond before the next begins so GitHub never reports a boundary
+// day in two adjacent windows.
+func calendarWindows(now time.Time) [][2]time.Time {
+	now = now.UTC()
+	start := previousSundayUTC(now.AddDate(-1, 0, 0))
+	var out [][2]time.Time
+	for from := start; from.Before(now); {
+		to := from.AddDate(0, 0, calendarWindowDays)
+		if to.After(now) {
+			to = now
+		}
+		out = append(out, [2]time.Time{from, to.Add(-time.Millisecond)})
+		from = to
+	}
+	return out
+}
+
+// previousSundayUTC snaps t back to the most recent Sunday at 00:00:00
+// UTC so calendar windows align with GitHub's Sunday-first weeks.
+func previousSundayUTC(t time.Time) time.Time {
+	t = t.UTC()
+	t = t.AddDate(0, 0, -int(t.Weekday()))
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }
 
 // isTransient mirrors base.isTransient so dataprovider can apply the

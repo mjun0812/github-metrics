@@ -154,10 +154,20 @@ func TestRun_FetchesFullCalendarYears(t *testing.T) {
 	seenFrom := []string{}
 	seenTo := []string{}
 	mux := mocks.NewGraphQLMux(t)
+	// Each calendar year is fetched as consecutive week-aligned windows to
+	// stay under GitHub's per-request contributionsCollection resource
+	// limit. The mock keys its response day off the window's own `from`
+	// date so chunks never double-count and every day lands in the right
+	// year. The exact window count depends on the (deliberately
+	// conservative) chunk width, so the assertions below check the
+	// invariants — coverage from account creation to now, correct years —
+	// rather than a brittle call count.
 	mux.OnFunc("UserIsocalendar", func(vars map[string]any) (int, string) {
-		seenFrom = append(seenFrom, fmt.Sprint(vars["from"]))
+		from := fmt.Sprint(vars["from"])
+		seenFrom = append(seenFrom, from)
 		seenTo = append(seenTo, fmt.Sprint(vars["to"]))
-		return 200, fmt.Sprintf(`{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[{"firstDay":"%[1]d-01-01","contributionDays":[{"date":"%[1]d-01-01","contributionCount":1,"weekday":1,"color":"#9be9a8"}]}]}}}}}`, 2024+len(seenFrom)-1)
+		date := from[:10]
+		return 200, fmt.Sprintf(`{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[{"firstDay":"%[1]s","contributionDays":[{"date":"%[1]s","contributionCount":1,"weekday":1,"color":"#9be9a8"}]}]}}}}}`, date)
 	})
 	pc := mocks.NewPluginContext(
 		t,
@@ -170,20 +180,18 @@ func TestRun_FetchesFullCalendarYears(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 	r := out.(*calendar.Result)
-	if got := mux.Calls("UserIsocalendar"); got != 3 {
-		t.Fatalf("UserIsocalendar calls = %d, want 3", got)
+	// Three years covered, each split into more than one window.
+	if got := mux.Calls("UserIsocalendar"); got <= 3 {
+		t.Fatalf("UserIsocalendar calls = %d, want each year windowed into multiple calls", got)
 	}
 	if len(r.Years) != 3 || r.Years[0].Year != 2026 || r.Years[2].Year != 2024 {
 		t.Fatalf("fetched years should render newest-first; got %+v", r.Years)
 	}
 	if seenFrom[0] != "2024-03-02T09:08:07Z" {
-		t.Fatalf("first year should start at account creation; got %s", seenFrom[0])
+		t.Fatalf("first window should start at account creation; got %s", seenFrom[0])
 	}
-	if seenTo[1] != "2025-12-31T23:59:59.999999999Z" {
-		t.Fatalf("middle year should end at final nanosecond; got %s", seenTo[1])
-	}
-	if seenTo[2] != "2026-06-10T12:00:00Z" {
-		t.Fatalf("current year should end at now; got %s", seenTo[2])
+	if seenTo[len(seenTo)-1] != "2026-06-10T12:00:00Z" {
+		t.Fatalf("final window should end at now; got %s", seenTo[len(seenTo)-1])
 	}
 }
 
@@ -197,21 +205,24 @@ func TestRun_FetchesLimitedCalendarYears(t *testing.T) {
 		name          string
 		createdAt     time.Time
 		limit         int
-		wantCalls     int
+		minYears      int
 		wantFirstFrom string
 	}{
 		{
+			// limit=2 keeps 2025+2026; both years are windowed, so more
+			// than two calls fire.
 			name:          "limit",
 			createdAt:     time.Date(2024, 3, 2, 9, 8, 7, 0, time.UTC),
 			limit:         2,
-			wantCalls:     2,
+			minYears:      2,
 			wantFirstFrom: "2025-01-01T00:00:00Z",
 		},
 		{
+			// clamped to account creation: 2024+2025+2026, each windowed.
 			name:          "created-at-clamp",
 			createdAt:     time.Date(2024, 3, 2, 9, 8, 7, 0, time.UTC),
 			limit:         10,
-			wantCalls:     3,
+			minYears:      3,
 			wantFirstFrom: "2024-03-02T09:08:07Z",
 		},
 	} {
@@ -221,9 +232,10 @@ func TestRun_FetchesLimitedCalendarYears(t *testing.T) {
 			seenFrom := []string{}
 			mux := mocks.NewGraphQLMux(t)
 			mux.OnFunc("UserIsocalendar", func(vars map[string]any) (int, string) {
-				seenFrom = append(seenFrom, fmt.Sprint(vars["from"]))
-				year := 2026 - tc.wantCalls + len(seenFrom)
-				return 200, fmt.Sprintf(`{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[{"firstDay":"%[1]d-01-01","contributionDays":[{"date":"%[1]d-01-01","contributionCount":1,"weekday":1,"color":"#9be9a8"}]}]}}}}}`, year)
+				from := fmt.Sprint(vars["from"])
+				seenFrom = append(seenFrom, from)
+				date := from[:10]
+				return 200, fmt.Sprintf(`{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[{"firstDay":"%[1]s","contributionDays":[{"date":"%[1]s","contributionCount":1,"weekday":1,"color":"#9be9a8"}]}]}}}}}`, date)
 			})
 			pc := mocks.NewPluginContext(
 				t,
@@ -234,8 +246,8 @@ func TestRun_FetchesLimitedCalendarYears(t *testing.T) {
 			if _, err := calendar.Plugin.Run(context.Background(), pc); err != nil {
 				t.Fatalf("Run: %v", err)
 			}
-			if got := mux.Calls("UserIsocalendar"); got != tc.wantCalls {
-				t.Fatalf("UserIsocalendar calls = %d, want %d", got, tc.wantCalls)
+			if got := mux.Calls("UserIsocalendar"); got < tc.minYears {
+				t.Fatalf("UserIsocalendar calls = %d, want at least %d (one window per year, likely more)", got, tc.minYears)
 			}
 			if seenFrom[0] != tc.wantFirstFrom {
 				t.Fatalf("first from = %s, want %s", seenFrom[0], tc.wantFirstFrom)
@@ -244,7 +256,137 @@ func TestRun_FetchesLimitedCalendarYears(t *testing.T) {
 	}
 }
 
+// TestRun_ChunkBoundaryWeekStaysWhole reproduces the #781 heatmap
+// regression: a calendar year split across windows must not fracture the
+// boundary week. A range-aware mock emulates GitHub (Sunday-aligned weeks
+// clipped to the queried range); with week-aligned chunk boundaries the
+// week straddling a chunk cut is returned whole in exactly one window and
+// renders as a single 7-cell column. A mid-week boundary (the bug) would
+// return it as two partial weeks and calendar.go would emit two broken
+// columns.
+func TestRun_ChunkBoundaryWeekStaysWhole(t *testing.T) {
+	restore := calendar.SetNowForTest(func() time.Time {
+		return time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)
+	})
+	defer restore()
+
+	data := plugins.NewData()
+	data.User = &plugins.User{
+		Login:     "octocat",
+		CreatedAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+	mux := mocks.NewGraphQLMux(t)
+	mux.OnFunc("UserIsocalendar", func(vars map[string]any) (int, string) {
+		fromDate := fmt.Sprint(vars["from"])[:10]
+		toDate := fmt.Sprint(vars["to"])[:10]
+		return 200, sundayWeeksJSON(t, fromDate, toDate)
+	})
+	pc := mocks.NewPluginContext(
+		t,
+		mocks.WithGraphQL(mux),
+		mocks.WithData(data),
+		mocks.WithInputs(map[string]any{"user": "octocat", "plugin_calendar": true, "plugin_calendar_limit": 1}),
+	)
+	out, err := calendar.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*calendar.Result)
+	if len(r.Years) != 1 || r.Years[0].Year != 2026 {
+		t.Fatalf("want a single 2026 year, got %+v", r.Years)
+	}
+
+	// The chunk boundary for 2026 (from Jan 1, 13-week windows) lands on
+	// Sunday 2026-03-29. That week and the one before it must each survive
+	// as a whole 7-cell column.
+	assertWholeWeek(t, r.Years[0].Weeks, "2026-03-29")
+	assertWholeWeek(t, r.Years[0].Weeks, "2026-03-22")
+
+	// No interior week is fractured: only the year-start and now-clamped
+	// weeks may be partial.
+	partials := 0
+	for _, w := range r.Years[0].Weeks {
+		if len(w.ContributionDays) != 7 {
+			partials++
+		}
+	}
+	if partials > 2 {
+		t.Errorf("found %d partial weeks; want at most 2 (year start + now)", partials)
+	}
+}
+
+// sundayWeeksJSON emulates GitHub's contributionCalendar for [fromDate,
+// toDate] (inclusive, YYYY-MM-DD): full Sunday-Saturday weeks with each
+// day clipped to the queried range.
+func sundayWeeksJSON(t *testing.T, fromDate, toDate string) string {
+	t.Helper()
+	from, err := time.Parse("2006-01-02", fromDate)
+	if err != nil {
+		t.Fatalf("parse from %q: %v", fromDate, err)
+	}
+	to, err := time.Parse("2006-01-02", toDate)
+	if err != nil {
+		t.Fatalf("parse to %q: %v", toDate, err)
+	}
+	weekStart := from.AddDate(0, 0, -int(from.Weekday())) // back to Sunday
+	var weeks []string
+	for w := weekStart; !w.After(to); w = w.AddDate(0, 0, 7) {
+		var days []string
+		for i := 0; i < 7; i++ {
+			day := w.AddDate(0, 0, i)
+			if day.Before(from) || day.After(to) {
+				continue
+			}
+			days = append(days, fmt.Sprintf(
+				`{"date":"%s","contributionCount":1,"weekday":%d,"color":"#9be9a8"}`,
+				day.Format("2006-01-02"), i))
+		}
+		if len(days) == 0 {
+			continue
+		}
+		weeks = append(weeks, fmt.Sprintf(`{"firstDay":"%s","contributionDays":[%s]}`,
+			w.Format("2006-01-02"), strings.Join(days, ",")))
+	}
+	return fmt.Sprintf(`{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[%s]}}}}}`,
+		strings.Join(weeks, ","))
+}
+
+// assertWholeWeek finds the CalendarWeek containing wantSunday (a Sunday
+// date) and asserts it carries all 7 days of that week in order.
+func assertWholeWeek(t *testing.T, weeks []calendar.CalendarWeek, wantSunday string) {
+	t.Helper()
+	sunday, err := time.Parse("2006-01-02", wantSunday)
+	if err != nil {
+		t.Fatalf("parse %q: %v", wantSunday, err)
+	}
+	for _, w := range weeks {
+		if len(w.ContributionDays) == 0 || w.ContributionDays[0].Date != wantSunday {
+			continue
+		}
+		if len(w.ContributionDays) != 7 {
+			t.Fatalf("week of %s has %d cells, want a whole 7-cell column: %+v",
+				wantSunday, len(w.ContributionDays), w.ContributionDays)
+		}
+		for i, d := range w.ContributionDays {
+			want := sunday.AddDate(0, 0, i).Format("2006-01-02")
+			if d.Date != want {
+				t.Fatalf("week of %s cell %d = %s, want %s", wantSunday, i, d.Date, want)
+			}
+		}
+		return
+	}
+	t.Fatalf("no CalendarWeek starting %s found in %+v", wantSunday, weeks)
+}
+
 func TestRun_FetchedCalendarOverridesComputedCalendar(t *testing.T) {
+	// Pin the clock early in the year so the single fetched year fits in
+	// one 13-week window; a fixed OnBody response would otherwise be
+	// replayed (and double-counted) across multiple chunks.
+	restore := calendar.SetNowForTest(func() time.Time {
+		return time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
+	})
+	defer restore()
+
 	data := plugins.NewData()
 	data.User = &plugins.User{
 		Login:     "octocat",
