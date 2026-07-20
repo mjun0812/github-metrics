@@ -91,7 +91,7 @@ jobs:
       image_ref: ${{ steps.forward.outputs.image_ref }}
       preview_tag: ${{ steps.tagname.outputs.preview_tag }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.branch }}
 
@@ -159,7 +159,7 @@ jobs:
       matrix: ${{ steps.gen.outputs.matrix }}
       image_ref: ${{ steps.image.outputs.image_ref }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.branch || github.ref }}
 
@@ -384,7 +384,7 @@ jobs:
     if: ${{ !cancelled() }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           # In branch mode we want the PR base to still be `main`, so
