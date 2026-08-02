@@ -194,6 +194,6 @@ Bug reports and pull requests are welcome. Before opening a PR, please read [`CO
 
 ## License
 
-[MIT](LICENSE). This project is a Go reimplementation derived from [lowlighter/metrics](https://github.com/lowlighter/metrics) (MIT-licensed). The `lowlighter/metrics` attribution is preserved per the MIT license terms.
+[MIT](LICENSE). This project is a Go reimplementation derived from [lowlighter/metrics](https://github.com/lowlighter/metrics) (MIT-licensed). See [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md) for the upstream and bundled third-party attributions.
 
 The GitHub Octicons assets (under `assets/octicons/`) are MIT-licensed by GitHub, Inc. and embedded via `//go:embed`.
