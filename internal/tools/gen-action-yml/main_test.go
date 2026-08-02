@@ -15,7 +15,7 @@ func TestGenerate_HasRequiredSections(t *testing.T) {
 		t.Fatalf("generate: %v", err)
 	}
 	for _, want := range []string{
-		"name: 'github-metrics'",
+		"name: 'GitHub Profile Metrics Generator'",
 		"inputs:",
 		"outputs:",
 		"runs:",

@@ -121,7 +121,7 @@ func generate(assetsRoot, version string) (string, error) {
 	b.WriteString("# 21 採用 plugins (constitution 原則 III). The lefthook pre-commit hook\n")
 	b.WriteString("# verifies 'git diff --quiet action.yml' after re-running the generator\n")
 	b.WriteString("# so metadata.yml and action.yml never drift.\n")
-	b.WriteString(`name: 'github-metrics'
+	b.WriteString(`name: 'GitHub Profile Metrics Generator'
 description: 'Generate metrics for your GitHub profile / repository (drop-in replacement for lowlighter/metrics).'
 author: 'mjun0812'
 branding:
