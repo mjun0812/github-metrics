@@ -29,7 +29,7 @@
 # Run   (local):  docker run --rm github-metrics:dev metrics-cli --help
 
 # --- Build stage ----------------------------------------------------
-FROM golang:1.26-bookworm AS build
+FROM golang:1.27-bookworm AS build
 
 WORKDIR /src
 
