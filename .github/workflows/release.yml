@@ -250,7 +250,7 @@ jobs:
           docker buildx imagetools inspect "${REGISTRY_IMAGE}:${{ steps.tag.outputs.tag }}" || true
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.10.0
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v3.10.0
 
       - name: Sign multi-arch manifest (cosign keyless OIDC)
         env:
@@ -330,7 +330,7 @@ jobs:
 
       - name: Install cosign
         if: ${{ github.event.inputs.dry_run != 'true' }}
-        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.10.0
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v3.10.0
 
       - name: Sign binaries + SHA256SUMS (cosign sign-blob keyless)
         if: ${{ github.event.inputs.dry_run != 'true' }}
