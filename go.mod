@@ -1,6 +1,6 @@
 module github.com/mjun0812/github-metrics
 
-go 1.26
+go 1.26.0
 
 require (
 	github.com/Khan/genqlient v0.8.2-0.20251119064104-5b0aabc933fa
@@ -12,7 +12,7 @@ require (
 	github.com/tdewolff/minify/v2 v2.24.17
 	github.com/tdewolff/parse/v2 v2.8.16
 	golang.org/x/image v0.45.0
-	golang.org/x/sync v0.22.0
+	golang.org/x/sync v0.23.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
