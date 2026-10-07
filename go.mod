@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/Khan/genqlient v0.8.2-0.20251119064104-5b0aabc933fa
 	github.com/PuerkitoBio/goquery v1.13.0
-	github.com/andybalholm/cascadia v1.3.4
+	github.com/andybalholm/cascadia v1.3.5
 	github.com/go-enry/go-enry/v2 v2.9.6
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/hashicorp/go-retryablehttp v0.7.8
