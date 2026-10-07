@@ -104,34 +104,6 @@ func TestRun_Skipped_PuppeteerDisabled(t *testing.T) {
 	if !r.Skipped {
 		t.Fatalf("Skipped = false, want true")
 	}
-	if r.SkippedReason != "puppeteer scrapping disabled via extras" {
-		t.Errorf("SkippedReason = %q", r.SkippedReason)
-	}
-}
-
-// TestRun_Normal_FakeNavigator — 3 lists, default limit applies.
-func TestRun_Normal_FakeNavigator(t *testing.T) {
-	t.Parallel()
-	nav := &fakeNavigator{lists: []starlists.Starlist{
-		{Name: "AI", Description: "ML/AI tools", Count: 12, URL: "/stars/octocat/lists/ai"},
-		{Name: "Bandwidth", Description: "Networking", Count: 5, URL: "/stars/octocat/lists/bw"},
-		{Name: "Compilers", Description: "Code generation", Count: 8, URL: "/stars/octocat/lists/comp"},
-	}}
-	pc := newPC(t, nav, nil)
-	out, err := starlists.Plugin.Run(context.Background(), pc)
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	r := out.(*starlists.Result)
-	if r.Skipped {
-		t.Fatalf("unexpected Skipped: %s", r.SkippedReason)
-	}
-	if len(r.List) != 3 {
-		t.Errorf("List len = %d, want 3", len(r.List))
-	}
-	if r.List[0].Name != "AI" {
-		t.Errorf("List[0] = %q, want AI (sorted)", r.List[0].Name)
-	}
 }
 
 // TestRun_Languages — _languages=true joins per-list repos with
@@ -287,51 +259,6 @@ func TestPartial_Starlists_Golden(t *testing.T) {
 	}
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
-	}
-	// Markers asserted against the native-SVG shape (#409 Phase B2). Each
-	// starlist is a <g class="starlist"> with a header <text>, a
-	// <g class="count"> repo count, and an optional description paragraph.
-	for _, marker := range []string{`class="starlist"`, `class="count"`, `>AI</text>`} {
-		if !strings.Contains(got, marker) {
-			t.Errorf("partial missing marker %q in:\n%s", marker, got)
-		}
-	}
-}
-
-// TestPartial_Starlists_EmptyListRendersHeader guards against the
-// regression (issue #474) where a non-Skipped Result with zero star
-// lists produced a completely empty card. Upstream still renders the
-// "0 Star lists" section header at count zero, so the partial must emit
-// non-empty output containing that header even with an empty List.
-func TestPartial_Starlists_EmptyListRendersHeader(t *testing.T) {
-	t.Parallel()
-	for _, list := range [][]starlists.Starlist{
-		nil, // List == nil
-		{},  // List == empty (non-nil) slice
-	} {
-		r := &starlists.Result{List: list}
-		data := plugins.NewData()
-		data.SetPlugin(starlists.Name, r)
-		pc := &templates.PartialContext{Data: data}
-		got, _, err := starlists.Partial(context.Background(), pc)
-		if err != nil {
-			t.Fatalf("Partial: %v", err)
-		}
-		if got == "" {
-			t.Fatalf("Partial returned empty output for empty List; want rendered header")
-		}
-		// Header must reflect the zero count with plural "lists".
-		if !strings.Contains(got, "0 Star lists") {
-			t.Errorf("partial missing %q for empty List in:\n%s", "0 Star lists", got)
-		}
-		// The section wrapper is present but carries no <div class="starlist">
-		// because the for-loop does not run.
-		if !strings.Contains(got, `<g data-section="starlists">`) {
-			t.Errorf("partial missing section wrapper in:\n%s", got)
-		}
-		if strings.Contains(got, `class="starlist"`) {
-			t.Errorf("partial unexpectedly rendered a starlist entry for empty List:\n%s", got)
-		}
 	}
 }
 

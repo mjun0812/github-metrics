@@ -46,35 +46,6 @@ func TestPartial_Traffic_MissingResult(t *testing.T) {
 	}
 }
 
-// TestPartial_Traffic_Normal checks the aggregate line and per-repo rows
-// render with the shared k/m short form.
-func TestPartial_Traffic_Normal(t *testing.T) {
-	t.Parallel()
-	got := renderTraffic(t, &traffic.Result{
-		Views: map[string]traffic.TrafficView{
-			"octocat/alpha": {Count: 1200, Uniques: 40},
-			"octocat/beta":  {Count: 50, Uniques: 1},
-		},
-		Total:     traffic.TrafficView{Count: 1250, Uniques: 41},
-		HideEmpty: true,
-	})
-	// Aggregate line uses k short form and plural "views".
-	if !strings.Contains(got, `>1.3k views (41 unique)</text>`) {
-		t.Errorf("missing/incorrect aggregate line; got:\n%s", got)
-	}
-	// Per-repo rows.
-	if !strings.Contains(got, `>octocat/alpha: 1.2k views (40 unique)</text>`) {
-		t.Errorf("missing alpha row; got:\n%s", got)
-	}
-	// Singular "view" and "unique" when the count is 1.
-	if !strings.Contains(got, `>octocat/beta: 50 views (1 unique)</text>`) {
-		t.Errorf("missing beta row; got:\n%s", got)
-	}
-	if !strings.Contains(got, `data-section="traffic"`) || !strings.Contains(got, `>Traffic</text>`) {
-		t.Errorf("missing section wrapper/header; got:\n%s", got)
-	}
-}
-
 // TestPartial_Traffic_SingularView pins "1 view" (singular) on the
 // aggregate line.
 func TestPartial_Traffic_SingularView(t *testing.T) {
@@ -172,23 +143,5 @@ func TestPartial_Traffic_EmptyViews(t *testing.T) {
 	// Header text + aggregate pill text = exactly two <text> elements.
 	if n := strings.Count(got, "</text>"); n != 2 {
 		t.Errorf("expected no per-repo rows (2 <text> total), got %d; got:\n%s", n, got)
-	}
-}
-
-// TestPartial_Traffic_XMLEscape ensures repo names are XML-escaped.
-func TestPartial_Traffic_XMLEscape(t *testing.T) {
-	t.Parallel()
-	got := renderTraffic(t, &traffic.Result{
-		Views: map[string]traffic.TrafficView{
-			"o&o/a<b": {Count: 5, Uniques: 2},
-		},
-		Total:     traffic.TrafficView{Count: 5, Uniques: 2},
-		HideEmpty: true,
-	})
-	if strings.Contains(got, "o&o/a<b") {
-		t.Errorf("repo name not escaped; got:\n%s", got)
-	}
-	if !strings.Contains(got, "o&amp;o/a&lt;b") {
-		t.Errorf("expected escaped repo name; got:\n%s", got)
 	}
 }

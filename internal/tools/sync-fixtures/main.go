@@ -16,9 +16,6 @@
 //	1  invocation / I/O error
 //	2  org_repo missing — soft skip path (CI without the upstream
 //	   checkout simply does not regenerate the fixture)
-//
-// The companion test in tests/compatibility/json_test.go gracefully
-// skips when the fixture is absent.
 package main
 
 import (

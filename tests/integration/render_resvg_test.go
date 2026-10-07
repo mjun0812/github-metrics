@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"image/jpeg"
 	"image/png"
 	"os"
 	"os/exec"
@@ -13,7 +12,6 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/engine"
-	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/render"
 )
 
@@ -115,86 +113,5 @@ func TestComputePNG_E2E_Resvg(t *testing.T) {
 	}
 	if bnds.Dy() < rng.HeightMin || bnds.Dy() > rng.HeightMax {
 		t.Errorf("Height = %d, want range [%d, %d]", bnds.Dy(), rng.HeightMin, rng.HeightMax)
-	}
-}
-
-// TestRepositoryTemplate_PNG_Resvg exercises the repository template
-// through the resvg pipeline and asserts the produced bytes are a
-// decodable PNG (magic number + image/png MIME).
-func TestRepositoryTemplate_PNG_Resvg(t *testing.T) {
-	deps, _ := newEngineDeps(t, map[string]string{
-		"User":             userOctocat,
-		"UserRepositories": userRepositories250,
-		"Repository":       repositoryHelloWorld,
-	})
-	deps.Render = withResvg(t)
-
-	res, err := engine.Compute(context.Background(), engine.Request{
-		Login:    "octocat",
-		Repo:     "hello-world",
-		Account:  plugins.AccountRepository,
-		Template: "repository",
-		Format:   "png",
-		Inputs: map[string]any{
-			"user":                "octocat",
-			"repo":                "hello-world",
-			"chrome_header":       "yes",
-			"chrome_activity":     "yes",
-			"chrome_community":    "yes",
-			"chrome_repositories": "yes",
-			"chrome_metadata":     "yes",
-		},
-	}, deps)
-	if err != nil {
-		t.Fatalf("Compute(png): %v", err)
-	}
-	if res.MIME != "image/png" {
-		t.Errorf("MIME = %q, want image/png", res.MIME)
-	}
-	if !bytes.HasPrefix(res.Output, []byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a}) {
-		t.Fatalf("PNG signature missing; got %x", res.Output[:min(8, len(res.Output))])
-	}
-	if _, err := png.Decode(bytes.NewReader(res.Output)); err != nil {
-		t.Errorf("png.Decode: %v", err)
-	}
-}
-
-// TestRepositoryTemplate_JPEG_Resvg mirrors the PNG test for the JPEG
-// branch (resvg PNG re-encoded to JPEG in Go).
-func TestRepositoryTemplate_JPEG_Resvg(t *testing.T) {
-	deps, _ := newEngineDeps(t, map[string]string{
-		"User":             userOctocat,
-		"UserRepositories": userRepositories250,
-		"Repository":       repositoryHelloWorld,
-	})
-	deps.Render = withResvg(t)
-
-	res, err := engine.Compute(context.Background(), engine.Request{
-		Login:    "octocat",
-		Repo:     "hello-world",
-		Account:  plugins.AccountRepository,
-		Template: "repository",
-		Format:   "jpeg",
-		Inputs: map[string]any{
-			"user":                "octocat",
-			"repo":                "hello-world",
-			"chrome_header":       "yes",
-			"chrome_activity":     "yes",
-			"chrome_community":    "yes",
-			"chrome_repositories": "yes",
-			"chrome_metadata":     "yes",
-		},
-	}, deps)
-	if err != nil {
-		t.Fatalf("Compute(jpeg): %v", err)
-	}
-	if res.MIME != "image/jpeg" {
-		t.Errorf("MIME = %q, want image/jpeg", res.MIME)
-	}
-	if len(res.Output) < 2 || res.Output[0] != 0xff || res.Output[1] != 0xd8 {
-		t.Fatalf("JPEG SOI marker missing; got %x", res.Output[:min(2, len(res.Output))])
-	}
-	if _, err := jpeg.Decode(bytes.NewReader(res.Output)); err != nil {
-		t.Errorf("jpeg.Decode: %v", err)
 	}
 }

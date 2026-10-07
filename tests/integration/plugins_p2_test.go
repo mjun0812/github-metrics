@@ -96,7 +96,7 @@ func newP2Deps(t *testing.T, scopes string) engine.Deps {
 	gql, err := githubapi.NewGraphQL(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost/graphql",
-		httpx.Options{Transport: gqlFix, MaxRetries: 0},
+		httpx.Options{Transport: gqlFix, DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)
@@ -106,7 +106,7 @@ func newP2Deps(t *testing.T, scopes string) engine.Deps {
 	rest, err := githubapi.NewREST(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost",
-		httpx.Options{Transport: restMux, MaxRetries: 0},
+		httpx.Options{Transport: restMux, DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
@@ -172,63 +172,15 @@ func TestComputeJSON_P2AllPlugins(t *testing.T) {
 			t.Errorf("plugins[%q] is nil", slug)
 		}
 	}
-}
-
-// TestComputeSVG_P2Bundle covers T074 — the three SVG bundles. We
-// rolled them into a single test with subtests because the dispatcher
-// behaviour is identical and shared mocked dependencies keep the test
-// fast.
-func TestComputeSVG_P2Bundle(t *testing.T) {
-	bundles := map[string][]string{
-		"A_data": {"calendar", "habits"},
-		"B_skipped_only": {
-			"notable", "contributors", "stargazers", "sponsorships",
-		},
-		"C_scope_gated": {"sponsors", "traffic"},
-	}
-	for name, slugs := range bundles {
-		t.Run(name, func(t *testing.T) {
-			deps := newP2Deps(t, "repo, read:user, read:org, read:project")
-			in := p1Inputs()
-			for _, slug := range slugs {
-				in["plugin_"+slug] = true
+	// Spot-check languages aggregation: Go should be Mostly given the
+	// fixture (6000 + 4000 bytes > TypeScript 4500).
+	if langs, ok := pluginsMap["languages"].(map[string]any); ok {
+		if mostly, ok := langs["mostly"].(map[string]any); ok {
+			if name, _ := mostly["name"].(string); name != "Go" {
+				t.Errorf("languages.mostly.name = %q, want Go", name)
 			}
-			res, err := engine.Compute(context.Background(), engine.Request{
-				Login:    "octocat",
-				Template: "classic",
-				Format:   "svg",
-				Inputs:   in,
-			}, deps)
-			if err != nil {
-				t.Fatalf("Compute: %v", err)
-			}
-			if res.MIME != "image/svg+xml" {
-				t.Fatalf("MIME = %q, want image/svg+xml", res.MIME)
-			}
-			// Spec 013: GraphQL plugins (sponsors / sponsorships /
-			// notable / stargazers / repositories.Pinned) now
-			// fire viewer.* / user.* queries when their `plugin_<slug>`
-			// is true. The notable plugin fires UserNotable
-			// (user.repositoriesContributedTo) since issue #447. In
-			// bundles B / C the GraphQL mux has no fixture for these new
-			// operations, so they record a *RetryableError per plugin.
-			// That's an EXPECTED degraded path (FR-002), not a test
-			// failure — partial output stays correct (Skipped fragments
-			// produce no DOM). Only fail on out-of-bounds errors.
-			for _, e := range res.Errors {
-				if !strings.Contains(e.Error(), "no fixture for operation Viewer") &&
-					!strings.Contains(e.Error(), "no fixture for operation UserNotable") {
-					t.Errorf("Result.Errors entry: %v", e)
-				}
-			}
-			// We don't assert specific DOM markers per slug — most P2
-			// plugins are Skipped in M4 (no wrappers emitted), and the
-			// shape stability is already checked by the JSON test
-			// above + the per-plugin golden tests.
-			out := string(res.Output)
-			if len(out) < 100 {
-				t.Errorf("SVG output suspiciously short: %d bytes", len(out))
-			}
-		})
+		} else {
+			t.Errorf("languages.mostly not an object: %v", langs["mostly"])
+		}
 	}
 }

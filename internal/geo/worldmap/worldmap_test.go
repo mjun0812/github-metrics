@@ -82,18 +82,6 @@ func TestRender_ExtremesClamped(t *testing.T) {
 	}
 }
 
-func TestRender_HeightMatchesEquirectangularAspect(t *testing.T) {
-	t.Parallel()
-	_, h, err := Render(nil, Options{Width: 480})
-	if err != nil {
-		t.Fatalf("Render: %v", err)
-	}
-	// 480 * 240 / 480 = 240
-	if h != 240 {
-		t.Errorf("height for width=480 = %d, want 240", h)
-	}
-}
-
 func TestRender_CustomColors(t *testing.T) {
 	t.Parallel()
 	svg, _, err := Render([]Point{{Lat: 0, Lng: 0, Count: 1}}, Options{

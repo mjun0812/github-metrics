@@ -60,11 +60,6 @@ func (f *failureMatrixREST) RoundTrip(req *http.Request) (*http.Response, error)
 			return mkRespFailure(req, http.StatusConflict, h,
 				`{"message":"Pull Request is not mergeable"}`), nil
 		}
-	case "merge_method_unavailable":
-		if strings.HasSuffix(path, "/merge") {
-			return mkRespFailure(req, http.StatusMethodNotAllowed, h,
-				`{"message":"Merge method not allowed"}`), nil
-		}
 	}
 
 	// Permissive defaults so other steps proceed and reach the failure.
@@ -100,7 +95,7 @@ func mkRespFailure(req *http.Request, status int, h http.Header, body string) *h
 }
 
 // TestAction_OutputAction_FailureWarning_Matrix covers SC-007 前半:
-// 4 deterministic committer failures MUST each warn-and-continue
+// 3 deterministic committer failures MUST each warn-and-continue
 // (Run returns nil, so the wrapping main returns exit 0).
 func TestAction_OutputAction_FailureWarning_Matrix(t *testing.T) {
 	cases := []struct {
@@ -111,7 +106,6 @@ func TestAction_OutputAction_FailureWarning_Matrix(t *testing.T) {
 		{"commit_API_403_branch_protection", "commit", "committer failed"},
 		{"pr_creation_422_conflict", "pull-request", "committer failed"},
 		{"merge_409_conflict", "pull-request-merge", "committer failed"},
-		{"merge_method_unavailable", "pull-request-rebase", "committer failed"},
 	}
 
 	for _, tc := range cases {

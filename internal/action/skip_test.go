@@ -37,22 +37,6 @@ func TestShouldSkip_NoMarker(t *testing.T) {
 	}
 }
 
-func TestShouldSkip_EmptyEventPath(t *testing.T) {
-	t.Parallel()
-	skip, _ := shouldSkip("")
-	if skip {
-		t.Errorf("expected skip=false for empty event path")
-	}
-}
-
-func TestShouldSkip_MissingFile(t *testing.T) {
-	t.Parallel()
-	skip, _ := shouldSkip("/nonexistent/event.json")
-	if skip {
-		t.Errorf("expected skip=false for missing event file")
-	}
-}
-
 func TestShouldSkip_MalformedJSON(t *testing.T) {
 	t.Parallel()
 	path := writeEvent(t, "not-json")

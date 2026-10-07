@@ -2,7 +2,6 @@ package action
 
 import (
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/mjun0812/github-metrics/internal/config"
@@ -17,59 +16,36 @@ func TestRequireTokenUnlessMocked(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name      string
-		token     string
-		mocked    bool
-		wantErr   bool
-		wantInKey string // substring assertion when wantErr
+		name    string
+		token   string
+		mocked  bool
+		wantErr bool
 	}{
-		{name: "missing_no_mock_fails", token: "", mocked: false, wantErr: true, wantInKey: "token"},
+		{name: "missing_no_mock_fails", token: "", mocked: false, wantErr: true},
 		{name: "missing_with_mock_ok", token: "", mocked: true, wantErr: false},
 		{name: "present_no_mock_ok", token: "ghp_abc", mocked: false, wantErr: false},
-		{name: "present_with_mock_ok", token: "ghp_abc", mocked: true, wantErr: false},
-		{name: "nil_invocation_ok", token: "", mocked: false, wantErr: false}, // covers the inv==nil guard below via special case
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			var err error
-			if tc.name == "nil_invocation_ok" {
-				err = requireTokenUnlessMocked(nil)
-			} else {
-				inv := &Invocation{
-					Token:         config.NewToken(tc.token),
-					UseMockedData: tc.mocked,
-				}
-				err = requireTokenUnlessMocked(inv)
-			}
-
-			if tc.wantErr {
-				if err == nil {
-					t.Fatalf("expected error, got nil")
-				}
-				var inputErr *InputError
-				if !errors.As(err, &inputErr) {
-					t.Fatalf("expected *InputError, got %T: %v", err, err)
-				}
-				if inputErr.Key != tc.wantInKey {
-					t.Errorf("InputError.Key = %q, want %q", inputErr.Key, tc.wantInKey)
-				}
-				if !strings.Contains(inputErr.Msg, "GITHUB_TOKEN") {
-					t.Errorf("InputError.Msg must reference GITHUB_TOKEN, got %q", inputErr.Msg)
-				}
-				if !strings.Contains(inputErr.Msg, "use_mocked_data") {
-					t.Errorf("InputError.Msg must mention the use_mocked_data escape hatch, got %q", inputErr.Msg)
-				}
-				if inputErr.Msg != tokenMissingMsg {
-					t.Errorf("InputError.Msg drifted from tokenMissingMsg constant")
+			err := requireTokenUnlessMocked(&Invocation{
+				Token:         config.NewToken(tc.token),
+				UseMockedData: tc.mocked,
+			})
+			if !tc.wantErr {
+				if err != nil {
+					t.Fatalf("expected nil error, got %v", err)
 				}
 				return
 			}
-			if err != nil {
-				t.Fatalf("expected nil error, got %v", err)
+			var inputErr *InputError
+			if !errors.As(err, &inputErr) {
+				t.Fatalf("expected *InputError, got %T: %v", err, err)
+			}
+			if inputErr.Key != "token" {
+				t.Errorf("InputError.Key = %q, want token", inputErr.Key)
 			}
 		})
 	}

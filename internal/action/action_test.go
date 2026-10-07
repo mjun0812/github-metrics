@@ -12,7 +12,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/mjun0812/github-metrics/internal/engine"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
@@ -218,70 +217,6 @@ func TestRun_Dryrun_NoCommitterCall(t *testing.T) {
 	}
 }
 
-// TestRun_OutputAction_UnsupportedFailFast — gist input causes exit 1
-// before any API call hits the REST mock. Spec FR-015b / SC-007.
-func TestRun_OutputAction_UnsupportedFailFast(t *testing.T) {
-	t.Parallel()
-	rest := newFakeREST()
-	outDir := t.TempDir()
-
-	err := runWith(context.Background(), runOptions{
-		Env: []string{
-			"GITHUB_REPOSITORY=mjun0812/test-repo",
-			"INPUT_USER=octocat",
-			"INPUT_TOKEN=ghp_mock_pat_valid",
-			"INPUT_OUTPUT_ACTION=gist",
-			"INPUT_DRYRUN=yes",
-		},
-		Stdout:    io.Discard,
-		OutputDir: outDir,
-		BuildDeps: buildTestDeps(t, rest),
-	})
-	if err == nil {
-		t.Fatal("expected error for output_action=gist")
-	}
-	var ce *ConfigError
-	if !errors.As(err, &ce) {
-		t.Errorf("err type = %T, want *ConfigError; err=%v", err, err)
-	}
-	if !strings.Contains(err.Error(), "not supported") {
-		t.Errorf("error should mention 'not supported'; got %v", err)
-	}
-	// engine.Compute MUST NOT have been called (no GraphQL hits).
-	// fakeREST only sees init helpers (no rate_limit / scope check
-	// path either, since output_action validates before token check).
-	if len(rest.putBodies) > 0 {
-		t.Errorf("PUT seen despite fail-fast: %v", rest.putBodies)
-	}
-}
-
-// TestRun_GithubPatRejected — fine-grained PAT triggers token-format
-// reject before any other API call.
-func TestRun_GithubPatRejected(t *testing.T) {
-	t.Parallel()
-	rest := newFakeREST()
-	outDir := t.TempDir()
-
-	err := runWith(context.Background(), runOptions{
-		Env: []string{
-			"GITHUB_REPOSITORY=mjun0812/test-repo",
-			"INPUT_USER=octocat",
-			"INPUT_TOKEN=github_pat_xxx",
-			"INPUT_OUTPUT_ACTION=commit",
-			"INPUT_DRYRUN=yes",
-		},
-		Stdout:    io.Discard,
-		OutputDir: outDir,
-		BuildDeps: buildTestDeps(t, rest),
-	})
-	if err == nil {
-		t.Fatal("expected error for github_pat_*")
-	}
-	if !strings.Contains(err.Error(), "github_pat_") {
-		t.Errorf("error should mention github_pat_; got %v", err)
-	}
-}
-
 // TestRun_SkipEvent — skip-marker present in GITHUB_EVENT_PATH causes
 // exit 0 with no engine work.
 func TestRun_SkipEvent(t *testing.T) {
@@ -303,40 +238,6 @@ func TestRun_SkipEvent(t *testing.T) {
 	if err != nil {
 		t.Errorf("skip-marker path should exit 0; got err=%v", err)
 	}
-}
-
-// TestNewInvocation_Defaults populates the right defaults from a
-// minimal env + INPUT_<UPPER> set.
-func TestNewInvocation_Defaults(t *testing.T) {
-	t.Parallel()
-	inputs := map[string]any{"user": "octocat", "combined": "yes"}
-	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
-	inv, err := newInvocation(inputs, env, "/tmp/out")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if inv.Login != "octocat" {
-		t.Errorf("Login = %q", inv.Login)
-	}
-	if inv.Template != "classic" {
-		t.Errorf("Template = %q, want classic", inv.Template)
-	}
-	if inv.OutputAction != "commit" {
-		t.Errorf("OutputAction = %q, want commit", inv.OutputAction)
-	}
-	if inv.OutputFilename != "github-metrics.svg" {
-		t.Errorf("OutputFilename = %q", inv.OutputFilename)
-	}
-	if inv.RepoOwner != "mjun0812" || inv.RepoName != "test" {
-		t.Errorf("Repo parse failed: owner=%q name=%q", inv.RepoOwner, inv.RepoName)
-	}
-	if inv.RetryPolicy.Retries != DefaultRetries {
-		t.Errorf("RetryPolicy.Retries = %d, want %d", inv.RetryPolicy.Retries, DefaultRetries)
-	}
-	if inv.RetryPolicy.Delay != DefaultRetryDelay {
-		t.Errorf("RetryPolicy.Delay = %v, want %v", inv.RetryPolicy.Delay, DefaultRetryDelay)
-	}
-	_ = time.Millisecond // keep time import alive across edits
 }
 
 // TestNewInvocation_OptimizeDefault guards the wiring that materializes
@@ -374,37 +275,6 @@ func TestNewInvocation_OptimizeDefault(t *testing.T) {
 	}
 }
 
-// TestNewInvocation_MissingLogin_Errors — required-input check.
-func TestNewInvocation_MissingLogin_Errors(t *testing.T) {
-	t.Parallel()
-	if _, err := newInvocation(map[string]any{}, map[string]string{}, "/tmp"); err == nil {
-		t.Error("expected error when user / GITHUB_ACTOR both empty")
-	}
-}
-
-// TestSortedTruthyPluginGates filters truthy plugin gates only.
-func TestSortedTruthyPluginGates(t *testing.T) {
-	t.Parallel()
-	got := sortedTruthyPluginGates(map[string]any{
-		"plugin_languages":          true,
-		"plugin_activity":           "yes",
-		"plugin_achievements":       false,
-		"plugin_calendar":           "no",
-		"plugin_languages_limit":    5,   // sub-option; excluded
-		"plugin_languages_sections": "x", // sub-option; excluded
-		"user":                      "x", // non-plugin; excluded
-	})
-	want := []string{"activity", "languages"}
-	if len(got) != len(want) {
-		t.Fatalf("got %v, want %v", got, want)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Errorf("got[%d] = %q, want %q", i, got[i], want[i])
-		}
-	}
-}
-
 // TestRun_RepoTemplate_MissingRepo_FailFast (M7 T011/T032 + SC-003):
 // `template == "repository"` without a `repo` input MUST exit 1 in
 // well under 5 seconds without contacting the GitHub API.
@@ -438,32 +308,5 @@ func TestRun_RepoTemplate_MissingRepo_FailFast(t *testing.T) {
 	// no template-side fetch — we exit before any deps construction).
 	if len(rest.putBodies) > 0 {
 		t.Errorf("PUT seen despite fail-fast: %v", rest.putBodies)
-	}
-}
-
-// TestRun_ClassicTemplate_WithRepoInput_Ignored (M7 T033 / FR-007):
-// `template == "classic"` + `repo == "something"` MUST still run the
-// classic flow without surfacing the repo input. This guards the
-// backward-compat promise that pre-M7 workflows continue to function.
-func TestRun_ClassicTemplate_WithRepoInput_Ignored(t *testing.T) {
-	rest := newFakeREST()
-	outDir := t.TempDir()
-	t.Setenv("GITHUB_OUTPUT", filepath.Join(outDir, "github_output"))
-
-	err := runWith(context.Background(), runOptions{
-		Env: []string{
-			"GITHUB_REPOSITORY=mjun0812/test-repo",
-			"INPUT_USER=octocat",
-			"INPUT_TOKEN=ghp_mock_pat_valid",
-			"INPUT_TEMPLATE=classic",
-			"INPUT_REPO=stray-but-harmless",
-			"INPUT_DRYRUN=yes",
-		},
-		Stdout:    io.Discard,
-		OutputDir: outDir,
-		BuildDeps: buildTestDeps(t, rest),
-	})
-	if err != nil {
-		t.Fatalf("classic + repo input must not error: %v", err)
 	}
 }

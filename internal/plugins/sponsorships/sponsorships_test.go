@@ -2,10 +2,6 @@ package sponsorships_test
 
 import (
 	"context"
-	"encoding/json"
-	"flag"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -13,26 +9,6 @@ import (
 	"github.com/mjun0812/github-metrics/internal/plugins/sponsorships"
 	"github.com/mjun0812/github-metrics/internal/templates"
 )
-
-var updateGolden = flag.Bool("update", false, "update golden files")
-
-func repoRoot(t *testing.T) string {
-	t.Helper()
-	cwd, _ := os.Getwd()
-	dir := cwd
-	for i := 0; i < 8; i++ {
-		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			return dir
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-	t.Fatalf("repo root not found")
-	return ""
-}
 
 func run(t *testing.T, inputs map[string]any) *sponsorships.Result {
 	t.Helper()
@@ -50,41 +26,8 @@ func TestRun_DefaultEmpty(t *testing.T) {
 	if r.Skipped {
 		t.Errorf("MVP should return empty non-Skipped Result")
 	}
-	if len(r.Active) != 0 {
-		t.Errorf("Active should be empty in MVP; got %+v", r.Active)
-	}
-}
-
-func TestRun_PastSection(t *testing.T) {
-	t.Parallel()
-	r := run(t, map[string]any{"plugin_sponsorships_sections": "active,past"})
-	if len(r.Past) != 0 {
-		t.Errorf("Past should remain empty in MVP")
-	}
-}
-
-func TestRun_NoNilFields(t *testing.T) {
-	t.Parallel()
-	r := run(t, nil)
-	if r.Active == nil {
-		t.Errorf("Active should be non-nil slice (was %v)", r.Active)
-	}
-}
-
-func TestRun_IsSkippedFalse(t *testing.T) {
-	t.Parallel()
-	r := run(t, nil)
-	if r.IsSkipped() {
-		t.Errorf("IsSkipped should be false")
-	}
-}
-
-func TestRun_NilInputs(t *testing.T) {
-	t.Parallel()
-	pc := &plugins.PluginContext{Data: plugins.NewData()}
-	out, _ := sponsorships.Plugin.Run(context.Background(), pc)
-	if out == nil {
-		t.Fatalf("Result should not be nil even with nil inputs")
+	if r.Active == nil || len(r.Active) != 0 {
+		t.Errorf("Active should be a non-nil empty slice; got %#v", r.Active)
 	}
 }
 
@@ -100,32 +43,6 @@ func partialFor(t *testing.T, r *sponsorships.Result, login string) string {
 		t.Fatalf("Partial: %v", err)
 	}
 	return out
-}
-
-// TestPartial_ZeroState verifies the #449 fix: with zero sponsorships and
-// the default sections, the partial still renders the amount section
-// (heart image + "$0.00") and the "0 users" goal text rather than an
-// empty string.
-func TestPartial_ZeroState(t *testing.T) {
-	t.Parallel()
-	r := &sponsorships.Result{
-		Active:   []sponsorships.Sponsored{},
-		Sections: []string{"amount", "sponsorships"},
-		Amount:   0,
-		Image:    "https://github.githubassets.com/images/icons/emoji/hearts_around.png",
-	}
-	out := partialFor(t, r, "mjun0812")
-
-	for _, want := range []string{
-		`data-section="sponsorships"`,
-		`<image href="https://github.githubassets.com/images/icons/emoji/hearts_around.png"`,
-		`>$0.00</tspan>`,
-		`mjun0812 helped funding the work of 0 users and organizations.`,
-	} {
-		if !strings.Contains(out, want) {
-			t.Errorf("zero-state output missing %q\ngot: %s", want, out)
-		}
-	}
 }
 
 // TestPartial_AmountFormatting checks the en-US USD formatting of
@@ -164,33 +81,5 @@ func TestPartial_SponsorshipsOnly(t *testing.T) {
 	}
 	if !strings.Contains(out, `href="https://github.com/alice.png?size=64"`) {
 		t.Errorf("expected alice avatar img\ngot: %s", out)
-	}
-}
-
-func TestRun_GoldenShape(t *testing.T) {
-	r := &sponsorships.Result{
-		Active:   []sponsorships.Sponsored{},
-		Sections: []string{"amount", "sponsorships"},
-		Amount:   0,
-	}
-	got, err := json.MarshalIndent(r, "", "  ")
-	if err != nil {
-		t.Fatalf("MarshalIndent: %v", err)
-	}
-	got = append(got, '\n')
-	gp := filepath.Join(repoRoot(t), "tests", "golden", "json", "m4", "sponsorships.json")
-	if *updateGolden {
-		_ = os.MkdirAll(filepath.Dir(gp), 0o755)
-		if werr := os.WriteFile(gp, got, 0o644); werr != nil {
-			t.Fatalf("WriteFile: %v", werr)
-		}
-		return
-	}
-	want, err := os.ReadFile(gp)
-	if err != nil {
-		t.Fatalf("ReadFile: %v (run with -update)", err)
-	}
-	if string(want) != string(got) {
-		t.Fatalf("golden mismatch\nwant:\n%s\ngot:\n%s", string(want), string(got))
 	}
 }

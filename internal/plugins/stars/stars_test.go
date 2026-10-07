@@ -2,13 +2,9 @@ package stars_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"flag"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -22,26 +18,6 @@ import (
 	"github.com/mjun0812/github-metrics/internal/plugins/stars"
 	"github.com/mjun0812/github-metrics/internal/templates"
 )
-
-var updateGolden = flag.Bool("update", false, "update golden files")
-
-func repoRoot(t *testing.T) string {
-	t.Helper()
-	cwd, _ := os.Getwd()
-	dir := cwd
-	for i := 0; i < 8; i++ {
-		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			return dir
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-	t.Fatalf("repo root not found")
-	return ""
-}
 
 // graphqlMux serves a single canned GraphQL response. status/body
 // control success vs. failure.
@@ -77,7 +53,7 @@ func newGQL(t *testing.T, mux *graphqlMux) *githubapi.GraphQL {
 	gql, err := githubapi.NewGraphQL(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost/graphql",
-		httpx.Options{Transport: mux, MaxRetries: 0},
+		httpx.Options{Transport: mux, DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)
@@ -135,58 +111,29 @@ func TestRun_Normal(t *testing.T) {
 	}
 }
 
-func TestRun_LimitInput(t *testing.T) {
+// TestRun_Limit guards the #472-class failure: GitHub rejects a
+// connection `first` above 100 with EXCESSIVE_PAGINATION, which would
+// fail the whole UserStarredRepositories query and blank the section.
+// plugin_stars_limit above 100 must clamp.
+func TestRun_Limit(t *testing.T) {
 	t.Parallel()
-	mux := &graphqlMux{body: `{"data":{"user":{"starredRepositories":{"totalCount":0,"edges":[]}}}}`}
-	pc := &plugins.PluginContext{
-		Data:    plugins.NewData(),
-		Inputs:  map[string]any{"user": "octocat", "plugin_stars": true, "plugin_stars_limit": 8},
-		GraphQL: newGQL(t, mux),
-	}
-	out, _ := stars.Plugin.Run(context.Background(), pc)
-	r := out.(*stars.Result)
-	if r.Limit != 8 {
-		t.Errorf("Limit = %d, want 8", r.Limit)
-	}
-}
-
-// TestRun_LimitClampedTo100 guards the #472-class failure: GitHub
-// rejects a connection `first` above 100 with EXCESSIVE_PAGINATION,
-// which would fail the whole UserStarredRepositories query and blank
-// the section. plugin_stars_limit above 100 must clamp.
-func TestRun_LimitClampedTo100(t *testing.T) {
-	t.Parallel()
-	mux := &graphqlMux{body: `{"data":{"user":{"starredRepositories":{"totalCount":0,"edges":[]}}}}`}
-	pc := &plugins.PluginContext{
-		Data:    plugins.NewData(),
-		Inputs:  map[string]any{"user": "octocat", "plugin_stars": true, "plugin_stars_limit": 150},
-		GraphQL: newGQL(t, mux),
-	}
-	out, err := stars.Plugin.Run(context.Background(), pc)
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	r := out.(*stars.Result)
-	if r.Limit != 100 {
-		t.Errorf("Limit = %d, want 100 (clamped from 150)", r.Limit)
-	}
-}
-
-func TestRun_EmptyResult(t *testing.T) {
-	t.Parallel()
-	mux := &graphqlMux{body: `{"data":{"user":{"starredRepositories":{"totalCount":0,"edges":[]}}}}`}
-	pc := &plugins.PluginContext{
-		Data:    plugins.NewData(),
-		Inputs:  map[string]any{"user": "octocat", "plugin_stars": true},
-		GraphQL: newGQL(t, mux),
-	}
-	out, _ := stars.Plugin.Run(context.Background(), pc)
-	r := out.(*stars.Result)
-	if r.Skipped {
-		t.Errorf("empty list != Skipped")
-	}
-	if len(r.List) != 0 {
-		t.Errorf("List = %v, want empty", r.List)
+	for _, c := range []struct{ in, want int }{
+		{8, 8},
+		{150, 100},
+	} {
+		mux := &graphqlMux{body: `{"data":{"user":{"starredRepositories":{"totalCount":0,"edges":[]}}}}`}
+		pc := &plugins.PluginContext{
+			Data:    plugins.NewData(),
+			Inputs:  map[string]any{"user": "octocat", "plugin_stars": true, "plugin_stars_limit": c.in},
+			GraphQL: newGQL(t, mux),
+		}
+		out, err := stars.Plugin.Run(context.Background(), pc)
+		if err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+		if r := out.(*stars.Result); r.Limit != c.want {
+			t.Errorf("plugin_stars_limit=%d: Limit = %d, want %d", c.in, r.Limit, c.want)
+		}
 	}
 }
 
@@ -303,36 +250,6 @@ func TestPartial_RendersRepoMetadata(t *testing.T) {
 	}
 }
 
-func TestPartial_RendersRelativeStarredDates(t *testing.T) {
-	restore := stars.SetNowForTest(func() time.Time {
-		return time.Date(2026, 5, 10, 12, 0, 0, 0, time.UTC)
-	})
-	defer restore()
-
-	r := &stars.Result{
-		List: []stars.StarredRepo{
-			{NameWithOwner: "alice/hourly", URL: "https://github.com/alice/hourly", StarredAt: time.Date(2026, 5, 10, 10, 30, 0, 0, time.UTC)},
-			{NameWithOwner: "alice/daily", URL: "https://github.com/alice/daily", StarredAt: time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC)},
-			{NameWithOwner: "alice/old", URL: "https://github.com/alice/old", StarredAt: time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)},
-		},
-	}
-	data := plugins.NewData()
-	data.SetPlugin(stars.Name, r)
-	got, _, err := stars.Partial(context.Background(), &templates.PartialContext{Data: data})
-	if err != nil {
-		t.Fatalf("Partial: %v", err)
-	}
-	for _, want := range []string{
-		"starred 2 hours ago",
-		"starred 3 days ago",
-		"starred Mar 01 2026",
-	} {
-		if !strings.Contains(got, want) {
-			t.Fatalf("missing %q in %s", want, got)
-		}
-	}
-}
-
 // TestPartial_RelativeStarredDateBoundaries pins the exact branch
 // boundaries of formatStarredAt (rendered through the partial via the
 // clock seam): the <1 day / <30 day / absolute-date cutoffs and the
@@ -349,6 +266,8 @@ func TestPartial_RelativeStarredDateBoundaries(t *testing.T) {
 			{NameWithOwner: "alice/oneday", URL: "https://github.com/alice/oneday", StarredAt: now.Add(-24 * time.Hour)},
 			// Exactly now-30*24h: hits the default absolute-date branch.
 			{NameWithOwner: "alice/thirty", URL: "https://github.com/alice/thirty", StarredAt: now.Add(-30 * 24 * time.Hour)},
+			{NameWithOwner: "alice/hourly", URL: "https://github.com/alice/hourly", StarredAt: now.Add(-90 * time.Minute)},
+			{NameWithOwner: "alice/daily", URL: "https://github.com/alice/daily", StarredAt: now.Add(-3 * 24 * time.Hour)},
 			// Future timestamp (now+1h): negative duration clamps to zero
 			// and must read "0 hours ago" (plural), not "0 hour ago".
 			{NameWithOwner: "alice/future", URL: "https://github.com/alice/future", StarredAt: now.Add(1 * time.Hour)},
@@ -361,6 +280,8 @@ func TestPartial_RelativeStarredDateBoundaries(t *testing.T) {
 		t.Fatalf("Partial: %v", err)
 	}
 	for _, want := range []string{
+		"starred 2 hours ago",
+		"starred 3 days ago",
 		"starred 1 day ago",
 		"starred Apr 10 2026",
 		"starred 0 hours ago",
@@ -371,34 +292,5 @@ func TestPartial_RelativeStarredDateBoundaries(t *testing.T) {
 	}
 	if strings.Contains(got, "0 hour ago") {
 		t.Fatalf("clamped future timestamp must read '0 hours ago' (plural), got %s", got)
-	}
-}
-
-func TestRun_GoldenShape(t *testing.T) {
-	r := &stars.Result{
-		List: []stars.StarredRepo{
-			{NameWithOwner: "alice/x", Description: "hi", Stars: 100, StarredAt: time.Date(2026, 5, 10, 0, 0, 0, 0, time.UTC)},
-		},
-		Limit: 4,
-	}
-	got, err := json.MarshalIndent(r, "", "  ")
-	if err != nil {
-		t.Fatalf("MarshalIndent: %v", err)
-	}
-	got = append(got, '\n')
-	gp := filepath.Join(repoRoot(t), "tests", "golden", "json", "m4", "stars.json")
-	if *updateGolden {
-		_ = os.MkdirAll(filepath.Dir(gp), 0o755)
-		if werr := os.WriteFile(gp, got, 0o644); werr != nil {
-			t.Fatalf("WriteFile: %v", werr)
-		}
-		return
-	}
-	want, err := os.ReadFile(gp)
-	if err != nil {
-		t.Fatalf("ReadFile: %v (run with -update)", err)
-	}
-	if string(want) != string(got) {
-		t.Fatalf("golden mismatch\nwant:\n%s\ngot:\n%s", string(want), string(got))
 	}
 }

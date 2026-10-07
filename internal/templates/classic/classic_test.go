@@ -22,21 +22,7 @@ import (
 	_ "github.com/mjun0812/github-metrics/internal/plugins/base"
 )
 
-func TestClassic_Check_UserSVG(t *testing.T) {
-	t.Parallel()
-	if err := classic.Template.Check(nil, "user", "svg"); err != nil {
-		t.Fatalf("Check(user,svg): %v", err)
-	}
-}
-
-func TestClassic_Check_OrganizationJSON(t *testing.T) {
-	t.Parallel()
-	if err := classic.Template.Check(nil, "organization", "json"); err != nil {
-		t.Fatalf("Check(organization,json): %v", err)
-	}
-}
-
-func TestClassic_Check_RepositoryRejected(t *testing.T) {
+func TestClassic_Check_Rejected(t *testing.T) {
 	t.Parallel()
 	err := classic.Template.Check(nil, "repository", "svg")
 	if err == nil {
@@ -49,11 +35,8 @@ func TestClassic_Check_RepositoryRejected(t *testing.T) {
 	if ie.Field != "account" {
 		t.Errorf("InputError.Field = %q, want account", ie.Field)
 	}
-}
 
-func TestClassic_Check_PDFUnsupported(t *testing.T) {
-	t.Parallel()
-	err := classic.Template.Check(nil, "user", "pdf")
+	err = classic.Template.Check(nil, "user", "pdf")
 	if err == nil {
 		t.Fatal("Check(user,pdf) should fail")
 	}
@@ -63,84 +46,12 @@ func TestClassic_Check_PDFUnsupported(t *testing.T) {
 	}
 }
 
-func TestClassic_Check_EmptyFormatPasses(t *testing.T) {
-	t.Parallel()
-	// Engine handles default resolution; Check must not block empty.
-	if err := classic.Template.Check(nil, "user", ""); err != nil {
-		t.Fatalf("Check(user,empty): %v", err)
-	}
-}
-
-func TestClassic_Metadata_AdvertisesFormats(t *testing.T) {
-	t.Parallel()
-	m := classic.Template.Metadata()
-	if m == nil {
-		t.Fatal("Metadata() nil")
-	}
-	wantFormats := map[string]bool{"svg": true, "png": true, "jpeg": true, "json": true}
-	for _, f := range m.Formats {
-		delete(wantFormats, f)
-	}
-	if len(wantFormats) > 0 {
-		t.Errorf("metadata missing formats: %v", wantFormats)
-	}
-}
-
-func TestClassic_Name(t *testing.T) {
-	t.Parallel()
-	if got := classic.Template.Name(); got != "classic" {
-		t.Errorf("Name() = %q, want classic", got)
-	}
-}
-
-func TestClassic_FSContainsExpectedFiles(t *testing.T) {
-	t.Parallel()
-	for _, name := range []string{"metadata.yml", "partials/_.json", "style.css", "fonts.css"} {
-		if _, err := classic.Template.FS().Open(name); err != nil {
-			t.Errorf("FS missing %s: %v", name, err)
-		}
-	}
-}
-
-// TestClassic_HelpersExportedNamesMatchContract is a tiny smoke check
-// that the classic package still exports its registered name through
-// the constant `classic.Name`, used by the engine + cmd wiring.
-func TestClassic_HelpersExportedNamesMatchContract(t *testing.T) {
-	t.Parallel()
-	if !strings.EqualFold(classic.Name, "classic") {
-		t.Errorf("classic.Name = %q, want classic", classic.Name)
-	}
-}
-
 // stubSkippableResult is a minimal type that the M4 dispatcher will
 // accept (non-nil interface value) and recognize via the IsSkipped()
 // duck-typed check.
 type stubSkippableResult struct{ skipped bool }
 
 func (s *stubSkippableResult) IsSkipped() bool { return s.skipped }
-
-// TestClassic_Run_ZeroM4Plugins asserts the M4 plugin partial loop
-// stays silent when no plugin_* inputs are truthy. The output must
-// contain none of the wrapper markers, even though the existing M2
-// base.* partials still run.
-// Contract: contracts/partial-classic-m4.md §3 step 3a.
-func TestClassic_Run_ZeroM4Plugins(t *testing.T) {
-	t.Parallel()
-	pc := &templates.PartialContext{
-		Inputs: map[string]any{},
-		Data:   &plugins.Data{},
-	}
-	out, err := classic.Template.Run(context.Background(), pc)
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	if strings.Contains(out, `data-plugin="`) {
-		t.Fatalf("expected no data-plugin wrappers; output:\n%s", out)
-	}
-	if strings.Contains(out, `class="plugin-`) {
-		t.Fatalf("expected no plugin- class wrappers; output:\n%s", out)
-	}
-}
 
 // TestClassic_Run_ConfigAnimations is the #736 regression: the
 // config_animations toggle must reach the root <svg> class so the

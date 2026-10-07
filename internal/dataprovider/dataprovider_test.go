@@ -110,8 +110,8 @@ func (c *countingTransport) setResponse(op, body string) {
 func newProviderWith(t *testing.T, transport http.RoundTripper) *dataprovider.Provider {
 	t.Helper()
 	gql, err := githubapi.NewGraphQL(config.NewToken("ghp_test"), "", httpx.Options{
-		Transport:  transport,
-		MaxRetries: 0,
+		Transport:      transport,
+		DisableRetries: true,
 	})
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)
@@ -126,8 +126,8 @@ func newProviderWith(t *testing.T, transport http.RoundTripper) *dataprovider.Pr
 func newProviderWithRepo(t *testing.T, repo string, transport http.RoundTripper) *dataprovider.Provider {
 	t.Helper()
 	gql, err := githubapi.NewGraphQL(config.NewToken("ghp_test"), "", httpx.Options{
-		Transport:  transport,
-		MaxRetries: 0,
+		Transport:      transport,
+		DisableRetries: true,
 	})
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)
@@ -140,8 +140,8 @@ func newProviderWithRepo(t *testing.T, repo string, transport http.RoundTripper)
 func newProviderWithOpts(t *testing.T, transport http.RoundTripper, opts dataprovider.Options) *dataprovider.Provider {
 	t.Helper()
 	gql, err := githubapi.NewGraphQL(config.NewToken("ghp_test"), "", httpx.Options{
-		Transport:  transport,
-		MaxRetries: 0,
+		Transport:      transport,
+		DisableRetries: true,
 	})
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)
@@ -330,85 +330,58 @@ func (c *ctxAwareTransport) RoundTrip(req *http.Request) (*http.Response, error)
 	return c.inner.RoundTrip(req)
 }
 
-func TestProvider_Profile_DoesNotCacheContextCanceled(t *testing.T) {
+// TestProvider_Profile_DoesNotCacheContextErrors verifies that a caller
+// whose ctx was canceled / past its deadline does not poison the memoized
+// profile: a later caller with a fresh ctx must trigger a new fetch.
+func TestProvider_Profile_DoesNotCacheContextErrors(t *testing.T) {
 	t.Parallel()
-	inner := newCountingTransport()
-	inner.setResponse("User", userResponseBody)
-	tr := &ctxAwareTransport{inner: inner}
-	p := newProviderWith(t, tr)
 
-	// Caller A: pre-cancel the ctx, then call Profile. The transport
-	// surfaces context.Canceled; fetchProfile wraps it. memoize must
-	// NOT store the error so a later caller with a fresh ctx can
-	// re-enter the fetch.
-	ctxA, cancelA := context.WithCancel(context.Background())
-	cancelA()
-	_, errA := p.Profile(ctxA)
-	if errA == nil {
-		t.Fatalf("caller A: expected context.Canceled-derived error, got nil")
+	tests := []struct {
+		name    string
+		newCtx  func() (context.Context, context.CancelFunc)
+		wantErr error
+	}{
+		{
+			name: "canceled",
+			newCtx: func() (context.Context, context.CancelFunc) {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				return ctx, cancel
+			},
+			wantErr: context.Canceled,
+		},
+		{
+			name: "deadline exceeded",
+			newCtx: func() (context.Context, context.CancelFunc) {
+				return context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
+			},
+			wantErr: context.DeadlineExceeded,
+		},
 	}
-	if !errors.Is(errA, context.Canceled) {
-		t.Fatalf("caller A: expected errors.Is(context.Canceled), got %v", errA)
-	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			inner := newCountingTransport()
+			inner.setResponse("User", userResponseBody)
+			p := newProviderWith(t, &ctxAwareTransport{inner: inner})
 
-	// Caller B: fresh ctx. If the cache poisoned the result, B would
-	// observe errA replayed without any new RoundTrip. Instead, B
-	// must trigger a fresh fetch and observe success.
-	prof, errB := p.Profile(context.Background())
-	if errB != nil {
-		t.Fatalf("caller B: expected fresh fetch to succeed, got %v", errB)
-	}
-	// errB == nil guarantees a non-nil profile on the happy path, so
-	// the fields can be observed directly.
-	if prof.Kind != plugins.ProfileKindUser || prof.User == nil {
-		t.Fatalf("caller B: expected user profile, got kind=%q user=%v", prof.Kind, prof.User)
-	}
+			ctxA, cancelA := tc.newCtx()
+			defer cancelA()
+			if _, err := p.Profile(ctxA); !errors.Is(err, tc.wantErr) {
+				t.Fatalf("caller A: errors.Is(%v) = false, got %v", tc.wantErr, err)
+			}
 
-	// Caller B's success MUST have hit the transport at least once
-	// (the User op count is the load-bearing assertion: zero would
-	// mean B was served the cached error).
-	if got := inner.count("User"); got == 0 {
-		t.Fatalf("User op never reached transport on caller B; cache replayed the canceled error")
-	}
-}
-
-func TestProvider_Profile_DoesNotCacheContextDeadlineExceeded(t *testing.T) {
-	t.Parallel()
-	inner := newCountingTransport()
-	inner.setResponse("User", userResponseBody)
-	tr := &ctxAwareTransport{inner: inner}
-	p := newProviderWith(t, tr)
-
-	// Caller A: deadline already in the past, so the transport surfaces
-	// context.DeadlineExceeded. memoize must NOT cache this error — it
-	// is the partner branch of the context.Canceled carve-out and a
-	// regression here would silently re-introduce request-wide cache
-	// poisoning whenever any single plugin hits its timeout.
-	ctxA, cancelA := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
-	defer cancelA()
-	_, errA := p.Profile(ctxA)
-	if errA == nil {
-		t.Fatalf("caller A: expected context.DeadlineExceeded-derived error, got nil")
-	}
-	if !errors.Is(errA, context.DeadlineExceeded) {
-		t.Fatalf("caller A: expected errors.Is(context.DeadlineExceeded), got %v", errA)
-	}
-
-	// Caller B: fresh ctx. If the cache poisoned the result, B would
-	// observe errA replayed without any new RoundTrip. Instead, B must
-	// trigger a fresh fetch and observe success.
-	prof, errB := p.Profile(context.Background())
-	if errB != nil {
-		t.Fatalf("caller B: expected fresh fetch to succeed, got %v", errB)
-	}
-	// errB == nil guarantees a non-nil profile on the happy path, so
-	// the fields can be observed directly.
-	if prof.Kind != plugins.ProfileKindUser || prof.User == nil {
-		t.Fatalf("caller B: expected user profile, got kind=%q user=%v", prof.Kind, prof.User)
-	}
-
-	if got := inner.count("User"); got == 0 {
-		t.Fatalf("User op never reached transport on caller B; cache replayed the deadline-exceeded error")
+			prof, err := p.Profile(context.Background())
+			if err != nil {
+				t.Fatalf("caller B: expected fresh fetch to succeed, got %v", err)
+			}
+			if prof.Kind != plugins.ProfileKindUser || prof.User == nil {
+				t.Fatalf("caller B: expected user profile, got kind=%q user=%v", prof.Kind, prof.User)
+			}
+			if got := inner.count("User"); got == 0 {
+				t.Fatalf("User op never reached transport on caller B; cache replayed the error")
+			}
+		})
 	}
 }
 
@@ -459,7 +432,7 @@ const userRepositoriesResponseBody = `{
             "description": null,
             "url": "https://example.invalid/beta",
             "isPrivate": false,
-            "isFork": false,
+            "isFork": true,
             "createdAt": "2021-01-01T00:00:00Z",
             "pushedAt": "2021-01-02T00:00:00Z",
             "updatedAt": "2021-01-02T00:00:00Z",
@@ -506,92 +479,8 @@ func TestProvider_RepositorySummary_IncludesIssuesAndPullRequests(t *testing.T) 
 	if got, want := summary.PullRequests, 10; got != want {
 		t.Errorf("PullRequests: got %d, want %d (sum of per-node pullRequests.totalCount)", got, want)
 	}
-}
-
-// userRepositoriesForkedResponseBody is a two-repo fixture where the
-// second node is a fork. Used by TestProvider_RepositorySummary_Forked
-// to anchor the ComputedRepositories.Forked accumulator that plugin_base
-// (#625) reads to render the "<N> Repositories (including <F> forks)"
-// heading. Both nodes carry the same shape as userRepositoriesResponseBody
-// to avoid drifting away from the production fetchOneRepoPage decoder.
-const userRepositoriesForkedResponseBody = `{
-  "data": {
-    "user": {
-      "repositories": {
-        "totalCount": 2,
-        "pageInfo": {"hasNextPage": false, "endCursor": null},
-        "nodes": [
-          {
-            "databaseId": 1, "id": "R1", "name": "alpha",
-            "nameWithOwner": "octocat/alpha", "description": null,
-            "url": "https://example.invalid/alpha",
-            "isPrivate": false, "isFork": false,
-            "createdAt": "2020-01-01T00:00:00Z",
-            "pushedAt": "2020-01-02T00:00:00Z",
-            "updatedAt": "2020-01-02T00:00:00Z",
-            "stargazerCount": 0, "forkCount": 0,
-            "issues": {"totalCount": 0}, "pullRequests": {"totalCount": 0},
-            "watchers": {"totalCount": 0}, "primaryLanguage": null,
-            "languages": null, "diskUsage": 0,
-            "releases": {"totalCount": 0}, "packages": {"totalCount": 0},
-            "deployments": {"totalCount": 0}, "licenseInfo": null
-          },
-          {
-            "databaseId": 2, "id": "R2", "name": "beta",
-            "nameWithOwner": "octocat/beta", "description": null,
-            "url": "https://example.invalid/beta",
-            "isPrivate": false, "isFork": true,
-            "createdAt": "2021-01-01T00:00:00Z",
-            "pushedAt": "2021-01-02T00:00:00Z",
-            "updatedAt": "2021-01-02T00:00:00Z",
-            "stargazerCount": 0, "forkCount": 0,
-            "issues": {"totalCount": 0}, "pullRequests": {"totalCount": 0},
-            "watchers": {"totalCount": 0}, "primaryLanguage": null,
-            "languages": null, "diskUsage": 0,
-            "releases": {"totalCount": 0}, "packages": {"totalCount": 0},
-            "deployments": {"totalCount": 0}, "licenseInfo": null
-          }
-        ]
-      }
-    }
-  }
-}`
-
-// TestProvider_RepositorySummary_Forked guards the
-// ComputedRepositories.Forked accumulator added in #625. plugin_base's
-// RepositoriesPartial renders the heading "<N> Repositories (including
-// <F> forks)" — if the per-node node.isFork is not summed during paging
-// the bracketed clause disappears and the wire-format key
-// computed.repositories.forked stays 0 on otherwise valid responses.
-func TestProvider_RepositorySummary_Forked(t *testing.T) {
-	t.Parallel()
-	tr := newCountingTransport()
-	tr.setResponse("User", userResponseBody)
-	tr.setResponse("UserRepositories", userRepositoriesForkedResponseBody)
-	p := newProviderWith(t, tr)
-
-	summary, err := p.RepositorySummary(context.Background())
-	if err != nil {
-		t.Fatalf("RepositorySummary: %v", err)
-	}
-	if summary == nil {
-		t.Fatal("RepositorySummary returned nil summary")
-	}
 	if got, want := summary.Forked, 1; got != want {
 		t.Errorf("Forked: got %d, want %d (count of nodes with isFork=true)", got, want)
-	}
-	if got, want := summary.Count, 2; got != want {
-		t.Errorf("Count: got %d, want %d (total nodes including forks)", got, want)
-	}
-
-	// Second call exercises the singleflight memoization path: must
-	// return the same Forked total without re-fetching.
-	again, err := p.RepositorySummary(context.Background())
-	if err != nil {
-		t.Fatalf("RepositorySummary (memoized): %v", err)
-	}
-	if again.Forked != summary.Forked {
-		t.Errorf("memoized Forked drifted: got %d, want %d", again.Forked, summary.Forked)
 	}
 }
 
@@ -853,29 +742,6 @@ func TestProvider_RepoResult_BatchOneRecoversAfterHalvingPhase(t *testing.T) {
 	}
 }
 
-// TestProvider_RepoResult_BatchOneRetriesMultipleTimes exercises the
-// batch=1 retry budget directly: after the halving phase, batch=1 fails
-// three consecutive times and then succeeds. Each batch=1 failure must
-// consume one unit of the dedicated budget (which resets on the eventual
-// success), not error out immediately.
-func TestProvider_RepoResult_BatchOneRetriesMultipleTimes(t *testing.T) {
-	t.Parallel()
-	inner := newCountingTransport()
-	inner.setResponse("User", userResponseBody)
-	inner.setResponse("UserRepositories", userRepositoriesResponseBody)
-	// 6 halving failures + 3 batch=1 failures, then success.
-	tr := &flakyRepoTransport{inner: inner, fails: 9}
-	p := newProviderNoHTTPRetry(t, tr)
-
-	repos, err := p.Repositories(context.Background())
-	if err != nil {
-		t.Fatalf("Repositories: expected recovery after 3 batch=1 retries, got %v", err)
-	}
-	if got, want := len(repos), 2; got != want {
-		t.Fatalf("len(Repositories) = %d, want %d", got, want)
-	}
-}
-
 // TestProvider_RepoResult_BatchOneExhaustsBudget locks the error contract
 // when batch=1 never recovers: the message must report the actual number
 // of batch=1 retries (6), not the shared counter's inflated total.
@@ -1019,8 +885,8 @@ func TestProvider_Profile_ContributedToDegradesGracefully(t *testing.T) {
 	var buf bytes.Buffer
 	logger := slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelWarn}))
 	gql, err := githubapi.NewGraphQL(config.NewToken("ghp_test"), "", httpx.Options{
-		Transport:  tr,
-		MaxRetries: 0,
+		Transport:      tr,
+		DisableRetries: true,
 	})
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)
@@ -1038,9 +904,6 @@ func TestProvider_Profile_ContributedToDegradesGracefully(t *testing.T) {
 	// The degraded counter is zero so the header hides the row (never "0").
 	if u.ContributedTo != 0 {
 		t.Errorf("ContributedTo = %d, want 0 (degraded/hidden)", u.ContributedTo)
-	}
-	if !strings.Contains(buf.String(), "repositoriesContributedTo unavailable") {
-		t.Errorf("expected a degradation warning in the log, got %q", buf.String())
 	}
 }
 

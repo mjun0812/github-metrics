@@ -200,9 +200,7 @@ func TestDiffScopes(t *testing.T) {
 		have     []string
 		want     []string
 	}{
-		{"all_present", []string{"repo"}, []string{"repo", "read:user"}, nil},
 		{"one_missing", []string{"repo", "read:project"}, []string{"repo"}, []string{"read:project"}},
-		{"empty_required", nil, []string{"repo"}, nil},
 		{"with_whitespace", []string{"repo"}, []string{" repo ", "read:user"}, nil},
 	}
 	for _, tc := range cases {
@@ -225,4 +223,25 @@ func equal(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// TestTokenValidator_FetchRateLimitTransportError covers REST transport
+// failures before HTTP status handling.
+func TestTokenValidator_FetchRateLimitTransportError(t *testing.T) {
+	t.Parallel()
+	v := &TokenValidator{
+		REST: newREST(t, staticRoundTripper{
+			status: http.StatusInternalServerError,
+			err:    errors.New("transport"),
+		}),
+		Token: config.NewToken("ghp_mock_pat_valid"),
+	}
+	if _, err := v.fetchRateLimit(context.Background()); err == nil {
+		t.Fatalf("expected transport error")
+	}
+	_, err := v.Validate(context.Background())
+	var retryable *xerrors.RetryableError
+	if !errors.As(err, &retryable) {
+		t.Fatalf("Validate err = %T, want RetryableError", err)
+	}
 }

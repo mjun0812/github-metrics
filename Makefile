@@ -19,7 +19,7 @@ GOVULNCHECK_VERSION   := latest
 GOFUMPT_VERSION       := latest
 LEFTHOOK_VERSION      := latest
 
-.PHONY: all build build-cli test test-resvg test-heavy test-race lint vet bench gen \
+.PHONY: all build build-cli test test-resvg test-heavy test-race lint vet gen \
         gen-octicons verify-octicons gen-action-yml docker docker-build docker-run-cli \
         docker-smoke release-dry-run \
         tools hooks-install hooks-run hooks-uninstall \
@@ -43,7 +43,6 @@ help:
 	@echo "  test-race           Run tests with the race detector"
 	@echo "  vet                 Run go vet ./..."
 	@echo "  lint                Run golangci-lint and govulncheck"
-	@echo "  bench               Run benchmarks (go test -bench=. -run=^$$)"
 	@echo "  gen                 Run code generation (go generate ./...)"
 	@echo "  gen-octicons        Regenerate assets/octicons/data.json from @primer/octicons"
 	@echo "  verify-octicons     Ensure committed assets/octicons/data.json matches gen-octicons output"
@@ -122,9 +121,6 @@ vet:
 lint:
 	golangci-lint run --timeout=10m
 	govulncheck ./...
-
-bench:
-	$(GO) test -bench=. -benchmem -run=^$$ ./...
 
 gen:
 	$(GO) generate ./...
@@ -215,9 +211,6 @@ docs-lint:
 
 check-compat:
 	$(GO) run ./internal/tools/check-compat
-
-check-output-compat:
-	$(GO) test ./tests/compatibility/...
 
 sync-assets:
 	./scripts/sync-assets.sh

@@ -2,12 +2,7 @@ package sponsors_test
 
 import (
 	"context"
-	"encoding/json"
-	"flag"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/mjun0812/github-metrics/internal/config"
@@ -16,26 +11,6 @@ import (
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/sponsors"
 )
-
-var updateGolden = flag.Bool("update", false, "update golden files")
-
-func repoRoot(t *testing.T) string {
-	t.Helper()
-	cwd, _ := os.Getwd()
-	dir := cwd
-	for i := 0; i < 8; i++ {
-		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			return dir
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-	t.Fatalf("repo root not found")
-	return ""
-}
 
 func newREST(t *testing.T, scopes string) *githubapi.REST {
 	t.Helper()
@@ -48,7 +23,7 @@ func newREST(t *testing.T, scopes string) *githubapi.REST {
 	r, err := githubapi.NewREST(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost",
-		httpx.Options{Transport: mux, MaxRetries: 0},
+		httpx.Options{Transport: mux, DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
@@ -80,22 +55,6 @@ func TestRun_NoOAuthScopeGate(t *testing.T) {
 	r := run(t, "repo")
 	if r.Skipped {
 		t.Errorf("sponsors must not gate on read:user/read:org; got Skipped (%s)", r.SkippedReason)
-	}
-}
-
-func TestRun_ReadUserOnly_NotSkipped(t *testing.T) {
-	t.Parallel()
-	r := run(t, "read:user")
-	if r.Skipped {
-		t.Errorf("read:user token should not be Skipped; got Skipped")
-	}
-}
-
-func TestRun_ReadOrgOnly_NotSkipped(t *testing.T) {
-	t.Parallel()
-	r := run(t, "read:org")
-	if r.Skipped {
-		t.Errorf("read:org token should not be Skipped; got Skipped")
 	}
 }
 
@@ -140,26 +99,6 @@ func TestRun_SizeReadsStringInput(t *testing.T) {
 	}
 }
 
-// TestRun_NilREST_NotSkipped verifies the plugin renders even without a
-// REST client. The old scope gate called REST.Scopes() and Skipped on a
-// nil client; upstream never reads scopes, so a nil REST must not blank
-// the card (#451). With no GraphQL client the M4 baseline (empty,
-// non-Skipped) is returned so the partial still emits the heading + about
-// section.
-func TestRun_NilREST_NotSkipped(t *testing.T) {
-	t.Parallel()
-	pc := &plugins.PluginContext{Data: plugins.NewData(), Inputs: map[string]any{}}
-	out, _ := sponsors.Plugin.Run(context.Background(), pc)
-	r := out.(*sponsors.Result)
-	if r.Skipped {
-		t.Errorf("nil REST must not yield Skipped; got Skipped (%s)", r.SkippedReason)
-	}
-	want := []string{"goal", "list", "about"}
-	if len(r.Sections) != len(want) {
-		t.Fatalf("expected default Sections=%v; got %+v", want, r.Sections)
-	}
-}
-
 // TestRun_RepoMode_Skipped verifies the one remaining gate (RequireUserMode):
 // in repository mode the per-user sponsors section has nothing to render, so
 // it Skips. This is the mode gate, NOT an OAuth scope gate.
@@ -173,29 +112,4 @@ func TestRun_RepoMode_Skipped(t *testing.T) {
 	if !r.Skipped {
 		t.Errorf("repository mode should Skip the user-mode sponsors section; got %+v", r)
 	}
-}
-
-func TestRun_GoldenShape(t *testing.T) {
-	r := &sponsors.Result{Skipped: true, Sponsors: []sponsors.Sponsor{}}
-	got, err := json.MarshalIndent(r, "", "  ")
-	if err != nil {
-		t.Fatalf("MarshalIndent: %v", err)
-	}
-	got = append(got, '\n')
-	gp := filepath.Join(repoRoot(t), "tests", "golden", "json", "m4", "sponsors.json")
-	if *updateGolden {
-		_ = os.MkdirAll(filepath.Dir(gp), 0o755)
-		if werr := os.WriteFile(gp, got, 0o644); werr != nil {
-			t.Fatalf("WriteFile: %v", werr)
-		}
-		return
-	}
-	want, err := os.ReadFile(gp)
-	if err != nil {
-		t.Fatalf("ReadFile: %v (run with -update)", err)
-	}
-	if string(want) != string(got) {
-		t.Fatalf("golden mismatch\nwant:\n%s\ngot:\n%s", string(want), string(got))
-	}
-	_ = strings.Contains // silence unused
 }

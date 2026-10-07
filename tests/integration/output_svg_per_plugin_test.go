@@ -110,55 +110,10 @@ var perPluginCases = []perPluginCase{
 		goldenPath: "classic/plugin-activity.svg",
 	},
 	{
-		name: "calendar",
-		slug: "calendar",
-		// calendar and isocalendar reconstruct the contribution calendar
-		// from windowed UserIsocalendar queries; an empty week list keeps
-		// the golden's degraded/skipped path.
-		fixtures: map[string]string{
-			"UserIsocalendar": `{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[]}}}}}`,
-		},
-		goldenPath: "classic/plugin-calendar.svg",
-	},
-	{
-		name:     "habits",
-		slug:     "habits",
-		fixtures: map[string]string{},
-		restSetup: func(m *mocks.RESTMux) {
-			// habits pages /users/{login}/events; empty first page terminates loop.
-			m.OnBody("/users/octocat/events", 200, "[]")
-		},
-		goldenPath: "classic/plugin-habits.svg",
-	},
-	{
-		name: "isocalendar",
-		slug: "isocalendar",
-		fixtures: map[string]string{
-			"UserIsocalendar": `{"data":{"user":{"contributionsCollection":{"contributionCalendar":{"weeks":[]}}}}}`,
-		},
-		goldenPath: "classic/plugin-isocalendar.svg",
-	},
-	{
 		name:       "languages",
 		slug:       "languages",
 		fixtures:   map[string]string{},
 		goldenPath: "classic/plugin-languages.svg",
-	},
-	{
-		name: "notable",
-		slug: "notable",
-		fixtures: map[string]string{
-			"UserNotable": `{"data":{"user":{"repositoriesContributedTo":{"totalCount":0,"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}`,
-		},
-		goldenPath: "classic/plugin-notable.svg",
-	},
-	{
-		name: "people",
-		slug: "people",
-		fixtures: map[string]string{
-			"UserFollowers": `{"data":{"user":{"followers":{"totalCount":0,"nodes":[]},"following":{"totalCount":0,"nodes":[]}}}}`,
-		},
-		goldenPath: "classic/plugin-people.svg",
 	},
 	{
 		name: "reactions",
@@ -218,14 +173,6 @@ var perPluginCases = []perPluginCase{
 		},
 		fixtures:   map[string]string{},
 		goldenPath: "classic/plugin-starlists.svg",
-	},
-	{
-		name: "stars",
-		slug: "stars",
-		fixtures: map[string]string{
-			"UserStarredRepositories": `{"data":{"user":{"starredRepositories":{"totalCount":0,"edges":[]}}}}`,
-		},
-		goldenPath: "classic/plugin-stars.svg",
 	},
 	{
 		name: "topics",

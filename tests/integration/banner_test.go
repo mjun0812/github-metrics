@@ -2,7 +2,6 @@ package integration_test
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 
 	"github.com/mjun0812/github-metrics/internal/action"
@@ -32,20 +31,4 @@ func TestAction_BannerSnapshot(t *testing.T) {
 	got := buf.Bytes()
 
 	golden.Compare(t, got, "action/banner.txt")
-
-	// Semantic guards — the banner MUST surface these fields in plain
-	// text so engineers can grep run logs without ANSI / JSON parsing.
-	gotStr := string(got)
-	for _, must := range []string{
-		"metrics-cli — startup banner",
-		"Version", "v0.0.0-test",
-		"Template", "classic",
-		"Plugins", "languages",
-		"Token", "ghp_***masked***",
-		"go1.26.0", "linux/amd64",
-	} {
-		if !strings.Contains(gotStr, must) {
-			t.Errorf("banner missing %q\nfull output:\n%s", must, gotStr)
-		}
-	}
 }

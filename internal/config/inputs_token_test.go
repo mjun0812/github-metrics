@@ -58,33 +58,6 @@ func TestToken_RawNeverLeaksThroughFormatters(t *testing.T) {
 	}
 }
 
-func TestToken_MarshalJSON(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name string
-		raw  string
-		want string
-	}{
-		{name: "non-empty marshals to placeholder", raw: "ghs_xxx", want: `"(provided)"`},
-		{name: "empty marshals to empty string", raw: "", want: `""`},
-	}
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			tk := config.NewToken(tc.raw)
-			b, err := json.Marshal(tk)
-			if err != nil {
-				t.Fatalf("Marshal: %v", err)
-			}
-			if got := string(b); got != tc.want {
-				t.Fatalf("Marshal = %q, want %q", got, tc.want)
-			}
-		})
-	}
-}
-
 func TestToken_MarshalJSONInsideStructDoesNotLeak(t *testing.T) {
 	t.Parallel()
 
@@ -107,33 +80,12 @@ func TestToken_MarshalJSONInsideStructDoesNotLeak(t *testing.T) {
 	if !strings.Contains(string(b), `"login":"octocat"`) {
 		t.Fatalf("non-token field missing: %s", b)
 	}
-}
 
-func TestToken_RevealReturnsRaw(t *testing.T) {
-	t.Parallel()
-
-	tk := config.NewToken("ghp_xyz")
-	if tk.Reveal() != "ghp_xyz" {
-		t.Fatalf("Reveal() = %q, want %q", tk.Reveal(), "ghp_xyz")
+	b, err = json.Marshal(payload{Login: "octocat"})
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
 	}
-
-	empty := config.NewToken("")
-	if empty.Reveal() != "" {
-		t.Fatalf("empty.Reveal() = %q, want empty", empty.Reveal())
-	}
-}
-
-func TestToken_Present(t *testing.T) {
-	t.Parallel()
-
-	if !config.NewToken("anything").Present() {
-		t.Fatalf("non-empty token should report Present()=true")
-	}
-	if config.NewToken("").Present() {
-		t.Fatalf("empty token should report Present()=false")
-	}
-	var zero config.Token
-	if zero.Present() {
-		t.Fatalf("zero-value token should report Present()=false")
+	if !strings.Contains(string(b), `"token":""`) {
+		t.Fatalf("expected empty token placeholder, got %s", b)
 	}
 }

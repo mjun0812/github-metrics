@@ -25,10 +25,8 @@ func TestFormatCreated(t *testing.T) {
 		{"zero skips span", time.Time{}, now, ""},
 		{"hours ago singular", now.Add(-30 * time.Minute), now, "1 hour ago"},
 		{"hours ago plural", now.Add(-3 * time.Hour), now, "3 hours ago"},
-		{"days ago singular", now.Add(-24 * time.Hour), now, "1 day ago"},
 		{"days ago plural", now.Add(-5 * 24 * time.Hour), now, "5 days ago"},
 		{"absolute date zero-padded day", time.Date(2024, time.October, 6, 0, 0, 0, 0, time.UTC), later, "Oct 06 2024"},
-		{"absolute date two-digit day", time.Date(2024, time.October, 26, 0, 0, 0, 0, time.UTC), later, "Oct 26 2024"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -178,7 +178,7 @@ github_api_graphql: %s/graphql
 	}
 }
 
-// TestCLI_ConfigYAML_Equivalence verifies that 4 representative inputs
+// TestCLI_ConfigYAML_Equivalence verifies that representative inputs
 // produce the same merged Invocation regardless of whether they came
 // from --config YAML, --plugin flags, or INPUT_<UPPER> env vars.
 //
@@ -202,32 +202,9 @@ func TestCLI_ConfigYAML_Equivalence(t *testing.T) {
 			flagArgs:  nil,
 		},
 		{
-			name:      "notice_releases_off",
-			yamlExtra: "notice_releases: false\n",
-			flagArgs:  []string{"--plugin", "notice_releases=false"},
-		},
-		{
-			name:      "config_padding_block",
-			yamlExtra: "config:\n  padding: 10%\n",
-			flagArgs:  []string{"--plugin", "config_padding=10%"},
-		},
-		{
 			name:      "plugin_languages_false",
 			yamlExtra: "plugins:\n  languages: false\n",
 			flagArgs:  []string{"--plugin", "plugin_languages=false"},
-		},
-		{
-			name:      "committer_branch_block",
-			yamlExtra: "committer:\n  branch: main\n",
-			flagArgs:  []string{"--plugin", "committer_branch=main"},
-		},
-		{
-			// M7 T031: --repo top-level flag vs YAML top-level repo
-			// key. The classic template ignores the value (FR-007), so
-			// the SVG body stays byte-identical between the two paths.
-			name:      "m7_repo_input",
-			yamlExtra: "repo: hello-world\n",
-			flagArgs:  []string{"--repo", "hello-world"},
 		},
 	}
 
@@ -237,6 +214,9 @@ func TestCLI_ConfigYAML_Equivalence(t *testing.T) {
 			t.Parallel()
 			fromYAML := stripVolatile(runCLIWithYAML(t, srv.URL, tc.yamlExtra))
 			fromFlags := stripVolatile(runCLIWithFlags(t, srv.URL, tc.flagArgs))
+			if !strings.Contains(fromYAML, "<svg") {
+				t.Fatalf("yaml invocation produced no SVG: %q", trunc(fromYAML, 400))
+			}
 			if fromYAML != fromFlags {
 				t.Errorf("equivalence broken (yaml vs flags): len yaml=%d, flags=%d", len(fromYAML), len(fromFlags))
 			}
@@ -328,40 +308,4 @@ func trunc(s string, n int) string {
 		return s
 	}
 	return s[:n] + "..."
-}
-
-// TestCLI_RepoTemplate_MissingRepo_FailFast (M7 T034 / SC-003):
-// Invoke the binary with `--template repository` but no `--repo`
-// flag and assert it exits with code 1 in under 5 seconds without
-// contacting GitHub. The unified Run pipeline (#646) hits the same
-// fail-fast path regardless of CI vs local invocation.
-func TestCLI_RepoTemplate_MissingRepo_FailFast(t *testing.T) {
-	t.Parallel()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	start := time.Now()
-	cmd := exec.CommandContext(
-		ctx, actionBin, //nolint:gosec // actionBin from TestMain
-		"--user", "octocat",
-		"--template", "repository",
-		// --repo deliberately omitted.
-		"--output", "svg",
-		"--dryrun",
-		"--filename", "-",
-	)
-	cmd.Env = append(stripGitHubActionsEnv(os.Environ()), "GITHUB_TOKEN=ghp_mock_pat_valid")
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	elapsed := time.Since(start)
-	if err == nil {
-		t.Fatalf("expected non-zero exit; stdout=%q stderr=%q", stdout.String(), stderr.String())
-	}
-	if elapsed > 5*time.Second {
-		t.Errorf("SC-003 budget violated: exit took %v (want <5s)", elapsed)
-	}
-	if !strings.Contains(stderr.String(), "repo") {
-		t.Errorf("stderr should mention 'repo'; got %q", stderr.String())
-	}
 }

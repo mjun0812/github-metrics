@@ -18,7 +18,6 @@ func TestRun_StarAndChevronDown(t *testing.T) {
 
 	dir := t.TempDir()
 	in := filepath.Join(dir, "data.json")
-	pkg := filepath.Join(filepath.Dir(dir), filepath.Base(dir)+"-pkg")
 
 	// Stub upstream input.
 	upstream := map[string]any{
@@ -91,45 +90,6 @@ func TestRun_StarAndChevronDown(t *testing.T) {
 	}
 	if _, ok := chev["24"]; ok {
 		t.Errorf("icons.chevron-down.24 should be absent (upstream did not provide it)")
-	}
-
-	// Sanity: package.json fallback path is only exercised when
-	// --source is empty. Cross-check that explicit --source wins.
-	_ = pkg
-}
-
-// TestRun_NoSource_FallsBackToPackageJSON exercises the secondary
-// source label discovery path. We seed a sibling package.json so the
-// tool can read the version off it.
-func TestRun_NoSource_FallsBackToPackageJSON(t *testing.T) {
-	t.Parallel()
-
-	root := t.TempDir()
-	octiconsDir := filepath.Join(root, "octicons")
-	buildDir := filepath.Join(octiconsDir, "build")
-	if err := os.MkdirAll(buildDir, 0o755); err != nil {
-		t.Fatalf("mkdir build: %v", err)
-	}
-	in := filepath.Join(buildDir, "data.json")
-	pkgJSON := filepath.Join(octiconsDir, "package.json")
-
-	mustWriteJSON(t, in, map[string]any{
-		"alert": map[string]any{
-			"name":    "alert",
-			"heights": map[string]any{"16": map[string]any{"width": 16, "path": `<path/>`}},
-		},
-	})
-	mustWriteJSON(t, pkgJSON, map[string]any{"version": "19.42.0"})
-
-	out := filepath.Join(root, "out.json")
-	when := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-	if err := run(in, out, "", when); err != nil {
-		t.Fatalf("run: %v", err)
-	}
-
-	got := readDoc(t, out)
-	if got.Meta.Source != "primer/octicons@19.42.0" {
-		t.Errorf("source = %q, want primer/octicons@19.42.0", got.Meta.Source)
 	}
 }
 

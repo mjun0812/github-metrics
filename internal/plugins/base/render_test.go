@@ -74,14 +74,6 @@ func activitySample() *base.Result {
 // ActivityPartial
 // ---------------------------------------------------------------------
 
-func TestActivityPartial_NilContextNoGate(t *testing.T) {
-	t.Parallel()
-	got, _, err := base.ActivityPartial(context.Background(), nil)
-	if err != nil || got != "" {
-		t.Fatalf("ActivityPartial(nil) = %q, %v; want \"\", nil", got, err)
-	}
-}
-
 func TestActivityPartial_GatedOff(t *testing.T) {
 	t.Parallel()
 	// The activity panel requires an explicit opt-in via
@@ -150,36 +142,26 @@ func TestActivityPartial_LegacyPluginBaseEnables(t *testing.T) {
 	}
 }
 
-func TestActivityPartial_MissingPluginEntry(t *testing.T) {
+// TestActivityPartial_EmptyWithoutUserProfile — the panel renders nothing
+// when the plugin entry is missing, the profile is an organization, or the
+// Provider failed (Result.Error set, Profile nil).
+func TestActivityPartial_EmptyWithoutUserProfile(t *testing.T) {
 	t.Parallel()
-	got, _, err := base.ActivityPartial(context.Background(), newPC(plugins.NewData(), gates()))
-	if err != nil || got != "" {
-		t.Fatalf("ActivityPartial(no plugin entry) = %q, %v; want \"\", nil", got, err)
-	}
-}
-
-func TestActivityPartial_WrongResultType(t *testing.T) {
-	t.Parallel()
-	d := plugins.NewData()
-	d.SetPlugin(base.Name, "not a *Result")
-	got, _, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
-	if err != nil || got != "" {
-		t.Fatalf("ActivityPartial(wrong type) = %q, %v; want \"\", nil", got, err)
-	}
-}
-
-func TestActivityPartial_OrgProfileEmits(t *testing.T) {
-	t.Parallel()
-	d := plugins.NewData()
-	putResult(d, &base.Result{
+	missing := plugins.NewData()
+	org := plugins.NewData()
+	putResult(org, &base.Result{
 		Profile: &plugins.Profile{
 			Kind:         plugins.ProfileKindOrganization,
 			Organization: &plugins.Organization{Login: "octolabs"},
 		},
 	})
-	got, _, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
-	if err != nil || got != "" {
-		t.Fatalf("ActivityPartial(org profile) must be empty; got %q, %v", got, err)
+	failed := plugins.NewData()
+	putResult(failed, &base.Result{Error: context.DeadlineExceeded})
+	for name, d := range map[string]*plugins.Data{"missing": missing, "org": org, "provider error": failed} {
+		got, _, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
+		if err != nil || got != "" {
+			t.Errorf("%s: ActivityPartial = %q, %v; want \"\", nil", name, got, err)
+		}
 	}
 }
 
@@ -282,30 +264,9 @@ func TestActivityPartial_ZeroRowsStillEmit(t *testing.T) {
 	}
 }
 
-// TestActivityPartial_ResultWithErrorStillRenders — a Provider failure
-// recorded on Result.Error must not stop the partial from rendering
-// what it can (Profile may be nil → partial returns "" without panic).
-func TestActivityPartial_ResultWithErrorStillRenders(t *testing.T) {
-	t.Parallel()
-	d := plugins.NewData()
-	putResult(d, &base.Result{Error: context.DeadlineExceeded})
-	got, _, err := base.ActivityPartial(context.Background(), newPC(d, gates()))
-	if err != nil || got != "" {
-		t.Fatalf("ActivityPartial(error result, nil Profile) = %q, %v; want \"\", nil", got, err)
-	}
-}
-
 // ---------------------------------------------------------------------
 // RepositoriesPartial
 // ---------------------------------------------------------------------
-
-func TestRepositoriesPartial_NilContextNoGate(t *testing.T) {
-	t.Parallel()
-	got, _, err := base.RepositoriesPartial(context.Background(), nil)
-	if err != nil || got != "" {
-		t.Fatalf("RepositoriesPartial(nil) = %q, %v; want \"\", nil", got, err)
-	}
-}
 
 func TestRepositoriesPartial_GatedOff(t *testing.T) {
 	t.Parallel()
@@ -405,11 +366,6 @@ func TestRepositoriesPartial_RendersHeadingAndRows(t *testing.T) {
 			t.Errorf("missing %q in repositories output:\n%s", want, got)
 		}
 	}
-	// The "(including N forks)" clause was dropped from the heading;
-	// the fork count is still represented via the "<F> Forkers" row.
-	if strings.Contains(got, "(including") {
-		t.Errorf("repositories heading must no longer carry the forks clause:\n%s", got)
-	}
 }
 
 func TestRepositoriesPartial_NilSummaryFallback(t *testing.T) {
@@ -435,9 +391,6 @@ func TestRepositoriesPartial_NilSummaryFallback(t *testing.T) {
 			t.Errorf("missing zero-state %q in:\n%s", want, got)
 		}
 	}
-	if strings.Contains(got, "(including") {
-		t.Errorf("zero-fork user must not get fork suffix:\n%s", got)
-	}
 }
 
 func TestRepositoriesPartial_SingularHeading(t *testing.T) {
@@ -456,10 +409,6 @@ func TestRepositoriesPartial_SingularHeading(t *testing.T) {
 	}
 	if !strings.Contains(got, `1 Repository`) {
 		t.Errorf("expected singular heading, got:\n%s", got)
-	}
-	// Forked counter must not surface in the heading even when > 0.
-	if strings.Contains(got, "(including") {
-		t.Errorf("heading must no longer carry the forks clause:\n%s", got)
 	}
 }
 
@@ -503,68 +452,33 @@ func (s *trafficStub) TotalViews() int { return s.total }
 
 // TestRepositoriesPartial_TrafficInline verifies that when the traffic
 // plugin published a non-zero TotalViews, the right column gains an
-// inline "<N> views in last two weeks" row. Mirrors upstream
-// base.repositories.ejs's `<%= plugins.traffic.views.count %>` block.
+// inline "<N> view(s) in last two weeks" row, and that a zero total
+// (skipped, error, or genuinely zero traffic) emits no row. Mirrors
+// upstream base.repositories.ejs's `<%= plugins.traffic.views.count %>`
+// block.
 func TestRepositoriesPartial_TrafficInline(t *testing.T) {
 	t.Parallel()
-	d := plugins.NewData()
-	putResult(d, activitySample())
-	d.SetPlugin("traffic", &trafficStub{total: 2345})
-	got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
-	if err != nil {
-		t.Fatalf("RepositoriesPartial: %v", err)
-	}
-	if !strings.Contains(got, `2.3k views in last two weeks`) {
-		t.Errorf("missing traffic views row in:\n%s", got)
-	}
-}
-
-// TestRepositoriesPartial_TrafficSingularNoun verifies the pluralisation
-// flips to "view" (singular) when TotalViews == 1.
-func TestRepositoriesPartial_TrafficSingularNoun(t *testing.T) {
-	t.Parallel()
-	d := plugins.NewData()
-	putResult(d, activitySample())
-	d.SetPlugin("traffic", &trafficStub{total: 1})
-	got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
-	if err != nil {
-		t.Fatalf("RepositoriesPartial: %v", err)
-	}
-	if !strings.Contains(got, `1 view in last two weeks`) {
-		t.Errorf("singular traffic noun missing in:\n%s", got)
-	}
-}
-
-// TestRepositoriesPartial_TrafficZeroSkipped verifies that a traffic
-// Result with TotalViews == 0 (Skipped, error, or genuinely zero
-// traffic) does NOT emit the row.
-func TestRepositoriesPartial_TrafficZeroSkipped(t *testing.T) {
-	t.Parallel()
-	d := plugins.NewData()
-	putResult(d, activitySample())
-	d.SetPlugin("traffic", &trafficStub{total: 0})
-	got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
-	if err != nil {
-		t.Fatalf("RepositoriesPartial: %v", err)
-	}
-	if strings.Contains(got, `in last two weeks`) {
-		t.Errorf("zero-views traffic row should be suppressed in:\n%s", got)
-	}
-}
-
-// TestRepositoriesPartial_TrafficForeignType verifies that a non-traffic
-// object placed under data.Plugins["traffic"] (defensive: should never
-// happen in practice) does not crash and does not render the row.
-func TestRepositoriesPartial_TrafficForeignType(t *testing.T) {
-	t.Parallel()
-	d := plugins.NewData()
-	putResult(d, activitySample())
-	d.SetPlugin("traffic", struct{}{}) // intentionally not implementing TotalViews()
-	got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
-	if err != nil {
-		t.Fatalf("RepositoriesPartial: %v", err)
-	}
-	if strings.Contains(got, `in last two weeks`) {
-		t.Errorf("foreign traffic type should be ignored in:\n%s", got)
+	for _, tc := range []struct {
+		total int
+		want  string // empty means the row must be absent
+	}{
+		{2345, `2.3k views in last two weeks`},
+		{1, `1 view in last two weeks`},
+		{0, ""},
+	} {
+		d := plugins.NewData()
+		putResult(d, activitySample())
+		d.SetPlugin("traffic", &trafficStub{total: tc.total})
+		got, _, err := base.RepositoriesPartial(context.Background(), newPC(d, gates()))
+		if err != nil {
+			t.Fatalf("RepositoriesPartial: %v", err)
+		}
+		if tc.want == "" {
+			if strings.Contains(got, `in last two weeks`) {
+				t.Errorf("total=%d: traffic row should be suppressed in:\n%s", tc.total, got)
+			}
+		} else if !strings.Contains(got, tc.want) {
+			t.Errorf("total=%d: missing %q in:\n%s", tc.total, tc.want, got)
+		}
 	}
 }

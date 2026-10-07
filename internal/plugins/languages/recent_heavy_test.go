@@ -45,12 +45,6 @@ func (m *restMux) on(path string, status int, body string) {
 	m.resp[path] = restResp{status: status, body: body}
 }
 
-func (m *restMux) onErr(path string, err error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.resp[path] = restResp{err: err}
-}
-
 func (m *restMux) RoundTrip(req *http.Request) (*http.Response, error) {
 	m.mu.Lock()
 	m.calls++
@@ -94,7 +88,7 @@ func newREST(t *testing.T, mux http.RoundTripper) *githubapi.REST {
 	rest, err := githubapi.NewREST(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost",
-		httpx.Options{Transport: mux, MaxRetries: 0},
+		httpx.Options{Transport: mux, DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)

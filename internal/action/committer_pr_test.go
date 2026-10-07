@@ -203,54 +203,9 @@ func TestCommitter_PullRequest_DataChangedSkips(t *testing.T) {
 	}
 }
 
-func TestCommitter_PullRequestMerge_AutoMerges(t *testing.T) {
+func TestCommitter_PullRequestMerge_CallsMerge(t *testing.T) {
 	t.Parallel()
-	mock := newPRRESTMock()
-	c := &Committer{
-		REST: newRESTPR(t, mock), Policy: RetryPolicy{Retries: 0, Delay: 0},
-		RepoOwner: "o", RepoName: "r",
-		Branch: "main", RunID: "12345",
-		Filename: "x.svg", Message: "metrics",
-		Author: CommitterAuthor{Name: "m", Email: "m@x"},
-		Action: "pull-request-merge",
-		Body:   []byte(`<svg></svg>`),
-	}
-	if err := c.Run(context.Background()); err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	merged := false
-	for _, call := range mock.calls {
-		if strings.HasPrefix(call, "PUT") && strings.HasSuffix(call, "/merge") {
-			merged = true
-		}
-	}
-	if !merged {
-		t.Errorf("expected PUT /pulls/N/merge; calls=%v", mock.calls)
-	}
-}
-
-func TestCommitter_PullRequestMerge_MergeError(t *testing.T) {
-	t.Parallel()
-	mock := newPRRESTMock()
-	mock.mergeStatus = http.StatusInternalServerError
-	c := &Committer{
-		REST: newRESTPR(t, mock), Policy: RetryPolicy{Retries: 0, Delay: 0},
-		RepoOwner: "o", RepoName: "r",
-		Branch: "main", RunID: "12345",
-		Filename: "x.svg", Message: "metrics",
-		Author: CommitterAuthor{Name: "m", Email: "m@x"},
-		Action: "pull-request-merge",
-		Body:   []byte(`<svg></svg>`),
-	}
-	err := c.Run(context.Background())
-	if err == nil || !strings.Contains(err.Error(), "merge PR") {
-		t.Fatalf("expected merge PR error, got %v", err)
-	}
-}
-
-func TestCommitter_PullRequestSquash_AndRebase(t *testing.T) {
-	t.Parallel()
-	for _, action := range []string{"pull-request-squash", "pull-request-rebase"} {
+	for _, action := range []string{"pull-request-merge", "pull-request-squash", "pull-request-rebase"} {
 		t.Run(action, func(t *testing.T) {
 			mock := newPRRESTMock()
 			c := &Committer{
@@ -265,17 +220,14 @@ func TestCommitter_PullRequestSquash_AndRebase(t *testing.T) {
 			if err := c.Run(context.Background()); err != nil {
 				t.Fatalf("Run: %v", err)
 			}
-			// Verify merge call carries the right merge_method.
-			// We can't inspect body here without exposing the body recorder;
-			// the call sequence existence is the immediate signal.
 			merged := false
 			for _, call := range mock.calls {
-				if strings.Contains(call, "/merge") {
+				if strings.HasPrefix(call, "PUT") && strings.HasSuffix(call, "/merge") {
 					merged = true
 				}
 			}
 			if !merged {
-				t.Errorf("expected merge call for %s; calls=%v", action, mock.calls)
+				t.Errorf("expected PUT /pulls/N/merge for %s; calls=%v", action, mock.calls)
 			}
 		})
 	}

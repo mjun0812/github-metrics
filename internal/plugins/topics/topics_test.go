@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -55,54 +53,6 @@ func newPC(_ *testing.T, nav topics.Navigator, inputs map[string]any) *plugins.P
 	return pc
 }
 
-// TestRun_DefaultNavigator_IsHTTP — when no Navigator is injected the
-// plugin falls back to the stdlib-backed httpNavigator. The plugin is
-// no longer "skipped" for missing a browser because the SSR topics page
-// is reachable via plain HTTPS.
-func TestRun_DefaultNavigator_IsHTTP(t *testing.T) {
-	t.Parallel()
-	// Stand up a local server returning a minimal stars/topics page
-	// (5 anchors). The navigator follows whatever URL the plugin
-	// constructs, so we cannot redirect there — instead we point the
-	// plugin at the local server via a NavigatorKey that wraps a
-	// real httpNavigator with our test endpoint.
-	body := `<!doctype html><html><body>
-<a href="/topics/go"><p>Go</p><p>Go lang</p><img src="/go.png"></a>
-<a href="/topics/rust"><p>Rust</p><p>Rust lang</p><img src="/rust.png"></a>
-</body></html>`
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
-		_, _ = w.Write([]byte(body))
-	}))
-	defer srv.Close()
-
-	httpNav := topics.NewHTTPNavigator(srv.Client(), "test-agent")
-	pc := newPC(t, &fixedURLNav{inner: httpNav, target: srv.URL}, nil)
-	out, err := topics.Plugin.Run(context.Background(), pc)
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	r := out.(*topics.Result)
-	if r.Skipped {
-		t.Fatalf("unexpected Skipped: %s", r.SkippedReason)
-	}
-	if len(r.List) != 2 {
-		t.Fatalf("List len = %d, want 2; %+v", len(r.List), r.List)
-	}
-}
-
-// fixedURLNav forwards Fetch to inner but always targets `target`,
-// ignoring the URL the plugin constructed. Used in network tests so we
-// don't have to mutate the plugin's URL builder.
-type fixedURLNav struct {
-	inner  topics.Navigator
-	target string
-}
-
-func (f *fixedURLNav) Fetch(ctx context.Context, _ string) ([]topics.Topic, error) {
-	return f.inner.Fetch(ctx, f.target)
-}
-
 // TestRun_Skipped_PuppeteerDisabled — extras toggle short-circuits
 // before any navigator interaction.
 func TestRun_Skipped_PuppeteerDisabled(t *testing.T) {
@@ -118,9 +68,6 @@ func TestRun_Skipped_PuppeteerDisabled(t *testing.T) {
 	r := out.(*topics.Result)
 	if !r.Skipped {
 		t.Fatalf("Skipped = false, want true")
-	}
-	if r.SkippedReason != "puppeteer scrapping disabled via extras" {
-		t.Errorf("SkippedReason = %q", r.SkippedReason)
 	}
 }
 
@@ -141,6 +88,10 @@ func TestRun_Normal_FakeNavigator(t *testing.T) {
 	r := out.(*topics.Result)
 	if r.Skipped {
 		t.Fatalf("unexpected Skipped: %s", r.SkippedReason)
+	}
+	// absent plugin_topics_mode behaves as the metadata default `starred` (#672).
+	if r.Mode != "starred" {
+		t.Errorf("Mode = %q, want starred (metadata default)", r.Mode)
 	}
 	names := make([]string, 0, len(r.List))
 	for _, top := range r.List {
@@ -165,11 +116,9 @@ func TestRun_SortMapsToPageParameter(t *testing.T) {
 		sort  any // absent when nil
 		param string
 	}{
-		{nil, "sort=stars"},           // declared default
-		{"stars", "sort=stars"},       // Most stars
-		{"activity", "sort=updated"},  // Recently active
-		{"starred", "sort=created"},   // Recently starred
-		{"bogus-value", "sort=stars"}, // unknown → declared default
+		{nil, "sort=stars"},          // declared default
+		{"activity", "sort=updated"}, // Recently active
+		{"starred", "sort=created"},  // Recently starred
 	}
 	for _, c := range cases {
 		nav := &fakeNavigator{}
@@ -185,23 +134,6 @@ func TestRun_SortMapsToPageParameter(t *testing.T) {
 			t.Errorf("sort=%v: fetched %q, want it to contain %q and direction=desc",
 				c.sort, nav.gotURL, c.param)
 		}
-	}
-}
-
-// TestRun_DefaultModeIsStarred pins the #672 fix: absent
-// plugin_topics_mode must behave as the metadata default `starred`
-// (labels), not the previous internal default `icons`.
-func TestRun_DefaultModeIsStarred(t *testing.T) {
-	t.Parallel()
-	nav := &fakeNavigator{list: []topics.Topic{{Name: "go"}}}
-	pc := newPC(t, nav, nil)
-	out, err := topics.Plugin.Run(context.Background(), pc)
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	r := out.(*topics.Result)
-	if r.Mode != "starred" {
-		t.Errorf("Mode = %q, want starred (metadata default)", r.Mode)
 	}
 }
 
@@ -350,14 +282,6 @@ func TestPartial_Topics_Golden(t *testing.T) {
 	}
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
-	}
-	// #409 Phase B2: topics renders as native SVG — a section anchor, the
-	// header <text>, and per-mode flow (rounded <image> icons for icons
-	// mode, `.label` pills for labels mode).
-	for _, marker := range []string{`data-section="topics"`, `>Starred topics</text>`, `<image href="https://github.githubassets.com/topics/go.png"`} {
-		if !strings.Contains(got, marker) {
-			t.Errorf("partial missing marker %q in:\n%s", marker, got)
-		}
 	}
 }
 

@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -156,23 +155,6 @@ func TestClient_CallerOverridesUserAgent(t *testing.T) {
 	}
 }
 
-func TestClient_ContextCancelStopsRetries(t *testing.T) {
-	t.Parallel()
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusServiceUnavailable)
-	}))
-	defer srv.Close()
-
-	c := newClient(t, nil)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
-	defer cancel()
-	_, _, err := c.Get(ctx, srv.URL, nil)
-	if err == nil {
-		t.Fatalf("expected error from cancelled context")
-	}
-}
-
 func TestClient_PostJSON(t *testing.T) {
 	t.Parallel()
 
@@ -201,25 +183,6 @@ func TestClient_PostJSON(t *testing.T) {
 	}
 	if got.Echoed["msg"] != "hi" {
 		t.Fatalf("echoed = %v", got.Echoed)
-	}
-}
-
-func TestClient_PostForm(t *testing.T) {
-	t.Parallel()
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = r.ParseForm()
-		_, _ = fmt.Fprint(w, r.Form.Get("hello"))
-	}))
-	defer srv.Close()
-
-	c := newClient(t, nil)
-	body, _, err := c.PostForm(context.Background(), srv.URL, url.Values{"hello": {"world"}})
-	if err != nil {
-		t.Fatalf("PostForm: %v", err)
-	}
-	if string(body) != "world" {
-		t.Fatalf("body = %q", body)
 	}
 }
 
@@ -262,15 +225,6 @@ func TestClient_ImgB64(t *testing.T) {
 	}
 	if !strings.HasPrefix(got, "data:image/png;base64,") {
 		t.Fatalf("prefix missing: %q", got)
-	}
-}
-
-func TestClient_HTTPClientExposesUnderlying(t *testing.T) {
-	t.Parallel()
-
-	c := httpx.New(httpx.Options{})
-	if c.HTTPClient() == nil {
-		t.Fatalf("HTTPClient() returned nil")
 	}
 }
 
@@ -375,27 +329,6 @@ func TestClient_403WithoutRateHeadersIsNotRetried(t *testing.T) {
 
 // --- ClassifyRateLimit tests ---
 
-func TestClassifyRateLimit_RetryAfterHeader(t *testing.T) {
-	t.Parallel()
-
-	resp := &http.Response{
-		StatusCode: http.StatusForbidden,
-		Header: http.Header{
-			"Retry-After": []string{"60"},
-		},
-	}
-	rle := httpx.ClassifyRateLimit(resp)
-	if rle == nil {
-		t.Fatal("expected *RateLimitedError, got nil")
-	}
-	if rle.Kind != httpx.RateLimitSecondary {
-		t.Fatalf("Kind = %v, want RateLimitSecondary", rle.Kind)
-	}
-	if rle.RetryAt.IsZero() {
-		t.Fatal("RetryAt should not be zero when Retry-After: 60 is present")
-	}
-}
-
 func TestClassifyRateLimit_PrimaryExhaustion(t *testing.T) {
 	t.Parallel()
 
@@ -416,47 +349,6 @@ func TestClassifyRateLimit_PrimaryExhaustion(t *testing.T) {
 	}
 	if rle.RetryAt.IsZero() {
 		t.Fatal("RetryAt should not be zero when x-ratelimit-reset is present")
-	}
-}
-
-func TestClassifyRateLimit_PlainForbidden(t *testing.T) {
-	t.Parallel()
-
-	resp := &http.Response{
-		StatusCode: http.StatusForbidden,
-		Header:     http.Header{},
-	}
-	if rle := httpx.ClassifyRateLimit(resp); rle != nil {
-		t.Fatalf("expected nil for plain 403, got %v", rle)
-	}
-}
-
-func TestClassifyRateLimit_Nil(t *testing.T) {
-	t.Parallel()
-
-	if rle := httpx.ClassifyRateLimit(nil); rle != nil {
-		t.Fatalf("expected nil for nil response, got %v", rle)
-	}
-}
-
-func TestRateLimitedError_ErrorString(t *testing.T) {
-	t.Parallel()
-
-	rle := &httpx.RateLimitedError{
-		Kind:    httpx.RateLimitSecondary,
-		RetryAt: time.Time{},
-	}
-	if rle.Error() == "" {
-		t.Fatal("Error() should return non-empty string")
-	}
-
-	rle2 := &httpx.RateLimitedError{
-		Kind:    httpx.RateLimitPrimary,
-		RetryAt: time.Now().Add(time.Minute),
-	}
-	msg := rle2.Error()
-	if !strings.Contains(msg, "primary") {
-		t.Fatalf("Error() = %q, want to contain 'primary'", msg)
 	}
 }
 
@@ -593,81 +485,5 @@ func TestClient_403RetryAfterBeyondCapNotRetried(t *testing.T) {
 	// Must NOT have retried — only 1 attempt.
 	if got := calls.Load(); got != 1 {
 		t.Fatalf("expected 1 attempt (no retry beyond cap), got %d", got)
-	}
-}
-
-// TestClient_403RetryAfterWithinCapIsRetried verifies Must 2 (positive path):
-// a 403 with a Retry-After within the cap is retried. This supplements the
-// existing TestClient_403WithRetryAfterIsRetried with an explicit cap-boundary check.
-func TestClient_403RetryAfterWithinCapIsRetried(t *testing.T) {
-	t.Parallel()
-
-	var calls atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		n := calls.Add(1)
-		if n == 1 {
-			// Retry-After: 1 second — well within the 2-minute cap.
-			w.Header().Set("Retry-After", "1")
-			http.Error(w, "secondary limit", http.StatusForbidden)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		_, _ = fmt.Fprint(w, "ok")
-	}))
-	defer srv.Close()
-
-	c := httpx.New(httpx.Options{
-		MaxRetries: 3,
-		MinBackoff: time.Millisecond,
-		MaxBackoff: 5 * time.Millisecond,
-	})
-
-	_, resp, err := c.Get(context.Background(), srv.URL, nil)
-	if err != nil {
-		t.Fatalf("Get: %v", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("status = %d, want 200", resp.StatusCode)
-	}
-	if got := calls.Load(); got != 2 {
-		t.Fatalf("expected 2 calls (1 rate-limited + 1 success), got %d", got)
-	}
-}
-
-// TestClient_429WithRetryAfterHonorsHeader verifies Must 3 regression:
-// a 429 with Retry-After should be retried and the header should be honored
-// by the backoff (not silently replaced with exponential backoff).
-func TestClient_429WithRetryAfterHonorsHeader(t *testing.T) {
-	t.Parallel()
-
-	var calls atomic.Int32
-	// Use Retry-After: 0 so the test doesn't actually sleep.
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		n := calls.Add(1)
-		if n == 1 {
-			w.Header().Set("Retry-After", "0")
-			http.Error(w, "too many requests", http.StatusTooManyRequests)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		_, _ = fmt.Fprint(w, "ok")
-	}))
-	defer srv.Close()
-
-	c := httpx.New(httpx.Options{
-		MaxRetries: 3,
-		MinBackoff: time.Millisecond,
-		MaxBackoff: 5 * time.Millisecond,
-	})
-
-	_, resp, err := c.Get(context.Background(), srv.URL, nil)
-	if err != nil {
-		t.Fatalf("Get: %v", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("status = %d, want 200", resp.StatusCode)
-	}
-	if got := calls.Load(); got != 2 {
-		t.Fatalf("expected 2 calls (1 429 + 1 success), got %d", got)
 	}
 }

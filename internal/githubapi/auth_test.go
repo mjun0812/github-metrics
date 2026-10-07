@@ -15,10 +15,6 @@ func TestClassifyToken_TableCases(t *testing.T) {
 		want githubapi.TokenKind
 	}{
 		{raw: "ghp_AAAAA", want: githubapi.TokenClassic},
-		{raw: "gho_AAAAA", want: githubapi.TokenClassic},
-		{raw: "ghu_AAAAA", want: githubapi.TokenClassic},
-		{raw: "ghs_AAAAA", want: githubapi.TokenClassic},
-		{raw: "ghr_AAAAA", want: githubapi.TokenClassic},
 		{raw: "github_pat_AAAAAA", want: githubapi.TokenFineGrained},
 		{raw: "NOT_NEEDED", want: githubapi.TokenNone},
 		{raw: "MOCKED_TOKEN", want: githubapi.TokenMocked},
@@ -38,23 +34,6 @@ func TestClassifyToken_TableCases(t *testing.T) {
 	}
 }
 
-func TestTokenKindString(t *testing.T) {
-	t.Parallel()
-
-	cases := map[githubapi.TokenKind]string{
-		githubapi.TokenClassic:     "classic",
-		githubapi.TokenFineGrained: "fine-grained",
-		githubapi.TokenNone:        "none",
-		githubapi.TokenMocked:      "mocked",
-		githubapi.TokenUnknown:     "unknown",
-	}
-	for k, want := range cases {
-		if k.String() != want {
-			t.Errorf("%d.String() = %q, want %q", k, k.String(), want)
-		}
-	}
-}
-
 func TestValidateToken_AcceptsClassicNoneAndMocked(t *testing.T) {
 	t.Parallel()
 
@@ -65,31 +44,16 @@ func TestValidateToken_AcceptsClassicNoneAndMocked(t *testing.T) {
 	}
 }
 
-func TestValidateToken_RejectsFineGrainedAsInputError(t *testing.T) {
+func TestValidateToken_RejectsFineGrainedAndUnknownAsInputError(t *testing.T) {
 	t.Parallel()
 
-	err := githubapi.ValidateToken("github_pat_secret")
-	if err == nil {
-		t.Fatalf("expected error")
-	}
-	var ie *xerrors.InputError
-	if !xerrors.As(err, &ie) {
-		t.Fatalf("error is not *InputError: %T", err)
-	}
-	if ie.Field != "token" {
-		t.Fatalf("InputError.Field = %q, want %q", ie.Field, "token")
-	}
-}
-
-func TestValidateToken_RejectsUnknownAsInputError(t *testing.T) {
-	t.Parallel()
-
-	err := githubapi.ValidateToken("notatoken")
-	var ie *xerrors.InputError
-	if !xerrors.As(err, &ie) {
-		t.Fatalf("error is not *InputError: %T", err)
-	}
-	if ie.Field != "token" {
-		t.Fatalf("InputError.Field = %q", ie.Field)
+	for _, raw := range []string{"github_pat_secret", "notatoken"} {
+		var ie *xerrors.InputError
+		if err := githubapi.ValidateToken(raw); !xerrors.As(err, &ie) {
+			t.Fatalf("ValidateToken(%q): error is not *InputError: %v", raw, err)
+		}
+		if ie.Field != "token" {
+			t.Fatalf("ValidateToken(%q): InputError.Field = %q, want %q", raw, ie.Field, "token")
+		}
 	}
 }

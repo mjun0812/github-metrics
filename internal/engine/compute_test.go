@@ -1,6 +1,5 @@
-// Package engine_test — compute_test.go covers Compute branches that
-// the bench file does not exercise: Die=true, JSON output format,
-// empty Login error, template not found error.
+// Package engine_test — compute_test.go covers Compute branches:
+// JSON output format, empty Login error, template not found error.
 package engine_test
 
 import (
@@ -13,7 +12,7 @@ import (
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 
 	// Side-effect imports register the classic template + core plugin so
-	// engine.Compute can resolve them (same as bench_full_test.go).
+	// engine.Compute can resolve them.
 	_ "github.com/mjun0812/github-metrics/internal/plugins/core"
 	_ "github.com/mjun0812/github-metrics/internal/templates/classic"
 )
@@ -23,7 +22,7 @@ import (
 func TestCompute_EmptyLogin_ReturnsInputError(t *testing.T) {
 	t.Parallel()
 
-	deps := newBenchDeps(t)
+	deps := newPerPluginTestDeps()
 	_, err := engine.Compute(context.Background(), engine.Request{
 		Login:    "",
 		Template: "classic",
@@ -44,7 +43,7 @@ func TestCompute_EmptyLogin_ReturnsInputError(t *testing.T) {
 func TestCompute_TemplateNotFound_ReturnsError(t *testing.T) {
 	t.Parallel()
 
-	deps := newBenchDeps(t)
+	deps := newPerPluginTestDeps()
 	_, err := engine.Compute(context.Background(), engine.Request{
 		Login:    "octocat",
 		Template: "no-such-template-xyz",
@@ -62,7 +61,7 @@ func TestCompute_TemplateNotFound_ReturnsError(t *testing.T) {
 func TestCompute_JSON_Format(t *testing.T) {
 	t.Parallel()
 
-	deps := newBenchDeps(t)
+	deps := newPerPluginTestDeps()
 	res, err := engine.Compute(context.Background(), engine.Request{
 		Login:    "octocat",
 		Template: "noop",
@@ -88,7 +87,7 @@ func TestCompute_JSON_Format(t *testing.T) {
 func TestCompute_Noop_NoTemplate_JSONDefault(t *testing.T) {
 	t.Parallel()
 
-	deps := newBenchDeps(t)
+	deps := newPerPluginTestDeps()
 	res, err := engine.Compute(context.Background(), engine.Request{
 		Login:    "octocat",
 		Template: "noop",

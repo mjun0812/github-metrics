@@ -22,59 +22,11 @@ func newPerPluginTestDeps() engine.Deps {
 	}
 }
 
-func baseInputsForPerPlugin() map[string]any {
-	return map[string]any{
-		"user":             "octocat",
-		"use_mocked_data":  true,
-		"optimize":         []string{"css", "xml"},
-		"plugin_header":    true,
-		"plugin_languages": true,
-		"plugin_stars":     true,
-	}
-}
-
-// TestComputePerPlugin_ThreePlugins verifies that per-plugin mode
-// produces one SVG file per enabled plugin.
-func TestComputePerPlugin_ThreePlugins(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	req := engine.Request{
-		Login:    "octocat",
-		Template: "classic",
-		Format:   "svg",
-		Inputs:   baseInputsForPerPlugin(),
-	}
-	results, err := engine.ComputePerPlugin(ctx, req, newPerPluginTestDeps())
-	if err != nil {
-		t.Fatalf("ComputePerPlugin: %v", err)
-	}
-	// Should produce 3 results (one per enabled plugin).
-	if len(results) != 3 {
-		t.Fatalf("len(results) = %d, want 3", len(results))
-	}
-	slugs := make(map[string]bool)
-	for _, pr := range results {
-		if pr.Error != nil {
-			t.Errorf("plugin %q: unexpected error: %v", pr.Plugin, pr.Error)
-		}
-		if len(pr.Output) == 0 {
-			t.Errorf("plugin %q: empty output", pr.Plugin)
-		}
-		slugs[pr.Plugin] = true
-	}
-	for _, want := range []string{"header", "languages", "stars"} {
-		if !slugs[want] {
-			t.Errorf("missing result for plugin %q", want)
-		}
-	}
-}
-
-// TestComputePerPlugin_HonorsTruthyGates checks that only truthy
-// `plugin_<slug>=true` gates produce SVG output; explicit `false`
-// gates are excluded, matching the post-#654 single-resolution path.
+// TestComputePerPlugin_HonorsTruthyGates verifies that only truthy
+// `plugin_<slug>=true` gates produce an SVG, one result per plugin, and
+// that explicit `false` gates are excluded.
 func TestComputePerPlugin_HonorsTruthyGates(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
 	req := engine.Request{
 		Login:  "octocat",
 		Format: "svg",
@@ -87,16 +39,29 @@ func TestComputePerPlugin_HonorsTruthyGates(t *testing.T) {
 			"plugin_stars":     false,
 		},
 	}
-	results, err := engine.ComputePerPlugin(ctx, req, newPerPluginTestDeps())
+	results, err := engine.ComputePerPlugin(context.Background(), req, newPerPluginTestDeps())
 	if err != nil {
 		t.Fatalf("ComputePerPlugin: %v", err)
 	}
 	if len(results) != 2 {
 		t.Fatalf("want 2 results (header+languages), got %d", len(results))
 	}
+	slugs := make(map[string]bool)
 	for _, pr := range results {
-		if pr.Plugin == "stars" {
-			t.Errorf("stars=false should have been excluded; got result %+v", pr)
+		if pr.Error != nil {
+			t.Errorf("plugin %q: unexpected error: %v", pr.Plugin, pr.Error)
 		}
+		if len(pr.Output) == 0 {
+			t.Errorf("plugin %q: empty output", pr.Plugin)
+		}
+		slugs[pr.Plugin] = true
+	}
+	for _, want := range []string{"header", "languages"} {
+		if !slugs[want] {
+			t.Errorf("missing result for plugin %q", want)
+		}
+	}
+	if slugs["stars"] {
+		t.Error("stars=false should have been excluded")
 	}
 }

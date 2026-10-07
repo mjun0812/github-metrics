@@ -23,8 +23,6 @@ While ungenerated:
 - `internal/tools/sync-fixtures` exits 1 when `tests/cases/<user>.yml`
   is absent, but exits 2 for a soft pass in environments without
   `org_repo` itself
-- The M4 compatibility tests in `tests/compatibility/json_test.go`
-  `t.Skip` when the fixture is absent, so the build stays green
 
 Until steps 1-4 above are completed manually, T092 / T093 are treated as
 "deferred" per the spec. Once complete, SC-004 evidence (key/type diff = 0)

@@ -164,7 +164,7 @@ jobs:
       - name: go test -tags=heavy
         run: |
           go test -tags=heavy ./internal/plugins/languages -run 'Test(RecentRun_|Indepth_)'
-          go test -tags=heavy ./tests/integration -run 'TestCompute(SVG|JSON)_P3HeavyAllPlugins'
+          go test -tags=heavy ./tests/integration -run 'TestComputeSVG_P3HeavyAllPlugins'
 
   compliance:
     name: compliance

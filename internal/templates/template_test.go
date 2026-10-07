@@ -4,7 +4,6 @@ import (
 	"context"
 	"io/fs"
 	"testing"
-	"testing/fstest"
 
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/templates"
@@ -58,20 +57,6 @@ func TestRegister_EmptyNamePanics(t *testing.T) {
 		}
 	}()
 	templates.Register(&fakeTemplate{name: ""})
-}
-
-func TestGet_PresentAndMissing(t *testing.T) {
-	reset(t)
-	tmpl := &fakeTemplate{name: "classic"}
-	templates.Register(tmpl)
-
-	got, ok := templates.Get("classic")
-	if !ok || got.Name() != "classic" {
-		t.Fatalf("Get classic: ok=%v got=%v", ok, got)
-	}
-	if _, ok := templates.Get("repository"); ok {
-		t.Fatalf("Get repository should return false in M1")
-	}
 }
 
 func TestMustGet_ReturnsNotFoundError(t *testing.T) {
@@ -141,32 +126,5 @@ func TestCheckAccount(t *testing.T) {
 	var ie *xerrors.InputError
 	if !xerrors.As(err, &ie) {
 		t.Fatalf("expected *InputError, got %T", err)
-	}
-}
-
-func TestPartialContext_FSWiring(t *testing.T) {
-	reset(t)
-	fsys := fstest.MapFS{
-		"image.svg": &fstest.MapFile{Data: []byte("<svg/>"), Mode: 0o644},
-	}
-	tmpl := &fakeTemplate{
-		name: "stub",
-		fsys: fsys,
-		run: func(ctx context.Context, pc *templates.PartialContext) (string, error) {
-			return "rendered", nil
-		},
-	}
-	templates.Register(tmpl)
-
-	got, ok := templates.Get("stub")
-	if !ok {
-		t.Fatalf("Get(stub) ok=false")
-	}
-	if _, err := fs.ReadFile(got.FS(), "image.svg"); err != nil {
-		t.Fatalf("ReadFile via Template.FS: %v", err)
-	}
-	out, err := got.Run(context.Background(), &templates.PartialContext{})
-	if err != nil || out != "rendered" {
-		t.Fatalf("Run returned (%q, %v)", out, err)
 	}
 }

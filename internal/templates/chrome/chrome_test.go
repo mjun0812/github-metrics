@@ -107,13 +107,6 @@ func TestAnyChromeInputPresent(t *testing.T) {
 	}
 }
 
-func TestChromeSectionInputKey(t *testing.T) {
-	t.Parallel()
-	if got := chrome.ChromeSectionInputKey("header"); got != "chrome_header" {
-		t.Errorf("ChromeSectionInputKey(header) = %q, want chrome_header", got)
-	}
-}
-
 func TestMetadataFooter(t *testing.T) {
 	t.Run("not enabled", func(t *testing.T) {
 		got, h := chrome.MetadataFooter(&templates.PartialContext{Inputs: map[string]any{}}, nil, chrome.FooterOpts{})

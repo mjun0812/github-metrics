@@ -54,20 +54,6 @@ func TestOptimizeCSS_DropsUnusedSelectors(t *testing.T) {
 	}
 }
 
-// TestOptimizeCSS_LeavesNonOptimizableStyleAlone asserts the
-// `<style>` without `data-optimizable="true"` is untouched.
-func TestOptimizeCSS_LeavesNonOptimizableStyleAlone(t *testing.T) {
-	t.Parallel()
-	in := `<svg xmlns="http://www.w3.org/2000/svg"><style>.untouched{display:none;}</style></svg>`
-	out, err := OptimizeCSS(in)
-	if err != nil {
-		t.Fatalf("OptimizeCSS: %v", err)
-	}
-	if !strings.Contains(out, ".untouched") {
-		t.Errorf("non-optimizable style should pass through; got %q", out)
-	}
-}
-
 // TestOptimizeCSS_EmptyInput keeps the empty-passthrough contract
 // shared by every pipeline stage.
 func TestOptimizeCSS_EmptyInput(t *testing.T) {
@@ -134,15 +120,16 @@ func TestOptimizeCSS_PreservesAtRuleBraces(t *testing.T) {
 	}
 }
 
-// TestOptimizeCSS_DropsEmptyMediaAfterPurge confirms a `@media` whose
-// only inner rule is purged collapses away entirely (matching upstream
-// purgecss + csso), rather than leaving an empty `@media(...){}`.
-func TestOptimizeCSS_DropsEmptyMediaAfterPurge(t *testing.T) {
+// TestOptimizeCSS_MediaPurge confirms a `@media` whose only inner rule is
+// purged collapses away entirely (matching upstream purgecss + csso),
+// while a `@media` whose inner selector is used survives with its braces.
+func TestOptimizeCSS_MediaPurge(t *testing.T) {
 	t.Parallel()
 	in := `<svg xmlns="http://www.w3.org/2000/svg"><style data-optimizable="true">
 		.used { color: red; }
 		@media (max-width: 850px) { .unused-wrapper { column-count: 1; } }
-	</style><g class="used"/></svg>`
+		@media (max-width: 600px) { .wrap { column-count: 1; } }
+	</style><g class="used"/><g class="wrap"/></svg>`
 	out, err := OptimizeCSS(in)
 	if err != nil {
 		t.Fatalf("OptimizeCSS: %v", err)
@@ -150,49 +137,13 @@ func TestOptimizeCSS_DropsEmptyMediaAfterPurge(t *testing.T) {
 	if !strings.Contains(out, ".used{color:red}") {
 		t.Errorf("used selector should survive: %q", out)
 	}
-	if strings.Contains(out, "@media") {
-		t.Errorf("empty @media should be dropped after purge: %q", out)
-	}
-}
-
-// TestOptimizeCSS_KeepsMediaWithUsedRule confirms a `@media` block is
-// preserved (with braces) when its inner selector is actually used.
-func TestOptimizeCSS_KeepsMediaWithUsedRule(t *testing.T) {
-	t.Parallel()
-	in := `<svg xmlns="http://www.w3.org/2000/svg"><style data-optimizable="true">
-		@media (max-width: 850px) { .wrap { column-count: 1; } }
-	</style><g class="wrap"/></svg>`
-	out, err := OptimizeCSS(in)
-	if err != nil {
-		t.Fatalf("OptimizeCSS: %v", err)
-	}
-	if !strings.Contains(out, "@media") || !strings.Contains(out, ".wrap{column-count:1}") {
+	if !strings.Contains(out, ".wrap{column-count:1}") {
 		t.Errorf("used @media rule should survive with braces: %q", out)
 	}
-	if open, close := strings.Count(out, "{"), strings.Count(out, "}"); open != close {
-		t.Errorf("unbalanced braces: %d open vs %d close\n got: %q", open, close, out)
+	if n := strings.Count(out, "@media"); n != 1 {
+		t.Errorf("only the used @media should remain, got %d: %q", n, out)
 	}
-}
-
-// TestOptimizeCSS_MinifiesSurvivingRules confirms the minify step
-// runs after the purge.
-func TestOptimizeCSS_MinifiesSurvivingRules(t *testing.T) {
-	t.Parallel()
-	in := `<svg xmlns="http://www.w3.org/2000/svg"><style data-optimizable="true">
-		.used   {
-			color: red ;
-		}
-	</style><g class="used"/></svg>`
-	out, err := OptimizeCSS(in)
-	if err != nil {
-		t.Fatalf("OptimizeCSS: %v", err)
-	}
-	if !strings.Contains(out, ".used") {
-		t.Errorf("used selector dropped unexpectedly: %q", out)
-	}
-	// The minified output should NOT carry the original tabs /
-	// newlines around the declaration.
-	if strings.Contains(out, "color: red ;") {
-		t.Errorf("declaration not minified; got %q", out)
+	if strings.Contains(out, "unused-wrapper") {
+		t.Errorf("empty @media should be dropped after purge: %q", out)
 	}
 }

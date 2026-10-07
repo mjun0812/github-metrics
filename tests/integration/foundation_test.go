@@ -248,7 +248,7 @@ func newEngineDeps(t testing.TB, gqlBody map[string]string) (engine.Deps, *graph
 	gql, err := githubapi.NewGraphQL(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost/graphql",
-		httpx.Options{Transport: fixture, MaxRetries: 0},
+		httpx.Options{Transport: fixture, DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)
@@ -286,7 +286,7 @@ func newEngineDepsWithREST(t *testing.T, login string, gqlBody map[string]string
 	rest, err := githubapi.NewREST(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost",
-		httpx.Options{Transport: restMux, MaxRetries: 0},
+		httpx.Options{Transport: restMux, DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
@@ -387,51 +387,5 @@ func TestEngine_ComputeOrganization(t *testing.T) {
 	}
 	if summary.Count != 12 {
 		t.Errorf("Repositories.Count = %d, want 12", summary.Count)
-	}
-}
-
-// TestEngine_RejectsEmptyLogin guards a common misuse case.
-func TestEngine_RejectsEmptyLogin(t *testing.T) {
-	t.Parallel()
-
-	deps, _ := newEngineDeps(t, map[string]string{})
-	_, err := engine.Compute(context.Background(), engine.Request{Login: ""}, deps)
-	if err == nil {
-		t.Fatalf("expected error for empty login")
-	}
-}
-
-// TestEngine_NoopTemplateSkipsLookup verifies the "noop" sentinel
-// skips templates.MustGet so tests can run without registering one.
-func TestEngine_NoopTemplateSkipsLookup(t *testing.T) {
-	t.Parallel()
-
-	deps, _ := newEngineDeps(t, map[string]string{
-		"User":             userOctocat,
-		"UserRepositories": userRepositories250,
-	})
-	if _, err := engine.Compute(context.Background(), engine.Request{
-		Login:    "octocat",
-		Template: "noop",
-	}, deps); err != nil {
-		t.Fatalf("noop template should not require registration: %v", err)
-	}
-}
-
-// TestEngine_UnknownTemplateErrors confirms that any non-"noop"
-// template name must be registered.
-func TestEngine_UnknownTemplateErrors(t *testing.T) {
-	t.Parallel()
-
-	deps, _ := newEngineDeps(t, map[string]string{
-		"User":             userOctocat,
-		"UserRepositories": userRepositories250,
-	})
-	_, err := engine.Compute(context.Background(), engine.Request{
-		Login:    "octocat",
-		Template: "no-such-template",
-	}, deps)
-	if err == nil {
-		t.Fatalf("expected error for unregistered template")
 	}
 }

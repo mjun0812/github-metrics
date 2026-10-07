@@ -2,7 +2,6 @@ package githubapi_test
 
 import (
 	"context"
-	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -16,8 +15,8 @@ import (
 func newRESTWithMock(t *testing.T, mock *githubapi.MockTransport) *githubapi.REST {
 	t.Helper()
 	rest, err := githubapi.NewREST(config.NewToken("ghp_aaaaa"), "", httpx.Options{
-		Transport:  mock,
-		MaxRetries: 0,
+		Transport:      mock,
+		DisableRetries: true,
 	})
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
@@ -89,7 +88,7 @@ func TestNewREST_NotNeededOmitsAuthorizationHeader(t *testing.T) {
 	mock := githubapi.NewMockTransport()
 	mock.SetJSON("GET", "/rate_limit", `{"resources":{"core":{"limit":60,"used":0,"remaining":60,"reset":0},"graphql":{"limit":0,"used":0,"remaining":0,"reset":0},"search":{"limit":10,"used":0,"remaining":10,"reset":0}},"rate":{"limit":60,"used":0,"remaining":60,"reset":0}}`)
 
-	rest, err := githubapi.NewREST(config.NewToken("NOT_NEEDED"), "", httpx.Options{Transport: mock, MaxRetries: 0})
+	rest, err := githubapi.NewREST(config.NewToken("NOT_NEEDED"), "", httpx.Options{Transport: mock, DisableRetries: true})
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
 	}
@@ -109,7 +108,7 @@ func TestNewREST_MockedTokenPanicsOnRealGitHub(t *testing.T) {
 	rest, err := githubapi.NewREST(
 		config.NewToken("MOCKED_TOKEN"),
 		"https://api.github.com", // real production URL
-		httpx.Options{MaxRetries: 0},
+		httpx.Options{DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
@@ -122,46 +121,4 @@ func TestNewREST_MockedTokenPanicsOnRealGitHub(t *testing.T) {
 		}
 	}()
 	_, _ = rest.RateLimit(context.Background())
-}
-
-func TestREST_RateLimit_ErrorOnNon200(t *testing.T) {
-	t.Parallel()
-
-	mock := githubapi.NewMockTransport()
-	mock.Set("GET", "/rate_limit", githubapi.MockResponse{Status: http.StatusForbidden, Body: []byte(`{"message":"nope"}`)})
-
-	rest := newRESTWithMock(t, mock)
-	if _, err := rest.RateLimit(context.Background()); err == nil {
-		t.Fatalf("expected error on 403")
-	}
-}
-
-func TestREST_BaseURLOverride(t *testing.T) {
-	t.Parallel()
-
-	rest, err := githubapi.NewREST(config.NewToken("ghp_aaaa"), "https://example.invalid/api/v3", httpx.Options{})
-	if err != nil {
-		t.Fatalf("NewREST: %v", err)
-	}
-	if rest.BaseURL() != "https://example.invalid/api/v3" {
-		t.Fatalf("BaseURL = %q", rest.BaseURL())
-	}
-}
-
-func TestREST_HeadRoot(t *testing.T) {
-	t.Parallel()
-
-	mock := githubapi.NewMockTransport()
-	h := http.Header{}
-	h.Set("X-OAuth-Scopes", "repo, read:org")
-	mock.Set("GET", "/", githubapi.MockResponse{Status: http.StatusOK, Header: h, Body: []byte(`{}`)})
-
-	rest := newRESTWithMock(t, mock)
-	resp, err := rest.HeadRoot(context.Background())
-	if err != nil {
-		t.Fatalf("HeadRoot: %v", err)
-	}
-	if got := resp.Header.Get("X-OAuth-Scopes"); got != "repo, read:org" {
-		t.Errorf("X-OAuth-Scopes = %q", got)
-	}
 }

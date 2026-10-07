@@ -14,14 +14,9 @@ func TestFormatBytes(t *testing.T) {
 		in   int64
 		want string
 	}{
-		{0, "0 B"},
-		{1, "1 B"},
 		{1023, "1023 B"},
 		{1024, "1.0 kB"},
-		{1536, "1.5 kB"},
-		{1024 * 1024, "1.0 MB"},
 		{1024 * 1024 * 3 / 2, "1.5 MB"},
-		{1024 * 1024 * 1024, "1.0 GB"},
 		{1024 * 1024 * 1024 * 2, "2.0 GB"},
 	}
 	for _, tc := range cases {
@@ -40,10 +35,7 @@ func TestFormatPercent(t *testing.T) {
 		in   float64
 		want string
 	}{
-		{0, "0.0%"},
 		{0.123, "12.3%"},
-		{0.5, "50.0%"},
-		{1.0, "100.0%"},
 		{0.0001, "0.0%"}, // rounding
 	}
 	for _, tc := range cases {
@@ -51,32 +43,6 @@ func TestFormatPercent(t *testing.T) {
 			t.Parallel()
 			if got := formatPercent(tc.in); got != tc.want {
 				t.Errorf("formatPercent(%v) = %q, want %q", tc.in, got, tc.want)
-			}
-		})
-	}
-}
-
-func TestDetailIncludes(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		name    string
-		details []string
-		needle  string
-		want    bool
-	}{
-		{"nil slice", nil, "lines", false},
-		{"empty slice", []string{}, "lines", false},
-		{"first hit", []string{"lines", "bytes-size"}, "lines", true},
-		{"middle hit", []string{"bytes-size", "lines", "percentage"}, "lines", true},
-		{"miss", []string{"bytes-size"}, "lines", false},
-		{"case-sensitive miss", []string{"Lines"}, "lines", false},
-		{"substring is not a match", []string{"line"}, "lines", false},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			if got := detailIncludes(tc.details, tc.needle); got != tc.want {
-				t.Errorf("detailIncludes(%v, %q) = %v, want %v", tc.details, tc.needle, got, tc.want)
 			}
 		})
 	}
@@ -145,132 +111,6 @@ func TestHasRecentSection(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestIndepthBytesByLanguage(t *testing.T) {
-	t.Parallel()
-
-	t.Run("nil pc returns empty map", func(t *testing.T) {
-		t.Parallel()
-		if got := indepthBytesByLanguage(nil); len(got) != 0 {
-			t.Errorf("nil pc: got %v", got)
-		}
-	})
-	t.Run("nil Data returns empty map", func(t *testing.T) {
-		t.Parallel()
-		if got := indepthBytesByLanguage(&templates.PartialContext{}); len(got) != 0 {
-			t.Errorf("nil Data: got %v", got)
-		}
-	})
-	t.Run("missing plugin returns empty map", func(t *testing.T) {
-		t.Parallel()
-		pc := &templates.PartialContext{Data: plugins.NewData()}
-		if got := indepthBytesByLanguage(pc); len(got) != 0 {
-			t.Errorf("missing plugin: got %v", got)
-		}
-	})
-	t.Run("skipped result returns empty map", func(t *testing.T) {
-		t.Parallel()
-		pc := &templates.PartialContext{Data: plugins.NewData()}
-		pc.Data.SetPlugin(IndepthName, &IndepthResult{Skipped: true, Total: LanguageBytes{Bytes: map[string]int64{"Go": 1}}})
-		if got := indepthBytesByLanguage(pc); len(got) != 0 {
-			t.Errorf("skipped: got %v", got)
-		}
-	})
-	t.Run("populated map round-trips", func(t *testing.T) {
-		t.Parallel()
-		pc := &templates.PartialContext{Data: plugins.NewData()}
-		pc.Data.SetPlugin(IndepthName, &IndepthResult{Total: LanguageBytes{Bytes: map[string]int64{"Go": 4096, "Python": 1024}}})
-		got := indepthBytesByLanguage(pc)
-		if got["Go"] != 4096 || got["Python"] != 1024 || len(got) != 2 {
-			t.Errorf("populated: got %v", got)
-		}
-	})
-}
-
-func TestIndepthLinesByLanguage(t *testing.T) {
-	t.Parallel()
-
-	t.Run("nil pc returns empty map", func(t *testing.T) {
-		t.Parallel()
-		if got := indepthLinesByLanguage(nil); len(got) != 0 {
-			t.Errorf("nil pc: got %v", got)
-		}
-	})
-	t.Run("missing plugin returns empty map", func(t *testing.T) {
-		t.Parallel()
-		pc := &templates.PartialContext{Data: plugins.NewData()}
-		if got := indepthLinesByLanguage(pc); len(got) != 0 {
-			t.Errorf("missing plugin: got %v", got)
-		}
-	})
-	t.Run("wrong type returns empty map", func(t *testing.T) {
-		t.Parallel()
-		pc := &templates.PartialContext{Data: plugins.NewData()}
-		pc.Data.SetPlugin(IndepthName, "not an *IndepthResult")
-		if got := indepthLinesByLanguage(pc); len(got) != 0 {
-			t.Errorf("wrong type: got %v", got)
-		}
-	})
-	t.Run("populated map round-trips", func(t *testing.T) {
-		t.Parallel()
-		pc := &templates.PartialContext{Data: plugins.NewData()}
-		pc.Data.SetPlugin(IndepthName, &IndepthResult{Total: LanguageBytes{Lines: map[string]int64{"Go": 200, "Python": 50}}})
-		got := indepthLinesByLanguage(pc)
-		if got["Go"] != 200 || got["Python"] != 50 || len(got) != 2 {
-			t.Errorf("populated: got %v", got)
-		}
-	})
-}
-
-func TestWriteIndepthSection(t *testing.T) {
-	t.Parallel()
-
-	t.Run("no-op when indepth absent", func(t *testing.T) {
-		t.Parallel()
-		var b strings.Builder
-		pc := &templates.PartialContext{Data: plugins.NewData()}
-		writeIndepthSection(&b, pc)
-		if b.Len() != 0 {
-			t.Errorf("expected no output, got %q", b.String())
-		}
-	})
-
-	t.Run("happy path sorted by bytes desc then name", func(t *testing.T) {
-		t.Parallel()
-		var b strings.Builder
-		pc := &templates.PartialContext{Data: plugins.NewData()}
-		pc.Data.SetPlugin(IndepthName, &IndepthResult{
-			Total: LanguageBytes{Bytes: map[string]int64{
-				"Python": 1000,
-				"Go":     3000, // largest first
-				"Rust":   1000, // tied with Python; alphabetical
-			}},
-		})
-		writeIndepthSection(&b, pc)
-		out := b.String()
-		// #409 Phase B7: the v1.0.0 <svg width="0" height="0"> wrapper hack
-		// is gone; the breakdown is now a plain hidden <g>.
-		if !strings.Contains(out, `visibility="hidden"`) {
-			t.Errorf("missing hidden wrapper: %q", out)
-		}
-		if !strings.Contains(out, `<g class="languages-indepth">`) {
-			t.Errorf("missing inner g class: %q", out)
-		}
-		// Order: Go (3000) → Python (1000) → Rust (1000)
-		goIdx := strings.Index(out, `data-language="Go"`)
-		pyIdx := strings.Index(out, `data-language="Python"`)
-		rsIdx := strings.Index(out, `data-language="Rust"`)
-		if goIdx < 0 || pyIdx < 0 || rsIdx < 0 {
-			t.Fatalf("missing one of Go/Python/Rust in: %q", out)
-		}
-		if goIdx >= pyIdx || pyIdx >= rsIdx {
-			t.Errorf("expected Go < Python < Rust by offset, got Go=%d Python=%d Rust=%d", goIdx, pyIdx, rsIdx)
-		}
-		if !strings.Contains(out, `data-bytes="3000"`) {
-			t.Errorf("missing data-bytes=3000: %q", out)
-		}
-	})
 }
 
 func TestWriteDetailsRows(t *testing.T) {

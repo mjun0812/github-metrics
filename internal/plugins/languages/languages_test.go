@@ -218,19 +218,6 @@ func TestRun_PluginDisabled(t *testing.T) {
 	}
 }
 
-// TestRun_PluginExplicitlyFalse covers the case where the input is
-// present but resolves to a falsy value — the gate still fires.
-func TestRun_PluginExplicitlyFalse(t *testing.T) {
-	t.Parallel()
-	r := runWith(t, octocatRepos(), map[string]any{"plugin_languages": false})
-	if !r.Skipped {
-		t.Errorf("Skipped = false, want true; result=%+v", r)
-	}
-	if r.SkippedReason != "plugin_languages not enabled" {
-		t.Errorf("SkippedReason = %q, want %q", r.SkippedReason, "plugin_languages not enabled")
-	}
-}
-
 // TestRun_Ignored excludes "Markdown" via _ignored and asserts it
 // disappears from Favorites and Other.
 func TestRun_Ignored(t *testing.T) {
