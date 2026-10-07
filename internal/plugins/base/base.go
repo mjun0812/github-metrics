@@ -44,14 +44,6 @@ type basePlugin struct{}
 
 func (*basePlugin) Name() string { return Name }
 
-// Requires declares the Provider methods this plugin calls during Run.
-func (*basePlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{
-		plugins.KeyProfile,
-		plugins.KeyRepositorySummary,
-	}
-}
-
 // Result is the JSON payload published under data.Plugins["base"]. It
 // snapshots the aggregated counters the partials render so they can
 // emit their fragments without re-querying Provider.

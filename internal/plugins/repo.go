@@ -68,7 +68,8 @@ type Repo struct {
 	// Copied from the user payload by the base plugin.
 	SponsorshipsAsMaintainer int
 	// Activity carries the recent commits / open issues / open PRs
-	// counts the `base.activity` and `activity` partials consume.
+	// counts published in the JSON output (`repo.activity`) and read by
+	// the contributors plugin's fallback list.
 	Activity RepoActivity
 }
 

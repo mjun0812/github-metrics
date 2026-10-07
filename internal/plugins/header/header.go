@@ -33,14 +33,6 @@ type headerPlugin struct{}
 
 func (*headerPlugin) Name() string { return Name }
 
-// Requires declares the Provider methods this plugin calls during Run.
-func (*headerPlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{
-		plugins.KeyProfile,
-		plugins.KeyCommitCalendar,
-	}
-}
-
 // Result is the JSON payload published under data.Plugins["header"].
 type Result struct {
 	Profile        *plugins.Profile              `json:"profile,omitempty"`

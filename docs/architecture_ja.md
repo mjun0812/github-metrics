@@ -61,20 +61,19 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error)
 ```go
 type Plugin interface {
     Name() string
-    Requires() []DataKey
     Run(ctx context.Context, pc *PluginContext) (any, error)
 }
 ```
 
 - `Run` の戻り値 `any` がそのプラグインの結果で、`data.Plugins[name]` に格納される。他プラグインは `PluginContext.Imports.Get(name)` で参照できる。
-- `Requires()` は依存する共有データキーを申告する (dataprovider の取得計画に使われる)。
+- プラグインは共有データを `PluginContext.Provider` (遅延 / メモ化取得する dataprovider) から必要な時点で読む。依存データの事前申告や先読みは行わない。
 - `metadata.yml` は `assets/plugins/<name>/metadata.yml` として `//go:embed` でバンドルされ、入力定義 / `supports` (対応アカウント種別) / 必要スコープを持つ。
 
 ### 3.2 特殊プラグイン
 
 - **`core`**: データプラグインではなく、Stage 1 の設定注入と Stage 2 の並列ランナーを担うオーケストレーション用プラグイン (`internal/plugins/core`)。
 - **`base`**: activity+community / repositories のサマリーパネルを描く opt-in プラグイン。`dataprovider` からのみ読む。
-- `internal/plugins/pluginutil` と `internal/plugins/requirestesting` はプラグインではなく共有ヘルパ。
+- `internal/plugins/pluginutil` はプラグインではなく共有ヘルパ。
 
 採用プラグインの一覧と分類は [`scope.md`](scope_ja.md) を参照。
 

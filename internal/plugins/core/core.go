@@ -28,12 +28,6 @@ type corePlugin struct{}
 
 func (p *corePlugin) Name() string { return Name }
 
-func (p *corePlugin) Requires() []plugins.DataKey {
-	// core is the plugin runner infrastructure; it does not call Provider
-	// directly.
-	return []plugins.DataKey{}
-}
-
 func (p *corePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	d := pc.Data
 	if d == nil {

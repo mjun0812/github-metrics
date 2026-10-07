@@ -34,12 +34,6 @@ type topicsPlugin struct{}
 
 func (p *topicsPlugin) Name() string { return Name }
 
-func (p *topicsPlugin) Requires() []plugins.DataKey {
-	// topics reads from pc.Data fields populated by base; it does not
-	// call Provider directly.
-	return []plugins.DataKey{}
-}
-
 // Result is the JSON payload published under data.Plugins["topics"].
 // Field set mirrors data-model E-023.
 type Result struct {

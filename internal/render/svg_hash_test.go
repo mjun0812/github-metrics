@@ -41,29 +41,6 @@ func TestHash_NoSVGRoot(t *testing.T) {
 	}
 }
 
-// TestHash_FooterRemoved is the SC-004 anchor: two SVGs whose only
-// DOM difference lives inside the first <footer> MUST produce the
-// same hash.
-func TestHash_FooterRemoved(t *testing.T) {
-	t.Parallel()
-	a := `<svg xmlns="http://www.w3.org/2000/svg"><g class="body"/><footer>generated 2026-01-01</footer></svg>`
-	b := `<svg xmlns="http://www.w3.org/2000/svg"><g class="body"/><footer>generated 2026-05-15</footer></svg>`
-	ha, err := Hash(a)
-	if err != nil {
-		t.Fatalf("Hash(a): %v", err)
-	}
-	hb, err := Hash(b)
-	if err != nil {
-		t.Fatalf("Hash(b): %v", err)
-	}
-	if ha != hb {
-		t.Errorf("Hash(a)=%q != Hash(b)=%q (only footer differs)", ha, hb)
-	}
-	if len(ha) != 32 {
-		t.Errorf("Hash length = %d, want 32 hex chars", len(ha))
-	}
-}
-
 // TestHash_MetadataSectionRemoved is the #409 Phase C anchor: the footer
 // is now a native-SVG `<g data-section="metadata">` block (no HTML
 // `<footer>`), so two SVGs whose only difference is the timestamp-bearing
@@ -99,24 +76,24 @@ func TestHash_DOMDifference(t *testing.T) {
 	}
 }
 
-// TestHash_MultipleFooters verifies the "only the first <footer> is
-// stripped" rule.
-func TestHash_MultipleFooters(t *testing.T) {
+// TestHash_MultipleMetadataSections verifies the "only the first
+// metadata group is stripped" rule.
+func TestHash_MultipleMetadataSections(t *testing.T) {
 	t.Parallel()
-	a := `<svg xmlns="http://www.w3.org/2000/svg"><footer>first-A</footer><footer>second</footer></svg>`
-	b := `<svg xmlns="http://www.w3.org/2000/svg"><footer>first-B</footer><footer>second</footer></svg>`
+	a := `<svg xmlns="http://www.w3.org/2000/svg"><g data-section="metadata"><text>first-A</text></g><g data-section="metadata"><text>second</text></g></svg>`
+	b := `<svg xmlns="http://www.w3.org/2000/svg"><g data-section="metadata"><text>first-B</text></g><g data-section="metadata"><text>second</text></g></svg>`
 	ha, _ := Hash(a)
 	hb, _ := Hash(b)
 	if ha != hb {
-		t.Errorf("only the first <footer> should be removed; got %q vs %q", ha, hb)
+		t.Errorf("only the first metadata group should be removed; got %q vs %q", ha, hb)
 	}
 
-	c := `<svg xmlns="http://www.w3.org/2000/svg"><footer>first</footer><footer>second-1</footer></svg>`
-	d := `<svg xmlns="http://www.w3.org/2000/svg"><footer>first</footer><footer>second-2</footer></svg>`
+	c := `<svg xmlns="http://www.w3.org/2000/svg"><g data-section="metadata"><text>first</text></g><g data-section="metadata"><text>second-1</text></g></svg>`
+	d := `<svg xmlns="http://www.w3.org/2000/svg"><g data-section="metadata"><text>first</text></g><g data-section="metadata"><text>second-2</text></g></svg>`
 	hc, _ := Hash(c)
 	hd, _ := Hash(d)
 	if hc == hd {
-		t.Errorf("second footer is load-bearing; hashes should differ but got %q for both", hc)
+		t.Errorf("second metadata group is load-bearing; hashes should differ but got %q for both", hc)
 	}
 }
 

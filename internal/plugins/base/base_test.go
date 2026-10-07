@@ -8,7 +8,6 @@ import (
 	"github.com/mjun0812/github-metrics/internal/dataprovider/dataprovidertest"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/base"
-	"github.com/mjun0812/github-metrics/internal/plugins/requirestesting"
 	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 )
 
@@ -21,38 +20,6 @@ func enabledInputs() map[string]any {
 		"chrome_community":    "yes",
 		"chrome_repositories": "yes",
 	}
-}
-
-// TestBase_Requires_Static asserts that base.Plugin.Requires() declares
-// exactly [KeyProfile, KeyRepositorySummary]. The dynamic test below
-// catches the case where Run silently starts calling additional
-// Provider methods.
-func TestBase_Requires_Static(t *testing.T) {
-	requirestesting.AssertExpected(t, base.Plugin, []plugins.DataKey{
-		plugins.KeyProfile,
-		plugins.KeyRepositorySummary,
-	})
-}
-
-// TestBase_Requires_Dynamic wires a CountingMock and asserts the set of
-// Provider methods touched by Run equals the declared Requires() set.
-// Auto-enable gates (#640) require an explicit chrome_* input so Run
-// reaches the Provider calls — otherwise the drift test sees an empty
-// "actually called" set even though Requires() is correct.
-func TestBase_Requires_Dynamic(t *testing.T) {
-	mock := dataprovidertest.NewCountingMock()
-
-	pc := mocks.NewPluginContext(t, mocks.WithInputs(map[string]any{
-		"user":                "octocat",
-		"chrome_activity":     "yes",
-		"chrome_community":    "yes",
-		"chrome_repositories": "yes",
-	}))
-	pc.Provider = mock
-
-	_, _ = base.Plugin.Run(context.Background(), pc)
-
-	requirestesting.AssertCalledMatchesRequires(t, base.Plugin, mock)
 }
 
 // TestRun_NilContextReturnsEmptyResult — base must tolerate the

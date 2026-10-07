@@ -33,10 +33,6 @@ type starlistsPlugin struct{}
 
 func (p *starlistsPlugin) Name() string { return Name }
 
-func (p *starlistsPlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{plugins.KeyRepositories}
-}
-
 // Result is the JSON payload published under data.Plugins["starlists"].
 // Field set mirrors data-model E-024.
 type Result struct {

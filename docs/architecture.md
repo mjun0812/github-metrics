@@ -61,20 +61,19 @@ Each plugin is a self-contained subpackage under `internal/plugins/<name>/` that
 ```go
 type Plugin interface {
     Name() string
-    Requires() []DataKey
     Run(ctx context.Context, pc *PluginContext) (any, error)
 }
 ```
 
 - The `any` returned by `Run` is that plugin's result and is stored in `data.Plugins[name]`. Other plugins can reference it via `PluginContext.Imports.Get(name)`.
-- `Requires()` declares the shared data keys the plugin depends on (used for the dataprovider's fetch planning).
+- Plugins read shared data on demand through `PluginContext.Provider` (the lazy, memoized dataprovider). Plugins do not declare their data dependencies up front, and nothing is prefetched.
 - `metadata.yml` is bundled via `//go:embed` as `assets/plugins/<name>/metadata.yml` and holds the input definitions, `supports` (supported account types), and required scopes.
 
 ### 3.2 Special plugins
 
 - **`core`**: not a data plugin but an orchestration plugin responsible for Stage 1 config injection and the Stage 2 parallel runner (`internal/plugins/core`).
 - **`base`**: an opt-in plugin that draws the activity+community / repositories summary panel. It reads only from `dataprovider`.
-- `internal/plugins/pluginutil` and `internal/plugins/requirestesting` are not plugins but shared helpers.
+- `internal/plugins/pluginutil` is not a plugin but a shared helper package.
 
 See [`scope.md`](scope.md) for the list and classification of adopted plugins.
 

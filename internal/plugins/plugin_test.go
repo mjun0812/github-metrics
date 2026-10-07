@@ -13,8 +13,7 @@ type fakePlugin struct {
 	run  func(ctx context.Context, pc *plugins.PluginContext) (any, error)
 }
 
-func (f *fakePlugin) Name() string                { return f.name }
-func (f *fakePlugin) Requires() []plugins.DataKey { return []plugins.DataKey{} }
+func (f *fakePlugin) Name() string { return f.name }
 func (f *fakePlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if f.run == nil {
 		return nil, nil

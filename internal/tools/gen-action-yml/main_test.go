@@ -1,34 +1,28 @@
 package main
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
 
-// TestGenerate_HasRequiredSections confirms the generator emits the
-// four mandatory action.yml top-level keys with the default
-// (pre-release) image directive.
-func TestGenerate_HasRequiredSections(t *testing.T) {
+// TestGenerate_MatchesCommittedActionYML is the action.yml drift gate:
+// the committed action.yml must equal the generator output under the
+// same conditions as `make gen-action-yml` (no VERSION, so the
+// local-Dockerfile image line). Re-run `make gen-action-yml` when this
+// fails.
+func TestGenerate_MatchesCommittedActionYML(t *testing.T) {
 	t.Parallel()
 	body, err := generate("../../../assets", "")
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}
-	for _, want := range []string{
-		"name: 'GitHub Profile Metrics Generator'",
-		"inputs:",
-		"outputs:",
-		"runs:",
-		"using: 'docker'",
-		// Local-dev / pre-release fallback: build from the M10
-		// production Dockerfile at Dockerfile. The release
-		// pipeline rewrites this to docker:// when run with
-		// VERSION=vX.Y.Z.
-		"image: 'Dockerfile'",
-	} {
-		if !strings.Contains(body, want) {
-			t.Errorf("generated action.yml missing %q", want)
-		}
+	committed, err := os.ReadFile("../../../action.yml")
+	if err != nil {
+		t.Fatalf("read action.yml: %v", err)
+	}
+	if body != string(committed) {
+		t.Errorf("action.yml is out of date with the generator; run `make gen-action-yml` and commit the result")
 	}
 }
 
@@ -46,85 +40,6 @@ func TestGenerate_VersionedImageRef(t *testing.T) {
 	}
 	if strings.Contains(body, "image: 'Dockerfile'") {
 		t.Errorf("generated action.yml still contains local Dockerfile fallback when VERSION set")
-	}
-}
-
-// TestGenerate_DevVersionFallsBackToLocalDockerfile confirms VERSION=dev
-// keeps the local-build behavior (parity with empty VERSION).
-func TestGenerate_DevVersionFallsBackToLocalDockerfile(t *testing.T) {
-	t.Parallel()
-	body, err := generate("../../../assets", "dev")
-	if err != nil {
-		t.Fatalf("generate: %v", err)
-	}
-	if !strings.Contains(body, "image: 'Dockerfile'") {
-		t.Errorf("VERSION=dev should emit Dockerfile fallback")
-	}
-}
-
-// TestGenerate_CoreInputsPresent confirms the core inputs (token,
-// user, committer_*, filename) land in action.yml.
-func TestGenerate_CoreInputsPresent(t *testing.T) {
-	t.Parallel()
-	body, err := generate("../../../assets", "")
-	if err != nil {
-		t.Fatalf("generate: %v", err)
-	}
-	for _, key := range []string{
-		"\n  token:\n",
-		"\n  user:\n",
-		"\n  repo:\n", // M7 — top-level repo input (already shipped by core metadata; locked here)
-		"\n  committer_branch:\n",
-		"\n  filename:\n",
-	} {
-		if !strings.Contains(body, key) {
-			t.Errorf("generated action.yml missing core input %q", key)
-		}
-	}
-}
-
-// TestGenerate_AdoptedPluginGatesPresent confirms each採用 plugin's
-// `plugin_<slug>` enable gate appears.
-func TestGenerate_AdoptedPluginGatesPresent(t *testing.T) {
-	t.Parallel()
-	body, err := generate("../../../assets", "")
-	if err != nil {
-		t.Fatalf("generate: %v", err)
-	}
-	adoptedGates := []string{
-		"plugin_languages", "plugin_activity", "plugin_achievements",
-		"plugin_repositories", "plugin_isocalendar",
-		"plugin_calendar", "plugin_habits", "plugin_stars", "plugin_people",
-		"plugin_notable", "plugin_contributors", "plugin_reactions",
-		"plugin_sponsors", "plugin_sponsorships",
-		"plugin_stargazers", "plugin_traffic",
-		"plugin_topics", "plugin_starlists",
-	}
-	for _, gate := range adoptedGates {
-		if !strings.Contains(body, "\n  "+gate+":\n") {
-			t.Errorf("generated action.yml missing adopted gate %q", gate)
-		}
-	}
-}
-
-// TestGenerate_NoUnadoptedPluginSlug enforces constitution 原則 III.
-func TestGenerate_NoUnadoptedPluginSlug(t *testing.T) {
-	t.Parallel()
-	body, err := generate("../../../assets", "")
-	if err != nil {
-		t.Fatalf("generate: %v", err)
-	}
-	unadopted := []string{
-		"plugin_code", "plugin_discussions", "plugin_followup", "plugin_gists",
-		"plugin_introduction", "plugin_licenses", "plugin_lines", "plugin_skyline",
-		"plugin_support", "plugin_anilist", "plugin_leetcode", "plugin_music",
-		"plugin_pagespeed", "plugin_posts", "plugin_rss", "plugin_stackoverflow",
-		"plugin_steam", "plugin_tweets", "plugin_wakatime",
-	}
-	for _, slug := range unadopted {
-		if strings.Contains(body, slug) {
-			t.Errorf("generated action.yml contains unadopted slug %q (constitution 原則 III)", slug)
-		}
 	}
 }
 

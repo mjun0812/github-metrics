@@ -39,12 +39,6 @@ type stargazersPlugin struct{}
 
 func (p *stargazersPlugin) Name() string { return Name }
 
-func (p *stargazersPlugin) Requires() []plugins.DataKey {
-	// stargazers reads from pc.Data fields populated by base; it does not
-	// call Provider directly.
-	return []plugins.DataKey{}
-}
-
 // Result is the JSON payload published under data.Plugins["stargazers"].
 // Worldmap is populated when plugin_stargazers_worldmap is truthy and
 // nil otherwise.
