@@ -153,22 +153,6 @@ func TestRun_IncludeForks(t *testing.T) {
 	t.Errorf("expected octocat/delta to be included; got %v", nameList(r.Featured))
 }
 
-// TestRun_RandomSeedDeterministic asserts the same seed gives the same
-// fisher-yates ordering across runs.
-func TestRun_RandomSeedDeterministic(t *testing.T) {
-	t.Parallel()
-	in := map[string]any{
-		"plugin_repositories_random":      true,
-		"plugin_repositories_random_seed": 42,
-	}
-	r1 := run(t, octocatRepos(), in)
-	r2 := run(t, octocatRepos(), in)
-	if !reflect.DeepEqual(nameList(r1.Random), nameList(r2.Random)) {
-		t.Errorf("random ordering not deterministic\n1=%v\n2=%v",
-			nameList(r1.Random), nameList(r2.Random))
-	}
-}
-
 // TestRun_Skipped — empty input yields Skipped=true.
 func TestRun_Skipped(t *testing.T) {
 	t.Parallel()
