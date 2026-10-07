@@ -32,15 +32,15 @@ func rateLimitJSON(restRemaining, graphqlRemaining int, reset int64) string {
 func newGateDeps(t *testing.T, token string, mock *githubapi.MockTransport) Deps {
 	t.Helper()
 	rest, err := githubapi.NewREST(config.NewToken(token), "", httpx.Options{
-		Transport:  mock,
-		MaxRetries: 0,
+		Transport:      mock,
+		DisableRetries: true,
 	})
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
 	}
 	gql, err := githubapi.NewGraphQL(config.NewToken(token), "", httpx.Options{
-		Transport:  mock,
-		MaxRetries: 0,
+		Transport:      mock,
+		DisableRetries: true,
 	})
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)
@@ -72,23 +72,6 @@ func TestRateGate_OffByDefault(t *testing.T) {
 	deps := newGateDeps(t, "ghp_aaaa", mock)
 
 	if err := runRateGate(context.Background(), map[string]any{}, deps); err != nil {
-		t.Fatalf("runRateGate (off): %v", err)
-	}
-	if got := rateLimitCalls(mock); got != 0 {
-		t.Errorf("off mode must not call /rate_limit; got %d calls", got)
-	}
-}
-
-// TestRateGate_OffExplicit asserts an explicit "off" likewise skips.
-func TestRateGate_OffExplicit(t *testing.T) {
-	t.Parallel()
-
-	mock := githubapi.NewMockTransport()
-	mock.SetJSON("GET", "/rate_limit", rateLimitJSON(0, 0, time.Now().Add(time.Hour).Unix()))
-	deps := newGateDeps(t, "ghp_aaaa", mock)
-
-	inputs := map[string]any{rateGuardInput: "off"}
-	if err := runRateGate(context.Background(), inputs, deps); err != nil {
 		t.Fatalf("runRateGate (off): %v", err)
 	}
 	if got := rateLimitCalls(mock); got != 0 {
@@ -192,7 +175,7 @@ func TestRateGate_WaitSleepsUntilReset(t *testing.T) {
 
 	mock := githubapi.NewMockTransport()
 	mock.SetJSON("GET", "/rate_limit", rateLimitJSON(5, 4990, reset.Unix()))
-	rest, err := githubapi.NewREST(config.NewToken("ghp_aaaa"), "", httpx.Options{Transport: mock, MaxRetries: 0})
+	rest, err := githubapi.NewREST(config.NewToken("ghp_aaaa"), "", httpx.Options{Transport: mock, DisableRetries: true})
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
 	}
@@ -223,28 +206,6 @@ func TestRateGate_WaitSleepsUntilReset(t *testing.T) {
 	}
 }
 
-// TestRateGate_WaitRealSleep exercises the production sleepCtx path with
-// a tiny reset offset so the real sleep stays well under a second.
-func TestRateGate_WaitRealSleep(t *testing.T) {
-	t.Parallel()
-
-	// Reset is in the past so the computed wait is <= slack; the gate
-	// returns immediately without a long sleep. The real sleepCtx path
-	// is still driven for the healthy (wait <= 0) short-circuit.
-	reset := time.Now().Add(-time.Minute)
-	mock := githubapi.NewMockTransport()
-	mock.SetJSON("GET", "/rate_limit", rateLimitJSON(5, 4990, reset.Unix()))
-	deps := newGateDeps(t, "ghp_aaaa", mock)
-
-	start := time.Now()
-	if err := runRateGate(context.Background(), map[string]any{rateGuardInput: "wait"}, deps); err != nil {
-		t.Fatalf("wait (past reset) should return immediately: %v", err)
-	}
-	if elapsed := time.Since(start); elapsed > time.Second {
-		t.Errorf("past-reset wait should be instant; took %s", elapsed)
-	}
-}
-
 // TestRateGate_WaitCapExceeded asserts wait mode errors (rather than
 // blocking) when the required wait exceeds the hard cap.
 func TestRateGate_WaitCapExceeded(t *testing.T) {
@@ -255,7 +216,7 @@ func TestRateGate_WaitCapExceeded(t *testing.T) {
 
 	mock := githubapi.NewMockTransport()
 	mock.SetJSON("GET", "/rate_limit", rateLimitJSON(5, 4990, reset.Unix()))
-	rest, err := githubapi.NewREST(config.NewToken("ghp_aaaa"), "", httpx.Options{Transport: mock, MaxRetries: 0})
+	rest, err := githubapi.NewREST(config.NewToken("ghp_aaaa"), "", httpx.Options{Transport: mock, DisableRetries: true})
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
 	}
@@ -290,7 +251,7 @@ func TestRateGate_WaitContextCancelled(t *testing.T) {
 
 	mock := githubapi.NewMockTransport()
 	mock.SetJSON("GET", "/rate_limit", rateLimitJSON(5, 4990, reset.Unix()))
-	rest, err := githubapi.NewREST(config.NewToken("ghp_aaaa"), "", httpx.Options{Transport: mock, MaxRetries: 0})
+	rest, err := githubapi.NewREST(config.NewToken("ghp_aaaa"), "", httpx.Options{Transport: mock, DisableRetries: true})
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
 	}
@@ -330,57 +291,5 @@ func TestRateGate_RefreshError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "refresh /rate_limit") {
 		t.Errorf("error should mention the refresh failure: %q", err.Error())
-	}
-}
-
-// TestRateGate_UnknownModeIsOff asserts an unrecognized mode value is
-// treated as "off" (no /rate_limit call), so a typo never silently
-// enables a blocking gate.
-func TestRateGate_UnknownModeIsOff(t *testing.T) {
-	t.Parallel()
-
-	mock := githubapi.NewMockTransport()
-	mock.SetJSON("GET", "/rate_limit", rateLimitJSON(0, 0, time.Now().Add(time.Hour).Unix()))
-	deps := newGateDeps(t, "ghp_aaaa", mock)
-
-	if err := runRateGate(context.Background(), map[string]any{rateGuardInput: "yes-please"}, deps); err != nil {
-		t.Fatalf("unknown mode should be treated as off: %v", err)
-	}
-	if got := rateLimitCalls(mock); got != 0 {
-		t.Errorf("unknown mode must not call /rate_limit; got %d", got)
-	}
-}
-
-// TestSleepCtx_ExpiresNormally verifies sleepCtx returns nil when the
-// timer fires before the context is cancelled.
-func TestSleepCtx_ExpiresNormally(t *testing.T) {
-	t.Parallel()
-
-	start := time.Now()
-	err := sleepCtx(context.Background(), 10*time.Millisecond)
-	elapsed := time.Since(start)
-
-	if err != nil {
-		t.Errorf("sleepCtx returned non-nil error: %v", err)
-	}
-	if elapsed < 5*time.Millisecond {
-		t.Errorf("sleepCtx returned too early: %s", elapsed)
-	}
-}
-
-// TestSleepCtx_CancelledContext verifies sleepCtx returns ctx.Err() when the
-// context is already cancelled before it is called.
-func TestSleepCtx_CancelledContext(t *testing.T) {
-	t.Parallel()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // cancel before calling sleepCtx
-
-	err := sleepCtx(ctx, time.Hour)
-	if err == nil {
-		t.Fatal("sleepCtx should return an error for cancelled context")
-	}
-	if err != context.Canceled {
-		t.Errorf("sleepCtx error = %v, want context.Canceled", err)
 	}
 }

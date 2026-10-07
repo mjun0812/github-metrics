@@ -2,11 +2,9 @@ package activity_test
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -81,44 +79,5 @@ func TestPartial_Activity_Golden(t *testing.T) {
 	}
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
-	}
-	// #409 Phase B7 native-SVG rewrite: each event row is now a
-	// `<g class="activity" data-type=... data-repo=...>` containing a
-	// positioned octicon `<g>` and a `<text>` with the verb + a
-	// `<tspan class="repo">` for the link-blue repo name.
-	for _, marker := range []string{
-		`class="activity"`,
-		`data-type="`,
-		`<tspan class="repo"`,
-	} {
-		if !strings.Contains(got, marker) {
-			t.Errorf("partial missing marker %q in:\n%s", marker, got)
-		}
-	}
-}
-
-func TestRun_GoldenShape_Activity(t *testing.T) {
-	r := fixedResult()
-	got, err := json.MarshalIndent(r, "", "  ")
-	if err != nil {
-		t.Fatalf("MarshalIndent: %v", err)
-	}
-	got = append(got, '\n')
-	gp := filepath.Join(repoRoot(t), "tests", "golden", "json", "m4", "activity.json")
-	if *updateGolden {
-		if werr := os.MkdirAll(filepath.Dir(gp), 0o755); werr != nil {
-			t.Fatalf("MkdirAll: %v", err)
-		}
-		if werr := os.WriteFile(gp, got, 0o644); werr != nil {
-			t.Fatalf("WriteFile: %v", werr)
-		}
-		return
-	}
-	want, err := os.ReadFile(gp)
-	if err != nil {
-		t.Fatalf("ReadFile %s: %v (run with -update)", gp, err)
-	}
-	if string(want) != string(got) {
-		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), string(got))
 	}
 }

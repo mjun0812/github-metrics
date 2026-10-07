@@ -16,8 +16,8 @@ func newRESTForRate(t *testing.T, body string) (*githubapi.REST, *githubapi.Mock
 	mock := githubapi.NewMockTransport()
 	mock.SetJSON("GET", "/rate_limit", body)
 	rest, err := githubapi.NewREST(config.NewToken("ghp_aaaa"), "", httpx.Options{
-		Transport:  mock,
-		MaxRetries: 0,
+		Transport:      mock,
+		DisableRetries: true,
 	})
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)

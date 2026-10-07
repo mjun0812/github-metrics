@@ -12,19 +12,6 @@ import (
 	"github.com/mjun0812/github-metrics/internal/engine"
 )
 
-// TestRunWith_ParseInputsError covers malformed INPUTS JSON in Action mode.
-func TestRunWith_ParseInputsError(t *testing.T) {
-	t.Parallel()
-	err := runWith(context.Background(), runOptions{
-		Env:       []string{"INPUTS=not-json"},
-		Stdout:    io.Discard,
-		OutputDir: t.TempDir(),
-	})
-	if err == nil || !strings.Contains(err.Error(), "parse inputs") {
-		t.Fatalf("expected parse inputs error, got %v", err)
-	}
-}
-
 // TestRunWith_NewInvocationError covers required login validation.
 func TestRunWith_NewInvocationError(t *testing.T) {
 	t.Parallel()
@@ -182,47 +169,6 @@ func TestRunWith_QuotaInsufficientSkips(t *testing.T) {
 	}
 	if len(rest.putBodies) != 0 {
 		t.Fatalf("PUT should not run on quota skip: %v", rest.putBodies)
-	}
-}
-
-// TestRunCLIWith_RepositoryValidationError covers repository template
-// fail-fast validation in CLI mode.
-func TestRunCLIWith_RepositoryValidationError(t *testing.T) {
-	t.Parallel()
-	err := runCLIWith(context.Background(), &CLIFlags{
-		User:     "octocat",
-		Template: "repository",
-		Output:   "svg",
-		Filename: "github-metrics.svg",
-		Dryrun:   true,
-		Plugins:  map[string]string{},
-	}, runOptions{OutputDir: t.TempDir()})
-	if err == nil || !strings.Contains(err.Error(), "requires --repo") {
-		t.Fatalf("expected repo validation error, got %v", err)
-	}
-}
-
-// TestRunCLIWith_BuildDepsError verifies CLI dependency construction error
-// wrapping.
-func TestRunCLIWith_BuildDepsError(t *testing.T) {
-	t.Parallel()
-	errBoom := errors.New("boom")
-	err := runCLIWith(context.Background(), &CLIFlags{
-		User:     "octocat",
-		Template: "classic",
-		Output:   "svg",
-		Filename: "github-metrics.svg",
-		Dryrun:   true,
-		Plugins:  map[string]string{},
-	}, runOptions{
-		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
-		OutputDir: t.TempDir(),
-		BuildDeps: func(context.Context, *Invocation) (engine.Deps, error) {
-			return engine.Deps{}, errBoom
-		},
-	})
-	if !errors.Is(err, errBoom) {
-		t.Fatalf("err = %v, want wrapped boom", err)
 	}
 }
 

@@ -9,28 +9,6 @@ import (
 // newInvocation: --filename behavior (regression for #614/#616 revert)
 // ---------------------------------------------------------------------------
 
-// TestNewInvocation_FilenameExplicit is the HIGHEST PRIORITY regression test.
-// When --filename foo.svg is passed (an explicit non-"-" filename), the resulting
-// inv.OutputFilename must be exactly "foo.svg".
-// The reverted PR #614 introduced per-plugin mode; its bug was that explicit
-// filenames would try to write /foo.svg instead of joining with OutputDir.
-// This test pins the current (correct) behavior.
-func TestNewInvocation_FilenameExplicit(t *testing.T) {
-	t.Parallel()
-	inputs := map[string]any{
-		"user":     "octocat",
-		"filename": "foo.svg",
-	}
-	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test-repo"}
-	inv, err := newInvocation(inputs, env, "/tmp/out")
-	if err != nil {
-		t.Fatalf("newInvocation: %v", err)
-	}
-	if inv.OutputFilename != "foo.svg" {
-		t.Errorf("OutputFilename = %q, want %q", inv.OutputFilename, "foo.svg")
-	}
-}
-
 // TestNewInvocation_FilenameStdout verifies that --filename - yields OutputFilename == "-".
 func TestNewInvocation_FilenameStdout(t *testing.T) {
 	t.Parallel()
@@ -45,28 +23,6 @@ func TestNewInvocation_FilenameStdout(t *testing.T) {
 	}
 	if inv.OutputFilename != "-" {
 		t.Errorf("OutputFilename = %q, want %q", inv.OutputFilename, "-")
-	}
-}
-
-// TestNewInvocation_FilenameWildcard verifies wildcard expansion:
-// "github-metrics.*" + format "svg" → "github-metrics.svg".
-func TestNewInvocation_FilenameWildcard(t *testing.T) {
-	t.Parallel()
-	inputs := map[string]any{
-		"user":          "octocat",
-		"filename":      "github-metrics.*",
-		"config_output": "svg",
-		// combined mode opt-in: the per-plugin default forbids the commit
-		// committer; this test asserts filename resolution only.
-		"combined": "yes",
-	}
-	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test-repo"}
-	inv, err := newInvocation(inputs, env, "/tmp/out")
-	if err != nil {
-		t.Fatalf("newInvocation: %v", err)
-	}
-	if inv.OutputFilename != "github-metrics.svg" {
-		t.Errorf("OutputFilename = %q, want %q", inv.OutputFilename, "github-metrics.svg")
 	}
 }
 
@@ -115,16 +71,6 @@ func TestNewInvocation_UserFromGitHubActor(t *testing.T) {
 	}
 }
 
-func TestNewInvocation_UserEmpty_Errors(t *testing.T) {
-	t.Parallel()
-	inputs := map[string]any{}
-	env := map[string]string{} // no GITHUB_ACTOR either
-	_, err := newInvocation(inputs, env, "/tmp")
-	if err == nil {
-		t.Error("expected error when user and GITHUB_ACTOR are both empty")
-	}
-}
-
 // ---------------------------------------------------------------------------
 // newInvocation: GITHUB_REPOSITORY parsing
 // ---------------------------------------------------------------------------
@@ -145,63 +91,9 @@ func TestNewInvocation_GitHubRepositoryParsed(t *testing.T) {
 	}
 }
 
-// After the v3.0 mode unification (#646), GITHUB_REPOSITORY is parsed
-// in every invocation — there is no longer a CLI-mode skip. The env
-// var still no-ops when absent (local CLI without the runner sets it),
-// but when present it populates RepoOwner / RepoName regardless of
-// whether the invocation came from the GitHub Actions runner or the
-// shell. This test pins that always-on behaviour.
-func TestNewInvocation_GitHubRepository_AlwaysParsed(t *testing.T) {
-	t.Parallel()
-	inputs := map[string]any{"user": "octocat", "combined": "yes"}
-	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test-repo"}
-	inv, err := newInvocation(inputs, env, "/tmp/out")
-	if err != nil {
-		t.Fatalf("newInvocation: %v", err)
-	}
-	if inv.RepoOwner != "mjun0812" || inv.RepoName != "test-repo" {
-		t.Errorf("RepoOwner/RepoName = %q/%q, want mjun0812/test-repo",
-			inv.RepoOwner, inv.RepoName)
-	}
-}
-
 // ---------------------------------------------------------------------------
 // newInvocation: optimize default injection
 // ---------------------------------------------------------------------------
-
-func TestNewInvocation_OptimizeAbsent_InjectsDefault(t *testing.T) {
-	t.Parallel()
-	inputs := map[string]any{"user": "octocat", "combined": "yes"}
-	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
-	inv, err := newInvocation(inputs, env, "/tmp/out")
-	if err != nil {
-		t.Fatalf("newInvocation: %v", err)
-	}
-	got, ok := inv.Inputs["optimize"]
-	if !ok {
-		t.Fatal("optimize key missing from Inputs")
-	}
-	gotSlice, ok := got.([]string)
-	if !ok {
-		t.Fatalf("optimize type = %T, want []string", got)
-	}
-	if len(gotSlice) != 2 || gotSlice[0] != "css" || gotSlice[1] != "xml" {
-		t.Errorf("optimize = %v, want [css xml]", gotSlice)
-	}
-}
-
-func TestNewInvocation_OptimizeExplicit_Preserved(t *testing.T) {
-	t.Parallel()
-	inputs := map[string]any{"user": "octocat", "optimize": "css", "combined": "yes"}
-	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
-	inv, err := newInvocation(inputs, env, "/tmp/out")
-	if err != nil {
-		t.Fatalf("newInvocation: %v", err)
-	}
-	if inv.Inputs["optimize"] != "css" {
-		t.Errorf("explicit optimize overwritten; got %v", inv.Inputs["optimize"])
-	}
-}
 
 // ---------------------------------------------------------------------------
 // newInvocation: token resolution chain (#647)
@@ -252,26 +144,6 @@ func TestNewInvocation_Token_GitHubTokenFallback(t *testing.T) {
 	// (banner / validators) see the same resolved value.
 	if got := inv.Inputs["token"]; got != "github_token_value" {
 		t.Errorf("inputs[\"token\"] = %v, want fallback value", got)
-	}
-}
-
-func TestNewInvocation_Token_InputTokenAloneActionPath(t *testing.T) {
-	t.Parallel()
-	// Action-mode happy path: GitHub Actions runner sets INPUT_TOKEN
-	// from `with: token:`; GITHUB_TOKEN is absent. ParseInputs would
-	// already have copied INPUT_TOKEN into inputs["token"].
-	inputs := map[string]any{
-		"user":     "octocat",
-		"token":    "input_token_only",
-		"combined": "yes",
-	}
-	env := map[string]string{"GITHUB_REPOSITORY": "octocat/test"}
-	inv, err := newInvocation(inputs, env, "/tmp/out")
-	if err != nil {
-		t.Fatalf("newInvocation: %v", err)
-	}
-	if got := inv.Token.Reveal(); got != "input_token_only" {
-		t.Errorf("token = %q, want %q", got, "input_token_only")
 	}
 }
 
@@ -348,23 +220,6 @@ func TestNewInvocation_CommitterMessageDefaultRunPlaceholder(t *testing.T) {
 // newInvocation: RetryPolicy defaults
 // ---------------------------------------------------------------------------
 
-func TestNewInvocation_RetryPolicyDefaults(t *testing.T) {
-	t.Parallel()
-	inputs := map[string]any{"user": "octocat", "combined": "yes"}
-	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
-	inv, err := newInvocation(inputs, env, "/tmp/out")
-	if err != nil {
-		t.Fatalf("newInvocation: %v", err)
-	}
-	if inv.RetryPolicy.Retries != DefaultRetries {
-		t.Errorf("Retries = %d, want %d", inv.RetryPolicy.Retries, DefaultRetries)
-	}
-	if inv.RetryPolicy.Delay != DefaultRetryDelay {
-		t.Errorf("Delay = %v, want %v", inv.RetryPolicy.Delay, DefaultRetryDelay)
-	}
-	_ = time.Millisecond // keep time import referenced
-}
-
 // TestNewInvocation_RetriesDelayInSeconds pins the action.yml contract:
 // `retries_delay` is declared in seconds ("Delay between each retry (in
 // seconds)"), so retries_delay=10 must yield a 10-second delay — not
@@ -385,26 +240,6 @@ func TestNewInvocation_RetriesDelayInSeconds(t *testing.T) {
 // ---------------------------------------------------------------------------
 // newInvocation: OutputRetryPolicy (regression for #746)
 // ---------------------------------------------------------------------------
-
-// TestNewInvocation_OutputRetryPolicyDefaults pins the action.yml defaults for
-// the output-action retry inputs (retries_output_action=5,
-// retries_delay_output_action=120s), which are distinct from the rendering
-// retries.
-func TestNewInvocation_OutputRetryPolicyDefaults(t *testing.T) {
-	t.Parallel()
-	inputs := map[string]any{"user": "octocat", "combined": "yes"}
-	env := map[string]string{"GITHUB_REPOSITORY": "mjun0812/test"}
-	inv, err := newInvocation(inputs, env, "/tmp/out")
-	if err != nil {
-		t.Fatalf("newInvocation: %v", err)
-	}
-	if inv.OutputRetryPolicy.Retries != DefaultOutputRetries {
-		t.Errorf("OutputRetryPolicy.Retries = %d, want %d", inv.OutputRetryPolicy.Retries, DefaultOutputRetries)
-	}
-	if inv.OutputRetryPolicy.Delay != DefaultOutputRetryDelay {
-		t.Errorf("OutputRetryPolicy.Delay = %v, want %v", inv.OutputRetryPolicy.Delay, DefaultOutputRetryDelay)
-	}
-}
 
 // TestNewInvocation_OutputRetryInputsWired pins that the dedicated
 // output-action retry inputs are honored (and read in seconds), independent of

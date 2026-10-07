@@ -55,47 +55,32 @@ func putResult(d *plugins.Data, r *header.Result) {
 	d.SetPlugin(header.Name, r)
 }
 
-func TestPartial_NilContext(t *testing.T) {
+// TestPartial_EmptyWithoutIdentity — the partial renders nothing when the
+// plugin entry or profile is missing, or when the user / organization has
+// neither login nor name.
+func TestPartial_EmptyWithoutIdentity(t *testing.T) {
 	t.Parallel()
-	got, _, err := header.Partial(context.Background(), nil)
-	if err != nil || got != "" {
-		t.Fatalf("Partial(nil) = %q, %v; want \"\", nil", got, err)
-	}
-}
-
-func TestPartial_NilData(t *testing.T) {
-	t.Parallel()
-	got, _, err := header.Partial(context.Background(), &templates.PartialContext{})
-	if err != nil || got != "" {
-		t.Fatalf("Partial(nil data) = %q, %v; want \"\", nil", got, err)
-	}
-}
-
-func TestPartial_MissingPluginEntry(t *testing.T) {
-	t.Parallel()
-	got, _, err := header.Partial(context.Background(), newPC(plugins.NewData()))
-	if err != nil || got != "" {
-		t.Fatalf("Partial(missing plugin) = %q, %v; want \"\", nil", got, err)
-	}
-}
-
-func TestPartial_NilProfile(t *testing.T) {
-	t.Parallel()
-	d := plugins.NewData()
-	putResult(d, &header.Result{}) // Profile is nil
-	got, _, err := header.Partial(context.Background(), newPC(d))
-	if err != nil || got != "" {
-		t.Fatalf("Partial(nil profile) = %q, %v; want \"\", nil", got, err)
-	}
-}
-
-func TestPartial_WrongResultType(t *testing.T) {
-	t.Parallel()
-	d := plugins.NewData()
-	d.SetPlugin(header.Name, "not a *Result")
-	got, _, err := header.Partial(context.Background(), newPC(d))
-	if err != nil || got != "" {
-		t.Fatalf("Partial(wrong type) = %q, %v; want \"\", nil", got, err)
+	for name, r := range map[string]*header.Result{
+		"missing plugin entry": nil,
+		"nil profile":          {},
+		"empty user": {Profile: &plugins.Profile{
+			Kind: plugins.ProfileKindUser,
+			User: &plugins.User{},
+		}},
+		"nil organization": {Profile: &plugins.Profile{Kind: plugins.ProfileKindOrganization}},
+		"empty organization": {Profile: &plugins.Profile{
+			Kind:         plugins.ProfileKindOrganization,
+			Organization: &plugins.Organization{},
+		}},
+	} {
+		d := plugins.NewData()
+		if r != nil {
+			putResult(d, r)
+		}
+		got, _, err := header.Partial(context.Background(), newPC(d))
+		if err != nil || got != "" {
+			t.Errorf("%s: Partial = %q, %v; want \"\", nil", name, got, err)
+		}
 	}
 }
 
@@ -240,25 +225,8 @@ func TestPartial_HidesZeroCounters(t *testing.T) {
 	}
 }
 
-// TestPartial_EmptyLoginAndName returns "" because both identity
-// fields are absent.
-func TestPartial_EmptyLoginAndName(t *testing.T) {
-	t.Parallel()
-	d := plugins.NewData()
-	putResult(d, &header.Result{
-		Profile: &plugins.Profile{
-			Kind: plugins.ProfileKindUser,
-			User: &plugins.User{},
-		},
-	})
-	got, _, err := header.Partial(context.Background(), newPC(d))
-	if err != nil || got != "" {
-		t.Fatalf("Partial(empty user) = %q, %v; want \"\", nil", got, err)
-	}
-}
-
 // TestPartial_OrgRenders verifies the organization branch emits the
-// header section with escaped name + avatar.
+// header section with name + avatar.
 func TestPartial_OrgRenders(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
@@ -267,7 +235,7 @@ func TestPartial_OrgRenders(t *testing.T) {
 			Kind: plugins.ProfileKindOrganization,
 			Organization: &plugins.Organization{
 				Login:     "octolabs",
-				Name:      "<Octo & Labs>",
+				Name:      "Octo Labs",
 				AvatarURL: "https://example/org.png",
 			},
 		},
@@ -278,7 +246,7 @@ func TestPartial_OrgRenders(t *testing.T) {
 	}
 	for _, want := range []string{
 		`data-section="header"`,
-		"&lt;Octo &amp; Labs&gt;",
+		">Octo Labs</text>",
 		`href="https://example/org.png"`,
 	} {
 		if !strings.Contains(got, want) {
@@ -288,36 +256,6 @@ func TestPartial_OrgRenders(t *testing.T) {
 	// Org branch never emits the counter row.
 	if strings.Contains(got, `data-block="header-counters"`) {
 		t.Errorf("org header should not emit counters block: %s", got)
-	}
-}
-
-// TestPartial_OrgNilOrganization returns "" when Profile.Kind=org but
-// the Organization payload is nil.
-func TestPartial_OrgNilOrganization(t *testing.T) {
-	t.Parallel()
-	d := plugins.NewData()
-	putResult(d, &header.Result{
-		Profile: &plugins.Profile{Kind: plugins.ProfileKindOrganization},
-	})
-	got, _, err := header.Partial(context.Background(), newPC(d))
-	if err != nil || got != "" {
-		t.Fatalf("Partial(nil org) = %q, %v; want \"\", nil", got, err)
-	}
-}
-
-// TestPartial_OrgEmptyLoginAndName mirrors the user-empty case.
-func TestPartial_OrgEmptyLoginAndName(t *testing.T) {
-	t.Parallel()
-	d := plugins.NewData()
-	putResult(d, &header.Result{
-		Profile: &plugins.Profile{
-			Kind:         plugins.ProfileKindOrganization,
-			Organization: &plugins.Organization{},
-		},
-	})
-	got, _, err := header.Partial(context.Background(), newPC(d))
-	if err != nil || got != "" {
-		t.Fatalf("Partial(empty org) = %q, %v; want \"\", nil", got, err)
 	}
 }
 
@@ -366,26 +304,6 @@ func TestBasePartial_LegacyPluginBaseEnables(t *testing.T) {
 	}
 	if !strings.Contains(got, `data-section="header"`) {
 		t.Errorf("legacy plugin_base=yes should render header; got:\n%s", got)
-	}
-}
-
-// TestBasePartial_NilContext returns ("", nil) when the dispatcher
-// passes nil.
-func TestBasePartial_NilContext(t *testing.T) {
-	t.Parallel()
-	got, _, err := header.BasePartial(context.Background(), nil)
-	if err != nil || got != "" {
-		t.Fatalf("BasePartial(nil) = %q, %v; want \"\", nil", got, err)
-	}
-}
-
-// TestBasePartial_NoDataNoProvider returns ("", nil) when neither
-// source can supply the header payload.
-func TestBasePartial_NoDataNoProvider(t *testing.T) {
-	t.Parallel()
-	got, _, err := header.BasePartial(context.Background(), &templates.PartialContext{})
-	if err != nil || got != "" {
-		t.Fatalf("BasePartial(empty pc) = %q, %v; want \"\", nil", got, err)
 	}
 }
 

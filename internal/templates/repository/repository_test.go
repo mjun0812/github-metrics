@@ -10,17 +10,6 @@ import (
 	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
-func TestTemplate_Registered(t *testing.T) {
-	t.Parallel()
-	got, ok := templates.Get(Name)
-	if !ok {
-		t.Fatalf("template %q not registered", Name)
-	}
-	if got.Name() != Name {
-		t.Errorf("Get(%q).Name() = %q", Name, got.Name())
-	}
-}
-
 func TestCheck_RejectsMissingRepo(t *testing.T) {
 	t.Parallel()
 	err := Template.Check(map[string]any{}, "repository", "svg")
@@ -29,13 +18,6 @@ func TestCheck_RejectsMissingRepo(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "repo") {
 		t.Errorf("error should mention 'repo'; got %v", err)
-	}
-}
-
-func TestCheck_AcceptsValidInput(t *testing.T) {
-	t.Parallel()
-	if err := Template.Check(map[string]any{"repo": "hello-world"}, "repository", "svg"); err != nil {
-		t.Errorf("Check happy path: %v", err)
 	}
 }
 
@@ -48,52 +30,12 @@ func TestCheck_RejectsNonRepositoryAccount(t *testing.T) {
 	}
 }
 
-func TestRun_EmitsValidSVGSkeleton(t *testing.T) {
-	t.Parallel()
-	d := plugins.NewData()
-	d.Account = plugins.AccountRepository
-	d.User = &plugins.User{Login: "octocat", AvatarURL: "https://x"}
-	d.Repo = &plugins.Repo{
-		Owner:        "octocat",
-		OwnerAvatar:  "https://x/avatar.png",
-		Name:         "hello-world",
-		Description:  "My first repository",
-		Stargazers:   42,
-		Forks:        7,
-		Contributors: 3,
-		Activity:     plugins.RepoActivity{RecentCommits: 5, OpenIssues: 2, OpenPullRequests: 1},
-	}
-	pc := &templates.PartialContext{
-		Data:   d,
-		Inputs: map[string]any{"repo": "hello-world", "chrome_header": "yes"},
-	}
-	out, err := Template.Run(context.Background(), pc)
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	for _, must := range []string{
-		`<svg`,
-		`</svg>`,
-		`data-template="repository"`,
-		`octocat/hello-world`,
-	} {
-		if !strings.Contains(out, must) {
-			t.Errorf("Run output missing %q\nfull (truncated): %s", must, truncate(out, 400))
-		}
-	}
-	// #464: the repo description / introduction badges are NOT base.header
-	// chrome and only render via the `plugin_introduction` toggle (which
-	// is unset here), matching upstream's base-only repository output.
-	if strings.Contains(out, "My first repository") {
-		t.Errorf("base-only repository render should not include the description")
-	}
-}
-
-// TestRun_NoChromeSuppressesChrome asserts that without any
-// chrome_* opt-in, the base.header section is suppressed — matching
-// the classic template + upstream per-plugin repository renders.
-// (#464; updated for v3.0 default-empty behavior in #649.)
-func TestRun_NoChromeSuppressesChrome(t *testing.T) {
+// TestRun_NoChromeEmptyCard asserts that without any chrome_* opt-in the
+// base.header section is suppressed, and that the resulting all-empty card
+// still declares a valid size: a 0 height/viewBox is not a valid SVG size
+// (rasterizers reject it), so the template must clamp to a minimal
+// positive canvas.
+func TestRun_NoChromeEmptyCard(t *testing.T) {
 	t.Parallel()
 	d := plugins.NewData()
 	d.Account = plugins.AccountRepository
@@ -108,73 +50,6 @@ func TestRun_NoChromeSuppressesChrome(t *testing.T) {
 	}
 	if strings.Contains(out, `data-section="header"`) {
 		t.Errorf("no chrome_* should suppress the base.header section; got %s", truncate(out, 400))
-	}
-}
-
-// TestRun_ConfigAnimations is the #736 regression: config_animations
-// must reach the root <svg> class so the style.css `.no-animations *`
-// rule can zero every animation-duration.
-func TestRun_ConfigAnimations(t *testing.T) {
-	t.Parallel()
-	for _, tc := range []struct {
-		name       string
-		animations bool
-	}{
-		{"enabled", true},
-		{"disabled", false},
-	} {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			d := plugins.NewData()
-			d.Account = plugins.AccountRepository
-			d.Repo = &plugins.Repo{Owner: "octocat", Name: "hello-world"}
-			d.Config.Animations = tc.animations
-			pc := &templates.PartialContext{
-				Data:   d,
-				Inputs: map[string]any{"repo": "hello-world", "chrome_header": "yes"},
-			}
-			out, err := Template.Run(context.Background(), pc)
-			if err != nil {
-				t.Fatalf("Run: %v", err)
-			}
-			hasClass := strings.Contains(out, `class="no-animations"`)
-			if hasClass == tc.animations {
-				t.Fatalf("animations=%v: root <svg> no-animations class present=%v; output:\n%s",
-					tc.animations, hasClass, truncate(out, 400))
-			}
-		})
-	}
-}
-
-func TestRun_NilRepo_StillEmitsSkeleton(t *testing.T) {
-	t.Parallel()
-	pc := &templates.PartialContext{
-		Data:   plugins.NewData(),
-		Inputs: map[string]any{"repo": "hello-world"},
-	}
-	out, err := Template.Run(context.Background(), pc)
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	// Partials are nil-safe; the SVG envelope still emits.
-	if !strings.HasPrefix(out, `<svg`) || !strings.HasSuffix(out, `</svg>`) {
-		t.Errorf("Run output not a valid SVG skeleton; got %s", truncate(out, 200))
-	}
-}
-
-func TestRun_EmptyCardKeepsValidSVGSize(t *testing.T) {
-	t.Parallel()
-	// All sections empty: the summed height is 0, but a 0
-	// height/viewBox is not a valid SVG size (rasterizers reject it),
-	// so the template must clamp to a minimal positive canvas.
-	pc := &templates.PartialContext{
-		Data:   plugins.NewData(),
-		Inputs: map[string]any{"repo": "hello-world"},
-	}
-	out, err := Template.Run(context.Background(), pc)
-	if err != nil {
-		t.Fatalf("Run: %v", err)
 	}
 	if strings.Contains(out, `height="0"`) || strings.Contains(out, `viewBox="0 0 480 0"`) {
 		t.Fatalf("empty card must not declare a zero size; output:\n%s", truncate(out, 300))

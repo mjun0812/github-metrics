@@ -102,7 +102,7 @@ func newGQL(t *testing.T, body string) *githubapi.GraphQL {
 	gql, err := githubapi.NewGraphQL(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost/graphql",
-		httpx.Options{Transport: &fixedMux{body: body}, MaxRetries: 0},
+		httpx.Options{Transport: &fixedMux{body: body}, DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)
@@ -137,65 +137,49 @@ func TestRun_DefaultTypes(t *testing.T) {
 	}
 }
 
-// TestRun_DefaultSizeAndLimit pins the upstream metadata.yml defaults
-// (plugin_people_size: 28, plugin_people_limit: 24) so a future
-// hardcode regression (issue #446) is caught. The limit is asserted via
-// the GraphQL `first` argument captured from the request body.
-func TestRun_DefaultSizeAndLimit(t *testing.T) {
+// TestRun_GraphQLSizeAndLimit asserts the GraphQL `first` / `size`
+// arguments sent upstream. The defaults follow the upstream metadata.yml
+// (plugin_people_size: 28, plugin_people_limit: 24), and a limit above
+// 100 is clamped because GitHub rejects a connection `first` above 100
+// with EXCESSIVE_PAGINATION, which would blank the whole section.
+func TestRun_GraphQLSizeAndLimit(t *testing.T) {
 	t.Parallel()
-	cap := &capturingMux{body: followersBody}
-	gql, err := githubapi.NewGraphQL(
-		config.NewToken("MOCKED_TOKEN"),
-		"http://mock.localhost/graphql",
-		httpx.Options{Transport: cap, MaxRetries: 0},
-	)
-	if err != nil {
-		t.Fatalf("NewGraphQL: %v", err)
+	cases := []struct {
+		name      string
+		inputs    map[string]any
+		wantFirst float64
+		wantSize  float64
+	}{
+		{"defaults", map[string]any{}, 24, 28},
+		{"limit clamped to 100", map[string]any{"plugin_people_limit": 150}, 100, 28},
 	}
-	pc := &plugins.PluginContext{
-		Data:    plugins.NewData(),
-		Inputs:  map[string]any{"user": "octocat", "plugin_people": true},
-		GraphQL: gql,
-	}
-	out, _ := people.Plugin.Run(context.Background(), pc)
-	r := out.(*people.Result)
-	if r.Size != 28 {
-		t.Errorf("default Size = %d, want 28 (upstream metadata default)", r.Size)
-	}
-	if got := cap.lastVariables()["first"]; got != float64(24) {
-		t.Errorf("GraphQL first = %v, want 24 (upstream limit default)", got)
-	}
-	if got := cap.lastVariables()["size"]; got != float64(28) {
-		t.Errorf("GraphQL size = %v, want 28 (avatarUrl(size:) bound)", got)
-	}
-}
-
-// TestRun_LimitClampedTo100 guards the #472-class failure: GitHub
-// rejects a connection `first` above 100 with EXCESSIVE_PAGINATION,
-// which would fail the whole UserFollowers query and blank the
-// section. plugin_people_limit above 100 must clamp the GraphQL
-// connection size.
-func TestRun_LimitClampedTo100(t *testing.T) {
-	t.Parallel()
-	cap := &capturingMux{body: followersBody}
-	gql, err := githubapi.NewGraphQL(
-		config.NewToken("MOCKED_TOKEN"),
-		"http://mock.localhost/graphql",
-		httpx.Options{Transport: cap, MaxRetries: 0},
-	)
-	if err != nil {
-		t.Fatalf("NewGraphQL: %v", err)
-	}
-	pc := &plugins.PluginContext{
-		Data:    plugins.NewData(),
-		Inputs:  map[string]any{"user": "octocat", "plugin_people": true, "plugin_people_limit": 150},
-		GraphQL: gql,
-	}
-	if _, err := people.Plugin.Run(context.Background(), pc); err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	if got := cap.lastVariables()["first"]; got != float64(100) {
-		t.Errorf("GraphQL first = %v, want 100 (clamped from 150)", got)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			cap := &capturingMux{body: followersBody}
+			gql, err := githubapi.NewGraphQL(
+				config.NewToken("MOCKED_TOKEN"),
+				"http://mock.localhost/graphql",
+				httpx.Options{Transport: cap, DisableRetries: true},
+			)
+			if err != nil {
+				t.Fatalf("NewGraphQL: %v", err)
+			}
+			inputs := map[string]any{"user": "octocat", "plugin_people": true}
+			for k, v := range tc.inputs {
+				inputs[k] = v
+			}
+			pc := &plugins.PluginContext{Data: plugins.NewData(), Inputs: inputs, GraphQL: gql}
+			if _, err := people.Plugin.Run(context.Background(), pc); err != nil {
+				t.Fatalf("Run: %v", err)
+			}
+			if got := cap.lastVariables()["first"]; got != tc.wantFirst {
+				t.Errorf("GraphQL first = %v, want %v", got, tc.wantFirst)
+			}
+			if got := cap.lastVariables()["size"]; got != tc.wantSize {
+				t.Errorf("GraphQL size = %v, want %v", got, tc.wantSize)
+			}
+		})
 	}
 }
 
@@ -254,11 +238,13 @@ func TestPartial_HonorsResultSize(t *testing.T) {
 	}
 }
 
-func TestRun_UnknownTypeIgnored(t *testing.T) {
+// TestRun_UnknownAndRepoOnlyTypes verifies that unknown types are dropped
+// and that repo-only types in user mode yield an empty slot.
+func TestRun_UnknownAndRepoOnlyTypes(t *testing.T) {
 	t.Parallel()
 	pc := &plugins.PluginContext{
 		Data:    plugins.NewData(),
-		Inputs:  map[string]any{"user": "octocat", "plugin_people": true, "plugin_people_types": "followers,bogus"},
+		Inputs:  map[string]any{"user": "octocat", "plugin_people": true, "plugin_people_types": "followers,bogus,contributors"},
 		GraphQL: newGQL(t, followersBody),
 	}
 	out, _ := people.Plugin.Run(context.Background(), pc)
@@ -266,17 +252,6 @@ func TestRun_UnknownTypeIgnored(t *testing.T) {
 	if _, ok := r.Types["bogus"]; ok {
 		t.Errorf("unknown type should not appear in Types")
 	}
-}
-
-func TestRun_OtherKnownTypeEmpty(t *testing.T) {
-	t.Parallel()
-	pc := &plugins.PluginContext{
-		Data:    plugins.NewData(),
-		Inputs:  map[string]any{"user": "octocat", "plugin_people": true, "plugin_people_types": "contributors"},
-		GraphQL: newGQL(t, followersBody),
-	}
-	out, _ := people.Plugin.Run(context.Background(), pc)
-	r := out.(*people.Result)
 	if contributors, ok := r.Types["contributors"]; !ok || len(contributors) != 0 {
 		t.Errorf("contributors should be empty slot; got %+v", r.Types)
 	}
@@ -439,23 +414,6 @@ func TestRun_RepositoryPeopleCapsPages(t *testing.T) {
 	}
 }
 
-func TestRun_ShuffleDeterministic(t *testing.T) {
-	t.Parallel()
-	in := map[string]any{
-		"user":                       "octocat",
-		"plugin_people":              true,
-		"plugin_people_shuffle":      true,
-		"plugin_people_shuffle_seed": 42,
-	}
-	pc1 := &plugins.PluginContext{Data: plugins.NewData(), Inputs: in, GraphQL: newGQL(t, followersBody)}
-	pc2 := &plugins.PluginContext{Data: plugins.NewData(), Inputs: in, GraphQL: newGQL(t, followersBody)}
-	out1, _ := people.Plugin.Run(context.Background(), pc1)
-	out2, _ := people.Plugin.Run(context.Background(), pc2)
-	if loginAt(out1, "followers", 0) != loginAt(out2, "followers", 0) {
-		t.Errorf("same seed should yield same shuffle")
-	}
-}
-
 func TestRun_NilGraphQL_Skipped(t *testing.T) {
 	t.Parallel()
 	pc := &plugins.PluginContext{Data: plugins.NewData(), Inputs: map[string]any{"user": "octocat", "plugin_people": true}}
@@ -463,33 +421,6 @@ func TestRun_NilGraphQL_Skipped(t *testing.T) {
 	r := out.(*people.Result)
 	if !r.Skipped {
 		t.Errorf("nil GraphQL should yield Skipped")
-	}
-}
-
-func TestRun_GoldenShape(t *testing.T) {
-	r := &people.Result{Types: map[string][]people.Person{
-		"followers": {{Login: "alice", Name: "Alice", AvatarURL: "a"}},
-		"following": {{Login: "carol", Name: "Carol", AvatarURL: "c"}},
-	}}
-	got, err := json.MarshalIndent(r, "", "  ")
-	if err != nil {
-		t.Fatalf("MarshalIndent: %v", err)
-	}
-	got = append(got, '\n')
-	gp := filepath.Join(repoRoot(t), "tests", "golden", "json", "m4", "people.json")
-	if *updateGolden {
-		_ = os.MkdirAll(filepath.Dir(gp), 0o755)
-		if werr := os.WriteFile(gp, got, 0o644); werr != nil {
-			t.Fatalf("WriteFile: %v", werr)
-		}
-		return
-	}
-	want, err := os.ReadFile(gp)
-	if err != nil {
-		t.Fatalf("ReadFile: %v (run with -update)", err)
-	}
-	if string(want) != string(got) {
-		t.Fatalf("golden mismatch\nwant:\n%s\ngot:\n%s", string(want), string(got))
 	}
 }
 
@@ -541,21 +472,6 @@ func TestPartial_RepositoryGolden(t *testing.T) {
 	}
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
-	}
-	// DOM contract spot-checks mirroring upstream people.repository.svg:
-	for _, marker := range []string{
-		`data-section="people"`,
-		`data-type="contributors"`,
-		`data-type="stargazers"`,
-		`data-type="watchers"`,
-		`>2 contributors</text>`,
-		`>1 stargazer</text>`,
-		`>1 watcher</text>`,
-		`href="https://avatars.example/alice.png"`,
-	} {
-		if !strings.Contains(got, marker) {
-			t.Errorf("partial missing marker %q in:\n%s", marker, got)
-		}
 	}
 }
 

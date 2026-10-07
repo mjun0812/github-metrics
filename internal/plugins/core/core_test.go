@@ -26,33 +26,29 @@ func TestCore_Run_ResolvesAsiaTokyoTimezone(t *testing.T) {
 	}
 }
 
-func TestCore_Run_FallsBackToUTCOnInvalidIANA(t *testing.T) {
+func TestCore_Run_TimezoneFallsBackToUTC(t *testing.T) {
 	t.Parallel()
 
-	pc := &plugins.PluginContext{
-		Inputs: map[string]any{"config_timezone": "Not/AZone"},
-		Data:   plugins.NewData(),
-	}
-	if _, err := core.Plugin.Run(context.Background(), pc); err != nil {
-		t.Fatalf("core.Run: %v", err)
-	}
-	if pc.Data.Config.Timezone.Name != "UTC" {
-		t.Fatalf("Timezone.Name = %q, want UTC", pc.Data.Config.Timezone.Name)
-	}
-	if pc.Data.Config.Timezone.Error == nil {
-		t.Fatalf("Timezone.Error = nil, want non-nil for invalid IANA")
-	}
-}
-
-func TestCore_Run_DefaultsTimezoneToUTC(t *testing.T) {
-	t.Parallel()
-
-	pc := &plugins.PluginContext{Inputs: map[string]any{}, Data: plugins.NewData()}
-	if _, err := core.Plugin.Run(context.Background(), pc); err != nil {
-		t.Fatalf("core.Run: %v", err)
-	}
-	if pc.Data.Config.Timezone.Name != "UTC" {
-		t.Fatalf("Timezone.Name = %q, want UTC", pc.Data.Config.Timezone.Name)
+	for name, tc := range map[string]struct {
+		inputs  map[string]any
+		wantErr bool
+	}{
+		"missing":      {inputs: map[string]any{}},
+		"invalid IANA": {inputs: map[string]any{"config_timezone": "Not/AZone"}, wantErr: true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			pc := &plugins.PluginContext{Inputs: tc.inputs, Data: plugins.NewData()}
+			if _, err := core.Plugin.Run(context.Background(), pc); err != nil {
+				t.Fatalf("core.Run: %v", err)
+			}
+			if pc.Data.Config.Timezone.Name != "UTC" {
+				t.Fatalf("Timezone.Name = %q, want UTC", pc.Data.Config.Timezone.Name)
+			}
+			if (pc.Data.Config.Timezone.Error != nil) != tc.wantErr {
+				t.Fatalf("Timezone.Error = %v, wantErr %v", pc.Data.Config.Timezone.Error, tc.wantErr)
+			}
+		})
 	}
 }
 
@@ -65,16 +61,6 @@ func TestCore_Run_InitializesComputedRepositoriesLanguages(t *testing.T) {
 	}
 	if pc.Data.Computed.Repositories.Languages == nil {
 		t.Fatalf("Computed.Repositories.Languages should be non-nil after core.Run")
-	}
-}
-
-func TestCore_Run_NilDataIsTolerated(t *testing.T) {
-	t.Parallel()
-
-	pc := &plugins.PluginContext{} // nil Data
-	_, err := core.Plugin.Run(context.Background(), pc)
-	if err != nil {
-		t.Fatalf("core.Run with nil Data should not error, got %v", err)
 	}
 }
 

@@ -22,8 +22,6 @@ M4 Polish (T092) 時点では未生成である。生成手順:
 
 - `internal/tools/sync-fixtures` は `tests/cases/<user>.yml` 不在で
   exit 1、ただし `org_repo` 自体が無い環境では exit 2 で soft pass
-- `tests/compatibility/json_test.go` の M4 互換テストは fixture 不在
-  時に `t.Skip` するためビルドは緑のまま
 
 上記 1-4 が手動完了するまで T092 / T093 は spec 上 "deferred" 扱い。
 完了 SC-004 evidence (key/型 diff = 0) は手動再現時に PR body で報告。

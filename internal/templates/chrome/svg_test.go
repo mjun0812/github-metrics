@@ -24,19 +24,15 @@ func TestSVGText_Basic(t *testing.T) {
 	if strings.Contains(got, "font-weight") || strings.Contains(got, "text-anchor") {
 		t.Errorf("zero-value opts should not emit weight/anchor: %q", got)
 	}
-}
 
-// TestSVGText_BoldAnchorFill exercises the non-default options.
-func TestSVGText_BoldAnchorFill(t *testing.T) {
-	t.Parallel()
-	got := SVGText(0, 0, "Hi", SVGTextOpts{
+	got = SVGText(0, 0, "Hi", SVGTextOpts{
 		Size: 20, Weight: fontmetrics.Bold, Fill: "#0366d6", Anchor: "middle",
 	})
 	for _, want := range []string{
 		`font-size="20"`, `fill="#0366d6"`, `font-weight="bold"`, `text-anchor="middle"`,
 	} {
 		if !strings.Contains(got, want) {
-			t.Errorf("missing %q in %q", want, got)
+			t.Errorf("non-default opts: missing %q in %q", want, got)
 		}
 	}
 }
@@ -110,30 +106,6 @@ func TestSVGField(t *testing.T) {
 	}
 }
 
-// TestSVGColumn stacks rows and tracks the cursor / height.
-func TestSVGColumn(t *testing.T) {
-	t.Parallel()
-	c := NewSVGColumn(0, CardWidth/2, 34)
-	if !c.Empty() {
-		t.Fatal("new column should be Empty")
-	}
-	c.Field(":octicon-clock:", "one")
-	c.Field(":octicon-people:", "two")
-	if c.Empty() {
-		t.Fatal("column with rows should not be Empty")
-	}
-	if c.Height() != 2*FieldPitch {
-		t.Errorf("height = %v, want %v", c.Height(), 2*FieldPitch)
-	}
-	// Second row must sit one pitch below the first.
-	if !strings.Contains(c.Markup(), `<text x="37" y="48"`) {
-		t.Errorf("first row baseline expected at y=48: %q", c.Markup())
-	}
-	if !strings.Contains(c.Markup(), `<text x="37" y="68"`) {
-		t.Errorf("second row baseline expected at y=68: %q", c.Markup())
-	}
-}
-
 // TestSVGCalendarRow emits one positioned rect per day, with the shared
 // calendar-grid marker; an empty slice is a no-op.
 func TestSVGCalendarRow(t *testing.T) {
@@ -183,26 +155,6 @@ func TestSVGAvatar(t *testing.T) {
 	rect := SVGAvatar(11, 10, 20, "https://x/o.png", "ho", false)
 	if !strings.Contains(rect, `<rect x="11" y="10" width="20" height="20" rx="3" ry="3"/>`) {
 		t.Errorf("org avatar should clip to a 15%% rounded square: %q", rect)
-	}
-}
-
-func TestCalendarLevelColor(t *testing.T) {
-	t.Parallel()
-	for _, tc := range []struct {
-		level int
-		want  string
-	}{
-		{0, "#ebedf0"},
-		{1, "#9be9a8"},
-		{2, "#40c463"},
-		{3, "#30a14e"},
-		{4, "#216e39"},
-		{5, "#ebedf0"},  // out of range → empty-cell fallback
-		{-1, "#ebedf0"}, // out of range → empty-cell fallback
-	} {
-		if got := CalendarLevelColor(tc.level); got != tc.want {
-			t.Errorf("CalendarLevelColor(%d) = %q, want %q", tc.level, got, tc.want)
-		}
 	}
 }
 

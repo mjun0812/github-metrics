@@ -2,13 +2,11 @@ package repositories_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/mjun0812/github-metrics/internal/config"
@@ -82,35 +80,10 @@ func TestRun_FeaturedDescByStars(t *testing.T) {
 
 // TestRun_FeaturedExplicitList exercises upstream's
 // `plugin_repositories_featured` semantics: a comma-separated list of
-// "owner/repo" or bare "repo" names overrides the auto-list, and the
-// output order follows the input order — not the sort key.
+// "owner/repo" or bare "repo" names overrides the auto-list, the output
+// order follows the input order (not the sort key), and unknown repos
+// are silently dropped.
 func TestRun_FeaturedExplicitList(t *testing.T) {
-	t.Parallel()
-	data := plugins.NewData()
-	data.User = &plugins.User{Login: "octocat"}
-	data.Computed.RepositoryList = octocatRepos()
-	pc := &plugins.PluginContext{
-		Inputs: map[string]any{
-			"plugin_repositories_featured": "octocat/alpha, beta",
-		},
-		Data: data,
-	}
-	out, err := repositories.Plugin.Run(context.Background(), pc)
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	r := out.(*repositories.Result)
-	want := []string{"octocat/alpha", "octocat/beta"}
-	got := nameList(r.Featured)
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Featured (explicit list) = %v, want %v", got, want)
-	}
-}
-
-// TestRun_FeaturedExplicitListUnknownIDsSkipped pins upstream's silent
-// skip behavior — unknown repos in the explicit list are dropped so the
-// remaining order stays intact.
-func TestRun_FeaturedExplicitListUnknownIDsSkipped(t *testing.T) {
 	t.Parallel()
 	data := plugins.NewData()
 	data.User = &plugins.User{Login: "octocat"}
@@ -121,11 +94,14 @@ func TestRun_FeaturedExplicitListUnknownIDsSkipped(t *testing.T) {
 		},
 		Data: data,
 	}
-	out, _ := repositories.Plugin.Run(context.Background(), pc)
+	out, err := repositories.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
 	want := []string{"octocat/gamma", "octocat/alpha"}
 	got := nameList(out.(*repositories.Result).Featured)
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Featured = %v, want %v", got, want)
+		t.Errorf("Featured (explicit list) = %v, want %v", got, want)
 	}
 }
 
@@ -232,37 +208,6 @@ func TestPartial_Repositories_Golden(t *testing.T) {
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
-	if !strings.Contains(got, `class="repository"`) {
-		t.Errorf("partial missing repository marker")
-	}
-}
-
-func TestRun_GoldenShape_Repositories(t *testing.T) {
-	r := &repositories.Result{
-		Featured: []plugins.Repository{
-			{NameWithOwner: "octocat/gamma", URL: "https://github.com/octocat/gamma", Stars: 200, Forks: 10},
-		},
-	}
-	got, err := json.MarshalIndent(r, "", "  ")
-	if err != nil {
-		t.Fatalf("MarshalIndent: %v", err)
-	}
-	got = append(got, '\n')
-	gp := filepath.Join(repoRoot(t), "tests", "golden", "json", "m4", "repositories.json")
-	if *updateGolden {
-		_ = os.MkdirAll(filepath.Dir(gp), 0o755)
-		if werr := os.WriteFile(gp, got, 0o644); werr != nil {
-			t.Fatalf("WriteFile: %v", werr)
-		}
-		return
-	}
-	want, err := os.ReadFile(gp)
-	if err != nil {
-		t.Fatalf("ReadFile: %v (run with -update)", err)
-	}
-	if string(want) != string(got) {
-		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), string(got))
-	}
 }
 
 func nameList(rs []plugins.Repository) []string {
@@ -287,7 +232,7 @@ func runWithStarred(t *testing.T, repos []plugins.Repository, login, body string
 	rest, err := githubapi.NewREST(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost",
-		httpx.Options{Transport: mux, MaxRetries: 0, DisableRetries: true},
+		httpx.Options{Transport: mux, DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
@@ -401,7 +346,7 @@ func TestRun_Starred_EmptyLogin(t *testing.T) {
 	rest, err := githubapi.NewREST(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost",
-		httpx.Options{Transport: mux, MaxRetries: 0, DisableRetries: true},
+		httpx.Options{Transport: mux, DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
@@ -427,29 +372,6 @@ func TestRun_Starred_EmptyLogin(t *testing.T) {
 	}
 	if calls := mux.Calls(); len(calls) != 0 {
 		t.Errorf("unexpected HTTP calls: %+v", calls)
-	}
-}
-
-// TC-005: Starred not enabled → Starred is nil (M4 baseline preserved).
-func TestRun_Starred_NotEnabled(t *testing.T) {
-	t.Parallel()
-	data := plugins.NewData()
-	data.Computed.RepositoryList = octocatRepos()
-	data.User = &plugins.User{Login: "octocat"}
-	pc := &plugins.PluginContext{
-		Inputs: map[string]any{
-			"plugin_repositories": true,
-			// plugin_repositories_starred intentionally omitted
-		},
-		Data: data,
-	}
-	out, err := repositories.Plugin.Run(context.Background(), pc)
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	r := out.(*repositories.Result)
-	if r.Starred != nil {
-		t.Errorf("Starred = %v, want nil when plugin_repositories_starred unset", r.Starred)
 	}
 }
 

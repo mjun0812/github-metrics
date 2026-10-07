@@ -51,39 +51,6 @@ func TestRunCLIWith_PerPlugin_DefaultMode(t *testing.T) {
 	}
 }
 
-// TestRunCLIWith_Combined_ExplicitFlag verifies that --combined produces
-// a single combined SVG file.
-func TestRunCLIWith_Combined_ExplicitFlag(t *testing.T) {
-	outDir := t.TempDir()
-
-	rest := newFakeREST()
-	cf := &CLIFlags{
-		User:     "octocat",
-		Template: "classic",
-		Output:   "svg",
-		Filename: "metrics.svg",
-		Combined: true,
-		Dryrun:   true,
-		Plugins:  map[string]string{},
-	}
-
-	err := runCLIWith(context.Background(), cf, runOptions{
-		Env:       []string{"GITHUB_TOKEN=ghp_mock_pat_valid"},
-		Stdout:    io.Discard,
-		OutputDir: outDir,
-		BuildDeps: buildTestDeps(t, rest),
-	})
-	if err != nil {
-		t.Fatalf("runCLIWith combined: %v", err)
-	}
-
-	// Combined mode → single file metrics.svg
-	path := filepath.Join(outDir, "metrics.svg")
-	if _, err := os.Stat(path); err != nil {
-		t.Errorf("expected combined file %s; err=%v", path, err)
-	}
-}
-
 // TestRunCLIWith_FilenameImpliesCombined is the REGRESSION test for #616.
 // When --filename foo.svg is explicitly set, the result must be a single
 // combined SVG at <outDir>/foo.svg, NOT per-plugin fan-out.

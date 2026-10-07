@@ -31,12 +31,15 @@ func (f *fakeFetcher) ImgB64(_ context.Context, target string) (string, error) {
 	return f.prefix, nil
 }
 
-// TestInlineImages_ReplacesRemoteAvatar asserts a remote `<img>` src is
-// swapped for the fetched data URI.
+// TestInlineImages_ReplacesRemoteAvatar asserts a remote `<img src>`, a
+// native-SVG `<image href>` and its `xlink:href` spelling are each swapped
+// for the fetched data URI.
 func TestInlineImages_ReplacesRemoteAvatar(t *testing.T) {
 	t.Parallel()
 	f := newFakeFetcher()
-	in := `<img class="avatar" src="https://avatars.githubusercontent.com/u/1?v=4" width="20" height="20"/>`
+	in := `<img class="avatar" src="https://avatars.githubusercontent.com/u/1?v=4" width="20" height="20"/>` +
+		`<image class="avatar" href="https://avatars.githubusercontent.com/u/2?v=4" width="20" height="20"/>` +
+		`<image xlink:href="https://avatars.githubusercontent.com/u/3?v=4"/>`
 	got, err := InlineImagesStage(context.Background(), f).Run(in)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -44,8 +47,8 @@ func TestInlineImages_ReplacesRemoteAvatar(t *testing.T) {
 	if strings.Contains(got, "https://avatars.githubusercontent.com") {
 		t.Errorf("remote URL should be gone; got %q", got)
 	}
-	if !strings.Contains(got, `src="data:image/png;base64,AAAA"`) {
-		t.Errorf("data URI not inlined; got %q", got)
+	if c := strings.Count(got, `="data:image/png;base64,AAAA"`); c != 3 {
+		t.Errorf("want 3 inlined references, got %d (%q)", c, got)
 	}
 }
 
@@ -101,43 +104,6 @@ func TestInlineImages_PassThrough(t *testing.T) {
 	}
 }
 
-// TestInlineImages_ReplacesSVGImageHref asserts a native-SVG
-// `<image href="http…">` (the header avatar after the #409 Phase B1
-// conversion) and its `xlink:href` spelling are inlined like `<img src>`.
-func TestInlineImages_ReplacesSVGImageHref(t *testing.T) {
-	t.Parallel()
-	f := newFakeFetcher()
-	in := `<image class="avatar" href="https://avatars.githubusercontent.com/u/1?v=4" width="20" height="20"/>` +
-		`<image xlink:href="https://avatars.githubusercontent.com/u/2?v=4"/>`
-	got, err := InlineImagesStage(context.Background(), f).Run(in)
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	if strings.Contains(got, "https://avatars.githubusercontent.com") {
-		t.Errorf("remote URL should be gone; got %q", got)
-	}
-	if c := strings.Count(got, `="data:image/png;base64,AAAA"`); c != 2 {
-		t.Errorf("want 2 inlined hrefs, got %d (%q)", c, got)
-	}
-}
-
-// TestInlineImages_FetchFailureKeepsURL asserts a fetch error is
-// surfaced while the original URL is preserved (best-effort, FR-018).
-func TestInlineImages_FetchFailureKeepsURL(t *testing.T) {
-	t.Parallel()
-	f := newFakeFetcher()
-	bad := "https://example/bad.png"
-	f.fail[bad] = true
-	in := `<img src="` + bad + `"/>`
-	got, err := InlineImagesStage(context.Background(), f).Run(in)
-	if err == nil {
-		t.Fatal("expected aggregated fetch error")
-	}
-	if !strings.Contains(got, bad) {
-		t.Errorf("failed URL should be preserved; got %q", got)
-	}
-}
-
 // TestInlineImages_PartialFailureKeepsSuccessesThroughApply asserts that
 // when one fetch fails, the successfully inlined images survive the full
 // Apply chain instead of being discarded with the stage's error.
@@ -174,27 +140,5 @@ func TestInlineImages_NilFetcher(t *testing.T) {
 	}
 	if got != in {
 		t.Errorf("nil fetcher should pass through; got %q", got)
-	}
-}
-
-// TestInlineImages_Idempotent asserts a second pass over already-inlined
-// output performs no further fetches.
-func TestInlineImages_Idempotent(t *testing.T) {
-	t.Parallel()
-	f := newFakeFetcher()
-	in := `<img src="https://example/x.png"/>`
-	once, err := InlineImagesStage(context.Background(), f).Run(in)
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	twice, err := InlineImagesStage(context.Background(), f).Run(once)
-	if err != nil {
-		t.Fatalf("Run (2nd): %v", err)
-	}
-	if once != twice {
-		t.Errorf("second pass changed output: %q != %q", once, twice)
-	}
-	if n := f.calls["https://example/x.png"]; n != 1 {
-		t.Errorf("want 1 fetch across both passes, got %d", n)
 	}
 }

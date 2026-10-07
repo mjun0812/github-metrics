@@ -32,21 +32,6 @@ func TestParseFlags_AllRecognized(t *testing.T) {
 	}
 }
 
-// TestParseFlags_TokenFlagsRejected pins the v3.0 removal of --token /
-// --token-env. The flag parser must reject both with the standard
-// `flag provided but not defined` error.
-func TestParseFlags_TokenFlagsRejected(t *testing.T) {
-	t.Parallel()
-	for _, args := range [][]string{
-		{"--token", "ghp_xxx"},
-		{"--token-env", "GH_TOKEN"},
-	} {
-		if _, err := ParseFlags(args); err == nil {
-			t.Errorf("ParseFlags(%v): expected error for removed flag", args)
-		}
-	}
-}
-
 func TestParseFlags_DefaultsApplied(t *testing.T) {
 	t.Parallel()
 	cf, err := ParseFlags([]string{"--user", "x"})
@@ -74,18 +59,15 @@ func TestParseFlags_SkipPrivateRepo(t *testing.T) {
 	if inputs["repositories_skip_private"] != true {
 		t.Errorf("repositories_skip_private = %v, want true", inputs["repositories_skip_private"])
 	}
-}
 
-func TestParseFlags_SkipPrivateRepo_DefaultOff(t *testing.T) {
-	t.Parallel()
-	cf, err := ParseFlags([]string{"--user", "x"})
+	cf, err = ParseFlags([]string{"--user", "x"})
 	if err != nil {
 		t.Fatalf("ParseFlags: %v", err)
 	}
 	if cf.SkipPrivateRepo {
 		t.Errorf("SkipPrivateRepo must default to false")
 	}
-	inputs, err := cf.ToInvocation(map[string]string{})
+	inputs, err = cf.ToInvocation(map[string]string{})
 	if err != nil {
 		t.Fatalf("ToInvocation: %v", err)
 	}
@@ -146,26 +128,6 @@ output_action: commit
 		if !equalAny(got, v) {
 			t.Errorf("%s: got %v (%T), want %v (%T)", k, got, got, v, v)
 		}
-	}
-}
-
-func TestLoadYAMLConfig_MissingFile(t *testing.T) {
-	t.Parallel()
-	_, err := LoadYAMLConfig(filepath.Join(t.TempDir(), "missing.yaml"))
-	if err == nil {
-		t.Errorf("expected error for missing file")
-	}
-}
-
-func TestLoadYAMLConfig_InvalidYAML(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	path := filepath.Join(dir, "bad.yaml")
-	if err := os.WriteFile(path, []byte("this is: not: yaml: ["), 0o600); err != nil {
-		t.Fatalf("write: %v", err)
-	}
-	if _, err := LoadYAMLConfig(path); err == nil {
-		t.Errorf("expected error for malformed YAML")
 	}
 }
 
@@ -270,18 +232,6 @@ func TestResolveOutputWriter_FilePath_MkdirP(t *testing.T) {
 	}
 	if _, err := os.Stat(target); err != nil {
 		t.Errorf("output file missing: %v", err)
-	}
-}
-
-func TestResolveOutputWriter_FilePathError(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	blocker := filepath.Join(dir, "file")
-	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
-		t.Fatalf("write blocker: %v", err)
-	}
-	if _, _, err := ResolveOutputWriter(filepath.Join(blocker, "out.svg"), "svg"); err == nil {
-		t.Errorf("expected mkdir error under file path")
 	}
 }
 

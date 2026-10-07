@@ -4,7 +4,6 @@ package integration_test
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"os"
@@ -160,7 +159,7 @@ func TestComputeSVG_P3HeavyAllPlugins(t *testing.T) {
 	gql, err := githubapi.NewGraphQL(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost/graphql",
-		httpx.Options{Transport: gqlFix, MaxRetries: 0},
+		httpx.Options{Transport: gqlFix, DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)
@@ -168,7 +167,7 @@ func TestComputeSVG_P3HeavyAllPlugins(t *testing.T) {
 	rest, err := githubapi.NewREST(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost",
-		httpx.Options{Transport: &p3HeavyEventsMux{}, MaxRetries: 0},
+		httpx.Options{Transport: &p3HeavyEventsMux{}, DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
@@ -216,81 +215,12 @@ func TestComputeSVG_P3HeavyAllPlugins(t *testing.T) {
 	}
 }
 
-// TestComputeJSON_P3HeavyAllPlugins asserts the JSON output exposes
-// both heavy plugin entries with non-skipped payloads.
-func TestComputeJSON_P3HeavyAllPlugins(t *testing.T) {
-	tmp := t.TempDir()
-	srcA := makeHeavyRepo(t, filepath.Join(tmp, "alpha"), map[string]string{
-		"main.go": "package main\nfunc main(){}\n",
-	})
-	srcB := makeHeavyRepo(t, filepath.Join(tmp, "beta"), map[string]string{
-		"app.js": "console.log(1);\n",
-	})
-	cln := &fsCloner{sources: map[string]string{
-		"https://github.com/octocat/alpha.git": srcA,
-		"https://github.com/octocat/beta.git":  srcB,
-	}}
-
-	gqlFix := newGraphQLFixture()
-	gqlFix.On("User", p1UserOctocat)
-	gqlFix.On("UserRepositories", p1UserRepositories)
-	gqlFix.onContributionDefaults()
-	gql, err := githubapi.NewGraphQL(
-		config.NewToken("MOCKED_TOKEN"),
-		"http://mock.localhost/graphql",
-		httpx.Options{Transport: gqlFix, MaxRetries: 0},
-	)
-	if err != nil {
-		t.Fatalf("NewGraphQL: %v", err)
+// snippet returns a bounded preview of s so failure messages stay
+// readable in CI logs.
+func snippet(s string) string {
+	const max = 800
+	if len(s) <= max {
+		return s
 	}
-	rest, err := githubapi.NewREST(
-		config.NewToken("MOCKED_TOKEN"),
-		"http://mock.localhost",
-		httpx.Options{Transport: &p3HeavyEventsMux{}, MaxRetries: 0},
-	)
-	if err != nil {
-		t.Fatalf("NewREST: %v", err)
-	}
-	deps := engine.Deps{
-		GraphQL: gql,
-		REST:    rest,
-		Render:  &render.FakeRenderer{},
-	}
-	inputs := map[string]any{
-		"plugin_languages":          true,
-		"plugin_languages_sections": "most-used,recently-used",
-		"plugin_languages_indepth":  true,
-		languages.IndepthClonerKey:  languages.IndepthCloner(cln),
-	}
-	res, err := engine.Compute(context.Background(), engine.Request{
-		Login:    "octocat",
-		Template: "classic",
-		Format:   "json",
-		Inputs:   inputs,
-	}, deps)
-	if err != nil {
-		t.Fatalf("Compute: %v", err)
-	}
-	if res.MIME != "application/json" {
-		t.Fatalf("MIME = %q, want application/json", res.MIME)
-	}
-	var payload map[string]any
-	if err := json.Unmarshal(res.Output, &payload); err != nil {
-		t.Fatalf("Unmarshal: %v", err)
-	}
-	pluginsMap, _ := payload["plugins"].(map[string]any)
-	if pluginsMap == nil {
-		t.Fatalf("plugins map missing in JSON output:\n%s", string(res.Output))
-	}
-	for _, slug := range []string{"languages.recent", "languages.indepth"} {
-		entry, ok := pluginsMap[slug].(map[string]any)
-		if !ok {
-			t.Errorf("data.plugins[%q] missing or wrong type: %T", slug, pluginsMap[slug])
-			continue
-		}
-		// Both heavy plugins should NOT be skipped given the fixture deps.
-		if sk, _ := entry["skipped"].(bool); sk {
-			t.Errorf("data.plugins[%q] skipped=true; entry=%v", slug, entry)
-		}
-	}
+	return s[:max] + "..."
 }

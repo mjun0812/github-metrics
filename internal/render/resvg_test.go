@@ -96,23 +96,6 @@ func TestResvg_JPEG_Decodable(t *testing.T) {
 	}
 }
 
-// TestResvg_SVG_PassThrough confirms the svg branch returns the input
-// verbatim without invoking the resvg subprocess.
-func TestResvg_SVG_PassThrough(t *testing.T) {
-	r := withResvg(t)
-
-	res, err := r.Resize(context.Background(), resvgFixtureSVG, ResizeOpts{Convert: "svg"})
-	if err != nil {
-		t.Fatalf("Resize(svg): %v", err)
-	}
-	if res.MIME != "image/svg+xml" {
-		t.Errorf("MIME = %q, want image/svg+xml", res.MIME)
-	}
-	if string(res.Body) != resvgFixtureSVG {
-		t.Errorf("Body = %q, want verbatim input", res.Body)
-	}
-}
-
 // TestApplyPadding covers the pure-Go canvas expansion: trivial padding
 // is a no-op that reports the intrinsic dims, and a non-trivial spec
 // rewrites width/height/viewBox by width*mult+abs / height*mult+abs

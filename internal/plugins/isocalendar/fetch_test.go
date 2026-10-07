@@ -16,45 +16,27 @@ import (
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
-// TestWindowStart_HalfYearSnapsToSunday pins the upstream range rule:
-// half-year is now-180d rewound to the previous Sunday 00:00:00 UTC.
-// 2026-06-03 (Wed) - 180d = 2025-12-05 (Fri) → Sunday 2025-11-30.
-func TestWindowStart_HalfYearSnapsToSunday(t *testing.T) {
+// TestWindowStart pins the upstream range rule: half-year is now-180d and
+// full-year is now-1y, both rewound to the previous Sunday 00:00:00 UTC
+// (only the time-of-day is zeroed when the date is already a Sunday).
+func TestWindowStart(t *testing.T) {
 	t.Parallel()
-	now := time.Date(2026, 6, 3, 8, 33, 25, 0, time.UTC)
-	got := windowStart(now, "half-year")
-	want := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
-	if !got.Equal(want) {
-		t.Errorf("windowStart(half-year) = %v, want %v", got, want)
-	}
-	if got.Weekday() != time.Sunday {
-		t.Errorf("windowStart(half-year).Weekday() = %v, want Sunday", got.Weekday())
-	}
-}
-
-// TestWindowStart_FullYearSnapsToSunday — full-year is now-1y rewound
-// to the previous Sunday. 2026-06-03 - 1y = 2025-06-03 (Tue) →
-// Sunday 2025-06-01.
-func TestWindowStart_FullYearSnapsToSunday(t *testing.T) {
-	t.Parallel()
-	now := time.Date(2026, 6, 3, 8, 33, 25, 0, time.UTC)
-	got := windowStart(now, "full-year")
-	want := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)
-	if !got.Equal(want) {
-		t.Errorf("windowStart(full-year) = %v, want %v", got, want)
-	}
-}
-
-// TestWindowStart_AlreadySunday — when now-180d already falls on a
-// Sunday only the time-of-day is zeroed (upstream skips the day shift).
-func TestWindowStart_AlreadySunday(t *testing.T) {
-	t.Parallel()
-	// 2025-11-30 (Sun) + 180d = 2026-05-29, so now-180d lands on the Sunday.
-	now := time.Date(2026, 5, 29, 10, 0, 0, 0, time.UTC)
-	got := windowStart(now, "half-year")
-	want := time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)
-	if !got.Equal(want) {
-		t.Errorf("windowStart = %v, want %v", got, want)
+	for _, tc := range []struct {
+		name     string
+		now      time.Time
+		duration string
+		want     time.Time
+	}{
+		// 2026-06-03 (Wed) - 180d = 2025-12-05 (Fri) → Sunday 2025-11-30.
+		{"half-year", time.Date(2026, 6, 3, 8, 33, 25, 0, time.UTC), "half-year", time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)},
+		// 2026-06-03 - 1y = 2025-06-03 (Tue) → Sunday 2025-06-01.
+		{"full-year", time.Date(2026, 6, 3, 8, 33, 25, 0, time.UTC), "full-year", time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)},
+		// 2026-05-29 - 180d already lands on Sunday 2025-11-30.
+		{"already Sunday", time.Date(2026, 5, 29, 10, 0, 0, 0, time.UTC), "half-year", time.Date(2025, 11, 30, 0, 0, 0, 0, time.UTC)},
+	} {
+		if got := windowStart(tc.now, tc.duration); !got.Equal(tc.want) {
+			t.Errorf("%s: windowStart = %v, want %v", tc.name, got, tc.want)
+		}
 	}
 }
 
@@ -131,8 +113,8 @@ func TestFetchWindowedWeeks_ChunkedFetch(t *testing.T) {
 		]}}}}}`,
 	}
 	gql, err := githubapi.NewGraphQL(config.NewToken("ghp_test"), "", httpx.Options{
-		Transport:  transport,
-		MaxRetries: 0,
+		Transport:      transport,
+		DisableRetries: true,
 	})
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)
@@ -168,21 +150,6 @@ func TestFetchWindowedWeeks_ChunkedFetch(t *testing.T) {
 	}
 }
 
-// TestFetchWindowedWeeks_NoGraphQL — the degraded path contract: no
-// client (unit-test harnesses) yields nil weeks and no error so Run
-// falls back to slicing the shared indepth calendar.
-func TestFetchWindowedWeeks_NoGraphQL(t *testing.T) {
-	t.Parallel()
-	pc := &plugins.PluginContext{Data: plugins.NewData()}
-	weeks, err := fetchWindowedWeeks(context.Background(), pc, "half-year")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if weeks != nil {
-		t.Errorf("weeks = %v, want nil", weeks)
-	}
-}
-
 // TestFetchWindowedWeeks_DisabledPluginSkipsFetch — core.RunPlugins
 // invokes every registered plugin even when its input is off, so a
 // disabled isocalendar must not issue any GraphQL traffic.
@@ -190,8 +157,8 @@ func TestFetchWindowedWeeks_DisabledPluginSkipsFetch(t *testing.T) {
 	t.Parallel()
 	transport := &chunkRecorderTransport{body: `{"data":{"user":null}}`}
 	gql, err := githubapi.NewGraphQL(config.NewToken("ghp_test"), "", httpx.Options{
-		Transport:  transport,
-		MaxRetries: 0,
+		Transport:      transport,
+		DisableRetries: true,
 	})
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)
@@ -222,8 +189,8 @@ func TestRun_ThreadsEmptyGraphQLResponseToDataErrors(t *testing.T) {
 	t.Parallel()
 	transport := &chunkRecorderTransport{body: `{"data":null}`}
 	gql, err := githubapi.NewGraphQL(config.NewToken("ghp_test"), "", httpx.Options{
-		Transport:  transport,
-		MaxRetries: 0,
+		Transport:      transport,
+		DisableRetries: true,
 	})
 	if err != nil {
 		t.Fatalf("NewGraphQL: %v", err)

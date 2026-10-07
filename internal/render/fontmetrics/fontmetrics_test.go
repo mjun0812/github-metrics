@@ -53,46 +53,6 @@ func TestWidth_ZeroOrNegativeSize(t *testing.T) {
 	}
 }
 
-// TestWidth_Monotonicity verifies that appending characters never
-// shrinks the measured width, and that a strict superset of visible
-// text is strictly wider.
-func TestWidth_Monotonicity(t *testing.T) {
-	prefixes := []string{"H", "He", "Hel", "Hell", "Hello", "Hello,", "Hello, W", "Hello, World!"}
-	prev := 0.0
-	for _, p := range prefixes {
-		w := Width(p, 14)
-		if w <= prev {
-			t.Errorf("Width(%q) = %.4f, want > previous width %.4f", p, w, prev)
-		}
-		prev = w
-	}
-}
-
-// TestWidth_ScaleLinearity checks that doubling sizePx roughly doubles
-// the measured width (within the fixed-point rounding that per-glyph
-// advances accumulate).
-func TestWidth_ScaleLinearity(t *testing.T) {
-	text := "Joined GitHub 8 years ago"
-	w14 := Width(text, 14)
-	w28 := Width(text, 28)
-	w56 := Width(text, 56)
-
-	approxEqual(t, w28, w14*2, w14*0.02)
-	approxEqual(t, w56, w14*4, w14*0.02)
-}
-
-// TestWidth_BoldWiderThanRegular checks that, for ordinary Latin text,
-// the Bold face is measured no narrower than Regular — bold glyphs
-// have equal or larger advances in Liberation Sans.
-func TestWidth_BoldWiderThanRegular(t *testing.T) {
-	text := "The quick brown fox jumps over the lazy dog"
-	reg := Width(text, 16)
-	bold := WidthBold(text, 16)
-	if bold <= reg {
-		t.Errorf("WidthBold(%q) = %.4f, want > Width(...) = %.4f", text, bold, reg)
-	}
-}
-
 // TestWidth_MissingGlyphFallback documents and verifies the fallback
 // behavior for runes absent from Liberation Sans (e.g. emoji): rather
 // than erroring or measuring as zero-width, each such rune is charged

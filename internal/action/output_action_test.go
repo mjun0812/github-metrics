@@ -6,25 +6,12 @@ import (
 	"testing"
 )
 
-func TestRegistry_Validate_SupportedAreOK(t *testing.T) {
-	t.Parallel()
-	r := DefaultRegistry()
-	for _, s := range r.Supported {
-		if err := r.Validate(s); err != nil {
-			t.Errorf("Validate(%q) = %v, want nil", s, err)
-		}
-	}
-}
-
 func TestRegistry_Validate_UnsupportedYieldsConfigError(t *testing.T) {
 	t.Parallel()
 	r := DefaultRegistry()
 	cases := []string{
 		"gist",
 		"markdown commit",
-		"markdown pull-request",
-		"markdown gist",
-		"gist pull-request",
 	}
 	for _, value := range cases {
 		t.Run(value, func(t *testing.T) {

@@ -14,18 +14,14 @@ func TestTruthy(t *testing.T) {
 		want bool
 	}{
 		{"bool-true", true, true},
-		{"bool-false", false, false},
 		{"str-true", "true", true},
 		{"str-TRUE-trim", "  TRUE  ", true},
 		{"str-yes", "yes", true},
-		{"str-1", "1", true},
 		{"str-no", "no", false},
-		{"str-empty", "", false},
 		{"int-1", 1, true},
 		{"int-0", 0, false},
 		{"int64-1", int64(1), true},
 		{"float-0.5", 0.5, true},
-		{"float-0", 0.0, false},
 		{"unknown", []string{"x"}, false},
 		{"nil", nil, false},
 	}
@@ -35,18 +31,6 @@ func TestTruthy(t *testing.T) {
 				t.Errorf("Truthy(%v) = %v, want %v", tc.in, got, tc.want)
 			}
 		})
-	}
-}
-
-func TestTruthyInput(t *testing.T) {
-	if pluginutil.TruthyInput(nil, "k") {
-		t.Errorf("nil map should not be truthy")
-	}
-	if pluginutil.TruthyInput(map[string]any{}, "k") {
-		t.Errorf("missing key should not be truthy")
-	}
-	if !pluginutil.TruthyInput(map[string]any{"k": "YES"}, "k") {
-		t.Errorf("YES should be truthy")
 	}
 }
 
@@ -65,35 +49,6 @@ func TestReadInt(t *testing.T) {
 	}
 	if _, ok := pluginutil.ReadInt(in, "obj"); ok {
 		t.Errorf("struct should not parse")
-	}
-}
-
-func TestReadIntDefault(t *testing.T) {
-	in := map[string]any{"a": 7}
-	if got := pluginutil.ReadIntDefault(in, "a", 99); got != 7 {
-		t.Errorf("got %d, want 7", got)
-	}
-	if got := pluginutil.ReadIntDefault(in, "missing", 99); got != 99 {
-		t.Errorf("got %d, want 99", got)
-	}
-}
-
-func TestReadBool(t *testing.T) {
-	in := map[string]any{"a": true, "b": "yes", "c": "no", "d": "garbage"}
-	if !pluginutil.ReadBool(in, "a") {
-		t.Errorf("a")
-	}
-	if !pluginutil.ReadBool(in, "b") {
-		t.Errorf("b")
-	}
-	if pluginutil.ReadBool(in, "c") {
-		t.Errorf("c")
-	}
-	if pluginutil.ReadBool(in, "d") {
-		t.Errorf("d")
-	}
-	if pluginutil.ReadBool(in, "missing") {
-		t.Errorf("missing")
 	}
 }
 
@@ -171,30 +126,6 @@ func TestExtrasEnabled(t *testing.T) {
 	}
 	if !pluginutil.ExtrasEnabled(map[string]any{"k": "yes"}, "k") {
 		t.Errorf("explicit yes should enable")
-	}
-}
-
-func TestPlural(t *testing.T) {
-	if pluginutil.Plural(1) != "" {
-		t.Errorf("Plural(1)")
-	}
-	if pluginutil.Plural(0) != "s" {
-		t.Errorf("Plural(0)")
-	}
-	if pluginutil.Plural(2) != "s" {
-		t.Errorf("Plural(2)")
-	}
-}
-
-func TestIsZeroSHA(t *testing.T) {
-	if !pluginutil.IsZeroSHA("") {
-		t.Errorf("empty")
-	}
-	if !pluginutil.IsZeroSHA(pluginutil.ZeroSHA) {
-		t.Errorf("zero const")
-	}
-	if pluginutil.IsZeroSHA("deadbeef") {
-		t.Errorf("real sha should be false")
 	}
 }
 

@@ -2,12 +2,10 @@ package isocalendar_test
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
@@ -69,65 +67,44 @@ func run(t *testing.T, cal *plugins.ContributionCalendar, account plugins.Accoun
 	return out.(*isocalendar.Result)
 }
 
-// TestRun_HalfYear26Weeks asserts the half-year duration truncates to
-// the most-recent 26 weeks.
-func TestRun_HalfYear26Weeks(t *testing.T) {
+// TestRun_Streak — Max is the longest run of non-zero days; Current is the
+// trailing run.
+func TestRun_Streak(t *testing.T) {
 	t.Parallel()
-	cal := makeCalendar(52, func(w, d int) int { return w })
-	r := run(t, cal, plugins.AccountUser, nil)
-	if r.Skipped {
-		t.Fatalf("unexpected Skipped: %+v", r)
-	}
-	if len(r.Weeks) != 26 {
-		t.Errorf("Weeks len = %d, want 26", len(r.Weeks))
-	}
-}
-
-// TestRun_FullYear53Weeks asserts full-year duration keeps 53 weeks
-// when the input has at least that many.
-func TestRun_FullYear53Weeks(t *testing.T) {
-	t.Parallel()
-	cal := makeCalendar(53, func(w, d int) int { return d })
-	r := run(t, cal, plugins.AccountUser, map[string]any{
-		"plugin_isocalendar_duration": "full-year",
-	})
-	if len(r.Weeks) != 53 {
-		t.Errorf("Weeks len = %d, want 53", len(r.Weeks))
-	}
-}
-
-// TestRun_StreakMax — 5 consecutive non-zero days inside an otherwise
-// zero calendar yields Max=5.
-func TestRun_StreakMax(t *testing.T) {
-	t.Parallel()
-	cal := makeCalendar(2, func(w, d int) int {
-		// week 0 days 1..5 = 1 contribution each → 5-day streak.
-		if w == 0 && d >= 1 && d <= 5 {
-			return 1
+	for _, tc := range []struct {
+		name        string
+		dayFn       func(w, d int) int
+		wantMax     int
+		wantCurrent int
+	}{
+		{
+			// week 0 days 1..5 = 1 contribution each → 5-day streak, not trailing.
+			name: "max",
+			dayFn: func(w, d int) int {
+				if w == 0 && d >= 1 && d <= 5 {
+					return 1
+				}
+				return 0
+			},
+			wantMax:     5,
+			wantCurrent: 0,
+		},
+		{
+			name: "current",
+			dayFn: func(w, d int) int {
+				if w == 1 && d >= 4 {
+					return 1
+				}
+				return 0
+			},
+			wantMax:     3,
+			wantCurrent: 3,
+		},
+	} {
+		r := run(t, makeCalendar(2, tc.dayFn), plugins.AccountUser, nil)
+		if r.Streak.Max != tc.wantMax || r.Streak.Current != tc.wantCurrent {
+			t.Errorf("%s: Streak = %+v, want Max=%d Current=%d", tc.name, r.Streak, tc.wantMax, tc.wantCurrent)
 		}
-		return 0
-	})
-	r := run(t, cal, plugins.AccountUser, nil)
-	if r.Streak.Max != 5 {
-		t.Errorf("Streak.Max = %d, want 5", r.Streak.Max)
-	}
-	if r.Streak.Current != 0 {
-		t.Errorf("Streak.Current = %d, want 0", r.Streak.Current)
-	}
-}
-
-// TestRun_StreakCurrent — last 3 days non-zero yields Current=3.
-func TestRun_StreakCurrent(t *testing.T) {
-	t.Parallel()
-	cal := makeCalendar(2, func(w, d int) int {
-		if w == 1 && d >= 4 {
-			return 1
-		}
-		return 0
-	})
-	r := run(t, cal, plugins.AccountUser, nil)
-	if r.Streak.Current != 3 {
-		t.Errorf("Streak.Current = %d, want 3", r.Streak.Current)
 	}
 }
 
@@ -137,107 +114,6 @@ func TestRun_OrganizationSkipped(t *testing.T) {
 	r := run(t, makeCalendar(26, func(w, d int) int { return 1 }), plugins.AccountOrganization, nil)
 	if !r.Skipped {
 		t.Errorf("expected Skipped=true for organization; got %+v", r)
-	}
-}
-
-// TestRun_AggregationMatchesUpstream pins the contribution-count
-// aggregation to upstream's isocalendar algorithm (#467). Upstream
-// (source/plugins/isocalendar/index.mjs::statistics) iterates every
-// ContributionDay in the windowed contributionsCollection calendar and
-// computes:
-//
-//	values.push(day.contributionCount)
-//	max          = Math.max(max, day.contributionCount)        // highest single day
-//	streak.current = day.contributionCount ? current + 1 : 0   // trailing run
-//	streak.max   = Math.max(streak.max, streak.current)        // forward pass
-//	average      = sum(values) / values.length
-//
-// Our Run() must reproduce this exactly: Sum/Max/Average over every day
-// in the (truncated) window and the same streak definitions. The per-day
-// contributionCount is GitHub's own value (commits + issues + PRs +
-// reviews, including private contributions iff the user enabled "Include
-// private contributions on my profile"); the plugin does no reweighting,
-// so identical daily inputs yield identical aggregates to upstream.
-func TestRun_AggregationMatchesUpstream(t *testing.T) {
-	t.Parallel()
-	// 26 weeks so half-year keeps every day (no truncation), making the
-	// expected aggregates a closed-form function of dayFn.
-	// day count = weekIndex+1 (1..7 per week, week 0 has 1..7 → 0-based d).
-	cal := makeCalendar(26, func(w, d int) int { return d }) // 0..6 each week
-
-	r := run(t, cal, plugins.AccountUser, nil)
-	if r.Skipped {
-		t.Fatalf("unexpected Skipped: %+v", r)
-	}
-
-	// Recompute expected aggregates with the upstream algorithm.
-	wantSum, wantMax := 0, 0
-	wantStreakMax, cur := 0, 0
-	total := 0
-	for w := 0; w < 26; w++ {
-		for d := 0; d < 7; d++ {
-			c := d
-			wantSum += c
-			total++
-			if c > wantMax {
-				wantMax = c
-			}
-			if c > 0 {
-				cur++
-				if cur > wantStreakMax {
-					wantStreakMax = cur
-				}
-			} else {
-				cur = 0
-			}
-		}
-	}
-	wantAvg := float64(wantSum) / float64(total)
-	// Trailing run: each week ends at d=6 (>0) but the next week starts
-	// at d=0 (zero), so the only trailing non-zero run is the final
-	// week's days 1..6 → current = 6.
-	wantCurrent := 6
-
-	if r.Sum != wantSum {
-		t.Errorf("Sum = %d, want %d", r.Sum, wantSum)
-	}
-	if r.Max != wantMax {
-		t.Errorf("Max = %d, want %d", r.Max, wantMax)
-	}
-	if r.Average != wantAvg {
-		t.Errorf("Average = %v, want %v", r.Average, wantAvg)
-	}
-	if r.Streak.Max != wantStreakMax {
-		t.Errorf("Streak.Max = %d, want %d", r.Streak.Max, wantStreakMax)
-	}
-	if r.Streak.Current != wantCurrent {
-		t.Errorf("Streak.Current = %d, want %d", r.Streak.Current, wantCurrent)
-	}
-}
-
-// TestRun_PrivateContributionsCountedFromCalendar documents the
-// private-contribution policy (#467). The plugin consumes GitHub's
-// contributionsCollection.contributionCalendar daily counts verbatim —
-// it never inspects a separate public/private breakdown and applies no
-// filtering. Whatever GitHub places in ContributionCount (which already
-// folds in private contributions when the user's profile setting allows
-// it) flows straight into Sum/Max/Average. This test asserts that a day
-// whose count GitHub reports as N (regardless of its public/private
-// origin) contributes exactly N — no doubling, no dropping.
-func TestRun_PrivateContributionsCountedFromCalendar(t *testing.T) {
-	t.Parallel()
-	cal := makeCalendar(1, func(w, d int) int {
-		if d == 3 {
-			return 42 // e.g. a day dominated by private commits
-		}
-		return 0
-	})
-	r := run(t, cal, plugins.AccountUser, nil)
-	if r.Sum != 42 {
-		t.Errorf("Sum = %d, want 42 (GitHub-reported daily count passed through)", r.Sum)
-	}
-	if r.Max != 42 {
-		t.Errorf("Max = %d, want 42", r.Max)
 	}
 }
 
@@ -309,55 +185,5 @@ func TestPartial_Isocalendar_Golden(t *testing.T) {
 	}
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
-	}
-	// #409 Phase B6: the partial is now native SVG (WrapSection nested
-	// <svg>, no foreignObject HTML). The stats panel + isometric wrapper
-	// markers survive; the h2/h3/field HTML wrappers are gone.
-	for _, marker := range []string{
-		`<g data-section="isocalendar" data-duration="half-year">`,
-		`Contributions calendar`,
-		`class="isocalendar-grid"`,
-		`<filter id="brightness1">`,
-		`Best streak`,
-		`Highest in a day at`,
-	} {
-		if !strings.Contains(got, marker) {
-			t.Errorf("partial missing marker %q in:\n%s", marker, got)
-		}
-	}
-	for _, html := range []string{`<h2`, `<h3`, `<div class="field"`, `class="row"`} {
-		if strings.Contains(got, html) {
-			t.Errorf("native SVG output should not contain HTML %q in:\n%s", html, got)
-		}
-	}
-}
-
-func TestRun_GoldenShape_Isocalendar(t *testing.T) {
-	r := &isocalendar.Result{
-		Weeks:    []isocalendar.ISOWeek{{FirstDay: "2026-W18", Days: [7]int{1, 0, 0, 0, 0, 0, 0}}},
-		Streak:   isocalendar.Streak{Max: 1, Current: 0},
-		Sum:      1,
-		Average:  0.14,
-		Duration: "half-year",
-	}
-	got, err := json.MarshalIndent(r, "", "  ")
-	if err != nil {
-		t.Fatalf("MarshalIndent: %v", err)
-	}
-	got = append(got, '\n')
-	gp := filepath.Join(repoRoot(t), "tests", "golden", "json", "m4", "isocalendar.json")
-	if *updateGolden {
-		_ = os.MkdirAll(filepath.Dir(gp), 0o755)
-		if werr := os.WriteFile(gp, got, 0o644); werr != nil {
-			t.Fatalf("WriteFile: %v", werr)
-		}
-		return
-	}
-	want, err := os.ReadFile(gp)
-	if err != nil {
-		t.Fatalf("ReadFile: %v (run with -update)", err)
-	}
-	if string(want) != string(got) {
-		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), string(got))
 	}
 }

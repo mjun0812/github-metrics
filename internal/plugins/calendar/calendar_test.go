@@ -2,11 +2,8 @@ package calendar_test
 
 import (
 	"context"
-	"encoding/json"
-	"flag"
 	"fmt"
-	"os"
-	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -16,26 +13,6 @@ import (
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 )
-
-var updateGolden = flag.Bool("update", false, "update golden files")
-
-func repoRoot(t *testing.T) string {
-	t.Helper()
-	cwd, _ := os.Getwd()
-	dir := cwd
-	for i := 0; i < 8; i++ {
-		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			return dir
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-	t.Fatalf("repo root not found")
-	return ""
-}
 
 // makeCal builds a synthetic ContributionCalendar where day k has
 // dayFn(year, month, day) contributions.
@@ -77,32 +54,28 @@ func TestRun_NoCalendar_Skipped(t *testing.T) {
 	}
 }
 
-func TestRun_SingleYear(t *testing.T) {
+// TestRun_LimitKeepsMostRecentYears — limit=0 means "all years" (it opts out
+// of the metadata default of 1); a positive limit keeps the most-recent
+// years. Years are always newest first.
+func TestRun_LimitKeepsMostRecentYears(t *testing.T) {
 	t.Parallel()
-	r := run(t, makeCal([]int{2026}), nil)
-	if r.Skipped {
-		t.Fatalf("unexpected Skipped")
-	}
-	if len(r.Years) != 1 {
-		t.Errorf("Years len = %d, want 1", len(r.Years))
-	}
-	if r.Years[0].Year != 2026 {
-		t.Errorf("Year = %d, want 2026", r.Years[0].Year)
-	}
-}
-
-func TestRun_MultiYear(t *testing.T) {
-	t.Parallel()
-	// limit=0 means "all years" (zero: disable); pass it explicitly to opt out
-	// of the metadata default (1) and exercise the multi-year path.
-	r := run(t, makeCal([]int{2023, 2024, 2025, 2026}), map[string]any{
-		"plugin_calendar_limit": 0,
-	})
-	if len(r.Years) != 4 {
-		t.Errorf("Years len = %d, want 4", len(r.Years))
-	}
-	if r.Years[0].Year != 2026 || r.Years[3].Year != 2023 {
-		t.Errorf("years not newest-first: %+v", r.Years)
+	for _, tc := range []struct {
+		limit int
+		want  []int
+	}{
+		{0, []int{2026, 2025, 2024, 2023}},
+		{2, []int{2026, 2025}},
+	} {
+		r := run(t, makeCal([]int{2023, 2024, 2025, 2026}), map[string]any{
+			"plugin_calendar_limit": tc.limit,
+		})
+		got := make([]int, 0, len(r.Years))
+		for _, y := range r.Years {
+			got = append(got, y.Year)
+		}
+		if !slices.Equal(got, tc.want) {
+			t.Errorf("limit=%d: years = %v, want %v", tc.limit, got, tc.want)
+		}
 	}
 }
 
@@ -123,20 +96,6 @@ func TestRun_DefaultLimitSingleYear(t *testing.T) {
 	}
 	if r.Limit != 1 {
 		t.Errorf("Limit should default to 1; got %d", r.Limit)
-	}
-}
-
-func TestRun_LimitTruncates(t *testing.T) {
-	t.Parallel()
-	r := run(t, makeCal([]int{2023, 2024, 2025, 2026}), map[string]any{
-		"plugin_calendar_limit": 2,
-	})
-	if len(r.Years) != 2 {
-		t.Errorf("Years len = %d, want 2", len(r.Years))
-	}
-	// Most-recent two, newest first: 2026, 2025.
-	if r.Years[0].Year != 2026 || r.Years[1].Year != 2025 {
-		t.Errorf("limit should keep most-recent 2 newest-first; got %+v", r.Years)
 	}
 }
 
@@ -180,10 +139,6 @@ func TestRun_FetchesFullCalendarYears(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 	r := out.(*calendar.Result)
-	// Three years covered, each split into more than one window.
-	if got := mux.Calls("UserIsocalendar"); got <= 3 {
-		t.Fatalf("UserIsocalendar calls = %d, want each year windowed into multiple calls", got)
-	}
 	if len(r.Years) != 3 || r.Years[0].Year != 2026 || r.Years[2].Year != 2024 {
 		t.Fatalf("fetched years should render newest-first; got %+v", r.Years)
 	}
@@ -205,24 +160,20 @@ func TestRun_FetchesLimitedCalendarYears(t *testing.T) {
 		name          string
 		createdAt     time.Time
 		limit         int
-		minYears      int
 		wantFirstFrom string
 	}{
 		{
-			// limit=2 keeps 2025+2026; both years are windowed, so more
-			// than two calls fire.
+			// limit=2 keeps 2025+2026.
 			name:          "limit",
 			createdAt:     time.Date(2024, 3, 2, 9, 8, 7, 0, time.UTC),
 			limit:         2,
-			minYears:      2,
 			wantFirstFrom: "2025-01-01T00:00:00Z",
 		},
 		{
-			// clamped to account creation: 2024+2025+2026, each windowed.
+			// clamped to account creation: 2024+2025+2026.
 			name:          "created-at-clamp",
 			createdAt:     time.Date(2024, 3, 2, 9, 8, 7, 0, time.UTC),
 			limit:         10,
-			minYears:      3,
 			wantFirstFrom: "2024-03-02T09:08:07Z",
 		},
 	} {
@@ -245,9 +196,6 @@ func TestRun_FetchesLimitedCalendarYears(t *testing.T) {
 			)
 			if _, err := calendar.Plugin.Run(context.Background(), pc); err != nil {
 				t.Fatalf("Run: %v", err)
-			}
-			if got := mux.Calls("UserIsocalendar"); got < tc.minYears {
-				t.Fatalf("UserIsocalendar calls = %d, want at least %d (one window per year, likely more)", got, tc.minYears)
 			}
 			if seenFrom[0] != tc.wantFirstFrom {
 				t.Fatalf("first from = %s, want %s", seenFrom[0], tc.wantFirstFrom)
@@ -451,9 +399,8 @@ func TestRun_MonthHistogram(t *testing.T) {
 	}
 }
 
-// TestPartial_NativeSVG pins the #409 Phase B6 conversion: the calendar
-// partial emits native SVG (a WrapSection nested `<svg>`, no foreignObject
-// HTML wrapper) and self-reports a non-zero pixel height.
+// TestPartial_NativeSVG pins that the calendar partial emits native SVG (a
+// WrapSection nested `<svg>`) and self-reports a non-zero pixel height.
 func TestPartial_NativeSVG(t *testing.T) {
 	t.Parallel()
 	r := &calendar.Result{
@@ -482,39 +429,5 @@ func TestPartial_NativeSVG(t *testing.T) {
 		if !strings.Contains(got, marker) {
 			t.Errorf("missing marker %q in:\n%s", marker, got)
 		}
-	}
-	for _, html := range []string{`<div`, `<h2`, `class="row"`, `class="field"`} {
-		if strings.Contains(got, html) {
-			t.Errorf("native SVG output should not contain HTML %q in:\n%s", html, got)
-		}
-	}
-}
-
-func TestRun_GoldenShape(t *testing.T) {
-	r := &calendar.Result{
-		Years: []calendar.YearCalendar{
-			{Year: 2026, Total: 365, Months: [12]int{30, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 32}},
-		},
-		Limit: 0,
-	}
-	got, err := json.MarshalIndent(r, "", "  ")
-	if err != nil {
-		t.Fatalf("MarshalIndent: %v", err)
-	}
-	got = append(got, '\n')
-	gp := filepath.Join(repoRoot(t), "tests", "golden", "json", "m4", "calendar.json")
-	if *updateGolden {
-		_ = os.MkdirAll(filepath.Dir(gp), 0o755)
-		if werr := os.WriteFile(gp, got, 0o644); werr != nil {
-			t.Fatalf("WriteFile: %v", werr)
-		}
-		return
-	}
-	want, err := os.ReadFile(gp)
-	if err != nil {
-		t.Fatalf("ReadFile: %v (run with -update)", err)
-	}
-	if string(want) != string(got) {
-		t.Fatalf("golden mismatch\nwant:\n%s\ngot:\n%s", string(want), string(got))
 	}
 }

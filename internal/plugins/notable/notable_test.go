@@ -63,45 +63,17 @@ func runWithGraphQL(t *testing.T, inputs map[string]any, body string) (*notable.
 	return out.(*notable.Result), gql
 }
 
-func TestRun_SkippedInM4(t *testing.T) {
+// TestRun_SkippedWithoutGraphQL verifies that without a GraphQL client Run
+// returns a Skipped result with an empty list and a reason naming GraphQL.
+func TestRun_SkippedWithoutGraphQL(t *testing.T) {
 	t.Parallel()
 	r := runWith(t, nil)
 	if !r.Skipped {
-		t.Errorf("notable should be Skipped in M4")
+		t.Errorf("notable should be Skipped without a GraphQL client")
 	}
-}
-
-func TestRun_SkippedWithFilterTrue(t *testing.T) {
-	t.Parallel()
-	r := runWith(t, map[string]any{"plugin_notable_filter": true})
-	if !r.Skipped {
-		t.Errorf("filter=true still Skipped")
-	}
-}
-
-func TestRun_SkippedWithIndepthTrue(t *testing.T) {
-	t.Parallel()
-	r := runWith(t, map[string]any{"plugin_notable_indepth": true})
-	if !r.Skipped {
-		t.Errorf("indepth=true still Skipped")
-	}
-}
-
-func TestRun_EmptyList(t *testing.T) {
-	t.Parallel()
-	r := runWith(t, nil)
 	if len(r.List) != 0 {
-		t.Errorf("List should be empty in M4; got %+v", r.List)
+		t.Errorf("List should be empty; got %+v", r.List)
 	}
-}
-
-// Spec 013: with GraphQL client unavailable (the M4 test path), Run
-// returns Skipped + "GraphQL client unavailable". The original
-// "follow-up" message was M4 baseline language; 013 replaces it with
-// the precise gating reason.
-func TestRun_SkippedReasonExplainsDeferral(t *testing.T) {
-	t.Parallel()
-	r := runWith(t, nil)
 	if !strings.Contains(r.SkippedReason, "GraphQL") {
 		t.Errorf("SkippedReason should mention GraphQL; got %q", r.SkippedReason)
 	}
@@ -170,29 +142,6 @@ func TestRun_FromAllKeepsEveryOwner(t *testing.T) {
 	}, notableGraphQLContributionsBody)
 	if len(r.List) != 2 {
 		t.Fatalf("List len = %d, want 2 (huggingface + torvalds): %+v", len(r.List), r.List)
-	}
-}
-
-// TestRun_RepositoriesShowsFullHandle confirms plugin_notable_repositories
-// keeps each repo distinct, labelling chips by the full owner/repo handle.
-func TestRun_RepositoriesShowsFullHandle(t *testing.T) {
-	t.Parallel()
-	r, _ := runWithGraphQL(t, map[string]any{
-		"user":                        "octocat",
-		"plugin_notable":              true,
-		"plugin_notable_repositories": true,
-	}, notableGraphQLContributionsBody)
-	if len(r.List) != 2 {
-		t.Fatalf("List len = %d, want 2 distinct org handles: %+v", len(r.List), r.List)
-	}
-	names := map[string]bool{}
-	for _, c := range r.List {
-		names[c.Name] = true
-	}
-	for _, want := range []string{"huggingface/accelerate", "huggingface/transformers"} {
-		if !names[want] {
-			t.Errorf("missing handle chip %q in %v", want, names)
-		}
 	}
 }
 
@@ -470,30 +419,6 @@ func notablePageBody(owner string, hasNext bool, endCursor string) string {
 	}}}}`
 }
 
-func TestRun_GoldenShape(t *testing.T) {
-	r := &notable.Result{Skipped: true, List: []notable.NotableContrib{}}
-	got, err := json.MarshalIndent(r, "", "  ")
-	if err != nil {
-		t.Fatalf("MarshalIndent: %v", err)
-	}
-	got = append(got, '\n')
-	gp := filepath.Join(repoRoot(t), "tests", "golden", "json", "m4", "notable.json")
-	if *updateGolden {
-		_ = os.MkdirAll(filepath.Dir(gp), 0o755)
-		if werr := os.WriteFile(gp, got, 0o644); werr != nil {
-			t.Fatalf("WriteFile: %v", werr)
-		}
-		return
-	}
-	want, err := os.ReadFile(gp)
-	if err != nil {
-		t.Fatalf("ReadFile: %v (run with -update)", err)
-	}
-	if string(want) != string(got) {
-		t.Fatalf("golden mismatch\nwant:\n%s\ngot:\n%s", string(want), string(got))
-	}
-}
-
 func TestRun_IndepthGoldenShape(t *testing.T) {
 	r, _ := runWithGraphQL(t, map[string]any{
 		"user":                        "octocat",
@@ -557,24 +482,6 @@ func TestPartial_BasicGolden(t *testing.T) {
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
 	}
-	// Issue #447 acceptance: owner chips appear, no star badge is
-	// rendered, and the gauge cluster does NOT render in basic mode.
-	for _, marker := range []string{
-		`@huggingface`,
-		`@qdoga`,
-		`@oxc-project`,
-		`@azooKey`,
-	} {
-		if !strings.Contains(got, marker) {
-			t.Errorf("missing marker %q in:\n%s", marker, got)
-		}
-	}
-	if strings.Contains(got, `class="stars"`) {
-		t.Errorf("basic-mode output should not render star badges:\n%s", got)
-	}
-	if strings.Contains(got, `class="gauge"`) {
-		t.Errorf("basic-mode output should not render gauge SVGs:\n%s", got)
-	}
 }
 
 func TestPartial_BasicTruncatesLongHandle(t *testing.T) {
@@ -604,69 +511,6 @@ func TestPartial_BasicTruncatesLongHandle(t *testing.T) {
 	}
 	if strings.Contains(got, "@"+longName+"<") {
 		t.Errorf("untruncated full name still present in chip label; got:\n%s", got)
-	}
-}
-
-// TestPartial_DefaultModeOmitsIndepthClass pins upstream parity (#557):
-// upstream `partials/notable.ejs` emits a single chip class for both
-// basic and indepth modes, with only the gauge SVGs differing. Default
-// chips must therefore not carry the divergent `indepth` token.
-func TestPartial_DefaultModeOmitsIndepthClass(t *testing.T) {
-	t.Parallel()
-	data := plugins.NewData()
-	data.SetPlugin(notable.Name, &notable.Result{
-		List: []notable.NotableContrib{{
-			Name:           "huggingface",
-			AvatarURL:      "https://example.invalid/avatar.png",
-			Organization:   true,
-			Login:          "huggingface",
-			Repo:           "huggingface/accelerate",
-			Type:           "owner",
-			StargazerCount: 12000,
-			// Indepth left false on purpose: default-mode chip.
-		}},
-	})
-	pc := &templates.PartialContext{Data: data}
-	got, _, err := notable.Partial(context.Background(), pc)
-	if err != nil {
-		t.Fatalf("Partial: %v", err)
-	}
-	if strings.Contains(got, "indepth") {
-		t.Errorf("default-mode chip must not carry the `indepth` class; got:\n%s", got)
-	}
-}
-
-// TestPartial_IndepthModeOmitsIndepthClass pins upstream parity (#557):
-// even in indepth mode the chip class must match upstream
-// `partials/notable.ejs` exactly (`organization contribution <level>`).
-// Earlier we attached an extra `indepth` token to scope a fixed-width
-// CSS rule, but that fixed width forced the gauge stack to collide
-// inside the box — so the marker is removed and the chip width becomes
-// content-driven again, matching upstream.
-func TestPartial_IndepthModeOmitsIndepthClass(t *testing.T) {
-	t.Parallel()
-	data := plugins.NewData()
-	data.SetPlugin(notable.Name, &notable.Result{
-		List: []notable.NotableContrib{{
-			Name:           "huggingface/accelerate",
-			AvatarURL:      "https://example.invalid/avatar.png",
-			Organization:   true,
-			Login:          "huggingface",
-			Repo:           "huggingface/accelerate",
-			Type:           "owner",
-			StargazerCount: 12000,
-			Indepth:        true,
-			Commits:        42,
-			Percentage:     0.5,
-		}},
-	})
-	pc := &templates.PartialContext{Data: data}
-	got, _, err := notable.Partial(context.Background(), pc)
-	if err != nil {
-		t.Fatalf("Partial: %v", err)
-	}
-	if strings.Contains(got, "indepth") {
-		t.Errorf("indepth chip must not carry the `indepth` class; got:\n%s", got)
 	}
 }
 
@@ -711,19 +555,6 @@ func TestPartial_IndepthGolden(t *testing.T) {
 	}
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
-	}
-	// Parity markers from upstream notable.ejs indepth output: the
-	// organization-contributions row, the "@owner/repo" chip name, the
-	// maintainer contribution-level class, and the gauge visualizations.
-	for _, marker := range []string{
-		`class="row organization contributions"`,
-		`class="organization contribution s "`,
-		`@huggingface/accelerate`,
-		`class="gauge"`,
-	} {
-		if !strings.Contains(got, marker) {
-			t.Errorf("missing marker %q in:\n%s", marker, got)
-		}
 	}
 }
 

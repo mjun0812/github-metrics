@@ -22,53 +22,39 @@ func enabledInputs() map[string]any {
 	}
 }
 
-// TestRun_NilContextReturnsEmptyResult — base must tolerate the
-// unwired ctor used by per-plugin tests that exercise the lookup path
-// without a Provider.
-func TestRun_NilContextReturnsEmptyResult(t *testing.T) {
+// TestRun_WithoutDependenciesReturnsEmptyResult — a nil PluginContext or a
+// PluginContext with no Provider must return a non-nil zero-value Result
+// and no error so the runner records it without crashing. The empty
+// Result is not skipped; IsSkipped reports true only for a nil receiver.
+func TestRun_WithoutDependenciesReturnsEmptyResult(t *testing.T) {
 	t.Parallel()
-	got, err := base.Plugin.Run(context.Background(), nil)
-	if err != nil {
-		t.Fatalf("Run(nil pc): err=%v", err)
-	}
-	r, ok := got.(*base.Result)
-	if !ok || r == nil {
-		t.Fatalf("Run(nil pc): want non-nil *Result, got %T %v", got, got)
-	}
-	if r.Profile != nil || r.RepositorySummary != nil || r.Error != nil {
-		t.Errorf("Run(nil pc): want zero-value Result, got %+v", r)
-	}
-	// Empty (zero-value) Result is NOT skipped; IsSkipped only reports
-	// true for a literal nil receiver. Anchor the contract here so a
-	// future change is loud.
-	if r.IsSkipped() {
-		t.Errorf("IsSkipped on empty Result: got true, want false (only nil receiver should report skipped)")
+	noProvider := mocks.NewPluginContext(t)
+	noProvider.Provider = nil
+	for name, pc := range map[string]*plugins.PluginContext{
+		"nil pc":       nil,
+		"nil Provider": noProvider,
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			got, err := base.Plugin.Run(context.Background(), pc)
+			if err != nil {
+				t.Fatalf("Run: err=%v", err)
+			}
+			r, ok := got.(*base.Result)
+			if !ok || r == nil {
+				t.Fatalf("want non-nil *Result, got %T %v", got, got)
+			}
+			if r.Profile != nil || r.RepositorySummary != nil || r.Error != nil {
+				t.Errorf("want zero-value Result, got %+v", r)
+			}
+			if r.IsSkipped() {
+				t.Errorf("IsSkipped on empty Result: got true, want false")
+			}
+		})
 	}
 	var nilResult *base.Result
 	if !nilResult.IsSkipped() {
 		t.Errorf("IsSkipped on nil receiver: got false, want true")
-	}
-}
-
-// TestRun_NilProviderReturnsEmptyResult mirrors the header plugin's
-// guard: a PluginContext with no Provider must return a non-nil
-// zero-value Result and no error so the runner records it without
-// crashing.
-func TestRun_NilProviderReturnsEmptyResult(t *testing.T) {
-	t.Parallel()
-	pc := mocks.NewPluginContext(t)
-	pc.Provider = nil
-
-	got, err := base.Plugin.Run(context.Background(), pc)
-	if err != nil {
-		t.Fatalf("Run(nil Provider): err=%v", err)
-	}
-	r, ok := got.(*base.Result)
-	if !ok || r == nil {
-		t.Fatalf("Run(nil Provider): want non-nil *Result, got %T", got)
-	}
-	if r.Profile != nil || r.RepositorySummary != nil {
-		t.Errorf("Run(nil Provider): expected unpopulated Result, got %+v", r)
 	}
 }
 
@@ -171,19 +157,5 @@ func TestRun_RepositorySummaryErrorRecorded(t *testing.T) {
 	}
 	if !errors.Is(r.Error, sentinel) {
 		t.Errorf("Result.Error = %v, want wraps sentinel %v", r.Error, sentinel)
-	}
-}
-
-// TestResult_IsSkipped covers the nil-receiver contract used by the
-// classic dispatcher's SkippableResult interface.
-func TestResult_IsSkipped(t *testing.T) {
-	t.Parallel()
-	var nilResult *base.Result
-	if !nilResult.IsSkipped() {
-		t.Errorf("nil *Result must report IsSkipped() = true")
-	}
-	empty := &base.Result{}
-	if empty.IsSkipped() {
-		t.Errorf("non-nil empty *Result must NOT report IsSkipped() = true")
 	}
 }

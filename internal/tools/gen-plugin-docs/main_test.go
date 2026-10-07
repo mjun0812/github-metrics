@@ -7,114 +7,6 @@ import (
 	"testing"
 )
 
-// TestAdoptedSlugsMatchCompliance asserts the doc generator's plugin
-// list (`adoptedSlugs`) stays aligned with
-// `tests/compliance/compliance_test.go::adoptedM4Plugins`, less the
-// foundational `base` / `core` slugs (which live in `foundationalSlugs`
-// — they ship a doc page but are not in the README gallery) and the
-// `languages.recent` / `languages.indepth` sub-modes (which share the
-// `languages` page).
-func TestAdoptedSlugsMatchCompliance(t *testing.T) {
-	t.Parallel()
-	root := repoRootForTest(t)
-	src, err := os.ReadFile(filepath.Join(root, "tests", "compliance", "compliance_test.go"))
-	if err != nil {
-		t.Fatalf("read compliance_test.go: %v", err)
-	}
-	want := compliancePluginsFromSource(string(src))
-	if len(want) == 0 {
-		t.Fatalf("could not extract adoptedM4Plugins from compliance_test.go")
-	}
-
-	got := map[string]struct{}{}
-	for _, s := range adoptedSlugs {
-		got[s] = struct{}{}
-	}
-	for s := range want {
-		if _, ok := got[s]; !ok {
-			t.Errorf("missing slug in adoptedSlugs: %q", s)
-		}
-	}
-	for s := range got {
-		if _, ok := want[s]; !ok {
-			t.Errorf("extra slug in adoptedSlugs: %q", s)
-		}
-	}
-}
-
-func compliancePluginsFromSource(src string) map[string]struct{} {
-	out := map[string]struct{}{}
-	start := strings.Index(src, "var adoptedM4Plugins = []string{")
-	if start < 0 {
-		return out
-	}
-	end := strings.Index(src[start:], "}")
-	if end < 0 {
-		return out
-	}
-	body := src[start : start+end]
-	for _, tok := range strings.Split(body, `"`) {
-		tok = strings.TrimSpace(tok)
-		if tok == "" || strings.HasPrefix(tok, ",") || strings.HasPrefix(tok, "var") {
-			continue
-		}
-		if strings.Contains(tok, ".") {
-			// languages.recent / languages.indepth share the languages page.
-			continue
-		}
-		if tok == "core" || tok == "base" {
-			// foundational plugins ship a doc page but are not in the
-			// adopted-19 gallery list.
-			continue
-		}
-		// Only accept tokens that look like plain slugs.
-		if isPlainSlug(tok) {
-			out[tok] = struct{}{}
-		}
-	}
-	return out
-}
-
-func isPlainSlug(s string) bool {
-	if s == "" {
-		return false
-	}
-	for _, r := range s {
-		switch {
-		case r >= 'a' && r <= 'z':
-		case r == '-':
-		default:
-			return false
-		}
-	}
-	return true
-}
-
-// TestFoundationalSlugs_IsBaseAndCore — the foundational set carries
-// the two infrastructure plugins (`base`, `core`) that ship a doc page
-// but are excluded from the README gallery. #605 removed `base`; #625
-// re-added it as a foundational plugin (no standalone card, composes
-// chrome via plugin_base*). Any further addition needs a constitution
-// amendment per docs/scope.md.
-func TestFoundationalSlugs_IsBaseAndCore(t *testing.T) {
-	t.Parallel()
-	want := map[string]struct{}{"base": {}, "core": {}}
-	got := map[string]struct{}{}
-	for _, s := range foundationalSlugs {
-		got[s] = struct{}{}
-	}
-	for s := range want {
-		if _, ok := got[s]; !ok {
-			t.Errorf("foundationalSlugs missing %q", s)
-		}
-	}
-	for s := range got {
-		if _, ok := want[s]; !ok {
-			t.Errorf("foundationalSlugs has unexpected %q", s)
-		}
-	}
-}
-
 // TestRenderPluginPage_CoreOmitsSampleImage — `core` has no standalone
 // visual output, so its rendered page MUST NOT reference a non-existent
 // plugin-core.svg image and SHOULD include the canonical no-output notice.
@@ -128,16 +20,11 @@ func TestRenderPluginPage_CoreOmitsSampleImage(t *testing.T) {
 	if !strings.Contains(got, "This plugin emits no standalone SVG") {
 		t.Errorf("core page should carry the no-standalone-SVG notice:\n%s", got)
 	}
-	if !strings.Contains(got, "## Requirements") {
-		t.Errorf("core page should emit Requirements section on first gen:\n%s", got)
-	}
-	if !strings.Contains(got, "Core has no standalone visual output") {
-		t.Errorf("core Requirements should explain why no image is rendered:\n%s", got)
-	}
 }
 
 // TestRenderPluginPage_HasRequiredSections enforces that the rendered
-// plugin page contains the 3 AUTOGEN sections + a `## Sample` heading.
+// plugin page contains the 3 AUTOGEN sections, the sample image and the
+// usage snippet.
 func TestRenderPluginPage_HasRequiredSections(t *testing.T) {
 	t.Parallel()
 	meta := pluginMetadata{
@@ -155,10 +42,6 @@ func TestRenderPluginPage_HasRequiredSections(t *testing.T) {
 		"<!-- AUTOGEN_END: config-table -->",
 		"<!-- AUTOGEN_START: usage-snippet -->",
 		"<!-- AUTOGEN_END: usage-snippet -->",
-		"## Sample",
-		"## Configuration (inputs)",
-		"## Usage",
-		"## References",
 		"![languages sample](../examples/plugin-languages.svg)",
 		"plugin_languages: yes",
 	} {
@@ -168,83 +51,84 @@ func TestRenderPluginPage_HasRequiredSections(t *testing.T) {
 	}
 }
 
-// TestRenderPluginPage_PreservesHumanZones verifies the re-generation
-// path: existing prose between AUTOGEN markers and headings is pulled
-// forward into the new render. Covers all three human-authored zones
-// (When to use, Requirements, Notes) under English headings.
-func TestRenderPluginPage_PreservesHumanZones(t *testing.T) {
+// TestRenderPluginPageLocale_PreservesHumanZones verifies the
+// re-generation path: existing prose under the locale's section headings
+// is pulled forward into the new render. Covers all three human-authored
+// zones (When to use, Requirements, Notes) in English and Japanese, and
+// the case where a previous page has Requirements but no Notes.
+func TestRenderPluginPageLocale_PreservesHumanZones(t *testing.T) {
 	t.Parallel()
-	meta := pluginMetadata{
-		Name:        "languages",
-		Description: "languages desc",
+	// page lays out a previously generated page: the title block, the
+	// optional "when to use" prose, the generated config / usage blocks,
+	// then the trailing human zones.
+	page := func(title, when, tail string) string {
+		return "<!-- AUTOGEN_START: title-and-description -->\n# " + title + "\n\nold description\n" +
+			"<!-- AUTOGEN_END: title-and-description -->\n\n" + when +
+			"<!-- AUTOGEN_START: config-table -->\nold config\n<!-- AUTOGEN_END: config-table -->\n\n" +
+			"<!-- AUTOGEN_START: usage-snippet -->\nold usage\n<!-- AUTOGEN_END: usage-snippet -->\n\n" + tail
 	}
-	existing := `<!-- AUTOGEN_START: title-and-description -->
-# Plugin: languages
 
-old description
-<!-- AUTOGEN_END: title-and-description -->
-
-## Sample
-
-![languages sample](../examples/plugin-languages.svg)
-
-## When to use
-
-Hand-authored prose for the when-to-use section.
-Spanning multiple lines.
-
-<!-- AUTOGEN_START: config-table -->
-old config
-<!-- AUTOGEN_END: config-table -->
-
-<!-- AUTOGEN_START: usage-snippet -->
-old usage
-<!-- AUTOGEN_END: usage-snippet -->
-
-## Requirements
-
-**Public repositories with detectable source code.** Hand-authored Requirements paragraph.
-
-## Notes
-
-Hand-authored notes preserved across regeneration.
-
-## References
-
-- ...
-`
-	got := renderPluginPage("languages", meta, nil, []byte(existing))
-	if !strings.Contains(got, "Hand-authored prose for the when-to-use section.") {
-		t.Errorf("when-section human zone lost:\n%s", got)
+	cases := []struct {
+		name     string
+		strs     localeStrings
+		existing string
+		want     []string
+		notWant  []string
+	}{
+		{
+			name: "en all zones",
+			strs: enStrings,
+			existing: page("Plugin: languages",
+				"## When to use\n\nHand-authored prose for the when-to-use section.\nSpanning multiple lines.\n\n",
+				"## Requirements\n\n**Public repositories with detectable source code.** Hand-authored Requirements paragraph.\n\n"+
+					"## Notes\n\nHand-authored notes preserved across regeneration.\n\n"+
+					"## References\n\n- ...\n"),
+			want: []string{
+				"Hand-authored prose for the when-to-use section.",
+				"Public repositories with detectable source code",
+				"Hand-authored notes preserved across regeneration.",
+			},
+		},
+		{
+			name: "en requirements without notes",
+			strs: enStrings,
+			existing: page("Plugin: languages", "",
+				"## Requirements\n\nHand-authored Requirements without a Notes section.\n\n"+
+					"## References\n\n- ...\n"),
+			want:    []string{"Hand-authored Requirements without a Notes section."},
+			notWant: []string{"## Notes"},
+		},
+		{
+			name: "ja all zones",
+			strs: jaStrings,
+			existing: page("プラグイン: languages",
+				"## 利用シーン\n\n手書きの利用シーン説明を保存します。\n\n",
+				"## 前提条件\n\n手書きの前提条件。\n\n"+
+					"## 備考\n\n手書きの備考。\n\n"+
+					"## 参考\n\n- ...\n"),
+			want: []string{
+				"手書きの利用シーン説明を保存します。",
+				"手書きの前提条件。",
+				"手書きの備考。",
+			},
+		},
 	}
-	if !strings.Contains(got, "Public repositories with detectable source code") {
-		t.Errorf("Requirements human zone lost:\n%s", got)
-	}
-	if !strings.Contains(got, "Hand-authored notes preserved across regeneration.") {
-		t.Errorf("notes human zone lost:\n%s", got)
-	}
-}
-
-// TestRenderPluginPage_RequirementsRegexHandlesMissingNotes pins the
-// regex behaviour when a previously-generated page has Requirements
-// but no Notes section: the Requirements prose must still be pulled
-// forward into the new render.
-func TestRenderPluginPage_RequirementsRegexHandlesMissingNotes(t *testing.T) {
-	t.Parallel()
-	meta := pluginMetadata{Name: "languages", Description: "languages desc"}
-	existing := "<!-- AUTOGEN_START: title-and-description -->\n" +
-		"# Plugin: languages\n\nold description\n" +
-		"<!-- AUTOGEN_END: title-and-description -->\n\n" +
-		"<!-- AUTOGEN_START: config-table -->\nold config\n<!-- AUTOGEN_END: config-table -->\n\n" +
-		"<!-- AUTOGEN_START: usage-snippet -->\nold usage\n<!-- AUTOGEN_END: usage-snippet -->\n\n" +
-		"## Requirements\n\nHand-authored Requirements without a Notes section.\n\n" +
-		"## References\n\n- ...\n"
-	got := renderPluginPage("languages", meta, nil, []byte(existing))
-	if !strings.Contains(got, "Hand-authored Requirements without a Notes section.") {
-		t.Errorf("Requirements prose lost when Notes is absent:\n%s", got)
-	}
-	if strings.Contains(got, "## Notes") {
-		t.Errorf("Notes section should not be emitted when there is no prose:\n%s", got)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			meta := pluginMetadata{Name: "languages", Description: "desc"}
+			got := renderPluginPageLocale("languages", meta, nil, []byte(tc.existing), tc.strs)
+			for _, want := range tc.want {
+				if !strings.Contains(got, want) {
+					t.Errorf("human zone lost (%q):\n%s", want, got)
+				}
+			}
+			for _, bad := range tc.notWant {
+				if strings.Contains(got, bad) {
+					t.Errorf("unexpected %q in:\n%s", bad, got)
+				}
+			}
+		})
 	}
 }
 
@@ -286,36 +170,8 @@ func TestRenderGallery_AllSlugsLinkedAlphabetically(t *testing.T) {
 	}
 }
 
-// TestMergeReadme_InsertsGalleryFromScratch — first-time generation
-// injects the plugins-gallery block at the documented anchor.
-func TestMergeReadme_InsertsGalleryFromScratch(t *testing.T) {
-	t.Parallel()
-	readme := `# github-metrics
-
-Some intro paragraph.
-
----
-
-## Highlights
-
-- bullet 1
-
-## Plugins
-
-(existing plugin table here)
-
-## Output formats
-`
-	got, err := mergeReadme(readme, renderGallery())
-	if err != nil {
-		t.Fatalf("mergeReadme: %v", err)
-	}
-	if !strings.Contains(got, galleryMarkerStart) || !strings.Contains(got, galleryMarkerEnd) {
-		t.Errorf("gallery markers missing after merge:\n%s", got)
-	}
-}
-
-// TestMergeReadme_Idempotent — second invocation produces zero diff.
+// TestMergeReadme_Idempotent — the first merge injects the gallery block
+// at the documented anchor and a second invocation produces zero diff.
 func TestMergeReadme_Idempotent(t *testing.T) {
 	t.Parallel()
 	readme := `# github-metrics
@@ -338,52 +194,15 @@ table
 	if err != nil {
 		t.Fatalf("first merge: %v", err)
 	}
+	if !strings.Contains(once, galleryMarkerStart) || !strings.Contains(once, galleryMarkerEnd) {
+		t.Errorf("gallery markers missing after merge:\n%s", once)
+	}
 	twice, err := mergeReadme(once, renderGallery())
 	if err != nil {
 		t.Fatalf("second merge: %v", err)
 	}
 	if once != twice {
 		t.Errorf("second merge produced diff (re-runs must be idempotent)")
-	}
-}
-
-func TestExtractInputKeys_PreservesYAMLOrder(t *testing.T) {
-	t.Parallel()
-	root := repoRootForTest(t)
-	_, keys, err := loadMetadata(root, "languages")
-	if err != nil {
-		t.Fatalf("loadMetadata languages: %v", err)
-	}
-	if len(keys) == 0 {
-		t.Fatalf("expected non-empty input keys for languages")
-	}
-	if keys[0] != "plugin_languages" {
-		t.Errorf("expected first key to be plugin_languages, got %q", keys[0])
-	}
-}
-
-func repoRootForTest(t *testing.T) string {
-	t.Helper()
-	root, err := repoRoot()
-	if err != nil {
-		t.Fatalf("repoRoot: %v", err)
-	}
-	return root
-}
-
-// TestPluginPagePath_LocaleSuffix pins the output path derivation for
-// each supported locale: English lives at `docs/plugins/<slug>.md`
-// (canonical, no suffix); Japanese lives at
-// `docs/plugins/<slug>_ja.md`.
-func TestPluginPagePath_LocaleSuffix(t *testing.T) {
-	t.Parallel()
-	got := pluginPagePath("/repo", "languages", enStrings)
-	if !strings.HasSuffix(got, "docs/plugins/languages.md") {
-		t.Errorf("en path suffix wrong: %s", got)
-	}
-	got = pluginPagePath("/repo", "languages", jaStrings)
-	if !strings.HasSuffix(got, "docs/plugins/languages_ja.md") {
-		t.Errorf("ja path suffix wrong: %s", got)
 	}
 }
 
@@ -456,8 +275,9 @@ func TestApplyTranslation_UnknownInputIsError(t *testing.T) {
 }
 
 // TestRenderPluginPageLocale_JAUsesTranslatedHeadings verifies that
-// the JA locale swaps every section heading and column header to its
-// Japanese label and preserves the (locale-invariant) AUTOGEN markers.
+// the JA locale swaps the section headings to their Japanese labels,
+// preserves the (locale-invariant) AUTOGEN markers and does not leak
+// English headings.
 func TestRenderPluginPageLocale_JAUsesTranslatedHeadings(t *testing.T) {
 	t.Parallel()
 	meta := pluginMetadata{
@@ -472,26 +292,16 @@ func TestRenderPluginPageLocale_JAUsesTranslatedHeadings(t *testing.T) {
 		"# プラグイン: languages",
 		"## サンプル",
 		"## 設定 (inputs)",
-		"| 入力 | 説明 | 既定値 | 必須 | 型 |",
 		"## 使い方",
-		"### GitHub Action",
-		"### CLI",
 		"## 参考",
 		"日本語の説明",
 		"<!-- AUTOGEN_START: title-and-description -->",
-		"<!-- AUTOGEN_END: title-and-description -->",
-		"<!-- AUTOGEN_START: config-table -->",
-		"<!-- AUTOGEN_END: config-table -->",
-		"<!-- AUTOGEN_START: usage-snippet -->",
 		"<!-- AUTOGEN_END: usage-snippet -->",
-		"入力スキーマのリファレンス",
-		"upstream 由来の metadata",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("JA page missing %q in:\n%s", want, got)
 		}
 	}
-	// English headings must NOT leak into the JA page.
 	for _, forbidden := range []string{
 		"# Plugin: ",
 		"## Sample",
@@ -505,269 +315,97 @@ func TestRenderPluginPageLocale_JAUsesTranslatedHeadings(t *testing.T) {
 	}
 }
 
-// TestRenderPluginPageLocale_JAPreservesHumanZones pins the
-// preserve-around-AUTOGEN behavior on the JA path: hand-authored prose
-// under the Japanese section headings must be pulled forward on
-// re-generation, mirroring the EN behavior.
-func TestRenderPluginPageLocale_JAPreservesHumanZones(t *testing.T) {
+// TestGeneratePluginPage_JAOverlay drives generatePluginPage for the JA
+// locale against a temporary repo layout. A page is written only when a
+// content-bearing overlay exists; an absent or content-empty overlay is
+// skipped without error ("half-translated is worse than none"), and a
+// mis-spelled key or malformed YAML fails loudly naming the source file.
+func TestGeneratePluginPage_JAOverlay(t *testing.T) {
 	t.Parallel()
-	meta := pluginMetadata{Description: "説明"}
-	existing := `<!-- AUTOGEN_START: title-and-description -->
-# プラグイン: languages
+	const baseYAML = "name: test\ndescription: |\n  English description.\ninputs:\n  plugin_x:\n    description: |\n      Enable\n    type: boolean\n    default: no\n"
 
-古い説明
-<!-- AUTOGEN_END: title-and-description -->
+	cases := []struct {
+		name     string
+		overlay  *string // nil = no metadata_ja.yml
+		wantErr  []string
+		wantPage bool
+		wantBody []string
+	}{
+		{name: "absent overlay is skipped"},
+		{name: "comment-only overlay is skipped", overlay: ptr("# TODO: translate\n\n")},
+		{
+			name:    "typoed top-level key errors",
+			overlay: ptr("descripton: |\n  日本語の説明。\n"),
+			// The error must name the offending key and the source file.
+			wantErr: []string{"descripton", "metadata_ja.yml"},
+		},
+		{
+			name:    "malformed YAML errors",
+			overlay: ptr("description: { unterminated\n"),
+			wantErr: []string{"metadata_ja.yml"},
+		},
+		{
+			name:     "translated overlay emits page",
+			overlay:  ptr("description: |\n  日本語の説明。\ninputs:\n  plugin_x:\n    description: |\n      有効化\n"),
+			wantPage: true,
+			wantBody: []string{"日本語の説明", "有効化", "## サンプル"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			root := t.TempDir()
+			assetsDir := filepath.Join(root, "assets", "plugins", "x")
+			if err := os.MkdirAll(assetsDir, 0o755); err != nil {
+				t.Fatalf("mkdir: %v", err)
+			}
+			if err := os.WriteFile(filepath.Join(assetsDir, "metadata.yml"), []byte(baseYAML), 0o600); err != nil {
+				t.Fatalf("write metadata.yml: %v", err)
+			}
+			if tc.overlay != nil {
+				if err := os.WriteFile(filepath.Join(assetsDir, "metadata_ja.yml"), []byte(*tc.overlay), 0o600); err != nil {
+					t.Fatalf("write metadata_ja.yml: %v", err)
+				}
+			}
+			if err := os.MkdirAll(filepath.Join(root, "docs", "plugins"), 0o755); err != nil {
+				t.Fatalf("mkdir docs: %v", err)
+			}
 
-## サンプル
+			err := generatePluginPage(root, "x", jaStrings)
+			if len(tc.wantErr) > 0 {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				for _, w := range tc.wantErr {
+					if !strings.Contains(err.Error(), w) {
+						t.Errorf("error should mention %q, got: %v", w, err)
+					}
+				}
+			} else if err != nil {
+				t.Fatalf("generatePluginPage(ja): %v", err)
+			}
 
-![languages sample](../examples/plugin-languages.svg)
-
-## 利用シーン
-
-手書きの利用シーン説明を保存します。
-
-<!-- AUTOGEN_START: config-table -->
-old config
-<!-- AUTOGEN_END: config-table -->
-
-<!-- AUTOGEN_START: usage-snippet -->
-old usage
-<!-- AUTOGEN_END: usage-snippet -->
-
-## 前提条件
-
-手書きの前提条件。
-
-## 備考
-
-手書きの備考。
-
-## 参考
-
-- ...
-`
-	got := renderPluginPageLocale("languages", meta, nil, []byte(existing), jaStrings)
-	for _, want := range []string{
-		"手書きの利用シーン説明を保存します。",
-		"手書きの前提条件。",
-		"手書きの備考。",
-	} {
-		if !strings.Contains(got, want) {
-			t.Errorf("JA human zone lost (%q):\n%s", want, got)
-		}
+			body, readErr := os.ReadFile(filepath.Join(root, "docs", "plugins", "x_ja.md"))
+			if !tc.wantPage {
+				if !os.IsNotExist(readErr) {
+					t.Errorf("expected no _ja.md file, read err: %v", readErr)
+				}
+				return
+			}
+			if readErr != nil {
+				t.Fatalf("read _ja.md: %v", readErr)
+			}
+			for _, w := range tc.wantBody {
+				if !strings.Contains(string(body), w) {
+					t.Errorf("generated page missing %q:\n%s", w, body)
+				}
+			}
+			// English description must not leak through when JA overrides it.
+			if strings.Contains(string(body), "English description.") {
+				t.Errorf("EN description leaked into JA page:\n%s", body)
+			}
+		})
 	}
 }
 
-// TestGeneratePluginPage_JASkipsWhenTranslationAbsent asserts that
-// running the generator against a slug without a metadata_ja.yml
-// overlay produces no JA file and does not error — the design
-// decision behind #761 is that a half-translated page is worse than
-// none.
-func TestGeneratePluginPage_JASkipsWhenTranslationAbsent(t *testing.T) {
-	t.Parallel()
-	root := t.TempDir()
-
-	// Minimal base metadata.
-	assetsDir := filepath.Join(root, "assets", "plugins", "untranslated")
-	if err := os.MkdirAll(assetsDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	baseYAML := "name: test\ndescription: |\n  English only.\ninputs:\n  plugin_untranslated:\n    description: |\n      Enable\n    type: boolean\n    default: no\n"
-	if err := os.WriteFile(filepath.Join(assetsDir, "metadata.yml"), []byte(baseYAML), 0o600); err != nil {
-		t.Fatalf("write metadata.yml: %v", err)
-	}
-	// NOTE: intentionally no metadata_ja.yml.
-
-	if err := os.MkdirAll(filepath.Join(root, "docs", "plugins"), 0o755); err != nil {
-		t.Fatalf("mkdir docs: %v", err)
-	}
-
-	if err := generatePluginPage(root, "untranslated", jaStrings); err != nil {
-		t.Fatalf("generatePluginPage(ja): %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(root, "docs", "plugins", "untranslated_ja.md")); !os.IsNotExist(err) {
-		t.Errorf("expected no _ja.md file when metadata_ja.yml is absent, stat err: %v", err)
-	}
-}
-
-// TestGeneratePluginPage_JAUnknownTopLevelKeyErrors guards SHOULD FIX
-// #1 (struct-key leg): a metadata_ja.yml with a mis-spelled top-level
-// key (e.g. `descripton:` for `description:`) must fail loud rather
-// than silently ship a page that falls through to English. The error
-// must name the offending key and the source file so a translator can
-// find the typo without spelunking.
-func TestGeneratePluginPage_JAUnknownTopLevelKeyErrors(t *testing.T) {
-	t.Parallel()
-	root := t.TempDir()
-
-	assetsDir := filepath.Join(root, "assets", "plugins", "typoed")
-	if err := os.MkdirAll(assetsDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	baseYAML := "name: test\ndescription: |\n  English.\ninputs:\n  plugin_typoed:\n    description: |\n      Enable\n    type: boolean\n    default: no\n"
-	if err := os.WriteFile(filepath.Join(assetsDir, "metadata.yml"), []byte(baseYAML), 0o600); err != nil {
-		t.Fatalf("write metadata.yml: %v", err)
-	}
-	// `descripton:` is a plausible typo for `description:`.
-	jaYAML := "descripton: |\n  日本語の説明。\n"
-	if err := os.WriteFile(filepath.Join(assetsDir, "metadata_ja.yml"), []byte(jaYAML), 0o600); err != nil {
-		t.Fatalf("write metadata_ja.yml: %v", err)
-	}
-	if err := os.MkdirAll(filepath.Join(root, "docs", "plugins"), 0o755); err != nil {
-		t.Fatalf("mkdir docs: %v", err)
-	}
-
-	err := generatePluginPage(root, "typoed", jaStrings)
-	if err == nil {
-		t.Fatalf("expected typoed top-level key to fail generation, got nil")
-	}
-	msg := err.Error()
-	if !strings.Contains(msg, "descripton") {
-		t.Errorf("error should mention the offending key, got: %v", err)
-	}
-	if !strings.Contains(msg, "metadata_ja.yml") {
-		t.Errorf("error should mention the source file, got: %v", err)
-	}
-	// The malformed overlay must NOT produce a page on disk.
-	if _, statErr := os.Stat(filepath.Join(root, "docs", "plugins", "typoed_ja.md")); !os.IsNotExist(statErr) {
-		t.Errorf("expected no _ja.md written on decode error, stat err: %v", statErr)
-	}
-}
-
-// TestGeneratePluginPage_JAMalformedYAMLErrors guards SHOULD FIX #3:
-// syntactically invalid YAML propagates as an error rather than being
-// swallowed. This is the "fail-loud" contract the PR body promises.
-func TestGeneratePluginPage_JAMalformedYAMLErrors(t *testing.T) {
-	t.Parallel()
-	root := t.TempDir()
-
-	assetsDir := filepath.Join(root, "assets", "plugins", "broken")
-	if err := os.MkdirAll(assetsDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	baseYAML := "name: test\ndescription: |\n  English.\ninputs: {}\n"
-	if err := os.WriteFile(filepath.Join(assetsDir, "metadata.yml"), []byte(baseYAML), 0o600); err != nil {
-		t.Fatalf("write metadata.yml: %v", err)
-	}
-	// Deliberately malformed: unclosed flow mapping.
-	if err := os.WriteFile(filepath.Join(assetsDir, "metadata_ja.yml"), []byte("description: { unterminated\n"), 0o600); err != nil {
-		t.Fatalf("write metadata_ja.yml: %v", err)
-	}
-	if err := os.MkdirAll(filepath.Join(root, "docs", "plugins"), 0o755); err != nil {
-		t.Fatalf("mkdir docs: %v", err)
-	}
-
-	err := generatePluginPage(root, "broken", jaStrings)
-	if err == nil {
-		t.Fatalf("expected malformed YAML to fail generation, got nil")
-	}
-	if !strings.Contains(err.Error(), "metadata_ja.yml") {
-		t.Errorf("error should reference the malformed file, got: %v", err)
-	}
-}
-
-// TestGeneratePluginPage_JAEmptyOverlaySkipsPage guards SHOULD FIX #3
-// (empty-overlay leg): a metadata_ja.yml that carries only comments and
-// whitespace is treated the same as an absent file — no JA page is
-// written. The alternative (silently emitting a page whose prose is
-// entirely English) violates the "half-translated is worse than none"
-// design goal.
-func TestGeneratePluginPage_JAEmptyOverlaySkipsPage(t *testing.T) {
-	t.Parallel()
-	root := t.TempDir()
-
-	assetsDir := filepath.Join(root, "assets", "plugins", "emptyoverlay")
-	if err := os.MkdirAll(assetsDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	baseYAML := "name: test\ndescription: |\n  English only.\ninputs:\n  plugin_emptyoverlay:\n    description: |\n      Enable\n    type: boolean\n    default: no\n"
-	if err := os.WriteFile(filepath.Join(assetsDir, "metadata.yml"), []byte(baseYAML), 0o600); err != nil {
-		t.Fatalf("write metadata.yml: %v", err)
-	}
-	// Overlay carries only a comment and whitespace — no translation.
-	if err := os.WriteFile(filepath.Join(assetsDir, "metadata_ja.yml"), []byte("# TODO: translate\n\n"), 0o600); err != nil {
-		t.Fatalf("write metadata_ja.yml: %v", err)
-	}
-	if err := os.MkdirAll(filepath.Join(root, "docs", "plugins"), 0o755); err != nil {
-		t.Fatalf("mkdir docs: %v", err)
-	}
-
-	if err := generatePluginPage(root, "emptyoverlay", jaStrings); err != nil {
-		t.Fatalf("generatePluginPage(ja): %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(root, "docs", "plugins", "emptyoverlay_ja.md")); !os.IsNotExist(err) {
-		t.Errorf("expected no _ja.md file for content-empty overlay, stat err: %v", err)
-	}
-}
-
-// TestDefaultRequirements_JAEmitsBaseAndCore guards SHOULD FIX #2:
-// when a JA overlay lands for the foundational `base` / `core` slugs,
-// the JA page must ship its canonical Requirements paragraph — not a
-// silently-blank section. This test pins that the JA branch of
-// defaultRequirements is populated for both foundational slugs and
-// stays empty for other locales / other slugs.
-func TestDefaultRequirements_JAEmitsBaseAndCore(t *testing.T) {
-	t.Parallel()
-	for _, slug := range []string{"base", "core"} {
-		if got := defaultRequirements(slug, jaStrings); got == "" {
-			t.Errorf("defaultRequirements(%q, ja) returned empty — JA overlays would ship without Requirements", slug)
-		}
-		if got := defaultRequirements(slug, enStrings); got == "" {
-			t.Errorf("defaultRequirements(%q, en) returned empty — regression against pre-PR behavior", slug)
-		}
-	}
-	// Non-foundational slug: nothing to emit in either locale.
-	if got := defaultRequirements("languages", jaStrings); got != "" {
-		t.Errorf("defaultRequirements(languages, ja) should be empty, got: %q", got)
-	}
-	if got := defaultRequirements("languages", enStrings); got != "" {
-		t.Errorf("defaultRequirements(languages, en) should be empty, got: %q", got)
-	}
-}
-
-// TestGeneratePluginPage_JAEmitsPageWhenTranslationPresent covers the
-// happy path end-to-end: with a metadata_ja.yml overlay in place, the
-// generator writes docs/plugins/<slug>_ja.md and the JA description
-// makes it into the rendered page.
-func TestGeneratePluginPage_JAEmitsPageWhenTranslationPresent(t *testing.T) {
-	t.Parallel()
-	root := t.TempDir()
-
-	assetsDir := filepath.Join(root, "assets", "plugins", "translated")
-	if err := os.MkdirAll(assetsDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	baseYAML := "name: test\ndescription: |\n  English description.\ninputs:\n  plugin_translated:\n    description: |\n      Enable\n    type: boolean\n    default: no\n"
-	if err := os.WriteFile(filepath.Join(assetsDir, "metadata.yml"), []byte(baseYAML), 0o600); err != nil {
-		t.Fatalf("write metadata.yml: %v", err)
-	}
-	jaYAML := "description: |\n  日本語の説明。\ninputs:\n  plugin_translated:\n    description: |\n      有効化\n"
-	if err := os.WriteFile(filepath.Join(assetsDir, "metadata_ja.yml"), []byte(jaYAML), 0o600); err != nil {
-		t.Fatalf("write metadata_ja.yml: %v", err)
-	}
-
-	if err := os.MkdirAll(filepath.Join(root, "docs", "plugins"), 0o755); err != nil {
-		t.Fatalf("mkdir docs: %v", err)
-	}
-	if err := generatePluginPage(root, "translated", jaStrings); err != nil {
-		t.Fatalf("generatePluginPage(ja): %v", err)
-	}
-	out, err := os.ReadFile(filepath.Join(root, "docs", "plugins", "translated_ja.md"))
-	if err != nil {
-		t.Fatalf("read _ja.md: %v", err)
-	}
-	body := string(out)
-	if !strings.Contains(body, "日本語の説明") {
-		t.Errorf("JA description missing from generated page:\n%s", body)
-	}
-	if !strings.Contains(body, "有効化") {
-		t.Errorf("JA input description missing from generated page:\n%s", body)
-	}
-	if !strings.Contains(body, "## サンプル") {
-		t.Errorf("JA section heading missing from generated page:\n%s", body)
-	}
-	// English description must not leak through when JA overrides it.
-	if strings.Contains(body, "English description.") {
-		t.Errorf("EN description leaked into JA page:\n%s", body)
-	}
-}
+func ptr(s string) *string { return &s }

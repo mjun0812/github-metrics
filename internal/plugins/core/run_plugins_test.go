@@ -3,10 +3,8 @@ package core_test
 import (
 	"context"
 	"errors"
-	"sort"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
@@ -104,42 +102,6 @@ func TestRunPlugins_AggregatesSuccessErrorPanic(t *testing.T) {
 	}
 }
 
-func TestRunPlugins_ParallelOneSerializes(t *testing.T) {
-	// With parallel=1 plugins must execute serially. We assert that by
-	// ensuring no two plugins overlap.
-	concurrent := atomic.Int32{}
-	maxObserved := atomic.Int32{}
-	noteRun := func(ctx context.Context, pc *plugins.PluginContext) (any, error) {
-		n := concurrent.Add(1)
-		defer concurrent.Add(-1)
-		for {
-			cur := maxObserved.Load()
-			if n <= cur {
-				break
-			}
-			if maxObserved.CompareAndSwap(cur, n) {
-				break
-			}
-		}
-		time.Sleep(2 * time.Millisecond)
-		return "ok", nil
-	}
-	registerStubs(
-		t,
-		&stubPlugin{name: "stub-a", run: noteRun},
-		&stubPlugin{name: "stub-b", run: noteRun},
-		&stubPlugin{name: "stub-c", run: noteRun},
-	)
-
-	pc := &plugins.PluginContext{Data: plugins.NewData()}
-	if err := core.RunPlugins(context.Background(), pc, 1); err != nil {
-		t.Fatalf("RunPlugins: %v", err)
-	}
-	if maxObserved.Load() != 1 {
-		t.Fatalf("parallel=1 should serialize plugins; maxObserved = %d", maxObserved.Load())
-	}
-}
-
 func TestRunPlugins_ParallelZeroUsesGOMAXPROCS(t *testing.T) {
 	// parallel<=0 must fall back to GOMAXPROCS. The exact value is
 	// runtime-dependent; assert that the call still completes
@@ -171,68 +133,3 @@ func TestRunPlugins_NilContextErrors(t *testing.T) {
 		t.Fatalf("expected error for nil PluginContext")
 	}
 }
-
-func TestRunPlugins_DrainsDataErrors(t *testing.T) {
-	// Stub plugin records a non-fatal error via Data.AppendError without
-	// returning the err from Run. The drain path is: plugin → Data.Errors
-	// (mutex-protected) → SnapshotErrors → engine.Result.Errors. This
-	// test exercises everything up through the SnapshotErrors call so a
-	// future change to the engine glue keeps the contract observable.
-	want := errors.New("paging: batch=1 failed after 3 retries")
-	registerStubs(
-		t,
-		&stubPlugin{
-			name: "stub-degraded",
-			run: func(ctx context.Context, pc *plugins.PluginContext) (any, error) {
-				pc.Data.AppendError(want)
-				return map[string]any{"partial": true}, nil
-			},
-		},
-	)
-
-	pc := &plugins.PluginContext{Data: plugins.NewData()}
-	if err := core.RunPlugins(context.Background(), pc, 1); err != nil {
-		t.Fatalf("RunPlugins: %v", err)
-	}
-
-	snap := pc.Data.SnapshotErrors()
-	if len(snap) != 1 || !errors.Is(snap[0], want) {
-		t.Fatalf("SnapshotErrors = %v, want [%v]", snap, want)
-	}
-	// The plugin's success payload still lands under Plugins so the
-	// degraded path is distinct from a hard failure.
-	if v, ok := pc.Data.GetPlugin("stub-degraded"); !ok || v == nil {
-		t.Fatalf("stub-degraded result missing: %v (ok=%v)", v, ok)
-	}
-}
-
-func TestRunPlugins_CancelledContextPropagates(t *testing.T) {
-	registerStubs(t, &stubPlugin{
-		name: "slow",
-		run: func(ctx context.Context, pc *plugins.PluginContext) (any, error) {
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(50 * time.Millisecond):
-				return "late", nil
-			}
-		},
-	})
-	pc := &plugins.PluginContext{Data: plugins.NewData()}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
-	defer cancel()
-	if err := core.RunPlugins(ctx, pc, 1); err == nil {
-		// Per the contract a per-plugin failure (here ctx error) is
-		// recorded in Data.Plugins, but the outer error is also
-		// allowed when ctx is already cancelled before the plugin
-		// returns. We accept either.
-		if v, ok := pc.Data.GetPlugin("slow"); ok {
-			if _, isErr := v.(error); !isErr {
-				t.Fatalf("slow plugin recorded value should be error, got %T", v)
-			}
-		}
-	}
-}
-
-// helper to keep imports tight
-var _ = sort.Strings

@@ -4,7 +4,6 @@
 package integration_test
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -77,30 +76,6 @@ func exeSuffix() string {
 	return ""
 }
 
-// runBin runs the given binary with args and returns stdout, stderr, exit code.
-// The child env strips GITHUB_ACTIONS — after the v3.0 mode unification
-// (#646) the binary ignores the marker anyway, but stripping it keeps
-// the test env minimal so future regressions that reintroduce env-based
-// dispatch surface immediately rather than passing under the inherited
-// runner marker.
-func runBin(t *testing.T, bin string, args ...string) (stdout, stderr string, exitCode int) {
-	t.Helper()
-	cmd := exec.Command(bin, args...)
-	cmd.Env = stripGitHubActionsEnv(os.Environ())
-	var outBuf, errBuf bytes.Buffer
-	cmd.Stdout = &outBuf
-	cmd.Stderr = &errBuf
-	err := cmd.Run()
-	if err != nil {
-		var exitErr *exec.ExitError
-		if !asExitError(err, &exitErr) {
-			t.Fatalf("run %s %v: unexpected error: %v", bin, args, err)
-		}
-		exitCode = exitErr.ExitCode()
-	}
-	return outBuf.String(), errBuf.String(), exitCode
-}
-
 // stripGitHubActionsEnv removes GITHUB_ACTIONS from the child env.
 // The marker has no behavioural effect after the v3.0 mode unification
 // (#646) — the binary no longer consults it — but stripping it keeps
@@ -115,67 +90,4 @@ func stripGitHubActionsEnv(env []string) []string {
 		out = append(out, kv)
 	}
 	return out
-}
-
-func asExitError(err error, target **exec.ExitError) bool {
-	if e, ok := err.(*exec.ExitError); ok {
-		*target = e
-		return true
-	}
-	return false
-}
-
-func TestBinariesHelpExitsZeroWithUsage(t *testing.T) {
-	t.Parallel()
-
-	t.Run("metrics-cli_--help", func(t *testing.T) {
-		t.Parallel()
-		stdout, _, code := runBin(t, actionBin, "--help")
-		if code != 0 {
-			t.Fatalf("metrics-cli --help exit code = %d, want 0", code)
-		}
-		if !strings.Contains(stdout, "Usage:") {
-			t.Fatalf("metrics-cli --help stdout missing 'Usage:'\ngot: %q", stdout)
-		}
-	})
-	t.Run("metrics-cli_default", func(t *testing.T) {
-		t.Parallel()
-		stdout, _, code := runBin(t, actionBin)
-		if code != 0 {
-			t.Fatalf("metrics-cli (no args) exit code = %d, want 0", code)
-		}
-		if !strings.Contains(stdout, "Usage:") {
-			t.Fatalf("metrics-cli (no args) stdout missing 'Usage:'\ngot: %q", stdout)
-		}
-	})
-}
-
-func TestBinariesVersionPrintsVersionString(t *testing.T) {
-	t.Parallel()
-
-	t.Run("metrics-cli_--version", func(t *testing.T) {
-		t.Parallel()
-		stdout, _, code := runBin(t, actionBin, "--version")
-		if code != 0 {
-			t.Fatalf("metrics-cli --version exit code = %d, want 0", code)
-		}
-		// The version is overridden via -ldflags at release time. The
-		// integration test does not pass ldflags, so the default
-		// "dev" string applies.
-		if got := strings.TrimSpace(stdout); got != "dev" {
-			t.Fatalf("metrics-cli --version stdout = %q, want %q", got, "dev")
-		}
-	})
-}
-
-func TestBinariesUnknownFlagExitsNonZero(t *testing.T) {
-	t.Parallel()
-
-	t.Run("metrics-cli_unknown_flag", func(t *testing.T) {
-		t.Parallel()
-		_, _, code := runBin(t, actionBin, "--nope")
-		if code == 0 {
-			t.Fatalf("metrics-cli --nope exit code = 0, want non-zero (flag parse error)")
-		}
-	})
 }

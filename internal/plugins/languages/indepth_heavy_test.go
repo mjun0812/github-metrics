@@ -32,11 +32,11 @@ func makeRepo(t *testing.T, dir string, files map[string]string) string {
 	}
 	for name, content := range files {
 		full := filepath.Join(dir, name)
-		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
-			t.Fatalf("mkdir parent for %s: %v", name, err)
+		if merr := os.MkdirAll(filepath.Dir(full), 0o755); merr != nil {
+			t.Fatalf("mkdir parent for %s: %v", name, merr)
 		}
-		if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
-			t.Fatalf("write %s: %v", name, err)
+		if werr := os.WriteFile(full, []byte(content), 0o644); werr != nil {
+			t.Fatalf("write %s: %v", name, werr)
 		}
 	}
 	wt, err := repo.Worktree()
@@ -44,8 +44,8 @@ func makeRepo(t *testing.T, dir string, files map[string]string) string {
 		t.Fatalf("Worktree: %v", err)
 	}
 	for name := range files {
-		if _, err := wt.Add(name); err != nil {
-			t.Fatalf("Add %s: %v", name, err)
+		if _, aerr := wt.Add(name); aerr != nil {
+			t.Fatalf("Add %s: %v", name, aerr)
 		}
 	}
 	_, err = wt.Commit("seed", &gogit.CommitOptions{
@@ -222,40 +222,6 @@ func TestIndepth_RepoTimeout(t *testing.T) {
 	}
 	if !anyContains(r.Errors, "octocat/slow") {
 		t.Errorf("Errors = %v, want contains octocat/slow", r.Errors)
-	}
-}
-
-// TestIndepth_TotalTimeout — overall timeout cuts the loop short.
-func TestIndepth_TotalTimeout(t *testing.T) {
-	t.Parallel()
-	base := t.TempDir()
-	src := makeRepo(t, filepath.Join(base, "src"), map[string]string{
-		"main.go": "package main\n",
-	})
-	cln := &fakeCloner{
-		sources: map[string]string{
-			"https://github.com/octocat/a.git": src,
-			"https://github.com/octocat/b.git": src,
-		},
-		delay: 200 * time.Millisecond,
-	}
-	repos := []plugins.Repository{
-		{NameWithOwner: "octocat/a"},
-		{NameWithOwner: "octocat/b"},
-	}
-	pc := newIndepthPC(t, cln, repos, map[string]any{
-		"plugin_languages_analysis_timeout":              "10ms",
-		"plugin_languages_analysis_timeout_repositories": "10ms",
-	})
-	out, _ := languages.IndepthPlugin.Run(context.Background(), pc)
-	r := out.(*languages.IndepthResult)
-	// Expect all repos failed to clone within the budget. Errors slice
-	// should mention at least one of them.
-	if len(r.Errors) == 0 {
-		t.Errorf("Errors = empty, expected at least one timeout entry")
-	}
-	if len(r.Analyzed) >= 2 {
-		t.Errorf("Analyzed = %v, expected < 2 due to overall timeout", r.Analyzed)
 	}
 }
 

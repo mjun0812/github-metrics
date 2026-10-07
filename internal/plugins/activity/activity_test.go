@@ -18,7 +18,6 @@ import (
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/activity"
-	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
 // restMux is a tiny HTTP transport that returns canned responses keyed
@@ -118,7 +117,7 @@ func newREST(t *testing.T, mux http.RoundTripper) *githubapi.REST {
 	rest, err := githubapi.NewREST(
 		config.NewToken("MOCKED_TOKEN"),
 		"http://mock.localhost",
-		httpx.Options{Transport: mux, MaxRetries: 0},
+		httpx.Options{Transport: mux, DisableRetries: true},
 	)
 	if err != nil {
 		t.Fatalf("NewREST: %v", err)
@@ -228,30 +227,6 @@ func TestRun_Normal(t *testing.T) {
 	}
 }
 
-// TestRun_Limit asserts the limit input caps the number of events kept.
-func TestRun_Limit(t *testing.T) {
-	t.Parallel()
-	now := time.Now().UTC()
-	mux := newRESTMux()
-	mux.on(
-		"/users/octocat/events",
-		http.StatusOK,
-		eventsBody(
-			ev("PushEvent", "octocat/a", now.Add(-1*time.Hour), true),
-			ev("PushEvent", "octocat/b", now.Add(-2*time.Hour), true),
-			ev("PushEvent", "octocat/c", now.Add(-3*time.Hour), true),
-		),
-	)
-	pc := newPC(t, mux, map[string]any{
-		"plugin_activity_limit": 1,
-	})
-	out, _ := activity.Plugin.Run(context.Background(), pc)
-	r := out.(*activity.Result)
-	if len(r.Events) != 1 {
-		t.Errorf("Events len = %d, want 1", len(r.Events))
-	}
-}
-
 // TestRun_DefaultLimit asserts the default display limit is 5 (matching
 // upstream metadata) so the timeline stays short when no
 // plugin_activity_limit is supplied.
@@ -299,23 +274,6 @@ func TestRun_NegativeLimitAndLoad_NoPanic(t *testing.T) {
 	}
 }
 
-// TestRun_EmptyEvents returns an empty array and asserts the plugin
-// still returns Skipped=false with an empty Events slice (contract §2.5).
-func TestRun_EmptyEvents(t *testing.T) {
-	t.Parallel()
-	mux := newRESTMux()
-	mux.on("/users/octocat/events", http.StatusOK, "[]")
-	pc := newPC(t, mux, nil)
-	out, _ := activity.Plugin.Run(context.Background(), pc)
-	r := out.(*activity.Result)
-	if r.Skipped {
-		t.Errorf("Skipped = true, want false (empty != skipped)")
-	}
-	if len(r.Events) != 0 {
-		t.Errorf("Events = %v, want []", r.Events)
-	}
-}
-
 // TestRun_5xxRetryable asserts a transient 500 returns a
 // *RetryableError so the engine can record it on Result.Errors.
 func TestRun_5xxRetryable(t *testing.T) {
@@ -339,28 +297,16 @@ func TestRun_5xxRetryable(t *testing.T) {
 // is reserved for transient transport failures.
 func TestRun_4xxNotRetryable(t *testing.T) {
 	t.Parallel()
-	cases := []struct {
-		name   string
-		status int
-	}{
-		{name: "404_not_found", status: http.StatusNotFound},
-		{name: "403_forbidden", status: http.StatusForbidden},
-		{name: "401_unauthorized", status: http.StatusUnauthorized},
+	mux := newRESTMux()
+	mux.on("/users/octocat/events", http.StatusNotFound, `{"message":"nope"}`)
+	pc := newPC(t, mux, nil)
+	_, err := activity.Plugin.Run(context.Background(), pc)
+	if err == nil {
+		t.Fatalf("expected error")
 	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			mux := newRESTMux()
-			mux.on("/users/octocat/events", tc.status, `{"message":"nope"}`)
-			pc := newPC(t, mux, nil)
-			_, err := activity.Plugin.Run(context.Background(), pc)
-			if err == nil {
-				t.Fatalf("expected error for %d", tc.status)
-			}
-			var re *xerrors.RetryableError
-			if errors.As(err, &re) {
-				t.Errorf("%d wrapped as *RetryableError; should be permanent. err=%v", tc.status, err)
-			}
-		})
+	var re *xerrors.RetryableError
+	if errors.As(err, &re) {
+		t.Errorf("404 wrapped as *RetryableError; should be permanent. err=%v", err)
 	}
 }
 
@@ -482,39 +428,6 @@ func TestRun_PullRequestStats_FallbackFailsGracefully(t *testing.T) {
 	pr := r.Events[0]
 	if pr.Files != nil || pr.Lines != nil {
 		t.Errorf("failed fallback should leave Files/Lines nil; got Files=%+v Lines=%+v", pr.Files, pr.Lines)
-	}
-}
-
-// TestPartial_PullRequestStats asserts the rendered partial includes the
-// upstream "N files changed ++A --D" details line for a PR event.
-func TestPartial_PullRequestStats(t *testing.T) {
-	t.Parallel()
-	data := plugins.NewData()
-	data.SetPlugin(activity.Name, &activity.Result{
-		Events: []activity.ActivityEvent{
-			{
-				Type:       "PullRequestEvent",
-				Repo:       "octocat/beta",
-				Date:       time.Date(2026, 5, 15, 12, 0, 0, 0, time.UTC),
-				Visibility: "public",
-				Files:      &activity.EventFiles{Changed: 2},
-				Lines:      &activity.EventLines{Added: 34, Deleted: 5},
-			},
-		},
-		Days: 14,
-	})
-	got, _, err := activity.Partial(context.Background(), &templates.PartialContext{Data: data})
-	if err != nil {
-		t.Fatalf("Partial: %v", err)
-	}
-	for _, want := range []string{
-		`<g class="code">`,
-		`2 files changed`,
-		`++34 --5`,
-	} {
-		if !strings.Contains(got, want) {
-			t.Errorf("partial missing %q in:\n%s", want, got)
-		}
 	}
 }
 

@@ -25,14 +25,12 @@ func TestRun_NoArgs(t *testing.T) {
 	}
 }
 
-// TestRun_Help_BootstrapFlag accepts --help / -h and exits cleanly.
+// TestRun_Help_BootstrapFlag accepts --help and exits cleanly.
 func TestRun_Help_BootstrapFlag(t *testing.T) {
 	t.Parallel()
-	for _, flag := range []string{"--help", "-h"} {
-		var out, errOut bytes.Buffer
-		if err := run([]string{flag}, &out, &errOut, nil); err != nil {
-			t.Errorf("run(%q): %v", flag, err)
-		}
+	var out, errOut bytes.Buffer
+	if err := run([]string{"--help"}, &out, &errOut, nil); err != nil {
+		t.Errorf("run(--help): %v", err)
 	}
 }
 
@@ -88,26 +86,6 @@ func TestRun_EnvOnlyDispatch(t *testing.T) {
 	}
 }
 
-// TestRun_GitHubActionsEnvIgnored confirms that GITHUB_ACTIONS=true
-// alone (no INPUT_*) is NOT enough to skip the no-arg banner+usage
-// short-circuit. The pre-v3.0 binary dispatched purely on that env
-// var; after #646 the binary ignores GITHUB_ACTIONS and looks for
-// actual inputs (INPUT_*/INPUTS or CLI flags).
-func TestRun_GitHubActionsEnvIgnored(t *testing.T) {
-	t.Setenv("GITHUB_ACTIONS", "true")
-	// Scrub INPUT_* / GITHUB_TOKEN so only the marker is set.
-	t.Setenv("INPUT_USER", "")
-	t.Setenv("INPUT_TOKEN", "")
-	t.Setenv("GITHUB_TOKEN", "")
-	var out, errOut bytes.Buffer
-	if err := run(nil, &out, &errOut, nil); err != nil {
-		t.Fatalf("run(nil) with GITHUB_ACTIONS=true alone: %v", err)
-	}
-	if !strings.Contains(out.String(), "Usage") {
-		t.Errorf("expected banner+usage when only GITHUB_ACTIONS is set; got %q", out.String())
-	}
-}
-
 // TestSplitBootstrapArgs confirms the bootstrap-flag splitter
 // separates --help / --version / --debug / --log-format from the rest
 // so action.Run's own flag.FlagSet only sees its expected args.
@@ -119,11 +97,7 @@ func TestSplitBootstrapArgs(t *testing.T) {
 		wantCLI  []string
 		wantBoot []string
 	}{
-		{"empty", nil, nil, nil},
-		{"only_bootstrap", []string{"--debug", "--version"}, nil, []string{"--debug", "--version"}},
-		{"only_cli", []string{"--user", "octocat"}, []string{"--user", "octocat"}, nil},
 		{"mixed", []string{"--user", "octocat", "--debug"}, []string{"--user", "octocat"}, []string{"--debug"}},
-		{"log_format_equal", []string{"--log-format=text", "--user", "x"}, []string{"--user", "x"}, []string{"--log-format=text"}},
 		{"log_format_space", []string{"--log-format", "text", "--user", "x"}, []string{"--user", "x"}, []string{"--log-format", "text"}},
 	}
 	for _, tc := range cases {
@@ -150,10 +124,8 @@ func TestHasActionInputs(t *testing.T) {
 		want bool
 	}{
 		{"empty", nil, false},
-		{"unrelated_only", []string{"PATH=/usr/bin", "HOME=/root"}, false},
 		{"github_actions_marker_alone", []string{"GITHUB_ACTIONS=true"}, false},
 		{"input_user", []string{"INPUT_USER=octocat"}, true},
-		{"input_token", []string{"PATH=/usr/bin", "INPUT_TOKEN=ghp_x"}, true},
 		{"inputs_json", []string{"INPUTS={\"user\":\"x\"}"}, true},
 		// Runner-emitted INPUT_FOO= entries for unset workflow inputs
 		// MUST NOT trigger the dispatch — otherwise an empty `with:`

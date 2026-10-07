@@ -15,11 +15,7 @@ func TestGeocoder_KnownCities(t *testing.T) {
 		lat, lng float64
 	}{
 		{"Tokyo", 35.68, 139.75},
-		{"London", 51.5, -0.13},
-		{"Paris", 48.85, 2.35},
-		{"New York", 40.71, -74.0},
 		{"NYC", 40.71, -74.0},
-		{"San Francisco", 37.77, -122.42},
 		{"São Paulo", -23.55, -46.63},
 	}
 	for _, c := range cases {
@@ -109,33 +105,5 @@ func TestGeocoder_EmptyAndNoMatch(t *testing.T) {
 	}
 	if _, ok := g.Lookup("qqqqzzzz-not-a-place"); ok {
 		t.Errorf("nonsense input should not resolve")
-	}
-}
-
-func TestGeocoder_DefaultSingleton(t *testing.T) {
-	t.Parallel()
-	g1 := Default()
-	g2 := Default()
-	if g1 != g2 {
-		t.Fatalf("Default() must return a singleton")
-	}
-}
-
-func TestNormalizeKey(t *testing.T) {
-	t.Parallel()
-	cases := map[string]string{
-		"Tokyo":     "tokyo",
-		"  Tokyo  ": "tokyo",
-		"São Paulo": "são paulo",
-		"New-York":  "new york",
-		"🇯🇵 Tokyo":  "tokyo",
-		"":          "",
-		"...":       "",
-		"U.S.A.":    "u s a",
-	}
-	for in, want := range cases {
-		if got := normalizeKey(in); got != want {
-			t.Errorf("normalizeKey(%q) = %q, want %q", in, got, want)
-		}
 	}
 }

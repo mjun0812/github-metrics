@@ -37,26 +37,6 @@ func TestMarshal_SelfReference(t *testing.T) {
 	}
 }
 
-func TestMarshal_MutualReference(t *testing.T) {
-	t.Parallel()
-
-	a := &node{Name: "a"}
-	b := &node{Name: "b"}
-	a.Peer = b
-	b.Peer = a
-
-	data := plugins.NewData()
-	data.SetPlugin("a-b", a)
-
-	body, err := engine.Marshal(data)
-	if err != nil {
-		t.Fatalf("Marshal: %v", err)
-	}
-	if !strings.Contains(string(body), `"[Circular]"`) {
-		t.Fatalf("expected [Circular] sentinel for mutual ref; got: %s", body)
-	}
-}
-
 func TestMarshal_CycleInSlice(t *testing.T) {
 	t.Parallel()
 

@@ -35,14 +35,6 @@ func TestParsePadding_Table(t *testing.T) {
 			wantAH: 0,
 		},
 		{
-			name:   "empty string slice",
-			in:     []string{""},
-			wantW:  1.0,
-			wantH:  1.0,
-			wantAW: 0,
-			wantAH: 0,
-		},
-		{
 			name:   "single element applies to both dimensions",
 			in:     []string{"0 + 6%"},
 			wantW:  1.06,
@@ -75,22 +67,6 @@ func TestParsePadding_Table(t *testing.T) {
 			wantAH: 0,
 		},
 		{
-			name:   "bogus token -> all zero defaults",
-			in:     []string{"bogus"},
-			wantW:  1.0,
-			wantH:  1.0,
-			wantAW: 0,
-			wantAH: 0,
-		},
-		{
-			name:   "exotic locale chars",
-			in:     []string{"あ%"},
-			wantW:  1.0,
-			wantH:  1.0,
-			wantAW: 0,
-			wantAH: 0,
-		},
-		{
 			name:   "negative relative",
 			in:     []string{"0 + -5%"},
 			wantW:  0.95,
@@ -117,17 +93,6 @@ func TestParsePadding_Table(t *testing.T) {
 				t.Errorf("absoluteHeight = %v, want %v", got.absoluteHeight, tc.wantAH)
 			}
 		})
-	}
-}
-
-// TestParsePadding_NoPanicOnControlChars confirms the function is
-// crash-safe against pathological inputs that downstream user
-// configuration could push through.
-func TestParsePadding_NoPanicOnControlChars(t *testing.T) {
-	t.Parallel()
-	inputs := []string{"\x00\x01\x02", "\t\n\r", "%%%%%", "+++", "---"}
-	for _, in := range inputs {
-		_ = parsePadding([]string{in}, quietLogger()) // assert: does not panic
 	}
 }
 

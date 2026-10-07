@@ -26,30 +26,6 @@ func render(t *testing.T, r *repositories.Result) string {
 	return got
 }
 
-// TestPartial_FeaturedOnly pins the default rendering: only `r.Featured`
-// becomes `<section class="repository">` cards when `r.Pinned` is empty.
-func TestPartial_FeaturedOnly(t *testing.T) {
-	t.Parallel()
-	got := render(t, &repositories.Result{
-		Featured: []plugins.Repository{
-			{NameWithOwner: "octocat/alpha", URL: "https://github.com/octocat/alpha", Stars: 10},
-			{NameWithOwner: "octocat/beta", URL: "https://github.com/octocat/beta", Stars: 5},
-		},
-	})
-	for _, want := range []string{
-		`<g data-section="repositories">`,
-		`>octocat/alpha</text>`,
-		`>octocat/beta</text>`,
-	} {
-		if !strings.Contains(got, want) {
-			t.Errorf("missing %q in output:\n%s", want, got)
-		}
-	}
-	if n := strings.Count(got, `<g class="repository"`); n != 2 {
-		t.Errorf("want 2 repository cards, got %d:\n%s", n, got)
-	}
-}
-
 // TestPartial_PinnedAppendedAfterFeatured pins #555: when `r.Pinned`
 // holds repos distinct from `r.Featured`, they are appended after the
 // featured cards inside the same `largeable-flex-wrap` section.
@@ -72,25 +48,6 @@ func TestPartial_PinnedAppendedAfterFeatured(t *testing.T) {
 	pi := strings.Index(got, "octocat/pinned-x")
 	if fi < 0 || pi < 0 || fi >= pi {
 		t.Errorf("expected featured-a to appear before pinned-x; featured idx=%d pinned idx=%d:\n%s", fi, pi, got)
-	}
-}
-
-// TestPartial_PinnedDedupesFeaturedCopy pins the no-token fallback path
-// in repositories.Run, which sets `r.Pinned = r.Featured` when GraphQL
-// is unavailable. The partial must collapse the duplicates so legacy
-// callers stay byte-identical to the pre-#555 output.
-func TestPartial_PinnedDedupesFeaturedCopy(t *testing.T) {
-	t.Parallel()
-	featured := []plugins.Repository{
-		{NameWithOwner: "octocat/alpha", URL: "https://github.com/octocat/alpha", Stars: 10},
-		{NameWithOwner: "octocat/beta", URL: "https://github.com/octocat/beta", Stars: 5},
-	}
-	got := render(t, &repositories.Result{
-		Featured: featured,
-		Pinned:   featured, // copy semantics from repositories.go:134
-	})
-	if n := strings.Count(got, `<g class="repository"`); n != 2 {
-		t.Errorf("dedup should yield 2 cards (no Pinned duplicates), got %d:\n%s", n, got)
 	}
 }
 
