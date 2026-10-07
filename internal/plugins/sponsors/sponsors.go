@@ -31,10 +31,6 @@ type sponsorsPlugin struct{}
 
 func (p *sponsorsPlugin) Name() string { return Name }
 
-func (p *sponsorsPlugin) Requires() []plugins.DataKey {
-	return []plugins.DataKey{plugins.KeyUser}
-}
-
 // Result is the JSON payload published under data.Plugins["sponsors"].
 type Result struct {
 	Skipped       bool      `json:"skipped,omitempty"`

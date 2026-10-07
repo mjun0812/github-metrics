@@ -67,8 +67,9 @@ $(BIN_DIR)/%: cmd/%/main.go
 
 # Generate action.yml from assets/plugins/<slug>/metadata.yml + core
 # inputs. Driven by internal/tools/gen-action-yml/. Must be re-run
-# whenever a plugin metadata.yml changes; CI gates `git diff --quiet
-# action.yml` after running this target.
+# whenever a plugin metadata.yml changes;
+# TestGenerate_MatchesCommittedActionYML (run by `go test ./...` in CI)
+# fails when the committed action.yml differs from this target's output.
 gen-action-yml:
 	$(GO) run ./internal/tools/gen-action-yml --output ./action.yml
 

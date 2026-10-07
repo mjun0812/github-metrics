@@ -17,8 +17,7 @@ type errorStubPlugin struct {
 	err  error
 }
 
-func (p *errorStubPlugin) Name() string                { return p.name }
-func (p *errorStubPlugin) Requires() []plugins.DataKey { return []plugins.DataKey{} }
+func (p *errorStubPlugin) Name() string { return p.name }
 func (p *errorStubPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	return nil, p.err
 }

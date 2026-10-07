@@ -8,22 +8,16 @@ package dataprovidertest
 
 import (
 	"context"
-	"sync"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
-// CountingMock implements plugins.Provider. Every method call is recorded
-// so tests can assert that the set of Provider methods actually invoked
-// during Plugin.Run matches the set declared by Plugin.Requires().
+// CountingMock implements plugins.Provider for plugin unit tests.
 //
 // All methods return zero-value non-error responses by default. Use the
 // setter fields to override individual return values for plugins that
 // branch on the returned data.
 type CountingMock struct {
-	mu     sync.Mutex
-	called map[plugins.DataKey]int
-
 	// Optional overrides. nil means return a zero-value non-error result.
 	ProfileFn           func(ctx context.Context) (*plugins.Profile, error)
 	UserFn              func(ctx context.Context) (*plugins.User, error)
@@ -34,48 +28,13 @@ type CountingMock struct {
 	RepoFn              func(ctx context.Context) (*plugins.Repo, error)
 }
 
-// NewCountingMock returns a CountingMock with all counters initialised to
-// zero and all optional overrides unset.
+// NewCountingMock returns a CountingMock with all optional overrides unset.
 func NewCountingMock() *CountingMock {
-	return &CountingMock{
-		called: make(map[plugins.DataKey]int),
-	}
-}
-
-// record increments the call counter for key under the mutex.
-func (m *CountingMock) record(key plugins.DataKey) {
-	m.mu.Lock()
-	m.called[key]++
-	m.mu.Unlock()
-}
-
-// CalledKeys returns the set of DataKeys that were called at least once.
-// The returned map is a snapshot; callers may modify it freely.
-func (m *CountingMock) CalledKeys() map[plugins.DataKey]int {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	out := make(map[plugins.DataKey]int, len(m.called))
-	for k, v := range m.called {
-		out[k] = v
-	}
-	return out
-}
-
-// CalledKeySet returns the set of DataKeys that were called at least once,
-// as a map[plugins.DataKey]struct{} for use with requirestesting helpers.
-func (m *CountingMock) CalledKeySet() map[plugins.DataKey]struct{} {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	out := make(map[plugins.DataKey]struct{}, len(m.called))
-	for k := range m.called {
-		out[k] = struct{}{}
-	}
-	return out
+	return &CountingMock{}
 }
 
 // Profile implements plugins.Provider.
 func (m *CountingMock) Profile(ctx context.Context) (*plugins.Profile, error) {
-	m.record(plugins.KeyProfile)
 	if m.ProfileFn != nil {
 		return m.ProfileFn(ctx)
 	}
@@ -88,7 +47,6 @@ func (m *CountingMock) Profile(ctx context.Context) (*plugins.Profile, error) {
 
 // User implements plugins.Provider.
 func (m *CountingMock) User(ctx context.Context) (*plugins.User, error) {
-	m.record(plugins.KeyUser)
 	if m.UserFn != nil {
 		return m.UserFn(ctx)
 	}
@@ -97,7 +55,6 @@ func (m *CountingMock) User(ctx context.Context) (*plugins.User, error) {
 
 // Organization implements plugins.Provider.
 func (m *CountingMock) Organization(ctx context.Context) (*plugins.Organization, error) {
-	m.record(plugins.KeyOrganization)
 	if m.OrganizationFn != nil {
 		return m.OrganizationFn(ctx)
 	}
@@ -106,7 +63,6 @@ func (m *CountingMock) Organization(ctx context.Context) (*plugins.Organization,
 
 // Repositories implements plugins.Provider.
 func (m *CountingMock) Repositories(ctx context.Context) ([]plugins.Repository, error) {
-	m.record(plugins.KeyRepositories)
 	if m.RepositoriesFn != nil {
 		return m.RepositoriesFn(ctx)
 	}
@@ -115,7 +71,6 @@ func (m *CountingMock) Repositories(ctx context.Context) ([]plugins.Repository, 
 
 // RepositorySummary implements plugins.Provider.
 func (m *CountingMock) RepositorySummary(ctx context.Context) (*plugins.ComputedRepositories, error) {
-	m.record(plugins.KeyRepositorySummary)
 	if m.RepositorySummaryFn != nil {
 		return m.RepositorySummaryFn(ctx)
 	}
@@ -124,7 +79,6 @@ func (m *CountingMock) RepositorySummary(ctx context.Context) (*plugins.Computed
 
 // CommitCalendar implements plugins.Provider.
 func (m *CountingMock) CommitCalendar(ctx context.Context) (*plugins.ContributionCalendar, error) {
-	m.record(plugins.KeyCommitCalendar)
 	if m.CommitCalendarFn != nil {
 		return m.CommitCalendarFn(ctx)
 	}
@@ -133,7 +87,6 @@ func (m *CountingMock) CommitCalendar(ctx context.Context) (*plugins.Contributio
 
 // Repo implements plugins.Provider.
 func (m *CountingMock) Repo(ctx context.Context) (*plugins.Repo, error) {
-	m.record(plugins.KeyRepo)
 	if m.RepoFn != nil {
 		return m.RepoFn(ctx)
 	}

@@ -256,9 +256,9 @@ func pluginEnabled(pc *templates.PartialContext, slug string) bool {
 // to the "plugin.<slug>" registration convention used by per-plugin
 // partial packages.
 func lookupPartial(name string) (templates.PartialFunc, bool) {
-	// Repository-specific partials (base.header, introduction,
-	// base.community, base.activity) live in the repository/partials
-	// package and override any classic-package registration.
+	// Repository-specific partials (base.header, introduction) live in
+	// the repository/partials package and override any classic-package
+	// registration.
 	if fn, ok := repopart.Lookup(name); ok {
 		return fn, true
 	}

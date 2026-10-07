@@ -3,7 +3,7 @@
 // partials registry — instead the parent repository package consumes
 // them through the per-template lookup table in repository.go.
 //
-// All four functions follow the M2 partial contract (nil-safe,
+// Both partials follow the M2 partial contract (nil-safe,
 // XML-escaped, single-line SVG fragment string).
 package partials
 
@@ -17,7 +17,6 @@ import (
 	"github.com/mjun0812/github-metrics/internal/render/fontmetrics"
 	"github.com/mjun0812/github-metrics/internal/templates"
 	"github.com/mjun0812/github-metrics/internal/templates/chrome"
-	classicpart "github.com/mjun0812/github-metrics/internal/templates/classic/partials"
 )
 
 // nowFunc is the time source used by BaseHeader's "Created <N> ago"
@@ -185,56 +184,6 @@ func Introduction(_ context.Context, pc *templates.PartialContext) (string, int,
 	return chrome.WrapSection("introduction", height, b.String()), height, nil
 }
 
-// BaseCommunity renders contributors / stargazers / forks counts.
-// Returns "" when data.Repo is nil OR all counts are zero (so empty
-// repos do not render a stray empty section).
-func BaseCommunity(_ context.Context, pc *templates.PartialContext) (string, int, error) {
-	if pc == nil || pc.Data == nil || pc.Data.Repo == nil {
-		return "", 0, nil
-	}
-	r := pc.Data.Repo
-	if r.Stargazers == 0 && r.Forks == 0 && r.Contributors == 0 {
-		return "", 0, nil
-	}
-	var b strings.Builder
-	b.WriteString(`<g data-section="community">`)
-	b.WriteString(`<div class="row community-stats">`)
-	fmt.Fprintf(&b, `<span class="stat stargazers">%s stars</span>`,
-		classicpart.FormatCount(int64(maxNonNegative(r.Stargazers))))
-	fmt.Fprintf(&b, `<span class="stat forks">%s forks</span>`,
-		classicpart.FormatCount(int64(maxNonNegative(r.Forks))))
-	fmt.Fprintf(&b, `<span class="stat contributors">%s contributors</span>`,
-		classicpart.FormatCount(int64(maxNonNegative(r.Contributors))))
-	b.WriteString(`</div>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
-}
-
-// BaseActivity renders the recent commits / open issues / open PRs
-// triple. Returns "" when data.Repo is nil OR the repo is archived
-// AND has no activity to show.
-func BaseActivity(_ context.Context, pc *templates.PartialContext) (string, int, error) {
-	if pc == nil || pc.Data == nil || pc.Data.Repo == nil {
-		return "", 0, nil
-	}
-	a := pc.Data.Repo.Activity
-	if a.RecentCommits == 0 && a.OpenIssues == 0 && a.OpenPullRequests == 0 {
-		return "", 0, nil
-	}
-	var b strings.Builder
-	b.WriteString(`<g data-section="activity">`)
-	b.WriteString(`<div class="row activity-stats">`)
-	fmt.Fprintf(&b, `<span class="stat commits">%s commits (30d)</span>`,
-		classicpart.FormatCount(int64(maxNonNegative(a.RecentCommits))))
-	fmt.Fprintf(&b, `<span class="stat issues">%s open issues</span>`,
-		classicpart.FormatCount(int64(maxNonNegative(a.OpenIssues))))
-	fmt.Fprintf(&b, `<span class="stat prs">%s open PRs</span>`,
-		classicpart.FormatCount(int64(maxNonNegative(a.OpenPullRequests))))
-	b.WriteString(`</div>`)
-	b.WriteString(`</section>`)
-	return b.String(), 0, nil
-}
-
 // Lookup returns the repository-template partial for the given name,
 // or nil when none is owned by this package. Plugin partial names
 // (`languages`, `activity`, etc.) are intentionally absent — the
@@ -247,17 +196,6 @@ func Lookup(name string) (templates.PartialFunc, bool) {
 		return BaseHeader, true
 	case "introduction":
 		return Introduction, true
-	case "base.community":
-		return BaseCommunity, true
-	case "base.activity":
-		return BaseActivity, true
 	}
 	return nil, false
-}
-
-func maxNonNegative(n int) int {
-	if n < 0 {
-		return 0
-	}
-	return n
 }
