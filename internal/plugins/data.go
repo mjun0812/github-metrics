@@ -272,8 +272,9 @@ type ComputedRepositories struct {
 	Forked int
 }
 
-// LicenseShare is one entry in the License-preference top-N. Percent is
-// the share of owned repositories whose `licenseInfo.name` matches Name
+// LicenseShare is one entry in the License-preference top-N. Name is the
+// upstream display label (nickname, else SPDX id, else name). Percent is
+// the share of owned repositories whose license maps to Name
 // (0..100, never normalised against unlicensed repositories — so the
 // figures sum to <= 100 when some repos have no license).
 type LicenseShare struct {

@@ -7,7 +7,24 @@ import (
 	"github.com/mjun0812/github-metrics/internal/plugins"
 )
 
-// topLicenseShares converts the raw license-name → count map produced by
+// licenseLabel returns the license label upstream's `f.license` renders:
+// the nickname, else the SPDX id, else the name. NOASSERTION (GitHub's
+// "Other" bucket) uses the name because its SPDX id is not a license.
+func licenseLabel(name string, spdxID, nickname *string) string {
+	spdx := derefString(spdxID)
+	if spdx == "NOASSERTION" {
+		return name
+	}
+	if nick := derefString(nickname); nick != "" {
+		return nick
+	}
+	if spdx != "" {
+		return spdx
+	}
+	return name
+}
+
+// topLicenseShares converts the raw license-label → count map produced by
 // the repository paging loop into a top-N slice sorted by Count
 // descending, breaking ties alphabetically so the ordering is
 // deterministic. Percent is computed against licensedRepos (the number

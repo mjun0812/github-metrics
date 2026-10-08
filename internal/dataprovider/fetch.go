@@ -421,7 +421,7 @@ func (p *Provider) fetchOneRepoPage(ctx context.Context, isUser bool, state *rep
 				if state.licenseCounts == nil {
 					state.licenseCounts = map[string]int{}
 				}
-				state.licenseCounts[node.LicenseInfo.Name]++
+				state.licenseCounts[licenseLabel(node.LicenseInfo.Name, node.LicenseInfo.SpdxId, node.LicenseInfo.Nickname)]++
 				state.licensedRepos++
 			}
 		}
@@ -483,7 +483,7 @@ func (p *Provider) fetchOneRepoPage(ctx context.Context, isUser bool, state *rep
 			if state.licenseCounts == nil {
 				state.licenseCounts = map[string]int{}
 			}
-			state.licenseCounts[node.LicenseInfo.Name]++
+			state.licenseCounts[licenseLabel(node.LicenseInfo.Name, node.LicenseInfo.SpdxId, node.LicenseInfo.Nickname)]++
 			state.licensedRepos++
 		}
 	}

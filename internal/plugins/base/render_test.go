@@ -64,7 +64,7 @@ func activitySample() *base.Result {
 			Packages:   2,
 			DiskUsage:  1024 * 1024,
 			LicensePreference: []plugins.LicenseShare{
-				{Name: "MIT License", Count: 30, Percent: 60},
+				{Name: "MIT", Count: 30, Percent: 60},
 			},
 		},
 	}
@@ -353,7 +353,7 @@ func TestRepositoriesPartial_RendersHeadingAndRows(t *testing.T) {
 	for _, want := range []string{
 		`data-section="repositories"`,
 		`50 Repositories`,
-		`Prefers MIT License license`,
+		`Prefers MIT license`,
 		`15 Releases`,
 		`2 Packages`,
 		`1 GB used`,
