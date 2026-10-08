@@ -21,7 +21,7 @@
           Recently used languages
         </text>
         <text x="240" y="65" font-size="11" fill="#666666" text-anchor="middle">
-          activity from 29 repositories analysed over last 30 days
+          estimation from 73.8 kB of code in 1031 edited files across 63 commits over last 1 day
         </text>
         <g transform="translate(10,79)">
           <svg class="bar" width="460" height="8" role="img" aria-label="Recently used languages distribution">
@@ -33,11 +33,11 @@
             </mask>
             <rect mask="url(#languages-bar-recent)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
             <g class="languages-recent">
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="348.64" height="8" fill="#00ADD8" data-language="Go"/>
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="348.64" y="0" width="50.71" height="8" fill="#000080" data-language="Lua"/>
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="399.35" y="0" width="44.23" height="8" fill="#3572A5" data-language="Python"/>
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="443.58" y="0" width="14.01" height="8" fill="#f34b7d" data-language="C++"/>
-              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="457.59" y="0" width="1.62" height="8" fill="#89e051" data-language="Shell"/>
+              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="0.00" y="0" width="349.05" height="8" fill="#00ADD8" data-language="Go"/>
+              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="349.05" y="0" width="50.76" height="8" fill="#000080" data-language="Lua"/>
+              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="399.81" y="0" width="43.73" height="8" fill="#3572A5" data-language="Python"/>
+              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="443.54" y="0" width="14.02" height="8" fill="#f34b7d" data-language="C++"/>
+              <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="457.56" y="0" width="1.65" height="8" fill="#89e051" data-language="Shell"/>
               <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.21" y="0" width="0.43" height="8" fill="#f1e05a" data-language="JavaScript"/>
               <rect class="language-bar-recent" mask="url(#languages-bar-recent)" x="459.64" y="0" width="0.36" height="8" fill="#427819" data-language="Makefile"/>
             </g>
@@ -53,7 +53,7 @@
             Go
           </text>
           <text x="232" y="108" font-size="11" fill="#666666" text-anchor="end">
-            13.4 kB  75.8%
+            13.4 kB  75.9%
           </text>
         </g>
         <g class="language details" data-language="Python">
@@ -66,7 +66,7 @@
             Python
           </text>
           <text x="232" y="128" font-size="11" fill="#666666" text-anchor="end">
-            1.7 kB  9.6%
+            1.7 kB  9.5%
           </text>
         </g>
         <g class="language details" data-language="Shell">
@@ -79,7 +79,7 @@
             Shell
           </text>
           <text x="232" y="148" font-size="11" fill="#666666" text-anchor="end">
-            64 B  0.4%
+            65 B  0.4%
           </text>
         </g>
         <g class="language details" data-language="Makefile">

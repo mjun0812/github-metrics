@@ -21,7 +21,7 @@
           Most used languages
         </text>
         <text x="240" y="65" font-size="11" fill="#666666" text-anchor="middle">
-          estimation from 263.4 MB of code in 42 analyzed repositories
+          estimation from 263.0 MB of code in 42 analyzed repositories
         </text>
         <g transform="translate(10,79)">
           <svg class="bar" width="460" height="8" role="img" aria-label="Languages distribution">
@@ -33,14 +33,14 @@
             </mask>
             <rect mask="url(#languages-bar-most)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
             <g class="languages-progress">
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="183.76" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="183.76" y="0" width="99.09" height="8" fill="#dea584" data-language="Rust"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="282.85" y="0" width="71.47" height="8" fill="#3572A5" data-language="Python"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="354.32" y="0" width="33.64" height="8" fill="#f1e05a" data-language="JavaScript"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="387.96" y="0" width="15.87" height="8" fill="#b07219" data-language="Java"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="403.83" y="0" width="15.15" height="8" fill="#3178c6" data-language="TypeScript"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="418.98" y="0" width="7.06" height="8" fill="#a91e50" data-language="EJS"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="426.03" y="0" width="6.34" height="8" fill="#00ADD8" data-language="Go"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="183.71" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="183.71" y="0" width="99.06" height="8" fill="#dea584" data-language="Rust"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="282.78" y="0" width="71.46" height="8" fill="#3572A5" data-language="Python"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="354.24" y="0" width="33.63" height="8" fill="#f1e05a" data-language="JavaScript"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="387.87" y="0" width="15.86" height="8" fill="#b07219" data-language="Java"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="403.73" y="0" width="15.15" height="8" fill="#3178c6" data-language="TypeScript"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="418.88" y="0" width="7.06" height="8" fill="#a91e50" data-language="EJS"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="425.93" y="0" width="6.45" height="8" fill="#00ADD8" data-language="Go"/>
               <rect class="language-bar" mask="url(#languages-bar-most)" x="432.38" y="0" width="27.62" height="8" fill="#cccccc" data-language="Other"/>
             </g>
           </svg>
@@ -167,16 +167,16 @@
             <text class="indepth-language" data-language="Jupyter Notebook" data-bytes="62380614">
               Jupyter Notebook
             </text>
-            <text class="indepth-language" data-language="SVG" data-bytes="46020478">
+            <text class="indepth-language" data-language="SVG" data-bytes="45551726">
               SVG
             </text>
             <text class="indepth-language" data-language="Rust" data-bytes="33638029">
               Rust
             </text>
-            <text class="indepth-language" data-language="Python" data-bytes="24263214">
+            <text class="indepth-language" data-language="Python" data-bytes="24264918">
               Python
             </text>
-            <text class="indepth-language" data-language="JSON" data-bytes="21742584">
+            <text class="indepth-language" data-language="JSON" data-bytes="21743929">
               JSON
             </text>
             <text class="indepth-language" data-language="Jest Snapshot" data-bytes="14374321">
@@ -188,7 +188,7 @@
             <text class="indepth-language" data-language="JavaScript" data-bytes="11419148">
               JavaScript
             </text>
-            <text class="indepth-language" data-language="Markdown" data-bytes="10910105">
+            <text class="indepth-language" data-language="Markdown" data-bytes="10914123">
               Markdown
             </text>
             <text class="indepth-language" data-language="Java" data-bytes="5386420">
@@ -206,7 +206,7 @@
             <text class="indepth-language" data-language="EJS" data-bytes="2396454">
               EJS
             </text>
-            <text class="indepth-language" data-language="Go" data-bytes="2152347">
+            <text class="indepth-language" data-language="Go" data-bytes="2189276">
               Go
             </text>
             <text class="indepth-language" data-language="TOML" data-bytes="1992805">
@@ -221,7 +221,7 @@
             <text class="indepth-language" data-language="TSX" data-bytes="1929191">
               TSX
             </text>
-            <text class="indepth-language" data-language="YAML" data-bytes="1685399">
+            <text class="indepth-language" data-language="YAML" data-bytes="1688382">
               YAML
             </text>
             <text class="indepth-language" data-language="TSV" data-bytes="1567898">
@@ -362,7 +362,7 @@
             <text class="indepth-language" data-language="Git Revision List" data-bytes="2185">
               Git Revision List
             </text>
-            <text class="indepth-language" data-language="Go Module" data-bytes="2105">
+            <text class="indepth-language" data-language="Go Module" data-bytes="2093">
               Go Module
             </text>
             <text class="indepth-language" data-language="Svelte" data-bytes="2071">
