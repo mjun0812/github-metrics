@@ -10,11 +10,13 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
+	"github.com/mjun0812/github-metrics/internal/dataprovider"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/habits"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 )
 
 var updateGolden = flag.Bool("update", false, "update golden files")
@@ -77,7 +79,7 @@ func pcWith(t *testing.T, body string, inputs map[string]any) *plugins.PluginCon
 	t.Helper()
 	pc := &plugins.PluginContext{
 		Data:   plugins.NewData(),
-		Inputs: map[string]any{"user": "octocat"},
+		Inputs: map[string]any{"user": "octocat", "plugin_habits": true},
 		REST:   newREST(t, body),
 	}
 	for k, v := range inputs {
@@ -186,7 +188,7 @@ func TestRun_NilREST_Skipped(t *testing.T) {
 	t.Parallel()
 	pc := &plugins.PluginContext{
 		Data:   plugins.NewData(),
-		Inputs: map[string]any{"user": "octocat"},
+		Inputs: map[string]any{"user": "octocat", "plugin_habits": true},
 	}
 	out, _ := habits.Plugin.Run(context.Background(), pc)
 	r := out.(*habits.Result)
@@ -264,7 +266,7 @@ func pcWithRoutes(t *testing.T, routes map[string]string, inputs map[string]any)
 	t.Helper()
 	pc := &plugins.PluginContext{
 		Data:   plugins.NewData(),
-		Inputs: map[string]any{"user": "octocat"},
+		Inputs: map[string]any{"user": "octocat", "plugin_habits": true},
 		REST:   newRESTWithRoutes(t, routes),
 	}
 	for k, v := range inputs {
@@ -408,4 +410,28 @@ func TestPartial_Habits_ChartsOnly_Golden(t *testing.T) {
 	r.ChartsEnabled = true
 	got := renderPartial(t, r)
 	assertPartialGolden(t, "habits_charts_only.svg", got)
+}
+
+// TestRun_PluginDisabled_Skipped covers the gate-off path: without a
+// truthy `plugin_habits` input, Run must Skip before reaching the
+// dataprovider or any API client. The GraphQL mux has no handlers, so
+// any GraphQL call fails the test.
+func TestRun_PluginDisabled_Skipped(t *testing.T) {
+	t.Parallel()
+	gql := mocks.NewGraphQLMux(t)
+	rest := mocks.NewRESTMux(t)
+	pc := mocks.NewPluginContext(t, mocks.WithGraphQL(gql), mocks.WithREST(rest))
+	pc.Provider = dataprovider.New("octocat", "", pc.GraphQL, pc.REST, pc.Logger, dataprovider.Options{})
+
+	out, err := habits.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*habits.Result)
+	if !r.Skipped || r.SkippedReason != "plugin disabled" {
+		t.Errorf("Skipped = %v, SkippedReason = %q; want true, %q", r.Skipped, r.SkippedReason, "plugin disabled")
+	}
+	if n := rest.TotalCalls(); n != 0 {
+		t.Errorf("REST calls = %d, want 0", n)
+	}
 }

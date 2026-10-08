@@ -13,11 +13,13 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/config"
+	"github.com/mjun0812/github-metrics/internal/dataprovider"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/activity"
+	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 )
 
 // restMux is a tiny HTTP transport that returns canned responses keyed
@@ -129,7 +131,7 @@ func newPC(t *testing.T, mux http.RoundTripper, inputs map[string]any) *plugins.
 	t.Helper()
 	data := plugins.NewData()
 	pc := &plugins.PluginContext{
-		Inputs: map[string]any{"user": "octocat"},
+		Inputs: map[string]any{"user": "octocat", "plugin_activity": true},
 		Data:   data,
 		REST:   newREST(t, mux),
 	}
@@ -637,5 +639,29 @@ func TestRun_PullRequestStats_RateLimitedSurfacesAsAppendError(t *testing.T) {
 	}
 	if !strings.Contains(errs[0].Error(), "rate limit") {
 		t.Errorf("error message should mention rate limit; got %q", errs[0].Error())
+	}
+}
+
+// TestRun_PluginDisabled_Skipped covers the gate-off path: without a
+// truthy `plugin_activity` input, Run must Skip before reaching the
+// dataprovider or any API client. The GraphQL mux has no handlers, so
+// any GraphQL call fails the test.
+func TestRun_PluginDisabled_Skipped(t *testing.T) {
+	t.Parallel()
+	gql := mocks.NewGraphQLMux(t)
+	rest := mocks.NewRESTMux(t)
+	pc := mocks.NewPluginContext(t, mocks.WithGraphQL(gql), mocks.WithREST(rest))
+	pc.Provider = dataprovider.New("octocat", "", pc.GraphQL, pc.REST, pc.Logger, dataprovider.Options{})
+
+	out, err := activity.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*activity.Result)
+	if !r.Skipped || r.SkippedReason != "plugin disabled" {
+		t.Errorf("Skipped = %v, SkippedReason = %q; want true, %q", r.Skipped, r.SkippedReason, "plugin disabled")
+	}
+	if n := rest.TotalCalls(); n != 0 {
+		t.Errorf("REST calls = %d, want 0", n)
 	}
 }

@@ -10,12 +10,14 @@ import (
 	"testing"
 
 	"github.com/mjun0812/github-metrics/internal/config"
+	"github.com/mjun0812/github-metrics/internal/dataprovider"
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/repositories"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 )
 
 var updateGolden = flag.Bool("update", false, "update golden files")
@@ -52,7 +54,11 @@ func run(t *testing.T, repos []plugins.Repository, in map[string]any) *repositor
 	t.Helper()
 	data := plugins.NewData()
 	data.Computed.RepositoryList = repos
-	pc := &plugins.PluginContext{Inputs: in, Data: data}
+	inputs := map[string]any{"plugin_repositories": true}
+	for k, v := range in {
+		inputs[k] = v
+	}
+	pc := &plugins.PluginContext{Inputs: inputs, Data: data}
 	out, err := repositories.Plugin.Run(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -90,6 +96,7 @@ func TestRun_FeaturedExplicitList(t *testing.T) {
 	data.Computed.RepositoryList = octocatRepos()
 	pc := &plugins.PluginContext{
 		Inputs: map[string]any{
+			"plugin_repositories":          true,
 			"plugin_repositories_featured": "octocat/gamma, ghost/missing, alpha",
 		},
 		Data: data,
@@ -114,6 +121,7 @@ func TestRun_FeaturedExplicitListWithoutLogin(t *testing.T) {
 	data.Computed.RepositoryList = octocatRepos()
 	pc := &plugins.PluginContext{
 		Inputs: map[string]any{
+			"plugin_repositories":          true,
 			"plugin_repositories_featured": "octocat/gamma, alpha",
 		},
 		Data: data,
@@ -389,5 +397,29 @@ func TestRun_Starred_RESTNilFallback(t *testing.T) {
 	if !reflect.DeepEqual(nameList(r.Starred), nameList(r.Featured)) {
 		t.Errorf("Starred should equal Featured under fallback\nStarred=%v\nFeatured=%v",
 			nameList(r.Starred), nameList(r.Featured))
+	}
+}
+
+// TestRun_PluginDisabled_Skipped covers the gate-off path: without a
+// truthy `plugin_repositories` input, Run must Skip before reaching the
+// dataprovider or any API client. The GraphQL mux has no handlers, so
+// any GraphQL call fails the test.
+func TestRun_PluginDisabled_Skipped(t *testing.T) {
+	t.Parallel()
+	gql := mocks.NewGraphQLMux(t)
+	rest := mocks.NewRESTMux(t)
+	pc := mocks.NewPluginContext(t, mocks.WithGraphQL(gql), mocks.WithREST(rest))
+	pc.Provider = dataprovider.New("octocat", "", pc.GraphQL, pc.REST, pc.Logger, dataprovider.Options{})
+
+	out, err := repositories.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*repositories.Result)
+	if !r.Skipped || r.SkippedReason != "plugin disabled" {
+		t.Errorf("Skipped = %v, SkippedReason = %q; want true, %q", r.Skipped, r.SkippedReason, "plugin disabled")
+	}
+	if n := rest.TotalCalls(); n != 0 {
+		t.Errorf("REST calls = %d, want 0", n)
 	}
 }

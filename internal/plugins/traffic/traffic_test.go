@@ -7,10 +7,12 @@ import (
 	"testing"
 
 	"github.com/mjun0812/github-metrics/internal/config"
+	"github.com/mjun0812/github-metrics/internal/dataprovider"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/traffic"
+	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 )
 
 func newREST(t *testing.T, mux *githubapi.MockTransport) *githubapi.REST {
@@ -41,7 +43,7 @@ func TestRun_NoRepoScope_Skipped(t *testing.T) {
 	mux := scopeMux("read:user")
 	pc := &plugins.PluginContext{
 		Data:   plugins.NewData(),
-		Inputs: map[string]any{},
+		Inputs: map[string]any{"plugin_traffic": true},
 		REST:   newREST(t, mux),
 	}
 	out, _ := traffic.Plugin.Run(context.Background(), pc)
@@ -64,7 +66,7 @@ func TestRun_HideEmpty_ExplicitFalse(t *testing.T) {
 		mux := scopeMux("repo")
 		pc := &plugins.PluginContext{
 			Data:   plugins.NewData(),
-			Inputs: map[string]any{"plugin_traffic_hide_empty": v},
+			Inputs: map[string]any{"plugin_traffic": true, "plugin_traffic_hide_empty": v},
 			REST:   newREST(t, mux),
 		}
 		out, _ := traffic.Plugin.Run(context.Background(), pc)
@@ -86,7 +88,7 @@ func TestRun_WithRepoScope_AggregatesViews(t *testing.T) {
 		{NameWithOwner: "octocat/alpha"},
 		{NameWithOwner: "octocat/beta"},
 	}
-	pc := &plugins.PluginContext{Data: data, Inputs: map[string]any{}, REST: newREST(t, mux)}
+	pc := &plugins.PluginContext{Data: data, Inputs: map[string]any{"plugin_traffic": true}, REST: newREST(t, mux)}
 	out, _ := traffic.Plugin.Run(context.Background(), pc)
 	r := out.(*traffic.Result)
 	if r.Skipped {
@@ -107,7 +109,7 @@ func TestRun_NoRepositories_EmptyButNotSkipped(t *testing.T) {
 	t.Parallel()
 	mux := scopeMux("repo")
 	pc := &plugins.PluginContext{
-		Data: plugins.NewData(), Inputs: map[string]any{}, REST: newREST(t, mux),
+		Data: plugins.NewData(), Inputs: map[string]any{"plugin_traffic": true}, REST: newREST(t, mux),
 	}
 	out, _ := traffic.Plugin.Run(context.Background(), pc)
 	r := out.(*traffic.Result)
@@ -121,7 +123,7 @@ func TestRun_NoRepositories_EmptyButNotSkipped(t *testing.T) {
 
 func TestRun_NilREST_Skipped(t *testing.T) {
 	t.Parallel()
-	pc := &plugins.PluginContext{Data: plugins.NewData(), Inputs: map[string]any{}}
+	pc := &plugins.PluginContext{Data: plugins.NewData(), Inputs: map[string]any{"plugin_traffic": true}}
 	out, _ := traffic.Plugin.Run(context.Background(), pc)
 	r := out.(*traffic.Result)
 	if !r.Skipped {
@@ -179,7 +181,7 @@ func TestRun_DropClassification(t *testing.T) {
 				{NameWithOwner: "octocat/alpha"},
 				{NameWithOwner: "octocat/beta"},
 			}
-			pc := &plugins.PluginContext{Data: data, Inputs: map[string]any{}, REST: newRESTNoRetry(t, mux)}
+			pc := &plugins.PluginContext{Data: data, Inputs: map[string]any{"plugin_traffic": true}, REST: newRESTNoRetry(t, mux)}
 			out, err := traffic.Plugin.Run(context.Background(), pc)
 			if err != nil {
 				t.Fatalf("Run returned error: %v", err)
@@ -206,5 +208,29 @@ func TestRun_DropClassification(t *testing.T) {
 				t.Errorf("error must not contain %q; got %q", c.notWant, msg)
 			}
 		})
+	}
+}
+
+// TestRun_PluginDisabled_Skipped covers the gate-off path: without a
+// truthy `plugin_traffic` input, Run must Skip before reaching the
+// dataprovider or any API client. The GraphQL mux has no handlers, so
+// any GraphQL call fails the test.
+func TestRun_PluginDisabled_Skipped(t *testing.T) {
+	t.Parallel()
+	gql := mocks.NewGraphQLMux(t)
+	rest := mocks.NewRESTMux(t)
+	pc := mocks.NewPluginContext(t, mocks.WithGraphQL(gql), mocks.WithREST(rest))
+	pc.Provider = dataprovider.New("octocat", "", pc.GraphQL, pc.REST, pc.Logger, dataprovider.Options{})
+
+	out, err := traffic.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*traffic.Result)
+	if !r.Skipped || r.SkippedReason != "plugin disabled" {
+		t.Errorf("Skipped = %v, SkippedReason = %q; want true, %q", r.Skipped, r.SkippedReason, "plugin disabled")
+	}
+	if n := rest.TotalCalls(); n != 0 {
+		t.Errorf("REST calls = %d, want 0", n)
 	}
 }

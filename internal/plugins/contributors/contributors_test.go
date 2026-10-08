@@ -1,7 +1,9 @@
 package contributors_test
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
 	"net/http"
 	"strings"
 	"testing"
@@ -17,7 +19,7 @@ func run(t *testing.T, account plugins.AccountKind) *contributors.Result {
 	t.Helper()
 	data := plugins.NewData()
 	data.Account = account
-	pc := &plugins.PluginContext{Data: data, Inputs: map[string]any{}}
+	pc := &plugins.PluginContext{Data: data, Inputs: map[string]any{"plugin_contributors": true}}
 	out, err := contributors.Plugin.Run(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -71,6 +73,7 @@ func TestRun_RepositoryContributionsStats(t *testing.T) {
 		mocks.WithREST(rest),
 		mocks.WithData(data),
 		mocks.WithInputs(map[string]any{
+			"plugin_contributors":               true,
 			"plugin_contributors_contributions": true,
 			"plugin_contributors_sections":      []string{"contributors"},
 			"plugin_contributors_ignored":       []string{"hubot"},
@@ -123,7 +126,7 @@ func TestRun_RepositoryStatsFailureKeepsMinimalStub(t *testing.T) {
 		t,
 		mocks.WithREST(rest),
 		mocks.WithData(data),
-		mocks.WithInputs(map[string]any{"plugin_contributors_contributions": true}),
+		mocks.WithInputs(map[string]any{"plugin_contributors": true, "plugin_contributors_contributions": true}),
 	)
 
 	out, err := contributors.Plugin.Run(context.Background(), pc)
@@ -169,7 +172,7 @@ func TestRun_RepositoryStatsPendingFallsBackToContributorList(t *testing.T) {
 		t,
 		mocks.WithREST(rest),
 		mocks.WithData(data),
-		mocks.WithInputs(map[string]any{"plugin_contributors_contributions": true}),
+		mocks.WithInputs(map[string]any{"plugin_contributors": true, "plugin_contributors_contributions": true}),
 	)
 
 	out, err := contributors.Plugin.Run(context.Background(), pc)
@@ -227,7 +230,7 @@ func TestRun_RepositoryStatsRetriesPendingThenSucceeds(t *testing.T) {
 		t,
 		mocks.WithREST(rest),
 		mocks.WithData(data),
-		mocks.WithInputs(map[string]any{"plugin_contributors_contributions": true}),
+		mocks.WithInputs(map[string]any{"plugin_contributors": true, "plugin_contributors_contributions": true}),
 	)
 
 	out, err := contributors.Plugin.Run(context.Background(), pc)
@@ -279,6 +282,7 @@ func TestRun_RepositoryStatsFailureFallsBackToContributorList(t *testing.T) {
 		mocks.WithREST(rest),
 		mocks.WithData(data),
 		mocks.WithInputs(map[string]any{
+			"plugin_contributors":               true,
 			"plugin_contributors_contributions": true,
 			"plugin_contributors_ignored":       []string{"hubot"},
 		}),
@@ -329,7 +333,7 @@ func TestRun_ContributorFallbackFollowsPagination(t *testing.T) {
 	data := plugins.NewData()
 	data.Account = plugins.AccountRepository
 	data.SetRepo(&plugins.Repo{Owner: "octocat", Name: "hello-world", Contributors: 2, DefaultBranch: "main"})
-	pc := mocks.NewPluginContext(t, mocks.WithREST(rest), mocks.WithData(data), mocks.WithInputs(map[string]any{}))
+	pc := mocks.NewPluginContext(t, mocks.WithREST(rest), mocks.WithData(data), mocks.WithInputs(map[string]any{"plugin_contributors": true}))
 
 	out, err := contributors.Plugin.Run(context.Background(), pc)
 	if err != nil {
@@ -367,7 +371,7 @@ func TestRun_ContributorFallbackCapsPages(t *testing.T) {
 	data := plugins.NewData()
 	data.Account = plugins.AccountRepository
 	data.SetRepo(&plugins.Repo{Owner: "octocat", Name: "hello-world", Contributors: 1, DefaultBranch: "main"})
-	pc := mocks.NewPluginContext(t, mocks.WithREST(rest), mocks.WithData(data), mocks.WithInputs(map[string]any{}))
+	pc := mocks.NewPluginContext(t, mocks.WithREST(rest), mocks.WithData(data), mocks.WithInputs(map[string]any{"plugin_contributors": true}))
 
 	if _, err := contributors.Plugin.Run(context.Background(), pc); err != nil {
 		t.Fatalf("Run: %v", err)
@@ -489,4 +493,54 @@ func TestPartial_DefaultDisplayHidesContributionNumbers(t *testing.T) {
 	if !strings.Contains(got, "octocat") {
 		t.Fatalf("default display should keep contributor row: %q", got)
 	}
+}
+
+// TestRun_PluginDisabled_Skipped covers the gate-off path: without a
+// truthy `plugin_contributors` input, Run must Skip before issuing any
+// REST call in repository mode, and must not log the user-mode WARN.
+func TestRun_PluginDisabled_Skipped(t *testing.T) {
+	t.Parallel()
+	t.Run("repository mode issues no REST call", func(t *testing.T) {
+		t.Parallel()
+		rest := mocks.NewRESTMux(t)
+		data := plugins.NewData()
+		data.Account = plugins.AccountRepository
+		data.SetRepo(&plugins.Repo{Owner: "octocat", Name: "hello-world", Contributors: 2, DefaultBranch: "main"})
+		pc := mocks.NewPluginContext(t, mocks.WithREST(rest), mocks.WithData(data))
+
+		out, err := contributors.Plugin.Run(context.Background(), pc)
+		if err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+		r := out.(*contributors.Result)
+		if !r.Skipped || r.SkippedReason != "plugin disabled" {
+			t.Errorf("Skipped = %v, SkippedReason = %q; want true, %q", r.Skipped, r.SkippedReason, "plugin disabled")
+		}
+		if n := rest.TotalCalls(); n != 0 {
+			t.Errorf("REST calls = %d, want 0", n)
+		}
+	})
+	t.Run("user mode logs no mode warning", func(t *testing.T) {
+		t.Parallel()
+		var logs bytes.Buffer
+		data := plugins.NewData()
+		data.Account = plugins.AccountUser
+		pc := &plugins.PluginContext{
+			Data:   data,
+			Inputs: map[string]any{},
+			Logger: slog.New(slog.NewTextHandler(&logs, nil)),
+		}
+
+		out, err := contributors.Plugin.Run(context.Background(), pc)
+		if err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+		r := out.(*contributors.Result)
+		if !r.Skipped || r.SkippedReason != "plugin disabled" {
+			t.Errorf("Skipped = %v, SkippedReason = %q; want true, %q", r.Skipped, r.SkippedReason, "plugin disabled")
+		}
+		if logs.Len() != 0 {
+			t.Errorf("unexpected log output: %s", logs.String())
+		}
+	})
 }

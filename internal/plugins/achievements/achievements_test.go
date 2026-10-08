@@ -9,9 +9,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mjun0812/github-metrics/internal/dataprovider"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/achievements"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 )
 
 var updateGolden = flag.Bool("update", false, "update golden files in tests/golden/...")
@@ -36,7 +38,11 @@ func repoRoot(t *testing.T) string {
 
 func run(t *testing.T, data *plugins.Data, inputs map[string]any) *achievements.Result {
 	t.Helper()
-	pc := &plugins.PluginContext{Inputs: inputs, Data: data}
+	in := map[string]any{"plugin_achievements": true}
+	for k, v := range inputs {
+		in[k] = v
+	}
+	pc := &plugins.PluginContext{Inputs: in, Data: data}
 	out, err := achievements.Plugin.Run(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -398,5 +404,29 @@ func TestPartial_UnknownIDFallsBackToTrophy(t *testing.T) {
 	// The trophy octicon has a distinctive opening "M3.217 6.962" segment.
 	if !strings.Contains(got, "M3.217 6.962") {
 		t.Errorf("expected trophy fallback path in:\n%s", got)
+	}
+}
+
+// TestRun_PluginDisabled_Skipped covers the gate-off path: without a
+// truthy `plugin_achievements` input, Run must Skip before reaching the
+// dataprovider or any API client. The GraphQL mux has no handlers, so
+// any GraphQL call fails the test.
+func TestRun_PluginDisabled_Skipped(t *testing.T) {
+	t.Parallel()
+	gql := mocks.NewGraphQLMux(t)
+	rest := mocks.NewRESTMux(t)
+	pc := mocks.NewPluginContext(t, mocks.WithGraphQL(gql), mocks.WithREST(rest))
+	pc.Provider = dataprovider.New("octocat", "", pc.GraphQL, pc.REST, pc.Logger, dataprovider.Options{})
+
+	out, err := achievements.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*achievements.Result)
+	if !r.Skipped || r.SkippedReason != "plugin disabled" {
+		t.Errorf("Skipped = %v, SkippedReason = %q; want true, %q", r.Skipped, r.SkippedReason, "plugin disabled")
+	}
+	if n := rest.TotalCalls(); n != 0 {
+		t.Errorf("REST calls = %d, want 0", n)
 	}
 }

@@ -74,6 +74,13 @@ func (p *calendarPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 	if pc == nil || pc.Data == nil {
 		return nil, nil
 	}
+	if !pluginutil.TruthyInput(pc.Inputs, "plugin_"+Name) {
+		return &Result{
+			Skipped:       true,
+			SkippedReason: "plugin disabled",
+			Years:         []YearCalendar{},
+		}, nil
+	}
 	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
 		return &Result{
 			Skipped:       true,
