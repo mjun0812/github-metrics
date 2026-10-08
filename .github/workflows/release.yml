@@ -17,6 +17,16 @@ name: Release
 # assertion (FR-006). If it fails, release-docker and release-binary
 # do not start — nothing oversized lands on GHCR.
 #
+# Action image pinning: the committed action.yml on main says
+# `image: 'Dockerfile'`, which would make every `uses:` caller rebuild
+# the image (with VERSION=dev) on their runner. Once the image is
+# published and signed and the GitHub Release exists, the
+# pin-action-image job commits an action.yml regenerated with
+# VERSION=<tag> (`image: 'docker://ghcr.io/...:<tag>'`) on top of the
+# tagged commit and force-moves the semver tag to that commit;
+# update-floating-tag then points vMAJOR at the same commit. The
+# pinned commit lives only under the tags, never on main.
+#
 # Dry-run: `workflow_dispatch` with `dry_run=true` (default) runs
 # the full build chain but skips GHCR push, GitHub Release upload,
 # and cosign signing. Artifacts are uploaded as workflow artifacts
@@ -385,9 +395,66 @@ jobs:
               --title "${TAG}"
           fi
 
+  # Re-point the semver tag at a commit whose action.yml runs the
+  # image published above instead of building the Dockerfile on the
+  # caller's runner. Runs for every published tag, pre-releases and
+  # back-ports included, because each of them has its own
+  # `${REGISTRY_IMAGE}:<tag>` image.
+  #
+  # The tag is pushed with GITHUB_TOKEN, whose pushes do not trigger
+  # workflow runs, so moving the tag does not re-run this release.
+  pin-action-image:
+    name: Pin action.yml to the published image
+    needs: [merge-manifest, release-binary]
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' &&
+      startsWith(github.ref, 'refs/tags/v') &&
+      github.event.inputs.dry_run != 'true'
+    permissions:
+      contents: write
+    outputs:
+      release_sha: ${{ steps.pin.outputs.release_sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Assert the image is pullable without credentials
+        # This job never logs in to GHCR, so the inspect runs
+        # anonymously, exactly like a `uses:` caller's runner pulling
+        # the image. It fails when the tag is missing or the GHCR
+        # package is not public, before any tag is moved.
+        env:
+          TAG: ${{ github.ref_name }}
+        run: docker buildx imagetools inspect "${REGISTRY_IMAGE}:${TAG}"
+
+      - name: Commit pinned action.yml + force-move the semver tag
+        id: pin
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG}" go run ./internal/tools/gen-action-yml --output ./action.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit \
+            -m "release: pin action.yml to ${REGISTRY_IMAGE}:${TAG}" \
+            -m "Source commit: ${GITHUB_SHA}" \
+            -- action.yml
+          release_sha="$(git rev-parse HEAD)"
+          git tag -f "${TAG}" "${release_sha}"
+          git push origin --force "refs/tags/${TAG}"
+          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
+          echo "Moved ${TAG} → ${release_sha} (source ${GITHUB_SHA})"
+
   update-floating-tag:
     name: Advance vMAJOR floating tag (stable releases only)
-    needs: [merge-manifest, release-binary]
+    needs: pin-action-image
     runs-on: ubuntu-latest
     # Only run on tag pushes (not workflow_dispatch from a branch) and
     # only when not in dry-run mode. The decision step below also
@@ -405,6 +472,8 @@ jobs:
 
       - name: Compute major version + advance decision
         id: decide
+        env:
+          RELEASE_SHA: ${{ needs.pin-action-image.outputs.release_sha }}
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF#refs/tags/}"
@@ -444,13 +513,13 @@ jobs:
           fi
 
           echo "floating=${FLOATING}" >> "${GITHUB_OUTPUT}"
-          echo "Will advance ${FLOATING} → $(git rev-parse HEAD) (= ${TAG})"
+          echo "Will advance ${FLOATING} → ${RELEASE_SHA} (= ${TAG})"
 
       - name: Force-update floating tag
         if: steps.decide.outputs.floating != ''
         env:
           FLOATING: ${{ steps.decide.outputs.floating }}
-          TARGET_SHA: ${{ github.sha }}
+          TARGET_SHA: ${{ needs.pin-action-image.outputs.release_sha }}
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail

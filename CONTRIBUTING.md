@@ -119,10 +119,23 @@ make docker-smoke
 ## Releasing
 
 The maintainer release procedure is split into three steps — dry-run
-gate, `action.yml` pinning, and tag push followed by post-release
-verification. Run `make release-dry-run` before pushing a tag to catch
-issues early; the [`scripts/release-verify.sh`](scripts/release-verify.sh)
-helper covers the post-release manifest / signature / checksum checks.
+gate, tag push, and post-release verification. Run
+`make release-dry-run` before pushing a tag to catch issues early; the
+dry run does not exercise the GHCR push, the GitHub Release, or the
+`action.yml` pinning below.
+
+`action.yml` pinning is automated: after the image is published and
+the GitHub Release exists, `release.yml` commits an `action.yml`
+regenerated with `VERSION=<tag>` (`image: 'docker://ghcr.io/...:<tag>'`)
+on top of the tagged commit and force-moves the pushed tag (and the
+`vMAJOR` floating tag for stable releases) to that commit. Do not
+commit a pinned `action.yml` to main. The GHCR package must be public,
+because `uses:` callers pull the image without credentials.
+
+The [`scripts/release-verify.sh`](scripts/release-verify.sh) helper
+covers the post-release manifest / signature / checksum checks. Its
+`action.yml` check reads the working tree, so run it from a checkout
+of the released tag (`git fetch --tags --force && git checkout <tag>`).
 
 ```sh
 make release-dry-run
@@ -155,6 +168,9 @@ fails if the committed file would drift.
 make gen-action-yml          # default (image: 'Dockerfile')
 VERSION=v1.0.0 make gen-action-yml   # release pin (image: 'docker://...')
 ```
+
+Commit only the default output. `release.yml` generates the release pin
+itself when a tag is pushed (see [Releasing](#releasing)).
 
 ### Upstream fixtures (optional)
 
