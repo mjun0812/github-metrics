@@ -23,7 +23,7 @@
           </svg>
         </g>
         <text x="37" y="42" font-size="14" fill="#777777">
-          3.8k Commits
+          6.6k Commits
         </text>
         <g transform="translate(13,50)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -31,7 +31,7 @@
           </svg>
         </g>
         <text x="37" y="62" font-size="14" fill="#777777">
-          122 Pull requests reviewed
+          211 Pull requests reviewed
         </text>
         <g transform="translate(13,70)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -39,7 +39,7 @@
           </svg>
         </g>
         <text x="37" y="82" font-size="14" fill="#777777">
-          780 Pull requests opened
+          1.4k Pull requests opened
         </text>
         <g transform="translate(13,90)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -48,7 +48,7 @@
           </svg>
         </g>
         <text x="37" y="102" font-size="14" fill="#777777">
-          577 Issues opened
+          1.2k Issues opened
         </text>
         <g transform="translate(13,110)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -56,7 +56,7 @@
           </svg>
         </g>
         <text x="37" y="122" font-size="14" fill="#777777">
-          461 issue comments
+          893 issue comments
         </text>
         <g transform="translate(253,9)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -81,7 +81,7 @@
           </svg>
         </g>
         <text x="277" y="62" font-size="14" fill="#777777">
-          Following 27 users
+          Following 29 users
         </text>
         <g transform="translate(253,70)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -97,7 +97,7 @@
           </svg>
         </g>
         <text x="277" y="102" font-size="14" fill="#777777">
-          Starred 329 repositories
+          Starred 353 repositories
         </text>
         <g transform="translate(253,110)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -105,7 +105,7 @@
           </svg>
         </g>
         <text x="277" y="122" font-size="14" fill="#777777">
-          Watching 31 repositories
+          Watching 30 repositories
         </text>
       </svg>
     </g>
@@ -119,7 +119,7 @@
           </svg>
         </g>
         <text x="37" y="22" font-size="16" fill="#0366d6">
-          57 Repositories
+          63 Repositories
         </text>
         <g transform="translate(13,30)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -127,7 +127,7 @@
           </svg>
         </g>
         <text x="37" y="42" font-size="14" fill="#777777">
-          Prefers MIT License license
+          Prefers MIT license
         </text>
         <g transform="translate(13,50)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -135,7 +135,7 @@
           </svg>
         </g>
         <text x="37" y="62" font-size="14" fill="#777777">
-          164 Releases
+          217 Releases
         </text>
         <g transform="translate(13,70)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -151,7 +151,7 @@
           </svg>
         </g>
         <text x="37" y="102" font-size="14" fill="#777777">
-          2.7 GB used
+          4.2 GB used
         </text>
         <g transform="translate(253,30)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -167,7 +167,7 @@
           </svg>
         </g>
         <text x="277" y="62" font-size="14" fill="#777777">
-          1.7k Stargazers
+          1.9k Stargazers
         </text>
         <g transform="translate(253,70)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -175,7 +175,7 @@
           </svg>
         </g>
         <text x="277" y="82" font-size="14" fill="#777777">
-          87 Forkers
+          97 Forkers
         </text>
         <g transform="translate(253,90)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -183,7 +183,7 @@
           </svg>
         </g>
         <text x="277" y="102" font-size="14" fill="#777777">
-          31 Watchers
+          33 Watchers
         </text>
         <g transform="translate(253,110)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -191,7 +191,7 @@
           </svg>
         </g>
         <text x="277" y="122" font-size="14" fill="#777777">
-          5k views in last two weeks
+          2.8k views in last two weeks
         </text>
       </svg>
     </g>

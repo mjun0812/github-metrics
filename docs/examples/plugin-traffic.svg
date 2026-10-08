@@ -15,7 +15,7 @@
           </svg>
         </g>
         <text x="37" y="22" font-size="16" fill="#0366d6">
-          36 Repositories
+          42 Repositories
         </text>
         <g transform="translate(13,30)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -23,7 +23,7 @@
           </svg>
         </g>
         <text x="37" y="42" font-size="14" fill="#777777">
-          Prefers MIT License license
+          Prefers MIT license
         </text>
         <g transform="translate(13,50)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -31,7 +31,7 @@
           </svg>
         </g>
         <text x="37" y="62" font-size="14" fill="#777777">
-          132 Releases
+          215 Releases
         </text>
         <g transform="translate(13,70)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -47,7 +47,7 @@
           </svg>
         </g>
         <text x="37" y="102" font-size="14" fill="#777777">
-          2.2 GB used
+          2.4 GB used
         </text>
         <g transform="translate(253,30)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -63,7 +63,7 @@
           </svg>
         </g>
         <text x="277" y="62" font-size="14" fill="#777777">
-          1.7k Stargazers
+          1.9k Stargazers
         </text>
         <g transform="translate(253,70)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -71,7 +71,7 @@
           </svg>
         </g>
         <text x="277" y="82" font-size="14" fill="#777777">
-          87 Forkers
+          97 Forkers
         </text>
         <g transform="translate(253,90)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -79,7 +79,7 @@
           </svg>
         </g>
         <text x="277" y="102" font-size="14" fill="#777777">
-          21 Watchers
+          23 Watchers
         </text>
         <g transform="translate(253,110)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16">
@@ -87,7 +87,7 @@
           </svg>
         </g>
         <text x="277" y="122" font-size="14" fill="#777777">
-          4.9k views in last two weeks
+          2.8k views in last two weeks
         </text>
       </svg>
     </g>
@@ -103,60 +103,60 @@
         <text x="37" y="22" font-size="16" fill="#0366d6">
           Traffic
         </text>
-        <rect x="5" y="30" width="149" height="22" rx="11" ry="11" fill="#58A6FF" fill-opacity="0.19"/>
+        <rect x="5" y="30" width="147" height="22" rx="11" ry="11" fill="#58A6FF" fill-opacity="0.19"/>
         <text x="15" y="45" font-size="12" fill="#0366D6">
-          4.9k views (1.4k unique)
+          2.8k views (882 unique)
         </text>
         <text x="5" y="70" font-size="14" fill="#777777">
-          mjun0812/flash-attention-prebuild-wheels: 4.7k views (1.3k unique)
+          mjun0812/flash-attention-prebuild-wheels: 2.6k views (817 unique)
         </text>
         <text x="5" y="90" font-size="14" fill="#777777">
-          mjun0812/dotfiles: 87 views (12 unique)
+          mjun0812/github-metrics: 33 views (3 unique)
         </text>
         <text x="5" y="110" font-size="14" fill="#777777">
-          mjun0812/python-copier-template: 48 views (10 unique)
+          mjun0812/python-project-template: 33 views (11 unique)
         </text>
         <text x="5" y="130" font-size="14" fill="#777777">
-          mjun0812/llm-wiki-template: 47 views (8 unique)
+          mjun0812/dotfiles: 20 views (6 unique)
         </text>
         <text x="5" y="150" font-size="14" fill="#777777">
-          mjun0812/RobotoMonoJP: 25 views (10 unique)
+          mjun0812/python-copier-template: 18 views (11 unique)
         </text>
         <text x="5" y="170" font-size="14" fill="#777777">
-          mjun0812/python-project-template: 18 views (9 unique)
+          mjun0812/skills: 14 views (8 unique)
         </text>
         <text x="5" y="190" font-size="14" fill="#777777">
-          mjun0812/mjun0812: 8 views (8 unique)
+          mjun0812/RobotoMonoJP: 11 views (7 unique)
         </text>
         <text x="5" y="210" font-size="14" fill="#777777">
-          mjun0812/chrome-vertical-tab-toggle-hammerspoon: 7 views (3 unique)
+          mjun0812/setup-cuda: 9 views (2 unique)
         </text>
         <text x="5" y="230" font-size="14" fill="#777777">
-          mjun0812/MLflow-Docker: 6 views (4 unique)
+          mjun0812/mjun0812: 5 views (3 unique)
         </text>
         <text x="5" y="250" font-size="14" fill="#777777">
-          mjun0812/mjun0812.github.io: 6 views (3 unique)
+          mjun0812/PyTorch-Project-Template: 4 views (4 unique)
         </text>
         <text x="5" y="270" font-size="14" fill="#777777">
-          mjun0812/hf-model-cleanup-experiment: 4 views (4 unique)
+          mjun0812/MLflow-Docker: 3 views (3 unique)
         </text>
         <text x="5" y="290" font-size="14" fill="#777777">
-          mjun0812/yolov5: 4 views (1 unique)
-        </text>
-        <text x="5" y="310" font-size="14" fill="#777777">
-          mjun0812/PyTorch-Project-Template: 2 views (2 unique)
-        </text>
-        <text x="5" y="330" font-size="14" fill="#777777">
-          mjun0812/zenn-content: 2 views (2 unique)
-        </text>
-        <text x="5" y="350" font-size="14" fill="#777777">
           mjun0812/accelerate: 1 view (1 unique)
         </text>
-        <text x="5" y="370" font-size="14" fill="#777777">
+        <text x="5" y="310" font-size="14" fill="#777777">
+          mjun0812/chrome-vertical-tab-toggle-hammerspoon: 1 view (1 unique)
+        </text>
+        <text x="5" y="330" font-size="14" fill="#777777">
           mjun0812/kornia: 1 view (1 unique)
         </text>
-        <text x="5" y="390" font-size="14" fill="#777777">
+        <text x="5" y="350" font-size="14" fill="#777777">
           mjun0812/matmul.c: 1 view (1 unique)
+        </text>
+        <text x="5" y="370" font-size="14" fill="#777777">
+          mjun0812/mjun0812.github.io: 1 view (1 unique)
+        </text>
+        <text x="5" y="390" font-size="14" fill="#777777">
+          mjun0812/raspi: 1 view (1 unique)
         </text>
         <text x="5" y="410" font-size="14" fill="#777777">
           mjun0812/torch_cpp: 1 view (1 unique)

@@ -15,13 +15,13 @@
           </svg>
         </g>
         <text x="37" y="22" font-size="16" fill="#0366d6">
-          24 Languages
+          27 Languages
         </text>
         <text x="240" y="48" font-size="14" fill="#0366d6" text-anchor="middle">
           Most used languages
         </text>
         <text x="240" y="65" font-size="11" fill="#666666" text-anchor="middle">
-          estimation from 171.1 MB of code in 36 analyzed repositories
+          estimation from 263.4 MB of code in 42 analyzed repositories
         </text>
         <g transform="translate(10,79)">
           <svg class="bar" width="460" height="8" role="img" aria-label="Languages distribution">
@@ -33,68 +33,68 @@
             </mask>
             <rect mask="url(#languages-bar-most)" x="0" y="0" width="0" height="8" fill="#d1d5da"/>
             <g class="languages-progress">
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="67.06" height="8" fill="#3D6117" data-language="TeX"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="67.06" y="0" width="59.89" height="8" fill="#f34b7d" data-language="C++"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="126.95" y="0" width="57.89" height="8" fill="#00ADD8" data-language="Go"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="184.84" y="0" width="54.73" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="239.56" y="0" width="54.43" height="8" fill="#a91e50" data-language="EJS"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="293.99" y="0" width="47.25" height="8" fill="#3572A5" data-language="Python"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="341.24" y="0" width="46.88" height="8" fill="#89e051" data-language="Shell"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="388.12" y="0" width="35.23" height="8" fill="#f1e05a" data-language="JavaScript"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="423.35" y="0" width="36.65" height="8" fill="#cccccc" data-language="Other"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="183.76" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="183.76" y="0" width="99.09" height="8" fill="#dea584" data-language="Rust"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="282.85" y="0" width="71.47" height="8" fill="#3572A5" data-language="Python"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="354.32" y="0" width="33.64" height="8" fill="#f1e05a" data-language="JavaScript"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="387.96" y="0" width="15.87" height="8" fill="#b07219" data-language="Java"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="403.83" y="0" width="15.15" height="8" fill="#3178c6" data-language="TypeScript"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="418.98" y="0" width="7.06" height="8" fill="#a91e50" data-language="EJS"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="426.03" y="0" width="6.34" height="8" fill="#00ADD8" data-language="Go"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="432.38" y="0" width="27.62" height="8" fill="#cccccc" data-language="Other"/>
             </g>
           </svg>
         </g>
-        <g class="language details" data-language="TeX">
+        <g class="language details" data-language="Jupyter Notebook">
           <g transform="translate(8,97)">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-              <path fill="#3D6117" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+              <path fill="#DA5B0B" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
             </svg>
           </g>
           <text x="32" y="109" font-size="14" fill="#777777">
-            TeX
+            Jupyter Notebook
           </text>
           <text x="232" y="108" font-size="11" fill="#666666" text-anchor="end">
-            2.8 MB  14.6%
+            59.5 MB  39.9%
           </text>
         </g>
-        <g class="language details" data-language="Go">
+        <g class="language details" data-language="Python">
           <g transform="translate(8,117)">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-              <path fill="#00ADD8" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+              <path fill="#3572A5" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
             </svg>
           </g>
           <text x="32" y="129" font-size="14" fill="#777777">
-            Go
+            Python
           </text>
           <text x="232" y="128" font-size="11" fill="#666666" text-anchor="end">
-            115 B  12.6%
+            23.1 MB  15.5%
+          </text>
+        </g>
+        <g class="language details" data-language="Java">
+          <g transform="translate(8,137)">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+              <path fill="#b07219" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+            </svg>
+          </g>
+          <text x="32" y="149" font-size="14" fill="#777777">
+            Java
+          </text>
+          <text x="232" y="148" font-size="11" fill="#666666" text-anchor="end">
+            5.1 MB  3.4%
           </text>
         </g>
         <g class="language details" data-language="EJS">
-          <g transform="translate(8,137)">
+          <g transform="translate(8,157)">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
               <path fill="#a91e50" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
             </svg>
           </g>
-          <text x="32" y="149" font-size="14" fill="#777777">
+          <text x="32" y="169" font-size="14" fill="#777777">
             EJS
           </text>
-          <text x="232" y="148" font-size="11" fill="#666666" text-anchor="end">
-            2.3 MB  11.8%
-          </text>
-        </g>
-        <g class="language details" data-language="Shell">
-          <g transform="translate(8,157)">
-            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-              <path fill="#89e051" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
-            </svg>
-          </g>
-          <text x="32" y="169" font-size="14" fill="#777777">
-            Shell
-          </text>
           <text x="232" y="168" font-size="11" fill="#666666" text-anchor="end">
-            265.6 kB  10.2%
+            2.3 MB  1.5%
           </text>
         </g>
         <g class="language details" data-language="Other">
@@ -107,167 +107,200 @@
             Other
           </text>
           <text x="232" y="188" font-size="11" fill="#666666" text-anchor="end">
-            1.5 MB  8.0%
+            8.9 MB  6.0%
           </text>
         </g>
-        <g class="language details" data-language="C++">
+        <g class="language details" data-language="Rust">
           <g transform="translate(248,97)">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-              <path fill="#f34b7d" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+              <path fill="#dea584" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
             </svg>
           </g>
           <text x="272" y="109" font-size="14" fill="#777777">
-            C++
+            Rust
           </text>
           <text x="472" y="108" font-size="11" fill="#666666" text-anchor="end">
-            35.9 kB  13.0%
-          </text>
-        </g>
-        <g class="language details" data-language="Jupyter Notebook">
-          <g transform="translate(248,117)">
-            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-              <path fill="#DA5B0B" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
-            </svg>
-          </g>
-          <text x="272" y="129" font-size="14" fill="#777777">
-            Jupyter Notebook
-          </text>
-          <text x="472" y="128" font-size="11" fill="#666666" text-anchor="end">
-            42.4 MB  11.9%
-          </text>
-        </g>
-        <g class="language details" data-language="Python">
-          <g transform="translate(248,137)">
-            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-              <path fill="#3572A5" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
-            </svg>
-          </g>
-          <text x="272" y="149" font-size="14" fill="#777777">
-            Python
-          </text>
-          <text x="472" y="148" font-size="11" fill="#666666" text-anchor="end">
-            19.0 MB  10.3%
+            32.1 MB  21.5%
           </text>
         </g>
         <g class="language details" data-language="JavaScript">
-          <g transform="translate(248,157)">
+          <g transform="translate(248,117)">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
               <path fill="#f1e05a" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
             </svg>
           </g>
-          <text x="272" y="169" font-size="14" fill="#777777">
+          <text x="272" y="129" font-size="14" fill="#777777">
             JavaScript
           </text>
+          <text x="472" y="128" font-size="11" fill="#666666" text-anchor="end">
+            10.9 MB  7.3%
+          </text>
+        </g>
+        <g class="language details" data-language="TypeScript">
+          <g transform="translate(248,137)">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+              <path fill="#3178c6" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+            </svg>
+          </g>
+          <text x="272" y="149" font-size="14" fill="#777777">
+            TypeScript
+          </text>
+          <text x="472" y="148" font-size="11" fill="#666666" text-anchor="end">
+            4.9 MB  3.3%
+          </text>
+        </g>
+        <g class="language details" data-language="Go">
+          <g transform="translate(248,157)">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+              <path fill="#00ADD8" fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"/>
+            </svg>
+          </g>
+          <text x="272" y="169" font-size="14" fill="#777777">
+            Go
+          </text>
           <text x="472" y="168" font-size="11" fill="#666666" text-anchor="end">
-            10.0 MB  7.7%
+            2.1 MB  1.4%
           </text>
         </g>
         <g visibility="hidden" aria-hidden="true">
           <g class="languages-indepth">
-            <text class="indepth-language" data-language="Jupyter Notebook" data-bytes="44428253">
+            <text class="indepth-language" data-language="Jupyter Notebook" data-bytes="62380614">
               Jupyter Notebook
             </text>
-            <text class="indepth-language" data-language="Rust" data-bytes="26191855">
+            <text class="indepth-language" data-language="SVG" data-bytes="46020478">
+              SVG
+            </text>
+            <text class="indepth-language" data-language="Rust" data-bytes="33638029">
               Rust
             </text>
-            <text class="indepth-language" data-language="Python" data-bytes="19921934">
+            <text class="indepth-language" data-language="Python" data-bytes="24263214">
               Python
             </text>
-            <text class="indepth-language" data-language="JSON" data-bytes="17213562">
+            <text class="indepth-language" data-language="JSON" data-bytes="21742584">
               JSON
             </text>
-            <text class="indepth-language" data-language="Jest Snapshot" data-bytes="14329594">
+            <text class="indepth-language" data-language="Jest Snapshot" data-bytes="14374321">
               Jest Snapshot
             </text>
             <text class="indepth-language" data-language="Adblock Filter List" data-bytes="12404744">
               Adblock Filter List
             </text>
-            <text class="indepth-language" data-language="JavaScript" data-bytes="10494023">
+            <text class="indepth-language" data-language="JavaScript" data-bytes="11419148">
               JavaScript
             </text>
-            <text class="indepth-language" data-language="Markdown" data-bytes="5934312">
+            <text class="indepth-language" data-language="Markdown" data-bytes="10910105">
               Markdown
             </text>
             <text class="indepth-language" data-language="Java" data-bytes="5386420">
               Java
             </text>
-            <text class="indepth-language" data-language="TypeScript" data-bytes="4981583">
+            <text class="indepth-language" data-language="TypeScript" data-bytes="5143077">
               TypeScript
             </text>
-            <text class="indepth-language" data-language="SVG" data-bytes="4389006">
-              SVG
+            <text class="indepth-language" data-language="MiniYAML" data-bytes="3253524">
+              MiniYAML
             </text>
             <text class="indepth-language" data-language="CSV" data-bytes="2716407">
               CSV
             </text>
+            <text class="indepth-language" data-language="EJS" data-bytes="2396454">
+              EJS
+            </text>
+            <text class="indepth-language" data-language="Go" data-bytes="2152347">
+              Go
+            </text>
+            <text class="indepth-language" data-language="TOML" data-bytes="1992805">
+              TOML
+            </text>
+            <text class="indepth-language" data-language="reStructuredText" data-bytes="1977121">
+              reStructuredText
+            </text>
+            <text class="indepth-language" data-language="Shell" data-bytes="1941818">
+              Shell
+            </text>
             <text class="indepth-language" data-language="TSX" data-bytes="1929191">
               TSX
             </text>
-            <text class="indepth-language" data-language="reStructuredText" data-bytes="1718436">
-              reStructuredText
+            <text class="indepth-language" data-language="YAML" data-bytes="1685399">
+              YAML
+            </text>
+            <text class="indepth-language" data-language="TSV" data-bytes="1567898">
+              TSV
             </text>
             <text class="indepth-language" data-language="RenderScript" data-bytes="1323984">
               RenderScript
             </text>
-            <text class="indepth-language" data-language="YAML" data-bytes="1217928">
-              YAML
-            </text>
-            <text class="indepth-language" data-language="CSS" data-bytes="1188869">
+            <text class="indepth-language" data-language="CSS" data-bytes="1251288">
               CSS
             </text>
-            <text class="indepth-language" data-language="TOML" data-bytes="1104096">
-              TOML
-            </text>
-            <text class="indepth-language" data-language="Swift" data-bytes="378042">
+            <text class="indepth-language" data-language="Swift" data-bytes="1036364">
               Swift
+            </text>
+            <text class="indepth-language" data-language="Lua" data-bytes="344585">
+              Lua
+            </text>
+            <text class="indepth-language" data-language="Text" data-bytes="312566">
+              Text
             </text>
             <text class="indepth-language" data-language="Cuda" data-bytes="273611">
               Cuda
             </text>
-            <text class="indepth-language" data-language="Shell" data-bytes="272007">
-              Shell
-            </text>
             <text class="indepth-language" data-language="R" data-bytes="265325">
               R
             </text>
-            <text class="indepth-language" data-language="Text" data-bytes="190234">
-              Text
+            <text class="indepth-language" data-language="KDL" data-bytes="265186">
+              KDL
             </text>
-            <text class="indepth-language" data-language="Astro" data-bytes="132681">
+            <text class="indepth-language" data-language="HTML" data-bytes="189732">
+              HTML
+            </text>
+            <text class="indepth-language" data-language="Roff Manpage" data-bytes="146461">
+              Roff Manpage
+            </text>
+            <text class="indepth-language" data-language="Astro" data-bytes="138295">
               Astro
             </text>
             <text class="indepth-language" data-language="Protocol Buffer" data-bytes="131568">
               Protocol Buffer
             </text>
+            <text class="indepth-language" data-language="Public Key" data-bytes="129688">
+              Public Key
+            </text>
             <text class="indepth-language" data-language="C" data-bytes="127647">
               C
             </text>
-            <text class="indepth-language" data-language="Lua" data-bytes="108996">
-              Lua
-            </text>
-            <text class="indepth-language" data-language="Ignore List" data-bytes="98455">
+            <text class="indepth-language" data-language="Ignore List" data-bytes="113185">
               Ignore List
             </text>
-            <text class="indepth-language" data-language="HTML" data-bytes="90035">
-              HTML
+            <text class="indepth-language" data-language="XML Property List" data-bytes="94383">
+              XML Property List
             </text>
-            <text class="indepth-language" data-language="JSON with Comments" data-bytes="65982">
+            <text class="indepth-language" data-language="PowerShell" data-bytes="83812">
+              PowerShell
+            </text>
+            <text class="indepth-language" data-language="JSON with Comments" data-bytes="66884">
               JSON with Comments
+            </text>
+            <text class="indepth-language" data-language="Dockerfile" data-bytes="53151">
+              Dockerfile
             </text>
             <text class="indepth-language" data-language="Pip Requirements" data-bytes="52608">
               Pip Requirements
             </text>
-            <text class="indepth-language" data-language="XML Property List" data-bytes="51593">
-              XML Property List
+            <text class="indepth-language" data-language="Ruby" data-bytes="41534">
+              Ruby
             </text>
-            <text class="indepth-language" data-language="Dockerfile" data-bytes="40541">
-              Dockerfile
+            <text class="indepth-language" data-language="GraphQL" data-bytes="40800">
+              GraphQL
             </text>
             <text class="indepth-language" data-language="Scala" data-bytes="40226">
               Scala
             </text>
             <text class="indepth-language" data-language="C++" data-bytes="36731">
               C++
+            </text>
+            <text class="indepth-language" data-language="Makefile" data-bytes="33918">
+              Makefile
             </text>
             <text class="indepth-language" data-language="SQL" data-bytes="28767">
               SQL
@@ -278,19 +311,22 @@
             <text class="indepth-language" data-language="Maven POM" data-bytes="27078">
               Maven POM
             </text>
-            <text class="indepth-language" data-language="Makefile" data-bytes="23241">
-              Makefile
+            <text class="indepth-language" data-language="Vue" data-bytes="23809">
+              Vue
+            </text>
+            <text class="indepth-language" data-language="fish" data-bytes="19072">
+              fish
             </text>
             <text class="indepth-language" data-language="SCSS" data-bytes="17548">
               SCSS
             </text>
-            <text class="indepth-language" data-language="PowerShell" data-bytes="16170">
-              PowerShell
+            <text class="indepth-language" data-language="Go Checksums" data-bytes="15530">
+              Go Checksums
             </text>
             <text class="indepth-language" data-language="BibTeX" data-bytes="13446">
               BibTeX
             </text>
-            <text class="indepth-language" data-language="XML" data-bytes="13382">
+            <text class="indepth-language" data-language="XML" data-bytes="12930">
               XML
             </text>
             <text class="indepth-language" data-language="Just" data-bytes="10191">
@@ -299,17 +335,35 @@
             <text class="indepth-language" data-language="RMarkdown" data-bytes="9677">
               RMarkdown
             </text>
+            <text class="indepth-language" data-language="Batchfile" data-bytes="8327">
+              Batchfile
+            </text>
             <text class="indepth-language" data-language="Less" data-bytes="8277">
               Less
             </text>
-            <text class="indepth-language" data-language="Batchfile" data-bytes="8230">
-              Batchfile
+            <text class="indepth-language" data-language="ApacheConf" data-bytes="8273">
+              ApacheConf
             </text>
-            <text class="indepth-language" data-language="Vue" data-bytes="5218">
-              Vue
+            <text class="indepth-language" data-language="Graphviz (DOT)" data-bytes="6645">
+              Graphviz (DOT)
+            </text>
+            <text class="indepth-language" data-language="Xonsh" data-bytes="5036">
+              Xonsh
             </text>
             <text class="indepth-language" data-language="Diff" data-bytes="4662">
               Diff
+            </text>
+            <text class="indepth-language" data-language="Pkl" data-bytes="3574">
+              Pkl
+            </text>
+            <text class="indepth-language" data-language="Nix" data-bytes="3021">
+              Nix
+            </text>
+            <text class="indepth-language" data-language="Git Revision List" data-bytes="2185">
+              Git Revision List
+            </text>
+            <text class="indepth-language" data-language="Go Module" data-bytes="2105">
+              Go Module
             </text>
             <text class="indepth-language" data-language="Svelte" data-bytes="2071">
               Svelte
@@ -317,23 +371,23 @@
             <text class="indepth-language" data-language="CODEOWNERS" data-bytes="1838">
               CODEOWNERS
             </text>
-            <text class="indepth-language" data-language="Git Revision List" data-bytes="1763">
-              Git Revision List
+            <text class="indepth-language" data-language="JSON5" data-bytes="1474">
+              JSON5
             </text>
-            <text class="indepth-language" data-language="Ruby" data-bytes="1389">
-              Ruby
+            <text class="indepth-language" data-language="EditorConfig" data-bytes="1452">
+              EditorConfig
             </text>
             <text class="indepth-language" data-language="CMake" data-bytes="1028">
               CMake
-            </text>
-            <text class="indepth-language" data-language="EditorConfig" data-bytes="1018">
-              EditorConfig
             </text>
             <text class="indepth-language" data-language="Mako" data-bytes="1004">
               Mako
             </text>
             <text class="indepth-language" data-language="Jsonnet" data-bytes="980">
               Jsonnet
+            </text>
+            <text class="indepth-language" data-language="Git Attributes" data-bytes="933">
+              Git Attributes
             </text>
             <text class="indepth-language" data-language="Jinja" data-bytes="849">
               Jinja
@@ -350,20 +404,20 @@
             <text class="indepth-language" data-language="MDX" data-bytes="677">
               MDX
             </text>
-            <text class="indepth-language" data-language="Git Attributes" data-bytes="675">
-              Git Attributes
+            <text class="indepth-language" data-language="RPM Spec" data-bytes="473">
+              RPM Spec
+            </text>
+            <text class="indepth-language" data-language="Dotenv" data-bytes="258">
+              Dotenv
             </text>
             <text class="indepth-language" data-language="Mermaid" data-bytes="252">
               Mermaid
             </text>
-            <text class="indepth-language" data-language="Dotenv" data-bytes="240">
-              Dotenv
-            </text>
             <text class="indepth-language" data-language="TSQL" data-bytes="211">
               TSQL
             </text>
-            <text class="indepth-language" data-language="Go" data-bytes="115">
-              Go
+            <text class="indepth-language" data-language="ShellCheck Config" data-bytes="90">
+              ShellCheck Config
             </text>
             <text class="indepth-language" data-language="robots.txt" data-bytes="70">
               robots.txt
