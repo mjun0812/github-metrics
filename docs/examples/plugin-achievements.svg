@@ -44,10 +44,10 @@
           </text>
           <rect x="211" y="36" width="35" height="16" rx="8" ry="8" fill="#EB355E" fill-opacity="0.15" stroke="#EB355E"/>
           <text x="228" y="47" font-size="10" fill="#EB355E" text-anchor="middle">
-            1392
+            1406
           </text>
           <text x="52" y="62" font-size="12" fill="#666666">
-            Opened 1392 pull requests
+            Opened 1406 pull requests
           </text>
         </g>
         <g class="achievement s" data-rank="S" data-icon="code-square">
@@ -214,10 +214,10 @@
           </text>
           <rect x="202" y="348" width="35" height="16" rx="8" ry="8" fill="#9E91FF" fill-opacity="0.15" stroke="#9D8FFF"/>
           <text x="220" y="359" font-size="10" fill="#9D8FFF" text-anchor="middle">
-            1761
+            1762
           </text>
           <text x="52" y="374" font-size="12" fill="#666666">
-            Most popular repository has 1761 stars
+            Most popular repository has 1762 stars
           </text>
         </g>
         <g class="achievement b" data-rank="B" data-icon="eye">
@@ -247,10 +247,10 @@
           </text>
           <rect x="190" y="400" width="29" height="16" rx="8" ry="8" fill="#9E91FF" fill-opacity="0.15" stroke="#9D8FFF"/>
           <text x="204" y="411" font-size="10" fill="#9D8FFF" text-anchor="middle">
-            210
+            218
           </text>
           <text x="52" y="426" font-size="12" fill="#666666">
-            Reviewed 210 pull requests
+            Reviewed 218 pull requests
           </text>
         </g>
         <g class="achievement b" data-rank="B" data-icon="star">
