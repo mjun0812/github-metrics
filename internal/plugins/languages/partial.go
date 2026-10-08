@@ -91,9 +91,13 @@ func Partial(_ context.Context, pc *templates.PartialContext) (string, int, erro
 	if !ok || r == nil || r.Skipped {
 		return "", 0, nil
 	}
-	bars := append([]plugins.LanguageStat(nil), r.Favorites...)
-	if r.Other.Size > 0 {
-		bars = append(bars, r.Other)
+	favorites, other := r.Favorites, r.Other
+	if ind, ok := indepthResult(pc); ok && len(ind.Favorites) > 0 {
+		favorites, other = ind.Favorites, ind.Other
+	}
+	bars := append([]plugins.LanguageStat(nil), favorites...)
+	if other.Size > 0 {
+		bars = append(bars, other)
 	}
 	if len(bars) == 0 && !hasRecentSection(pc) {
 		return "", 0, nil
@@ -538,10 +542,6 @@ func writeDetailsRows(b *strings.Builder, bars []plugins.LanguageStat, details [
 	showBytes := detailIncludes(details, "bytes-size")
 	showPct := detailIncludes(details, "percentage")
 
-	// Lookup table from language name → indepth bytes (best estimate of
-	// "size" upstream uses). Falls back to bars[i].Size when indepth
-	// isn't wired.
-	indepthBytes := indepthBytesByLanguage(pc)
 	indepthLines := indepthLinesByLanguage(pc)
 
 	maxY := top
@@ -552,11 +552,6 @@ func writeDetailsRows(b *strings.Builder, bars []plugins.LanguageStat, details [
 			if i%numCols != col {
 				continue
 			}
-			size := int64(lang.Size)
-			if v, ok := indepthBytes[lang.Name]; ok && v > 0 {
-				size = v
-			}
-
 			dotY := y + (langListPitch-langIconSize)/2
 			nameBaseline := y + langListPitch/2 + langListFont*langBaseRatio
 			valBaseline := y + langListPitch/2 + langDetailFont*langBaseRatio
@@ -571,7 +566,7 @@ func writeDetailsRows(b *strings.Builder, bars []plugins.LanguageStat, details [
 				parts = append(parts, fmt.Sprintf("%s lines", partials.FormatCount(indepthLines[lang.Name])))
 			}
 			if showBytes {
-				parts = append(parts, formatBytes(size))
+				parts = append(parts, formatBytes(int64(lang.Size)))
 			}
 			if showPct {
 				parts = append(parts, formatPercent(lang.Value))
@@ -589,26 +584,18 @@ func writeDetailsRows(b *strings.Builder, bars []plugins.LanguageStat, details [
 	return maxY
 }
 
-// indepthBytesByLanguage extracts the per-language total bytes from
-// the indepth result if present. Used to populate the "bytes-size"
-// column in details mode.
-func indepthBytesByLanguage(pc *templates.PartialContext) map[string]int64 {
-	out := map[string]int64{}
+// indepthResult returns the non-skipped languages.indepth result when
+// present.
+func indepthResult(pc *templates.PartialContext) (*IndepthResult, bool) {
 	if pc == nil || pc.Data == nil {
-		return out
+		return nil, false
 	}
 	raw, ok := pc.Data.GetPlugin(IndepthName)
 	if !ok || raw == nil {
-		return out
+		return nil, false
 	}
 	r, ok := raw.(*IndepthResult)
-	if !ok || r == nil || r.Skipped {
-		return out
-	}
-	for name, n := range r.Total.Bytes {
-		out[name] = n
-	}
-	return out
+	return r, ok && r != nil && !r.Skipped
 }
 
 func indepthLinesByLanguage(pc *templates.PartialContext) map[string]int64 {

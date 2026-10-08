@@ -202,3 +202,42 @@ func TestPartial_Languages_Indepth(t *testing.T) {
 		t.Errorf("indepth ordering = %v, want %v in:\n%s", indepthOrder, wantOrder, got)
 	}
 }
+
+// TestPartial_Languages_IndepthDrivesRows — with an indepth result the
+// rows (order, size, percentage) come from the indepth ranking, not from
+// the standard aggregation.
+func TestPartial_Languages_IndepthDrivesRows(t *testing.T) {
+	t.Parallel()
+	data := plugins.NewData()
+	data.SetPlugin(languages.Name, &languages.Result{
+		Favorites: []plugins.LanguageStat{
+			{Name: "JavaScript", Color: "#f1e05a", Size: 90000, Value: 0.9},
+			{Name: "Go", Color: "#00ADD8", Size: 10000, Value: 0.1},
+		},
+		Sections: []string{"most-used"},
+		Details:  []string{"bytes-size", "percentage"},
+	})
+	data.SetPlugin(languages.IndepthName, &languages.IndepthResult{
+		Total: languages.LanguageBytes{Bytes: map[string]int64{"Go": 750, "JavaScript": 450}},
+		Favorites: []plugins.LanguageStat{
+			{Name: "Go", Color: "#00ADD8", Size: 750, Value: 0.625},
+			{Name: "JavaScript", Color: "#f1e05a", Size: 450, Value: 0.375},
+		},
+		Analyzed: []string{"octocat/alpha"},
+	})
+	got, _, err := languages.Partial(context.Background(), &templates.PartialContext{Data: data})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	for _, want := range []string{"750 B  62.5%", "450 B  37.5%"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("output missing %q", want)
+		}
+	}
+	if strings.Contains(got, "90000") || strings.Contains(got, "87.9 kB") {
+		t.Errorf("standard aggregation leaked into indepth rows")
+	}
+	if strings.Index(got, `data-language="Go"`) > strings.Index(got, `data-language="JavaScript"`) {
+		t.Errorf("Go must be listed before JavaScript")
+	}
+}

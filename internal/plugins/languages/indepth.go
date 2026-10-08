@@ -52,8 +52,14 @@ type IndepthResult struct {
 	SkippedReason string                   `json:"-"`
 	Repositories  map[string]LanguageBytes `json:"repositories"`
 	Total         LanguageBytes            `json:"total"`
-	Analyzed      []string                 `json:"analyzed"`
-	Errors        []string                 `json:"errors,omitempty"`
+	// Favorites / Other are Total ranked with the languages plugin's
+	// limit / other / aliases / ignored inputs, so the card's size,
+	// percentage, bar and order all come from this one aggregation
+	// (upstream replaces languages.stats with the indepth result).
+	Favorites []plugins.LanguageStat `json:"favorites,omitempty"`
+	Other     plugins.LanguageStat   `json:"other,omitempty"`
+	Analyzed  []string               `json:"analyzed"`
+	Errors    []string               `json:"errors,omitempty"`
 }
 
 // IsSkipped lets the classic dispatcher detect the skipped path.
@@ -225,12 +231,55 @@ func (p *indepthPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 	if perRepo == nil {
 		perRepo = map[string]LanguageBytes{}
 	}
+	langIn := parseInputs(pc.Inputs)
+	bytesSum = aliasTotals(bytesSum, langIn.aliases)
+	linesSum = aliasTotals(linesSum, langIn.aliases)
+	favorites, other := rankIndepth(bytesSum, repos, langIn)
 	return &IndepthResult{
 		Repositories: perRepo,
 		Total:        LanguageBytes{Bytes: bytesSum, Lines: linesSum},
+		Favorites:    favorites,
+		Other:        other,
 		Analyzed:     analyzed,
 		Errors:       errs,
 	}, nil
+}
+
+// aliasTotals folds per-language totals under their aliased names.
+func aliasTotals(in map[string]int64, aliases map[string]string) map[string]int64 {
+	out := make(map[string]int64, len(in))
+	for name, n := range in {
+		out[canonicalLanguage(name, aliases)] += n
+	}
+	return out
+}
+
+// rankIndepth ranks the indepth byte totals exactly like the standard
+// aggregation (rankLanguages). Colors come from the repositories'
+// GraphQL language edges since the linguist walk carries none.
+func rankIndepth(totals map[string]int64, repos []plugins.Repository, in inputs) ([]plugins.LanguageStat, plugins.LanguageStat) {
+	colors := map[string]string{}
+	for _, repo := range repos {
+		for _, lang := range repo.Languages {
+			name := canonicalLanguage(lang.Name, in.aliases)
+			if _, ok := colors[name]; !ok && lang.Color != "" {
+				colors[name] = lang.Color
+			}
+		}
+	}
+	accs := map[string]*acc{}
+	for name, n := range totals {
+		if _, drop := in.ignored[name]; drop || name == "" {
+			continue
+		}
+		color := colors[name]
+		if override, ok := in.colors[name]; ok {
+			color = override
+		}
+		accs[name] = &acc{size: int(n), color: color}
+	}
+	favorites, other, _ := rankLanguages(accs, in)
+	return favorites, other
 }
 
 // analyzeRepository walks HEAD's tree of the given clone directory and

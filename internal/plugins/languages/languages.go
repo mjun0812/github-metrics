@@ -120,11 +120,6 @@ func (p *languagesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 	// Per-language accumulators. counts tracks how many repositories
 	// surfaced each language (after aliasing) so the upstream `count`
 	// field stays accurate when aliases collapse two languages into one.
-	type acc struct {
-		size  int
-		count int
-		color string
-	}
 	// Upstream `repositories_forks: no` is the default (org_repo/source/
 	// plugins/base/metadata.yml line 88). Without this filter, language
 	// stats from forked repos (e.g. a fork of a large EJS codebase)
@@ -171,10 +166,7 @@ func (p *languagesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 		}
 	}
 
-	totalBytes := 0
-	for _, a := range totals {
-		totalBytes += a.size
-	}
+	favorites, other, totalBytes := rankLanguages(totals, in)
 	if totalBytes == 0 {
 		return &Result{
 			Skipped:       true,
@@ -183,44 +175,6 @@ func (p *languagesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 			Favorites:     []plugins.LanguageStat{},
 			Colors:        map[string]string{},
 		}, nil
-	}
-
-	stats := make([]plugins.LanguageStat, 0, len(totals))
-	for name, a := range totals {
-		stats = append(stats, plugins.LanguageStat{
-			Name:  name,
-			Color: a.color,
-			Size:  a.size,
-			Count: a.count,
-			Value: float64(a.size) / float64(totalBytes),
-		})
-	}
-	sort.SliceStable(stats, func(i, j int) bool {
-		if stats[i].Size != stats[j].Size {
-			return stats[i].Size > stats[j].Size
-		}
-		return stats[i].Name < stats[j].Name
-	})
-
-	limit := in.limit
-	if limit < 0 {
-		limit = 0
-	}
-	if limit > len(stats) {
-		limit = len(stats)
-	}
-	favorites := append([]plugins.LanguageStat(nil), stats[:limit]...)
-
-	other := plugins.LanguageStat{
-		Name:  "Other",
-		Color: "#cccccc",
-	}
-	if in.other && limit < len(stats) {
-		for _, s := range stats[limit:] {
-			other.Size += s.Size
-			other.Count += s.Count
-		}
-		other.Value = float64(other.Size) / float64(totalBytes)
 	}
 
 	mostly := plugins.LanguageStat{}
@@ -266,6 +220,66 @@ func (p *languagesPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (a
 		Details:   details,
 		Unique:    len(totals),
 	}, nil
+}
+
+// acc accumulates one language's size, repository count and color.
+type acc struct {
+	size  int
+	count int
+	color string
+}
+
+// rankLanguages sorts the per-language totals by size, applies the
+// limit / other inputs and returns the favorites, the "Other" bucket and
+// the grand total in bytes. Both the standard and the indepth
+// aggregation go through it so their size, percentage and order agree.
+func rankLanguages(totals map[string]*acc, in inputs) ([]plugins.LanguageStat, plugins.LanguageStat, int) {
+	totalBytes := 0
+	for _, a := range totals {
+		totalBytes += a.size
+	}
+	if totalBytes == 0 {
+		return nil, plugins.LanguageStat{}, 0
+	}
+
+	stats := make([]plugins.LanguageStat, 0, len(totals))
+	for name, a := range totals {
+		stats = append(stats, plugins.LanguageStat{
+			Name:  name,
+			Color: a.color,
+			Size:  a.size,
+			Count: a.count,
+			Value: float64(a.size) / float64(totalBytes),
+		})
+	}
+	sort.SliceStable(stats, func(i, j int) bool {
+		if stats[i].Size != stats[j].Size {
+			return stats[i].Size > stats[j].Size
+		}
+		return stats[i].Name < stats[j].Name
+	})
+
+	limit := in.limit
+	if limit < 0 {
+		limit = 0
+	}
+	if limit > len(stats) {
+		limit = len(stats)
+	}
+	favorites := append([]plugins.LanguageStat(nil), stats[:limit]...)
+
+	other := plugins.LanguageStat{
+		Name:  "Other",
+		Color: "#cccccc",
+	}
+	if in.other && limit < len(stats) {
+		for _, s := range stats[limit:] {
+			other.Size += s.Size
+			other.Count += s.Count
+		}
+		other.Value = float64(other.Size) / float64(totalBytes)
+	}
+	return favorites, other, totalBytes
 }
 
 // canonicalLanguage applies the aliases map, returning the resolved
