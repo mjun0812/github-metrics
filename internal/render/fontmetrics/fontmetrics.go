@@ -20,6 +20,7 @@ import (
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/image/math/fixed"
+	"golang.org/x/text/width"
 )
 
 //go:embed fonts/LiberationSans-Regular.ttf fonts/LiberationSans-Bold.ttf
@@ -33,6 +34,13 @@ var fontFS embed.FS
 // of erroring or measuring as zero-width. Roughly half an em matches
 // Liberation Sans' average Latin glyph advance.
 const fallbackAdvanceRatio = 0.5
+
+// wideAdvanceRatio is the advance, as a fraction of sizePx, used for
+// absent-glyph runes that East Asian Width classes Wide or Fullwidth
+// (CJK, emoji). Fallback fonts draw them about 1em wide; the extra
+// 14% is the headroom the package documents for fallback-font
+// variance.
+const wideAdvanceRatio = 1.14
 
 // Weight selects which embedded font face to measure with.
 type Weight int
@@ -92,7 +100,7 @@ func WidthBold(text string, sizePx float64) float64 {
 // using the given weight. It never errors: if the embedded font fails
 // to parse (which should not happen — the font is compiled in) it
 // returns 0, and individual runes without a glyph fall back to
-// fallbackAdvanceRatio so one exotic character doesn't invalidate the
+// fallbackAdvanceRatio (wideAdvanceRatio for wide runes) so one exotic character doesn't invalidate the
 // whole measurement.
 func WidthWeight(text string, sizePx float64, weight Weight) float64 {
 	if text == "" || sizePx <= 0 {
@@ -109,23 +117,30 @@ func WidthWeight(text string, sizePx float64, weight Weight) float64 {
 
 	ppem := fixed.Int26_6(math.Round(sizePx * 64))
 	fallback := fixed.Int26_6(math.Round(sizePx * fallbackAdvanceRatio * 64))
+	wide := fixed.Int26_6(math.Round(sizePx * wideAdvanceRatio * 64))
+	missing := func(r rune) fixed.Int26_6 {
+		if k := width.LookupRune(r).Kind(); k == width.EastAsianWide || k == width.EastAsianFullwidth {
+			return wide
+		}
+		return fallback
+	}
 
-	var width fixed.Int26_6
+	var w fixed.Int26_6
 	for _, r := range text {
 		idx, err := f.GlyphIndex(buf, r)
 		if err != nil || idx == 0 {
 			// idx == 0 is sfnt's .notdef / "rune not in cmap" result.
-			width += fallback
+			w += missing(r)
 			continue
 		}
 		adv, err := f.GlyphAdvance(buf, idx, ppem, font.HintingNone)
 		if err != nil {
-			width += fallback
+			w += missing(r)
 			continue
 		}
-		width += adv
+		w += adv
 	}
-	return float64(width) / 64
+	return float64(w) / 64
 }
 
 // Wrap greedily word-wraps text into lines no wider than maxWidth

@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/mjun0812/github-metrics/internal/render/fontmetrics"
 	"github.com/mjun0812/github-metrics/internal/templates/chrome"
@@ -35,10 +37,13 @@ var (
 )
 
 // mdWord is one whitespace-delimited token. When href is non-empty the
-// word renders as link-colored text wrapped in an `<a>`.
+// word renders as link-colored text wrapped in an `<a>`. spaceBefore is
+// false when the word touches the previous one in the source (e.g. the
+// comma in `[x](url), y`), so no gap is drawn between them.
 type mdWord struct {
-	text string
-	href string
+	text        string
+	href        string
+	spaceBefore bool
 }
 
 // mdParaWords tokenizes one paragraph into flowable words, extracting
@@ -61,12 +66,20 @@ func mdParaWords(para string) []mdWord {
 	para = mdSVGLink.ReplaceAllStringFunc(para, repl(true, mdSVGLink))
 
 	var words []mdWord
+	// spaced is whether the next word is preceded by whitespace (or is first).
+	spaced := true
+	appendWords := func(s, href string) {
+		for _, w := range strings.Fields(s) {
+			words = append(words, mdWord{text: w, href: href, spaceBefore: spaced})
+			spaced = true
+		}
+	}
 	appendText := func(s string) {
 		s = mdSVGEmph.Replace(s)
 		s = strings.ReplaceAll(s, "*", "")
-		for _, w := range strings.Fields(s) {
-			words = append(words, mdWord{text: w})
-		}
+		spaced = spaced || unicode.IsSpace(firstRune(s))
+		appendWords(s, "")
+		spaced = unicode.IsSpace(lastRune(s))
 	}
 
 	last := 0
@@ -80,9 +93,8 @@ func mdParaWords(para string) []mdWord {
 		if it.link {
 			href = it.href
 		}
-		for _, w := range strings.Fields(it.label) {
-			words = append(words, mdWord{text: w, href: href})
-		}
+		appendWords(it.label, href)
+		spaced = false
 		last = loc[1]
 	}
 	if last < len(para) {
@@ -100,10 +112,10 @@ func mdWrap(words []mdWord, maxWidth float64) [][]mdWord {
 	for _, w := range words {
 		ww := fontmetrics.Width(w.text, mdFont)
 		add := ww
-		if len(cur) > 0 {
+		if len(cur) > 0 && w.spaceBefore {
 			add += spaceW
 		}
-		if len(cur) > 0 && curW+add > maxWidth {
+		if len(cur) > 0 && w.spaceBefore && curW+add > maxWidth {
 			out = append(out, cur)
 			cur, curW = nil, 0
 			add = ww
@@ -126,12 +138,15 @@ func mdRenderLine(b *strings.Builder, line []mdWord, x, baseline float64) {
 	for i := 0; i < len(line); {
 		href := line[i].href
 		j := i
-		var parts []string
+		var sb strings.Builder
 		for j < len(line) && line[j].href == href {
-			parts = append(parts, line[j].text)
+			if j > i && line[j].spaceBefore {
+				sb.WriteByte(' ')
+			}
+			sb.WriteString(line[j].text)
 			j++
 		}
-		text := strings.Join(parts, " ")
+		text := sb.String()
 		fill := mdTextFill
 		if href != "" {
 			fill = mdLinkFill
@@ -143,7 +158,7 @@ func mdRenderLine(b *strings.Builder, line []mdWord, x, baseline float64) {
 			b.WriteString(txt)
 		}
 		cx += fontmetrics.Width(text, mdFont)
-		if j < len(line) {
+		if j < len(line) && line[j].spaceBefore {
 			cx += spaceW
 		}
 		i = j
@@ -175,4 +190,14 @@ func renderMarkdownSVG(src string, x, top, maxWidth float64) (string, float64) {
 		}
 	}
 	return b.String(), y - top
+}
+
+func firstRune(s string) rune {
+	r, _ := utf8.DecodeRuneInString(s)
+	return r
+}
+
+func lastRune(s string) rune {
+	r, _ := utf8.DecodeLastRuneInString(s)
+	return r
 }
