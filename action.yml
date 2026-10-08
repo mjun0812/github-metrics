@@ -908,8 +908,8 @@ outputs:
 
 runs:
   using: 'docker'
-  # Local-development fallback: build the M10 production image
-  # from source. The release pipeline rewrites this line to a
-  # docker:// reference pinned to the published vX.Y.Z tag when it
-  # runs `VERSION=vX.Y.Z make gen-action-yml`.
-  image: 'Dockerfile'
+  # Pinned to the published GHCR image so a
+  # `uses: mjun0812/github-metrics@v5.0.5` invocation always resolves
+  # to the exact image bytes built for the v5.0.5 release.
+  # Cosign keyless OIDC signatures (SC-004) prove provenance.
+  image: 'docker://ghcr.io/mjun0812/github-metrics:v5.0.5'
