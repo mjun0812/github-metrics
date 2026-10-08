@@ -324,3 +324,55 @@ func TestIndepth_PartialSizeAndPercentageShareAggregation(t *testing.T) {
 		t.Errorf("Go must be listed before JavaScript (indepth order)")
 	}
 }
+
+// TestIndepth_CategoriesFilterRankedLanguages pins plugin_languages_categories
+// (default "markup, programming"): data languages such as JSON stay in the
+// headline total but are left out of the ranked rows, as upstream's
+// analyzer only adds allowed categories to its stats.
+func TestIndepth_CategoriesFilterRankedLanguages(t *testing.T) {
+	t.Parallel()
+	base := t.TempDir()
+	src := makeRepo(t, filepath.Join(base, "src"), map[string]string{
+		"main.go":   strings.Repeat("// hello world\n", 50),
+		"data.json": "[" + strings.Repeat(`"0123456789",`, 200) + `""]`,
+	})
+	cln := &fakeCloner{sources: map[string]string{
+		"https://github.com/octocat/alpha.git": src,
+	}}
+	repos := []plugins.Repository{{NameWithOwner: "octocat/alpha"}}
+
+	for _, tc := range []struct {
+		name       string
+		categories string
+		wantJSON   bool
+	}{
+		{name: "default", wantJSON: false},
+		{name: "data allowed", categories: "data, programming", wantJSON: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			inputs := map[string]any{}
+			if tc.categories != "" {
+				inputs["plugin_languages_categories"] = tc.categories
+			}
+			pc := newIndepthPC(t, cln, repos, inputs)
+			out, err := languages.IndepthPlugin.Run(context.Background(), pc)
+			if err != nil {
+				t.Fatalf("indepth Run: %v", err)
+			}
+			r := out.(*languages.IndepthResult)
+			if r.Total.Bytes["JSON"] == 0 {
+				t.Fatalf("Total must keep JSON bytes for the headline; got %v", r.Total.Bytes)
+			}
+			gotJSON := false
+			for _, f := range r.Favorites {
+				if f.Name == "JSON" {
+					gotJSON = true
+				}
+			}
+			if gotJSON != tc.wantJSON {
+				t.Errorf("JSON in favorites = %v, want %v (favorites %+v)", gotJSON, tc.wantJSON, r.Favorites)
+			}
+		})
+	}
+}

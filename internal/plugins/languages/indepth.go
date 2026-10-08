@@ -106,6 +106,10 @@ type indepthInputs struct {
 	timeoutRepo  time.Duration
 	timeoutTotal time.Duration
 	concurrency  int
+	// categories limits the ranked most-used languages to these linguist
+	// types (plugin_languages_categories); the headline total keeps
+	// every language, as upstream's analyzer does.
+	categories map[string]struct{}
 }
 
 func (p *indepthPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
@@ -232,9 +236,15 @@ func (p *indepthPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any
 		perRepo = map[string]LanguageBytes{}
 	}
 	langIn := parseInputs(pc.Inputs)
+	ranked := map[string]int64{}
+	for lang, n := range bytesSum {
+		if categoryAllowed(lang, in.categories) {
+			ranked[lang] = n
+		}
+	}
+	favorites, other := rankIndepth(aliasTotals(ranked, langIn.aliases), repos, langIn)
 	bytesSum = aliasTotals(bytesSum, langIn.aliases)
 	linesSum = aliasTotals(linesSum, langIn.aliases)
-	favorites, other := rankIndepth(bytesSum, repos, langIn)
 	return &IndepthResult{
 		Repositories: perRepo,
 		Total:        LanguageBytes{Bytes: bytesSum, Lines: linesSum},
@@ -369,6 +379,13 @@ func parseIndepthInputs(in map[string]any) indepthInputs {
 		timeoutRepo:  7*time.Minute + 30*time.Second,
 		timeoutTotal: 15 * time.Minute,
 		concurrency:  4,
+		categories:   map[string]struct{}{"markup": {}, "programming": {}},
+	}
+	if cats := pluginutil.ReadCSV(in, "plugin_languages_categories"); len(cats) > 0 {
+		out.categories = map[string]struct{}{}
+		for _, c := range cats {
+			out.categories[strings.ToLower(c)] = struct{}{}
+		}
 	}
 	if v, ok := in["plugin_languages_analysis_timeout_repositories"]; ok {
 		if d, ok := parseDurationLoose(v); ok {
