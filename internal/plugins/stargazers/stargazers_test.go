@@ -2,7 +2,11 @@ package stargazers_test
 
 import (
 	"context"
+	"math"
 	"net/http"
+	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -264,12 +268,10 @@ func TestPartial_GraphChart(t *testing.T) {
 			t.Fatalf("graph partial missing %q:\n%s", marker, got)
 		}
 	}
-	// Pin the upstream-equivalent dashed grid (#542): each of the two
-	// graph charts emits one vertical Y-axis line + 5 horizontal grid
-	// rows (numGrid in writeGraphChart), so the partial must contain
-	// at least (1+5)*2 = 12 `stroke-dasharray="2,2"` occurrences.
-	if n := strings.Count(got, `stroke-dasharray="2,2"`); n < 12 {
-		t.Errorf("graph partial should carry the horizontal dashed grid (>= 12 dashed lines for 2 charts), got %d:\n%s", n, got)
+	// Pin the upstream-equivalent dashed grid (#542): each chart emits
+	// one vertical Y-axis line plus one row per Y tick (at least 2).
+	if n := strings.Count(got, `stroke-dasharray="2,2"`); n < 6 {
+		t.Errorf("graph partial should carry the horizontal dashed grid (>= 6 dashed lines for 2 charts), got %d:\n%s", n, got)
 	}
 }
 
@@ -338,4 +340,145 @@ func renderPartial(t *testing.T, chartsType string) string {
 		t.Fatalf("Partial: %v", err)
 	}
 	return got
+}
+
+// graphSeries mirrors the shape of the plugin-stargazers-graph sample:
+// 14 daily points, small per-day increments (max 3), a flat tail.
+func graphSeries() []stargazers.ChartPoint {
+	news := []int{1, 0, 2, 1, 3, 2, 1, 0, 1, 2, 1, 1, 0, 0}
+	start := time.Date(2026, 9, 25, 0, 0, 0, 0, time.UTC)
+	total := 1832
+	series := make([]stargazers.ChartPoint, len(news))
+	for i, n := range news {
+		total += n
+		series[i] = stargazers.ChartPoint{Date: start.AddDate(0, 0, i), Count: total, New: n}
+	}
+	return series
+}
+
+type graphText struct {
+	x, y    float64
+	val     string
+	anchor  string
+	rotated bool
+}
+
+var (
+	graphSVGRe  = regexp.MustCompile(`(?s)<svg class="stargazers-graph".*?</svg>`)
+	graphTextRe = regexp.MustCompile(`<text x="([\d.]+)" y="([\d.]+)"[^>]*?text-anchor="(\w+)"[^>]*?(transform="[^"]*")?>([^<]*)</text>`)
+	graphGridRe = regexp.MustCompile(`<line x1="32.0" y1="([\d.]+)" x2="466.0" y2="[\d.]+" stroke="rgba\(127, 127, 127, \.4\)"`)
+	graphDotRe  = regexp.MustCompile(`<circle cx="([\d.]+)" cy="([\d.]+)"`)
+)
+
+func renderGraphCharts(t *testing.T) []string {
+	t.Helper()
+	data := plugins.NewData()
+	data.SetPlugin("stargazers", &stargazers.Result{
+		Mode:   plugins.ModeUser,
+		List:   []stargazers.Stargazer{},
+		Charts: stargazers.StargazersCharts{Type: "graph", Series: graphSeries()},
+	})
+	got, _, err := stargazers.Partial(context.Background(), &templates.PartialContext{Data: data})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	charts := graphSVGRe.FindAllString(got, -1)
+	if len(charts) != 2 {
+		t.Fatalf("want 2 graph svgs, got %d", len(charts))
+	}
+	return charts
+}
+
+// extent approximates the horizontal span of a 10px label (~5.6px/char).
+func (g graphText) extent() (float64, float64) {
+	w := 5.6 * float64(len(g.val))
+	switch g.anchor {
+	case "end":
+		return g.x - w, g.x
+	case "start":
+		return g.x, g.x + w
+	}
+	return g.x - w/2, g.x + w/2
+}
+
+func parseGraphTexts(svg string) []graphText {
+	matches := graphTextRe.FindAllStringSubmatch(svg, -1)
+	out := make([]graphText, 0, len(matches))
+	for _, m := range matches {
+		x, _ := strconv.ParseFloat(m[1], 64)
+		y, _ := strconv.ParseFloat(m[2], 64)
+		out = append(out, graphText{x: x, y: y, val: m[5], anchor: m[3], rotated: m[4] != ""})
+	}
+	return out
+}
+
+// TestPartial_GraphYTicksAreNiceIntegers pins d3's `ticks()` behaviour
+// used by upstream's Graph.timeline: 1/2/5 x 10^k steps inside
+// [low, high], each tick label sitting on its own grid line.
+func TestPartial_GraphYTicksAreNiceIntegers(t *testing.T) {
+	t.Parallel()
+	charts := renderGraphCharts(t)
+	want := [][]string{{"1845", "1840", "1835"}, {"3", "2", "1", "0"}}
+	for ci, svg := range charts {
+		var ticks []graphText
+		for _, tx := range parseGraphTexts(svg) {
+			if tx.x == 28.0 {
+				ticks = append(ticks, tx)
+			}
+		}
+		vals := make([]string, 0, len(ticks))
+		for _, tk := range ticks {
+			vals = append(vals, tk.val)
+		}
+		if !slices.Equal(vals, want[ci]) {
+			t.Errorf("chart %d y ticks = %v, want %v", ci, vals, want[ci])
+		}
+		grid := graphGridRe.FindAllStringSubmatch(svg, -1)
+		if len(grid) != len(ticks) {
+			t.Fatalf("chart %d: %d grid lines for %d ticks", ci, len(grid), len(ticks))
+		}
+		for i, g := range grid {
+			gy, _ := strconv.ParseFloat(g[1], 64)
+			if math.Abs(ticks[i].y-4-gy) > 0.11 {
+				t.Errorf("chart %d tick %q at y=%.1f is off its grid line y=%.1f", ci, ticks[i].val, ticks[i].y-4, gy)
+			}
+		}
+	}
+	// New chart: the point with value 2 (index 2) lies on the "2" grid line.
+	grid := graphGridRe.FindAllStringSubmatch(charts[1], -1)
+	dots := graphDotRe.FindAllStringSubmatch(charts[1], -1)
+	if grid[1][1] != dots[2][2] {
+		t.Errorf("value-2 point cy=%s differs from tick 2 line y=%s", dots[2][2], grid[1][1])
+	}
+}
+
+// TestPartial_GraphLabelsDoNotCollide checks the data labels and rotated
+// X labels keep a minimum horizontal gap and stay inside the viewport.
+func TestPartial_GraphLabelsDoNotCollide(t *testing.T) {
+	t.Parallel()
+	for ci, svg := range renderGraphCharts(t) {
+		var data, xs []graphText
+		for _, tx := range parseGraphTexts(svg) {
+			switch {
+			case tx.rotated:
+				xs = append(xs, tx)
+			case tx.x != 28.0:
+				data = append(data, tx)
+			}
+		}
+		for name, set := range map[string][]graphText{"data": data, "x": xs} {
+			for i := 1; i < len(set); i++ {
+				_, prevR := set[i-1].extent()
+				curL, _ := set[i].extent()
+				if curL-prevR < 2 {
+					t.Errorf("chart %d %s labels %q/%q overlap or touch", ci, name, set[i-1].val, set[i].val)
+				}
+			}
+		}
+		for _, d := range data {
+			if d.y < 10 {
+				t.Errorf("chart %d data label %q baseline y=%.1f is clipped by the viewport top", ci, d.val, d.y)
+			}
+		}
+	}
 }

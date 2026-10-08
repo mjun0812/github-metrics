@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -207,13 +208,13 @@ func writeGraphSection(b *strings.Builder, series []ChartPoint, top float64) flo
 	m, subH := chrome.SVGSubHeader(center, y, maxW, "Total stargazers")
 	b.WriteString(m)
 	y += subH
-	writeGraphChart(b, series, totals, "Total stargazers graph", y)
+	writeGraphChart(b, series, totals, slices.Min(totals), "Total stargazers graph", y)
 	y += graphHeight
 
 	m2, _ := chrome.SVGSubHeader(center, y, maxW, "New stargazers per day")
 	b.WriteString(m2)
 	y += subH
-	writeGraphChart(b, series, news, "New stargazers per day graph", y)
+	writeGraphChart(b, series, news, 0, "New stargazers per day graph", y)
 	y += graphHeight
 
 	return y + chartMarginBottom
@@ -221,27 +222,21 @@ func writeGraphSection(b *strings.Builder, series []ChartPoint, top float64) flo
 
 // writeGraphChart renders one native line/area chart as a positioned
 // nested `<svg>` at y=yOffset. The 480x180 viewBox is unchanged; only the
-// vertical placement inside the section is set by yOffset.
-func writeGraphChart(b *strings.Builder, series []ChartPoint, values []int, label string, yOffset float64) {
+// vertical placement inside the section is set by yOffset. low is the
+// Y-axis lower bound: the series minimum for the cumulative chart and 0
+// for the increments chart, matching upstream's `Graph.timeline` options.
+func writeGraphChart(b *strings.Builder, series []ChartPoint, values []int, low int, label string, yOffset float64) {
 	const (
 		width  = 480.0
 		height = graphHeight
 		left   = 32.0
-		top    = 12.0
+		top    = 22.0
 		right  = 14.0
 		bottom = 54.0
 	)
 	plotW := width - left - right
 	plotH := height - top - bottom
-	minV, maxV := values[0], values[0]
-	for _, v := range values[1:] {
-		if v < minV {
-			minV = v
-		}
-		if v > maxV {
-			maxV = v
-		}
-	}
+	minV, maxV := low, slices.Max(values)
 	denom := maxV - minV
 	if denom == 0 {
 		denom = 1
@@ -257,17 +252,15 @@ func writeGraphChart(b *strings.Builder, series []ChartPoint, values []int, labe
 		points[i] = [2]float64{x, y}
 	}
 
-	// Thin out per-point labels so they don't overlap. Upstream's D3
-	// chart lets the layout engine drop ticks; here we keep at most
-	// ~maxLabels evenly spaced labels (always including the first/last).
-	const maxLabels = 12
+	// Thin out per-point labels so they don't overlap. Upstream labels
+	// only the D3 axis ticks; here every stride-th point is labelled so
+	// adjacent labels keep at least minLabelGap px between their anchors.
+	const minLabelGap = 36.0
 	stride := 1
-	if len(series) > maxLabels {
-		stride = (len(series) + maxLabels - 1) / maxLabels
+	if len(series) > 1 {
+		stride = int(math.Ceil(minLabelGap / (plotW / float64(len(series)-1))))
 	}
-	labelAt := func(i int) bool {
-		return i == 0 || i == len(series)-1 || i%stride == 0
-	}
+	labelAt := func(i int) bool { return i%stride == 0 }
 
 	fmt.Fprintf(b, `<svg class="stargazers-graph" xmlns="http://www.w3.org/2000/svg" width="480" height="180" viewBox="0 0 480 180" x="0" y="%.0f" role="img" aria-label="%s">`, yOffset, partials.EscapeXML(label))
 	// Vertical Y axis (left dashed) + bottom solid baseline, matching
@@ -275,18 +268,11 @@ func writeGraphChart(b *strings.Builder, series []ChartPoint, values []int, labe
 	fmt.Fprintf(b, `<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"></line>`, left, top, left, top+plotH)
 	fmt.Fprintf(b, `<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="rgba(127, 127, 127, .8)"></line>`, left, top+plotH, left+plotW, top+plotH)
 
-	// Horizontal dashed grid (#542): upstream's chartist line chart
-	// draws a stack of intermediate Y-grid rows so the reader can read
-	// off plot values without guessing. The previous implementation
-	// emitted only the topmost (max) and bottom (min) Y labels with no
-	// gridlines in between, so the chart looked unreferenced. Five
-	// evenly-spaced rows (incl. max/min) keeps the loop trivial and
-	// matches the upstream visual density.
-	const numGrid = 5
-	for k := 0; k < numGrid; k++ {
-		frac := float64(k) / float64(numGrid-1)
-		y := top + plotH*frac
-		val := maxV - int(float64(maxV-minV)*frac+0.5)
+	// Horizontal dashed grid (#542): one row per Y tick. Ticks follow
+	// d3's `ticks()` as used by upstream's `Graph.timeline`: 1/2/5 x 10^k
+	// steps inside [min, max], so each label sits exactly on its grid line.
+	for _, val := range yTicks(minV, maxV, int(math.Round(height/50))) {
+		y := top + plotH - plotH*float64(val-minV)/float64(denom)
 		fmt.Fprintf(b, `<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="rgba(127, 127, 127, .4)" stroke-dasharray="2,2"></line>`, left, y, left+plotW, y)
 		fmt.Fprintf(b, `<text x="%.1f" y="%.1f" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10">%d</text>`, left-4, y+4, val)
 	}
@@ -324,6 +310,33 @@ func writeGraphChart(b *strings.Builder, series []ChartPoint, values []int, labe
 		fmt.Fprintf(b, `<text x="%.1f" y="%.1f" fill="rgba(127, 127, 127, .8)" text-anchor="end" font-size="10" transform="rotate(-45 %.1f %.1f)">%s</text>`, p[0], ly, p[0], ly, label)
 	}
 	b.WriteString(`</svg>`)
+}
+
+// yTicks returns integer tick values in [lo, hi] using d3-array's
+// `ticks(lo, hi, count)` step rule (1, 2 or 5 x 10^k), with the step
+// floored at 1 because the plotted values are counts. Ticks are listed
+// from hi down to lo, the order the grid is drawn top to bottom.
+func yTicks(lo, hi, count int) []int {
+	if hi <= lo || count < 1 {
+		return []int{hi}
+	}
+	raw := float64(hi-lo) / float64(count)
+	power := math.Pow(10, math.Floor(math.Log10(raw)))
+	factor := 1.0
+	switch err := raw / power; {
+	case err >= math.Sqrt(50):
+		factor = 10
+	case err >= math.Sqrt(10):
+		factor = 5
+	case err >= math.Sqrt(2):
+		factor = 2
+	}
+	step := max(int(factor*power), 1)
+	var ticks []int
+	for v := hi / step * step; v >= lo; v -= step {
+		ticks = append(ticks, v)
+	}
+	return ticks
 }
 
 func writeLinePath(b *strings.Builder, points [][2]float64) {
