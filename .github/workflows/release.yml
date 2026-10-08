@@ -466,8 +466,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Check out the pinned commit explicitly: pin-action-image has
+      # already moved the pushed tag away from GITHUB_SHA, and checking
+      # out the event ref fails actions/checkout's tag-target check.
       - uses: actions/checkout@v7
         with:
+          ref: ${{ needs.pin-action-image.outputs.release_sha }}
           fetch-depth: 0
 
       - name: Compute major version + advance decision
