@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
-	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 // chunkDays is the width of one contributionsCollection(from,to) query
@@ -57,10 +56,7 @@ func chunkRanges(start, now time.Time) [][2]time.Time {
 // harnesses / degraded runs); callers then fall back to slicing the
 // shared indepth calendar.
 func fetchWindowedWeeks(ctx context.Context, pc *plugins.PluginContext, duration string) ([]plugins.ContributionWeek, error) {
-	// core.RunPlugins drives every registered plugin regardless of
-	// inputs, so gate the network fetch on the plugin actually being
-	// enabled — disabled runs stay on the shared-calendar path.
-	if pc.GraphQL == nil || !pluginutil.TruthyInput(pc.Inputs, "plugin_isocalendar") {
+	if pc.GraphQL == nil {
 		return nil, nil
 	}
 	login := resolveLogin(ctx, pc)

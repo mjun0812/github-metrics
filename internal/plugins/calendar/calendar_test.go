@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mjun0812/github-metrics/internal/dataprovider"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/calendar"
 	"github.com/mjun0812/github-metrics/internal/templates"
@@ -38,7 +39,11 @@ func run(t *testing.T, cal *plugins.ContributionCalendar, inputs map[string]any)
 	t.Helper()
 	data := plugins.NewData()
 	data.Computed.ContributionCalendar = cal
-	pc := &plugins.PluginContext{Data: data, Inputs: inputs}
+	in := map[string]any{"plugin_calendar": true}
+	for k, v := range inputs {
+		in[k] = v
+	}
+	pc := &plugins.PluginContext{Data: data, Inputs: in}
 	out, err := calendar.Plugin.Run(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -429,5 +434,29 @@ func TestPartial_NativeSVG(t *testing.T) {
 		if !strings.Contains(got, marker) {
 			t.Errorf("missing marker %q in:\n%s", marker, got)
 		}
+	}
+}
+
+// TestRun_PluginDisabled_Skipped covers the gate-off path: without a
+// truthy `plugin_calendar` input, Run must Skip before reaching the
+// dataprovider or any API client. The GraphQL mux has no handlers, so
+// any GraphQL call fails the test.
+func TestRun_PluginDisabled_Skipped(t *testing.T) {
+	t.Parallel()
+	gql := mocks.NewGraphQLMux(t)
+	rest := mocks.NewRESTMux(t)
+	pc := mocks.NewPluginContext(t, mocks.WithGraphQL(gql), mocks.WithREST(rest))
+	pc.Provider = dataprovider.New("octocat", "", pc.GraphQL, pc.REST, pc.Logger, dataprovider.Options{})
+
+	out, err := calendar.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*calendar.Result)
+	if !r.Skipped || r.SkippedReason != "plugin disabled" {
+		t.Errorf("Skipped = %v, SkippedReason = %q; want true, %q", r.Skipped, r.SkippedReason, "plugin disabled")
+	}
+	if n := rest.TotalCalls(); n != 0 {
+		t.Errorf("REST calls = %d, want 0", n)
 	}
 }

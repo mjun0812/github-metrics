@@ -27,113 +27,13 @@
   "plugins": {
     "achievements": {
       "display": "detailed",
-      "list": [
-        {
-          "description": "Published 250 public repositories",
-          "icon": "repo",
-          "id": "developer",
-          "rank": "S",
-          "title": "Developer",
-          "value": 250
-        },
-        {
-          "description": "Followed by 1555 users",
-          "icon": "people",
-          "id": "influencer",
-          "rank": "S",
-          "title": "Influencer",
-          "value": 1555
-        },
-        {
-          "description": "Registered 18 years ago",
-          "icon": "calendar",
-          "id": "member",
-          "rank": "S",
-          "title": "Member",
-          "value": 18
-        },
-        {
-          "description": "Following 617 users",
-          "icon": "person-add",
-          "id": "follower",
-          "rank": "A",
-          "title": "Follower",
-          "value": 617
-        },
-        {
-          "description": "Opened 290 pull requests",
-          "icon": "git-pull-request",
-          "id": "contributor",
-          "rank": "B",
-          "title": "Contributor",
-          "value": 290
-        },
-        {
-          "description": "Starred 310 repositories",
-          "icon": "star",
-          "id": "stargazer",
-          "rank": "B",
-          "title": "Stargazer",
-          "value": 310
-        },
-        {
-          "description": "Member of 2 organizations",
-          "icon": "organization",
-          "id": "worker",
-          "rank": "B",
-          "title": "Worker",
-          "value": 2
-        },
-        {
-          "description": "Most forked repository has 10 forks",
-          "icon": "repo-forked",
-          "id": "inspirer",
-          "rank": "C",
-          "title": "Inspirer",
-          "value": 10
-        },
-        {
-          "description": "Most popular repository has 100 stars",
-          "icon": "tools",
-          "id": "maintainer",
-          "rank": "C",
-          "title": "Maintainer",
-          "value": 100
-        },
-        {
-          "description": "Reviewed 68 pull requests",
-          "icon": "eye",
-          "id": "reviewer",
-          "rank": "C",
-          "title": "Reviewer",
-          "value": 68
-        }
-      ],
-      "ranks": {
-        "chatter": "X",
-        "contributor": "B",
-        "deployer": "X",
-        "developer": "S",
-        "follower": "A",
-        "forker": "X",
-        "gister": "X",
-        "helper": "X",
-        "influencer": "S",
-        "inspirer": "C",
-        "maintainer": "C",
-        "member": "S",
-        "packager": "X",
-        "polyglot": "X",
-        "reviewer": "C",
-        "sponsor": "X",
-        "stargazer": "B",
-        "worker": "B"
-      },
-      "skipped": false
+      "list": [],
+      "ranks": {},
+      "skipped": true
     },
     "activity": {
       "days": 0,
-      "events": null,
+      "events": [],
       "mode": "",
       "skipped": true
     },
@@ -285,7 +185,7 @@
     },
     "isocalendar": {
       "average": 0,
-      "duration": "half-year",
+      "duration": "",
       "max": 0,
       "skipped": true,
       "streak": {
@@ -376,43 +276,10 @@
       "total": 0
     },
     "repositories": {
-      "featured": [
-        {
-          "createdAt": "0001-01-01T00:00:00Z",
-          "description": "",
-          "forks": 10,
-          "isFork": false,
-          "issues": 0,
-          "language": null,
-          "languages": null,
-          "license": null,
-          "nameWithOwner": "octocat/alpha",
-          "pullRequests": 0,
-          "stars": 100,
-          "uRL": "https://github.com/octocat/alpha",
-          "visibility": "public",
-          "watchers": 5
-        },
-        {
-          "createdAt": "0001-01-01T00:00:00Z",
-          "description": "",
-          "forks": 3,
-          "isFork": false,
-          "issues": 0,
-          "language": null,
-          "languages": null,
-          "license": null,
-          "nameWithOwner": "octocat/beta",
-          "pullRequests": 0,
-          "stars": 50,
-          "uRL": "https://github.com/octocat/beta",
-          "visibility": "public",
-          "watchers": 2
-        }
-      ],
+      "featured": [],
       "pinned": null,
       "random": null,
-      "skipped": false,
+      "skipped": true,
       "starred": null
     },
     "sponsors": {
@@ -426,19 +293,15 @@
         }
       },
       "goal": null,
-      "mode": "user",
-      "past": [],
+      "mode": "",
+      "past": null,
       "pastIncluded": false,
-      "sections": [
-        "goal",
-        "list",
-        "about"
-      ],
-      "size": 24,
-      "skipped": false,
+      "sections": null,
+      "size": 0,
+      "skipped": true,
       "sponsors": [],
-      "title": "Sponsor Me!",
-      "user": "octocat"
+      "title": "",
+      "user": ""
     },
     "sponsorships": {
       "active": [],

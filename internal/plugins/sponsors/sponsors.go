@@ -104,8 +104,9 @@ type CountBucket struct {
 // being enabled — it does NOT require any OAuth scope and renders the
 // `Sponsor Me!` heading + goal + about section even when the viewer has
 // zero active sponsors (see docs/reference_examples/metrics.plugin.sponsors.svg).
-// We mirror that: the only gate is RequireUserMode (the section is a
-// per-user signal with nothing to compute in repository mode).
+// We mirror that: the gates are `plugin_sponsors` and RequireUserMode
+// (the section is a per-user signal with nothing to compute in
+// repository mode).
 //
 // History (#451): an earlier implementation additionally required the
 // `read:user` / `read:org` OAuth scope (via REST.Scopes) and Skipped the
@@ -116,6 +117,13 @@ type CountBucket struct {
 func (p *sponsorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any, error) {
 	if pc == nil || pc.Data == nil {
 		return nil, nil
+	}
+	if !pluginutil.TruthyInput(pc.Inputs, "plugin_"+Name) {
+		return &Result{
+			Skipped:       true,
+			SkippedReason: "plugin disabled",
+			Sponsors:      []Sponsor{},
+		}, nil
 	}
 	if reason, skip := plugins.RequireUserMode(pc, Name); skip {
 		return &Result{
@@ -163,11 +171,10 @@ func (p *sponsorsPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (an
 		Count:        Count{Active: CountBucket{Total: 0}, Past: CountBucket{Total: 0}},
 	}
 
-	// GraphQL data fetch (spec 013). On nil client OR when the plugin
-	// is not enabled via `plugin_sponsors=yes` we return the M4 baseline
-	// (empty, non-Skipped) so dependent test suites that don't enable
-	// the plugin stay green and don't accumulate Data.Errors entries.
-	if pc.GraphQL == nil || !pluginEnabled(pc.Inputs, "plugin_sponsors") {
+	// GraphQL data fetch (spec 013). On nil client we return the M4
+	// baseline (empty, non-Skipped) without accumulating Data.Errors
+	// entries.
+	if pc.GraphQL == nil {
 		return base, nil
 	}
 	// GitHub's GraphQL API rejects a connection `first: 0` (it must be a
@@ -284,17 +291,6 @@ func splitCSV(s string) []string {
 		}
 	}
 	return parts
-}
-
-// pluginEnabled returns true when the named input is truthy. Used by
-// spec-013 wiring to short-circuit GraphQL fetches when the consuming
-// workflow has not opted into the plugin (test paths + dryrun CLI).
-func pluginEnabled(in map[string]any, key string) bool {
-	v, ok := in[key]
-	if !ok {
-		return false
-	}
-	return pluginutil.Truthy(v)
 }
 
 // loginFromProvider reads the page user's login via the shared

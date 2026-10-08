@@ -88,15 +88,13 @@
       "years": []
     },
     "contributors": {
-      "base": "master",
+      "base": "",
       "contributions": false,
-      "head": "master",
+      "head": "",
       "list": [],
       "mode": "repo",
-      "sections": [
-        "contributors"
-      ],
-      "skipped": false,
+      "sections": [],
+      "skipped": true,
       "stats_pending": false
     },
     "habits": {

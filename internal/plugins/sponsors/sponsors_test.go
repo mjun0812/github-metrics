@@ -6,10 +6,12 @@ import (
 	"testing"
 
 	"github.com/mjun0812/github-metrics/internal/config"
+	"github.com/mjun0812/github-metrics/internal/dataprovider"
 	"github.com/mjun0812/github-metrics/internal/githubapi"
 	"github.com/mjun0812/github-metrics/internal/httpx"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/sponsors"
+	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 )
 
 func newREST(t *testing.T, scopes string) *githubapi.REST {
@@ -35,7 +37,7 @@ func run(t *testing.T, scopes string) *sponsors.Result {
 	t.Helper()
 	pc := &plugins.PluginContext{
 		Data:   plugins.NewData(),
-		Inputs: map[string]any{},
+		Inputs: map[string]any{"plugin_sponsors": true},
 		REST:   newREST(t, scopes),
 	}
 	out, err := sponsors.Plugin.Run(context.Background(), pc)
@@ -86,7 +88,7 @@ func TestRun_SizeReadsStringInput(t *testing.T) {
 	t.Parallel()
 	pc := &plugins.PluginContext{
 		Data:   plugins.NewData(),
-		Inputs: map[string]any{"plugin_sponsors_size": "48"},
+		Inputs: map[string]any{"plugin_sponsors": true, "plugin_sponsors_size": "48"},
 		REST:   newREST(t, "read:user, read:org"),
 	}
 	out, err := sponsors.Plugin.Run(context.Background(), pc)
@@ -99,17 +101,41 @@ func TestRun_SizeReadsStringInput(t *testing.T) {
 	}
 }
 
-// TestRun_RepoMode_Skipped verifies the one remaining gate (RequireUserMode):
+// TestRun_RepoMode_Skipped verifies the mode gate (RequireUserMode):
 // in repository mode the per-user sponsors section has nothing to render, so
 // it Skips. This is the mode gate, NOT an OAuth scope gate.
 func TestRun_RepoMode_Skipped(t *testing.T) {
 	t.Parallel()
 	data := plugins.NewData()
 	data.SetRepo(&plugins.Repo{Owner: "mjun0812", Name: "github-metrics"})
-	pc := &plugins.PluginContext{Data: data, Inputs: map[string]any{}}
+	pc := &plugins.PluginContext{Data: data, Inputs: map[string]any{"plugin_sponsors": true}}
 	out, _ := sponsors.Plugin.Run(context.Background(), pc)
 	r := out.(*sponsors.Result)
 	if !r.Skipped {
 		t.Errorf("repository mode should Skip the user-mode sponsors section; got %+v", r)
+	}
+}
+
+// TestRun_PluginDisabled_Skipped covers the gate-off path: without a
+// truthy `plugin_sponsors` input, Run must Skip before reaching the
+// dataprovider or any API client. The GraphQL mux has no handlers, so
+// any GraphQL call fails the test.
+func TestRun_PluginDisabled_Skipped(t *testing.T) {
+	t.Parallel()
+	gql := mocks.NewGraphQLMux(t)
+	rest := mocks.NewRESTMux(t)
+	pc := mocks.NewPluginContext(t, mocks.WithGraphQL(gql), mocks.WithREST(rest))
+	pc.Provider = dataprovider.New("octocat", "", pc.GraphQL, pc.REST, pc.Logger, dataprovider.Options{})
+
+	out, err := sponsors.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*sponsors.Result)
+	if !r.Skipped || r.SkippedReason != "plugin disabled" {
+		t.Errorf("Skipped = %v, SkippedReason = %q; want true, %q", r.Skipped, r.SkippedReason, "plugin disabled")
+	}
+	if n := rest.TotalCalls(); n != 0 {
+		t.Errorf("REST calls = %d, want 0", n)
 	}
 }

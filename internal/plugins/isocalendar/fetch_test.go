@@ -150,35 +150,6 @@ func TestFetchWindowedWeeks_ChunkedFetch(t *testing.T) {
 	}
 }
 
-// TestFetchWindowedWeeks_DisabledPluginSkipsFetch — core.RunPlugins
-// invokes every registered plugin even when its input is off, so a
-// disabled isocalendar must not issue any GraphQL traffic.
-func TestFetchWindowedWeeks_DisabledPluginSkipsFetch(t *testing.T) {
-	t.Parallel()
-	transport := &chunkRecorderTransport{body: `{"data":{"user":null}}`}
-	gql, err := githubapi.NewGraphQL(config.NewToken("ghp_test"), "", httpx.Options{
-		Transport:      transport,
-		DisableRetries: true,
-	})
-	if err != nil {
-		t.Fatalf("NewGraphQL: %v", err)
-	}
-	data := plugins.NewData()
-	data.User = &plugins.User{Login: "octocat"}
-	pc := &plugins.PluginContext{Data: data, GraphQL: gql}
-
-	weeks, err := fetchWindowedWeeks(context.Background(), pc, "half-year")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if weeks != nil {
-		t.Errorf("weeks = %v, want nil", weeks)
-	}
-	if len(transport.froms) != 0 {
-		t.Errorf("GraphQL calls = %d, want 0 for a disabled plugin", len(transport.froms))
-	}
-}
-
 // TestRun_ThreadsEmptyGraphQLResponseToDataErrors guards #732 /
 // PR #773: when the windowed contribution-calendar fetch returns
 // githubapi.ErrEmptyGraphQLResponse (secondary rate limit path),

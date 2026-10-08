@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/mjun0812/github-metrics/internal/plugins"
-	"github.com/mjun0812/github-metrics/internal/plugins/pluginutil"
 )
 
 var (
@@ -35,7 +34,7 @@ func currentNow() time.Time {
 }
 
 func fetchYearlyWeeks(ctx context.Context, pc *plugins.PluginContext, limit int) ([]plugins.ContributionWeek, error) {
-	if pc == nil || pc.Data == nil || pc.GraphQL == nil || !pluginutil.TruthyInput(pc.Inputs, "plugin_calendar") {
+	if pc == nil || pc.Data == nil || pc.GraphQL == nil {
 		return nil, nil
 	}
 	user, ok := resolveUser(ctx, pc)

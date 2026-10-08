@@ -96,6 +96,18 @@ func (m *RESTMux) Calls(path string) int {
 	return m.calls[path]
 }
 
+// TotalCalls returns the number of times RoundTrip dispatched to any
+// path, registered or not.
+func (m *RESTMux) TotalCalls() int {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	total := 0
+	for _, n := range m.calls {
+		total += n
+	}
+	return total
+}
+
 // RoundTrip satisfies http.RoundTripper.
 func (m *RESTMux) RoundTrip(req *http.Request) (*http.Response, error) {
 	path := req.URL.Path

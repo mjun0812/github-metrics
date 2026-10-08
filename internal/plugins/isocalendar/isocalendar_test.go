@@ -8,9 +8,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/mjun0812/github-metrics/internal/dataprovider"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/isocalendar"
 	"github.com/mjun0812/github-metrics/internal/templates"
+	"github.com/mjun0812/github-metrics/internal/testutil/mocks"
 )
 
 var updateGolden = flag.Bool("update", false, "update golden files")
@@ -59,7 +61,11 @@ func run(t *testing.T, cal *plugins.ContributionCalendar, account plugins.Accoun
 	data := plugins.NewData()
 	data.Account = account
 	data.Computed.ContributionCalendar = cal
-	pc := &plugins.PluginContext{Inputs: in, Data: data}
+	inputs := map[string]any{"plugin_isocalendar": true}
+	for k, v := range in {
+		inputs[k] = v
+	}
+	pc := &plugins.PluginContext{Inputs: inputs, Data: data}
 	out, err := isocalendar.Plugin.Run(context.Background(), pc)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -185,5 +191,29 @@ func TestPartial_Isocalendar_Golden(t *testing.T) {
 	}
 	if string(want) != got {
 		t.Fatalf("golden mismatch\nwant:\n%s\n\ngot:\n%s", string(want), got)
+	}
+}
+
+// TestRun_PluginDisabled_Skipped covers the gate-off path: without a
+// truthy `plugin_isocalendar` input, Run must Skip before reaching the
+// dataprovider or any API client. The GraphQL mux has no handlers, so
+// any GraphQL call fails the test.
+func TestRun_PluginDisabled_Skipped(t *testing.T) {
+	t.Parallel()
+	gql := mocks.NewGraphQLMux(t)
+	rest := mocks.NewRESTMux(t)
+	pc := mocks.NewPluginContext(t, mocks.WithGraphQL(gql), mocks.WithREST(rest))
+	pc.Provider = dataprovider.New("octocat", "", pc.GraphQL, pc.REST, pc.Logger, dataprovider.Options{})
+
+	out, err := isocalendar.Plugin.Run(context.Background(), pc)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	r := out.(*isocalendar.Result)
+	if !r.Skipped || r.SkippedReason != "plugin disabled" {
+		t.Errorf("Skipped = %v, SkippedReason = %q; want true, %q", r.Skipped, r.SkippedReason, "plugin disabled")
+	}
+	if n := rest.TotalCalls(); n != 0 {
+		t.Errorf("REST calls = %d, want 0", n)
 	}
 }
