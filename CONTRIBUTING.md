@@ -174,9 +174,9 @@ itself when a tag is pushed (see [Releasing](#releasing)).
 
 ### Upstream fixtures (optional)
 
-The compatibility test compares the engine's JSON output to a captured
-upstream baseline at `tests/fixtures/upstream/octocat.json`. That
-fixture is regenerated from a local `./org_repo` checkout via:
+`tests/fixtures/upstream/octocat.json` is a captured upstream JSON
+baseline for manual comparison with the engine's output. No test reads
+it. It is regenerated from a local `./org_repo` checkout via:
 
 ```sh
 make sync-fixtures
@@ -185,9 +185,7 @@ make sync-fixtures
 `./org_repo` is intentionally `.gitignore`'d — the project must not
 contain upstream history. Contributors who need to refresh the fixture
 clone `lowlighter/metrics` to `./org_repo` first
-(`cd org_repo && npm install`) and then run the target. Tests skip
-gracefully when the fixture is absent, so a fresh checkout without
-`./org_repo` still passes CI.
+(`cd org_repo && npm install`) and then run the target.
 
 ### Regenerating plugin docs + example SVGs
 
