@@ -280,12 +280,16 @@ func runWith(ctx context.Context, opts runOptions) error {
 		return fmt.Errorf("action: write output: %w", cerr)
 	}
 
-	// 14. metrics_sha output (always set, even on dryrun + skipped Committer).
-	sha, hashErr := render.Hash(string(res.Output))
-	if hashErr != nil {
-		slog.Warn("render.Hash failed; metrics_sha output skipped", "err", hashErr)
-	} else if oerr := SetOutput("metrics_sha", sha); oerr != nil {
-		slog.Warn("metrics_sha output write failed", "err", oerr)
+	// 14. metrics_sha output (SVG only: it is the SVG render hash, which has
+	// no meaning for json / png / jpeg bodies; set even on dryrun + skipped
+	// Committer).
+	if inv.Format == "svg" {
+		sha, hashErr := render.Hash(string(res.Output))
+		if hashErr != nil {
+			slog.Warn("render.Hash failed; metrics_sha output skipped", "err", hashErr)
+		} else if oerr := SetOutput("metrics_sha", sha); oerr != nil {
+			slog.Warn("metrics_sha output write failed", "err", oerr)
+		}
 	}
 
 	// 15. Committer — only when not dryrun and output_action != none.

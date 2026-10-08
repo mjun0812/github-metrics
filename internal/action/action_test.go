@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -214,6 +215,48 @@ func TestRun_Dryrun_NoCommitterCall(t *testing.T) {
 	outBody, _ := os.ReadFile(filepath.Join(outDir, "github_output"))
 	if !strings.Contains(string(outBody), "metrics_sha=") {
 		t.Errorf("metrics_sha output missing; got %q", outBody)
+	}
+}
+
+// TestRun_JSONOutput_NoMetricsSHA — metrics_sha is the SVG render hash, so
+// non-SVG output must neither warn about a failed hash nor set the output.
+func TestRun_JSONOutput_NoMetricsSHA(t *testing.T) {
+	rest := newFakeREST()
+	outDir := t.TempDir()
+	t.Setenv("GITHUB_OUTPUT", filepath.Join(outDir, "github_output"))
+
+	var logBuf bytes.Buffer
+	oldDefault := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelWarn})))
+	t.Cleanup(func() { slog.SetDefault(oldDefault) })
+
+	var stdout bytes.Buffer
+	err := runWith(context.Background(), runOptions{
+		Env: []string{
+			"GITHUB_REPOSITORY=mjun0812/test-repo",
+			"GITHUB_ACTOR=octocat",
+			"INPUT_USER=octocat",
+			"INPUT_TEMPLATE=classic",
+			"INPUT_TOKEN=ghp_mock_pat_valid",
+			"INPUT_DRYRUN=yes",
+			"INPUT_OUTPUT_ACTION=none",
+			"INPUT_USE_MOCKED_DATA=false",
+			"INPUT_COMBINED=yes",
+			"INPUT_CONFIG_OUTPUT=json",
+		},
+		Stdout:    &stdout,
+		OutputDir: outDir,
+		BuildDeps: buildTestDeps(t, rest),
+	})
+	if err != nil {
+		t.Fatalf("runWith: %v", err)
+	}
+	if strings.Contains(logBuf.String(), "render.Hash failed") {
+		t.Errorf("unexpected render.Hash warning for json output: %s", logBuf.String())
+	}
+	outBody, _ := os.ReadFile(filepath.Join(outDir, "github_output"))
+	if strings.Contains(string(outBody), "metrics_sha=") {
+		t.Errorf("metrics_sha must not be set for json output; got %q", outBody)
 	}
 }
 

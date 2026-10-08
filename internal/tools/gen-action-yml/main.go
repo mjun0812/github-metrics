@@ -175,7 +175,7 @@ outputs:
   metrics_url:
     description: 'URL of the generated metrics file inside the repository (when output_action committed).'
   metrics_sha:
-    description: 'Render-time SHA of the generated metrics file.'
+    description: 'Render-time SHA of the generated metrics file (svg output only).'
 
 runs:
   using: 'docker'
