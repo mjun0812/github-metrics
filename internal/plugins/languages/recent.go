@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"net/url"
 	"slices"
@@ -54,6 +55,10 @@ type RecentResult struct {
 	Other         plugins.LanguageStat   `json:"other"`
 	Days          int                    `json:"days"`
 	Load          int                    `json:"load"`
+	Total         int                    `json:"total"`
+	Files         int                    `json:"files"`
+	Commits       int                    `json:"commits"`
+	Latest        int                    `json:"latest"`
 	Repos         []string               `json:"repos"`
 }
 
@@ -152,11 +157,19 @@ func (p *recentPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 	totals := map[string]*acc{}
 	seenRepos := map[string]struct{}{}
 	repos := []string{}
+	// Upstream stats.recent counters: total edited bytes, edited files
+	// (summed per commit / push), analysed commits.
+	var totalEdited, editedFiles, commitCount int
+	var oldest time.Time
 	// accumulate folds a commit/push file list into the per-language byte
 	// totals, applying the standard-mode alias / ignored / category
 	// filters so recent mode stays consistent with most-used mode.
 	accumulate := func(files []rawCommitFile) {
+		editedFiles += len(files)
 		for _, f := range files {
+			if n := f.Additions + f.Deletions; n > 0 {
+				totalEdited += n
+			}
 			lang := enry.GetLanguage(f.Filename, nil)
 			if lang == "" {
 				continue
@@ -193,6 +206,7 @@ func (p *recentPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 			seenRepos[pe.Repo.Name] = struct{}{}
 			repos = append(repos, pe.Repo.Name)
 		}
+		oldest = pe.CreatedAt
 		// Prefer the explicit per-commit list when the events payload
 		// still carries it. GitHub increasingly omits payload.commits
 		// (leaving only before/head); in that case resolve the pushed
@@ -208,18 +222,24 @@ func (p *recentPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 					pc.Data.AppendError(fmt.Errorf("languages.recent: commit %s/%s: %w", pe.Repo.Name, sha, err))
 					continue
 				}
+				commitCount++
 				accumulate(files)
 			}
 			continue
 		}
-		files, err := fetchPushFiles(ctx, pc, pe.Repo.Name, pe.Payload.Before, pe.Payload.Head)
+		files, pushCommits, err := fetchPushFiles(ctx, pc, pe.Repo.Name, pe.Payload.Before, pe.Payload.Head)
 		if err != nil {
 			// Best-effort: a single push miss should not abort the walk.
 			pc.Data.AppendError(fmt.Errorf("languages.recent: push %s (%s..%s): %w",
 				pe.Repo.Name, shortSHA(pe.Payload.Before), shortSHA(pe.Payload.Head), err))
 			continue
 		}
+		commitCount += pushCommits
 		accumulate(files)
+	}
+	latest := 0
+	if !oldest.IsZero() {
+		latest = int(math.Round(time.Since(oldest).Hours() / 24))
 	}
 
 	totalBytes := 0
@@ -273,6 +293,10 @@ func (p *recentPlugin) Run(ctx context.Context, pc *plugins.PluginContext) (any,
 		Other:     other,
 		Days:      in.days,
 		Load:      len(pushes),
+		Total:     totalEdited,
+		Files:     editedFiles,
+		Commits:   commitCount,
+		Latest:    latest,
 		Repos:     repos,
 	}, nil
 }
@@ -402,7 +426,8 @@ func shortSHA(sha string) string {
 // rawCompare is the subset of the /compare response we consume: the
 // aggregated file list across the pushed range.
 type rawCompare struct {
-	Files []rawCommitFile `json:"files"`
+	TotalCommits int             `json:"total_commits"`
+	Files        []rawCommitFile `json:"files"`
 }
 
 // fetchPushFiles resolves the files changed by a push via the compare API
@@ -410,30 +435,32 @@ type rawCompare struct {
 // additions/deletions across every commit in the pushed range. This
 // avoids depending on payload.commits, which GitHub frequently omits from
 // the events feed. New-branch pushes carry an all-zero `before` with
-// nothing to diff from, so fall back to the head commit alone.
-func fetchPushFiles(ctx context.Context, pc *plugins.PluginContext, repo, before, head string) ([]rawCommitFile, error) {
+// nothing to diff from, so fall back to the head commit alone. The int
+// result is the number of commits the push covers.
+func fetchPushFiles(ctx context.Context, pc *plugins.PluginContext, repo, before, head string) ([]rawCommitFile, int, error) {
 	if head == "" {
-		return nil, nil
+		return nil, 0, nil
 	}
 	if pluginutil.IsZeroSHA(before) {
-		return fetchCommitFiles(ctx, pc, repo, head)
+		files, err := fetchCommitFiles(ctx, pc, repo, head)
+		return files, 1, err
 	}
 	path := fmt.Sprintf("/repos/%s/compare/%s...%s", repo, before, head)
 	body, resp, err := pc.REST.Get(ctx, path, nil)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if resp == nil {
-		return nil, errors.New("languages.recent: nil response")
+		return nil, 0, errors.New("languages.recent: nil response")
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, &recentFetchStatusError{status: resp.StatusCode}
+		return nil, 0, &recentFetchStatusError{status: resp.StatusCode}
 	}
 	var c rawCompare
 	if err := json.Unmarshal(body, &c); err != nil {
-		return nil, fmt.Errorf("languages.recent: decode compare: %w", err)
+		return nil, 0, fmt.Errorf("languages.recent: decode compare: %w", err)
 	}
-	return c.Files, nil
+	return c.Files, c.TotalCommits, nil
 }
 
 // --- input parsing ---------------------------------------------------

@@ -285,8 +285,8 @@ func writeSimpleList(b *strings.Builder, bars []plugins.LanguageStat, top float6
 }
 
 // writeRecentlyUsedSection emits the "Recently used languages" column per
-// upstream EJS lines 21-31: centered sub-header, the "activity from N
-// repositories" summary or "No recent push activity found" empty state,
+// upstream EJS lines 21-31: centered sub-header, the "estimation from N of code in M
+// edited files across K commits" summary or "No recent push activity found" empty state,
 // the recent progress bar, and the per-language list. Returns the y
 // cursor after the block.
 func writeRecentlyUsedSection(b *strings.Builder, pc *templates.PartialContext, top float64) float64 {
@@ -324,13 +324,12 @@ func writeRecentlyUsedSection(b *strings.Builder, pc *templates.PartialContext, 
 	}
 
 	// Recent activity summary (upstream EJS lines 23-25).
-	if r.Days > 0 {
-		summary := fmt.Sprintf("activity from %d repositor%s analysed over last %d day%s",
-			r.Load, pluralRepository(r.Load), r.Days, pluginutil.Plural(r.Days))
-		b.WriteString(chrome.SVGText(center, y+langSmallFont, summary,
-			chrome.SVGTextOpts{Size: langSmallFont, Fill: langSmallFill, Anchor: "middle", MaxWidth: float64(chrome.CardWidth) - 20}))
-		y += langSmallPitch
-	}
+	summary := fmt.Sprintf("estimation from %s of code in %d edited file%s across %d commit%s over last %d day%s",
+		formatBytes(int64(r.Total)), r.Files, pluginutil.Plural(r.Files),
+		r.Commits, pluginutil.Plural(r.Commits), r.Latest, pluginutil.Plural(r.Latest))
+	b.WriteString(chrome.SVGText(center, y+langSmallFont, summary,
+		chrome.SVGTextOpts{Size: langSmallFont, Fill: langSmallFill, Anchor: "middle", MaxWidth: float64(chrome.CardWidth) - 20}))
+	y += langSmallPitch
 
 	y += langBarTopGap
 	writeBar(b, bars, y, "languages-bar-recent", "languages-recent", "Recently used languages distribution", "language-bar-recent")

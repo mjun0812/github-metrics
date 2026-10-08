@@ -185,6 +185,12 @@ func TestRecentRun_Normal(t *testing.T) {
 	if len(r.Repos) != 2 {
 		t.Errorf("Repos = %v, want 2", r.Repos)
 	}
+	// Upstream stats.recent: commits analysed, edited files summed per
+	// commit, total edited bytes, days since the oldest counted push.
+	if r.Commits != 3 || r.Files != 4 || r.Total != 245 || r.Latest != 0 {
+		t.Errorf("Commits/Files/Total/Latest = %d/%d/%d/%d, want 3/4/245/0",
+			r.Commits, r.Files, r.Total, r.Latest)
+	}
 }
 
 // TestRecentRun_LinguistDisabled — extras toggle skips the plugin entirely.
@@ -383,7 +389,7 @@ func TestRecentRun_CompareFallback(t *testing.T) {
 	)
 	mux.on("/users/octocat/events", http.StatusOK, pushEventsArray(ev))
 	mux.on("/repos/octocat/alpha/compare/aaa1111...bbb2222", http.StatusOK,
-		commitBody(file("main.go", 120, 10), file("util.py", 30, 5)))
+		`{"total_commits":3,"files":[`+file("main.go", 120, 10)+","+file("util.py", 30, 5)+`]}`)
 
 	pc := newPC(t, mux, nil)
 	out, err := languages.RecentPlugin.Run(context.Background(), pc)
@@ -406,6 +412,9 @@ func TestRecentRun_CompareFallback(t *testing.T) {
 	}
 	if names["Python"] == 0 {
 		t.Errorf("expected Python bytes > 0 via compare; favorites=%+v", r.Favorites)
+	}
+	if r.Commits != 3 || r.Files != 2 || r.Total != 165 {
+		t.Errorf("Commits/Files/Total = %d/%d/%d, want 3/2/165", r.Commits, r.Files, r.Total)
 	}
 }
 
@@ -440,5 +449,8 @@ func TestRecentRun_NewBranchUsesHead(t *testing.T) {
 	}
 	if names["Go"] == 0 {
 		t.Errorf("expected Go bytes > 0 from head fallback; favorites=%+v", r.Favorites)
+	}
+	if r.Commits != 1 || r.Files != 1 {
+		t.Errorf("Commits/Files = %d/%d, want 1/1", r.Commits, r.Files)
 	}
 }
