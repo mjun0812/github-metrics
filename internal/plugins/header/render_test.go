@@ -162,12 +162,15 @@ func TestPartial_UserCountersAndAge(t *testing.T) {
 		`data-block="header-counters"`,
 		"Joined GitHub 18 years ago",
 		"Followed by 1.6k users",
-		"Following 617 users",
 		"Contributed to 42 repositories",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in output: %s", want, got)
 		}
+	}
+	// Following lives in the base community stats, not the header.
+	if strings.Contains(got, "Following") {
+		t.Errorf("header must not render Following: %s", got)
 	}
 }
 

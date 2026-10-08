@@ -193,7 +193,7 @@ func renderResult(r *Result) (string, int, error) {
 	}
 
 	// Two-column counters layout mirroring upstream base.header.ejs.
-	// Left column: Joined / Followed by / Following.
+	// Left column: Joined / Followed by.
 	left := chrome.NewSVGColumn(0, chrome.CardWidth/2, hdrTitleBottom)
 	if age := format.RelativeAge(u.CreatedAt, currentNow()); age != "" {
 		left.Field(":octicon-clock:", "Joined GitHub "+age)
@@ -201,10 +201,6 @@ func renderResult(r *Result) (string, int, error) {
 	if u.Followers > 0 {
 		left.Field(":octicon-people:", fmt.Sprintf("Followed by %s %s",
 			partials.FormatCount(int64(u.Followers)), pluralLabel("user", u.Followers)))
-	}
-	if u.Following > 0 {
-		left.Field(":octicon-people:", fmt.Sprintf("Following %s %s",
-			partials.FormatCount(int64(u.Following)), pluralLabel("user", u.Following)))
 	}
 
 	// Right column: contribution mini calendar + contributed-to count.

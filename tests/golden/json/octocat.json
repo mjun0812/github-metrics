@@ -339,8 +339,11 @@
       }
     },
     "languages.recent": {
+      "commits": 0,
       "days": 14,
       "favorites": [],
+      "files": 0,
+      "latest": 0,
       "load": 100,
       "other": {
         "color": "",
@@ -350,7 +353,8 @@
         "value": 0
       },
       "repos": [],
-      "skipped": true
+      "skipped": true,
+      "total": 0
     },
     "notable": {
       "list": [],

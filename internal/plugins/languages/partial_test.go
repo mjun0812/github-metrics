@@ -126,6 +126,10 @@ func TestPartial_Languages_NoDuplicateMaskID(t *testing.T) {
 		Favorites: []plugins.LanguageStat{{Name: "Python", Color: "#3572A5", Size: 200, Value: 1}},
 		Days:      7,
 		Load:      50,
+		Total:     2048,
+		Files:     3,
+		Commits:   1,
+		Latest:    5,
 		Repos:     []string{"octocat/py"},
 	})
 	pc := &templates.PartialContext{Data: data}
@@ -155,6 +159,10 @@ func TestPartial_Languages_NoDuplicateMaskID(t *testing.T) {
 	}
 	if !strings.Contains(got, `data-language="Python"`) {
 		t.Errorf("missing Python data attr in:\n%s", got)
+	}
+	const want = "estimation from 2.0 kB of code in 3 edited files across 1 commit over last 5 days"
+	if !strings.Contains(got, want) {
+		t.Errorf("missing recent summary %q in:\n%s", want, got)
 	}
 }
 
