@@ -225,6 +225,14 @@
     "languages.indepth": {
       "analyzed": [],
       "errors": null,
+      "favorites": null,
+      "other": {
+        "color": "",
+        "count": 0,
+        "name": "",
+        "size": 0,
+        "value": 0
+      },
       "repositories": {},
       "skipped": true,
       "total": {

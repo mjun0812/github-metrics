@@ -13,6 +13,7 @@ import (
 	xerrors "github.com/mjun0812/github-metrics/internal/errors"
 	"github.com/mjun0812/github-metrics/internal/plugins"
 	"github.com/mjun0812/github-metrics/internal/plugins/starlists"
+	"github.com/mjun0812/github-metrics/internal/render/fontmetrics"
 	"github.com/mjun0812/github-metrics/internal/templates"
 )
 
@@ -378,4 +379,51 @@ func repoRoot(t *testing.T) string {
 	}
 	t.Fatalf("could not find repo root from %s", cwd)
 	return ""
+}
+
+// TestPartial_Starlists_CJKDescriptionWraps: a repository description
+// mixing CJK and Latin must wrap so that, measuring each CJK character
+// as a full 1em, no line exceeds the description column.
+func TestPartial_Starlists_CJKDescriptionWraps(t *testing.T) {
+	t.Parallel()
+	const (
+		size     = 11.0
+		maxWidth = 400.0
+	)
+	desc := "Chrome 垂直标签栏快捷键 | Chrome 垂直分頁側邊欄快速鍵 | Chrome垂直タブサイドバーショートカット | Atajo para la barra lateral de pestañas"
+	r := &starlists.Result{
+		List: []starlists.Starlist{{
+			Name:         "AI",
+			Count:        1,
+			Repositories: []starlists.Repository{{Name: "octocat/repo-a", Description: desc}},
+		}},
+	}
+	data := plugins.NewData()
+	data.SetPlugin(starlists.Name, r)
+	got, _, err := starlists.Partial(context.Background(), &templates.PartialContext{Data: data})
+	if err != nil {
+		t.Fatalf("Partial: %v", err)
+	}
+	lines := 0
+	for _, m := range regexp.MustCompile(`<text [^>]*>([^<]*)</text>`).FindAllStringSubmatch(got, -1) {
+		if !strings.ContainsAny(m[1], "垂Atajo") {
+			continue
+		}
+		lines++
+		var latin strings.Builder
+		wide := 0
+		for _, c := range m[1] {
+			if c > 0x2E80 {
+				wide++
+			} else {
+				latin.WriteRune(c)
+			}
+		}
+		if w := fontmetrics.Width(latin.String(), size) + float64(wide)*size; w > maxWidth {
+			t.Errorf("line %q is about %.0f px, exceeds %.0f", m[1], w, maxWidth)
+		}
+	}
+	if lines < 2 {
+		t.Errorf("description rendered on %d line(s), want it wrapped", lines)
+	}
 }

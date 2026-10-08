@@ -160,12 +160,12 @@ func TestWriteDetailsRows(t *testing.T) {
 		}
 	})
 
-	t.Run("indepth bytes override the bars size", func(t *testing.T) {
+	t.Run("indepth supplies the lines column", func(t *testing.T) {
 		t.Parallel()
 		var b strings.Builder
 		pc := &templates.PartialContext{Data: plugins.NewData()}
-		// bars[0].Size = 4000 but indepth reports 5MB. The rendered
-		// bytes-size column should reflect the indepth value.
+		// The size column always comes from bars (Partial feeds it the
+		// indepth ranking); only the lines column reads the indepth result.
 		pc.Data.SetPlugin(IndepthName, &IndepthResult{
 			Total: LanguageBytes{
 				Bytes: map[string]int64{"Go": 5 * 1024 * 1024},
@@ -174,8 +174,8 @@ func TestWriteDetailsRows(t *testing.T) {
 		})
 		writeDetailsRows(&b, bars, []string{"lines", "bytes-size"}, pc, 0)
 		out := b.String()
-		if !strings.Contains(out, "5.0 MB") {
-			t.Errorf("expected indepth-derived bytes-size 5.0 MB, got: %s", out)
+		if !strings.Contains(out, "3.9 kB") {
+			t.Errorf("expected bars-derived bytes-size 3.9 kB, got: %s", out)
 		}
 		// FormatCount uses k-suffix shortening for >=1000; keep value
 		// below the cutoff so the literal byte count survives.

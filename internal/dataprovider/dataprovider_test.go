@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -454,6 +456,55 @@ const userRepositoriesResponseBody = `{
     }
   }
 }`
+
+// TestProvider_RepositorySummary_LicensePreferenceUsesUpstreamLabel pins
+// the label upstream's `f.license` renders after "Prefers": nickname, then
+// SPDX id, then name, with NOASSERTION falling back to the name. Keying by
+// licenseInfo.name rendered "Prefers MIT License license".
+func TestProvider_RepositorySummary_LicensePreferenceUsesUpstreamLabel(t *testing.T) {
+	t.Parallel()
+	licenses := []string{
+		`{"name": "MIT License", "key": "mit", "nickname": null, "spdxId": "MIT"}`,
+		`{"name": "MIT License", "key": "mit", "nickname": null, "spdxId": "MIT"}`,
+		`{"name": "GNU General Public License v3.0", "key": "gpl-3.0", "nickname": "GNU GPLv3", "spdxId": "GPL-3.0"}`,
+		`{"name": "Other", "key": "other", "nickname": null, "spdxId": "NOASSERTION"}`,
+	}
+	nodes := make([]string, 0, len(licenses))
+	for i, license := range licenses {
+		nodes = append(nodes, fmt.Sprintf(`{
+            "databaseId": %[1]d, "id": "R%[1]d", "name": "r%[1]d", "nameWithOwner": "octocat/r%[1]d",
+            "description": null, "url": "https://example.invalid/r%[1]d",
+            "isPrivate": false, "isFork": false,
+            "createdAt": "2020-01-01T00:00:00Z", "pushedAt": "2020-01-02T00:00:00Z", "updatedAt": "2020-01-02T00:00:00Z",
+            "stargazerCount": 0, "forkCount": 0,
+            "issues": {"totalCount": 0}, "pullRequests": {"totalCount": 0}, "watchers": {"totalCount": 0},
+            "primaryLanguage": null, "languages": null, "diskUsage": 0,
+            "releases": {"totalCount": 0}, "packages": {"totalCount": 0}, "deployments": {"totalCount": 0},
+            "licenseInfo": %[2]s
+          }`, i+1, license))
+	}
+	body := fmt.Sprintf(`{"data": {"user": {"repositories": {
+        "totalCount": %d, "pageInfo": {"hasNextPage": false, "endCursor": null},
+        "nodes": [%s]}}}}`, len(nodes), strings.Join(nodes, ","))
+
+	tr := newCountingTransport()
+	tr.setResponse("User", userResponseBody)
+	tr.setResponse("UserRepositories", body)
+	p := newProviderWith(t, tr)
+
+	summary, err := p.RepositorySummary(context.Background())
+	if err != nil {
+		t.Fatalf("RepositorySummary: %v", err)
+	}
+	got := make([]string, 0, len(summary.LicensePreference))
+	for _, share := range summary.LicensePreference {
+		got = append(got, fmt.Sprintf("%s=%d", share.Name, share.Count))
+	}
+	want := []string{"MIT=2", "GNU GPLv3=1", "Other=1"}
+	if !slices.Equal(got, want) {
+		t.Errorf("LicensePreference: got %v, want %v", got, want)
+	}
+}
 
 // TestProvider_RepositorySummary_IncludesIssuesAndPullRequests guards the
 // JSON wire format keys computed.repositories.issues /

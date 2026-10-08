@@ -40,10 +40,10 @@
           <text x="18" y="192" font-size="10" fill="#666666" text-anchor="middle">
             00
           </text>
-          <text x="37" y="163" font-size="6" fill="#666666" text-anchor="middle">
+          <text x="37" y="164" font-size="6" fill="#666666" text-anchor="middle">
             4
           </text>
-          <rect x="34" y="165" width="7" height="15" rx="3" ry="3" fill="#40c463"/>
+          <rect x="34" y="166" width="7" height="14" rx="3" ry="3" fill="#40c463"/>
           <text x="37" y="192" font-size="10" fill="#666666" text-anchor="middle">
             01
           </text>
@@ -152,22 +152,22 @@
           <text x="327" y="192" font-size="10" fill="#666666" text-anchor="middle">
             16
           </text>
-          <text x="346" y="163" font-size="6" fill="#666666" text-anchor="middle">
+          <text x="346" y="164" font-size="6" fill="#666666" text-anchor="middle">
             4
           </text>
-          <rect x="343" y="165" width="7" height="15" rx="3" ry="3" fill="#40c463"/>
+          <rect x="343" y="166" width="7" height="14" rx="3" ry="3" fill="#40c463"/>
           <text x="346" y="192" font-size="10" fill="#666666" text-anchor="middle">
             17
           </text>
-          <text x="366" y="163" font-size="6" fill="#666666" text-anchor="middle">
+          <text x="366" y="164" font-size="6" fill="#666666" text-anchor="middle">
             4
           </text>
-          <rect x="362" y="165" width="7" height="15" rx="3" ry="3" fill="#40c463"/>
+          <rect x="362" y="166" width="7" height="14" rx="3" ry="3" fill="#40c463"/>
           <text x="366" y="192" font-size="10" fill="#666666" text-anchor="middle">
             18
           </text>
           <text x="385" y="128" font-size="6" fill="#666666" text-anchor="middle">
-            13
+            14
           </text>
           <rect x="382" y="130" width="7" height="50" rx="3" ry="3" fill="#216e39"/>
           <text x="385" y="192" font-size="10" fill="#666666" text-anchor="middle">
@@ -228,7 +228,7 @@
             Tue
           </text>
           <text x="120" y="232" font-size="6" fill="#666666" text-anchor="middle">
-            28
+            29
           </text>
           <rect x="117" y="234" width="7" height="50" rx="3" ry="3" fill="#216e39"/>
           <text x="120" y="296" font-size="10" fill="#666666" text-anchor="middle">
@@ -260,49 +260,49 @@
           Language activity
         </text>
         <text x="324" y="238" font-size="10" fill="#666666" text-anchor="end">
-          JSON
-        </text>
-        <rect x="330" y="232" width="38" height="7" rx="3" ry="3" fill="#40c463"/>
-        <text x="374" y="238" font-size="10" fill="#666666">
-          39%
-        </text>
-        <text x="324" y="256" font-size="10" fill="#666666" text-anchor="end">
           XML
         </text>
-        <rect x="330" y="250" width="25" height="7" rx="3" ry="3" fill="#40c463"/>
-        <text x="361" y="256" font-size="10" fill="#666666">
-          26%
+        <rect x="330" y="232" width="34" height="7" rx="3" ry="3" fill="#40c463"/>
+        <text x="370" y="238" font-size="10" fill="#666666">
+          35%
+        </text>
+        <text x="324" y="256" font-size="10" fill="#666666" text-anchor="end">
+          JSON
+        </text>
+        <rect x="330" y="250" width="32" height="7" rx="3" ry="3" fill="#40c463"/>
+        <text x="368" y="256" font-size="10" fill="#666666">
+          33%
         </text>
         <text x="324" y="274" font-size="10" fill="#666666" text-anchor="end">
           Go
         </text>
-        <rect x="330" y="268" width="21" height="7" rx="3" ry="3" fill="#9be9a8"/>
-        <text x="357" y="274" font-size="10" fill="#666666">
-          22%
+        <rect x="330" y="268" width="17" height="7" rx="3" ry="3" fill="#9be9a8"/>
+        <text x="354" y="274" font-size="10" fill="#666666">
+          18%
         </text>
         <text x="324" y="292" font-size="10" fill="#666666" text-anchor="end">
-          SVG
+          Markdown
         </text>
-        <rect x="330" y="286" width="4" height="7" rx="3" ry="3" fill="#9be9a8"/>
+        <rect x="330" y="286" width="3" height="7" rx="3" ry="3" fill="#9be9a8"/>
         <text x="340" y="292" font-size="10" fill="#666666">
           4%
         </text>
         <text x="324" y="310" font-size="10" fill="#666666" text-anchor="end">
-          Markdown
+          SVG
         </text>
         <rect x="330" y="304" width="3" height="7" rx="3" ry="3" fill="#9be9a8"/>
         <text x="339" y="310" font-size="10" fill="#666666">
           3%
         </text>
         <text x="324" y="328" font-size="10" fill="#666666" text-anchor="end">
-          Python
+          Lua
         </text>
         <rect x="330" y="322" width="3" height="7" rx="3" ry="3" fill="#9be9a8"/>
         <text x="339" y="328" font-size="10" fill="#666666">
           3%
         </text>
         <text x="324" y="346" font-size="10" fill="#666666" text-anchor="end">
-          Lua
+          Python
         </text>
         <rect x="330" y="340" width="2" height="7" rx="3" ry="3" fill="#9be9a8"/>
         <text x="338" y="346" font-size="10" fill="#666666">

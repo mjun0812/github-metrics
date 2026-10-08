@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="206" viewBox="0 0 480 206" class="">
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="221" viewBox="0 0 480 221" class="">
   <defs>
     <style/>
   </defs>
@@ -8,7 +8,7 @@
   <style/>
   <g transform="translate(0,0)" class="plugin-starlists" data-plugin="starlists">
     <g data-section="starlists">
-      <svg width="100%" height="206" viewBox="0 0 480 206">
+      <svg width="100%" height="221" viewBox="0 0 480 221">
         <g transform="translate(13,9)" fill="#959da5">
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
             <path fill-rule="evenodd" d="M1.75 2.5a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5zm4 5a.75.75 0 000 1.5h7.5a.75.75 0 000-1.5h-7.5zm0 5a.75.75 0 000 1.5h7.5a.75.75 0 000-1.5h-7.5zM3 8a1 1 0 11-2 0 1 1 0 012 0zm-1 6a1 1 0 100-2 1 1 0 000 2z"/>
@@ -56,16 +56,19 @@
                 Hammerspoon: toggle Chrome vertical tab sidebar via keyboard &amp; mouse hover.
               </text>
               <text x="33" y="124" font-size="11" fill="#666666">
-                macOS Accessibility API. | Chrome 垂直标签栏快捷键 | Chrome 垂直分頁側邊欄快速鍵 |
+                macOS Accessibility API. | Chrome 垂直标签栏快捷键 | Chrome
               </text>
               <text x="33" y="139" font-size="11" fill="#666666">
-                Chrome垂直タブサイドバーショートカット | Chrome 수직 탭 사이드바 단축키 | Atajo pestañas verticales
+                垂直分頁側邊欄快速鍵 | Chrome垂直タブサイドバーショートカット |
               </text>
               <text x="33" y="154" font-size="11" fill="#666666">
-                Chrome | Raccourci onglets verticaux Chrome | Chrome vertikale Tabs
+                Chrome 수직 탭 사이드바 단축키 | Atajo pestañas verticales Chrome |
               </text>
               <text x="33" y="168" font-size="11" fill="#666666">
-                Tastenkürzel | Горячая клавиша вкладок Chrome
+                Raccourci onglets verticaux Chrome | Chrome vertikale Tabs Tastenkürzel |
+              </text>
+              <text x="33" y="183" font-size="11" fill="#666666">
+                Горячая клавиша вкладок Chrome
               </text>
             </g>
           </g>
