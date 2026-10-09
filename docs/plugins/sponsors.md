@@ -47,7 +47,7 @@ metrics-cli --user <your-login> \
 
 ## Requirements
 
-The user must be **sponsored via GitHub Sponsors** (incoming sponsorships) for a non-empty card. Non-sponsored accounts produce an empty card; this is normal.
+Reads the GitHub Sponsors listing of the account (incoming sponsorships). The card (section heading, goal and `About Me` sections) is rendered even when the account has no active sponsors. The plugin does not check OAuth scopes at runtime, and it is Skipped in repository mode.
 
 ## Notes
 
@@ -57,5 +57,5 @@ The user must be **sponsored via GitHub Sponsors** (incoming sponsorships) for a
 
 - [`action.yml`](../../action.yml) — canonical input schema
 - [`assets/plugins/sponsors/metadata.yml`](../../assets/plugins/sponsors/metadata.yml) — upstream metadata
-- Supported account types: user, organization, repository
-- Required scopes: read:user, read:org
+- Supported account types: user
+- Required scopes: public_access
