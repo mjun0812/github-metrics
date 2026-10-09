@@ -1,7 +1,8 @@
 // Package languages — recent.go implements the "languages.recent"
 // sub-mode of the M4 languages plugin. It walks PushEvents from
-// /users/<login>/events, fetches per-commit file lists from
-// /repos/<owner>/<name>/commits/<sha>, runs each filename through
+// /users/<login>/events, fetches the changed file lists from
+// /repos/<owner>/<name>/commits/<sha> (or the compare API for pushes
+// without payload.commits), runs each filename through
 // go-enry, and aggregates byte counts per language using the same
 // favorites/other split as standard mode.
 //

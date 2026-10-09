@@ -14,7 +14,7 @@ name: Release
 #
 # Pipeline ordering: a `docker-smoke` gate job builds the image
 # locally (amd64) and runs `metrics-cli --help` + size-budget
-# assertion (FR-006). If it fails, release-docker and release-binary
+# assertion (FR-006). If it fails, build-image and release-binary
 # do not start — nothing oversized lands on GHCR.
 #
 # Action image pinning: the committed action.yml on main says

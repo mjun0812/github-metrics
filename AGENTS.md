@@ -17,7 +17,7 @@ Before starting on any new feature, always check the following source of truth f
 
 `tests/compliance/compliance_test.go` gates the following. Fix immediately if any of them fail:
 
-- `TestCompliance_M4_AdoptedPlugins`: exact match of the 19 adopted plugin dirs
+- `TestCompliance_M4_AdoptedPlugins`: exact match of the adopted plugin dirs (the 19 user-visible plugins + `base`)
 - `TestNoUnadoptedPluginReference`: detects non-adopted plugin slugs leaking into production code
 - `TestNoRemovedSentinelComments`: forbids `// removed:`-style deletion-history comments — **code comments must describe only the current behavior, never "what was removed"**
 

@@ -44,7 +44,7 @@ metrics-cli --user <your-login> \
 
 ## Requirements
 
-Same data source as the `calendar` plugin (the user's public contribution calendar). Public contributions within the past year are required for a non-empty heatmap. The `full-year` mode renders 52 weeks of the same dataset.
+Same data source as the `calendar` plugin (the user's public contribution calendar). Public contributions within the past year are required for a non-empty heatmap. The `full-year` mode renders the window from one year ago (rounded down to the preceding Sunday 00:00 UTC) up to now, so the number of weeks depends on the date; only the degraded path (see Notes) is fixed at the trailing 53 weeks.
 
 ## Notes
 

@@ -185,12 +185,6 @@ The left column uses a different data source, so the numbers will not match. The
 | ---------------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------- |
 | <img src="original_examples/metrics.plugin.reactions.svg" width="420"> | <img src="reference_examples/metrics.plugin.reactions.svg" width="420"> | <img src="examples/plugin-reactions.svg" width="420"> |
 
-### projects
-
-| `lowlighter/metrics` (lowlighter's data)                              | `lowlighter/metrics` (mjun0812's data)                                                     | Go (`plugin-projects.svg`)                           |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
-| <img src="original_examples/metrics.plugin.projects.svg" width="420"> | — _GitHub deprecated the Projects (classic) API; `lowlighter/metrics` returns `NOT_FOUND`_ | <img src="examples/plugin-projects.svg" width="420"> |
-
 ### sponsors
 
 | `lowlighter/metrics` (lowlighter's data)                              | `lowlighter/metrics` (mjun0812's data)                                 | Go (`plugin-sponsors.svg`)                           |

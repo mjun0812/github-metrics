@@ -26,32 +26,32 @@
 
 すべての plugin は GitHub の API トークンと通常の HTTP 取得だけで
 動作する。`topics` / `starlists` は `lowlighter/metrics` では Headless Chromium で
-ページをスクレイプするが、本移植では goquery による HTML パースに
-置き換えているためブラウザは不要である。
+ページをスクレイプするが、本移植では `topics` は goquery による HTML パース、
+`starlists` は GraphQL API (`user.lists`) に置き換えているためブラウザは不要である。
 
-| 名前         | `lowlighter/metrics` slug | 注記                                  |
-| ------------ | ------------------------- | ------------------------------------- |
-| base         | base                      | プロファイル基本情報 (内部使用)       |
-| core         | core                      | 設定注入 + 並列実行 (内部使用)        |
-| languages    | languages                 | `recent` / `indepth` サブモード対応   |
-| activity     | activity                  |                                       |
-| achievements | achievements              |                                       |
-| repositories | repositories              | Featured / Pinned / Starred / Random  |
-| isocalendar  | isocalendar               | 3D 等尺カレンダー                     |
-| calendar     | calendar                  | 多年カレンダー                        |
-| habits       | habits                    | 曜日 / 時間帯傾向                     |
-| stars        | stars                     | 最近スターしたリポジトリ              |
-| people       | people                    | フォロワー / フォロイング             |
-| notable      | notable                   |                                       |
-| contributors | contributors              | repository テンプレート向け           |
-| reactions    | reactions                 | リアクション集計                      |
-| projects     | projects                  | GitHub Projects (`read:project` 必要) |
-| sponsors     | sponsors                  | (`read:user` / `read:org` 必要)       |
-| sponsorships | sponsorships              | (`read:user` / `read:org` 必要)       |
-| stargazers   | stargazers                | 累積 star チャート                    |
-| traffic      | traffic                   | 閲覧数 (`repo` 必要)                  |
-| topics       | topics                    | HTML スクレイプ (goquery)             |
-| starlists    | starlists                 | HTML スクレイプ (goquery)             |
+| 名前         | `lowlighter/metrics` slug | 注記                                            |
+| ------------ | ------------------------- | ----------------------------------------------- |
+| header       | -                         | プロファイル ID カード (アバター / 名前 / 統計) |
+| base         | base                      | プロファイル基本情報 (内部使用)                 |
+| core         | core                      | 設定注入 + 並列実行 (内部使用)                  |
+| languages    | languages                 | `recent` / `indepth` サブモード対応             |
+| activity     | activity                  |                                                 |
+| achievements | achievements              |                                                 |
+| repositories | repositories              | Featured / Pinned / Starred / Random            |
+| isocalendar  | isocalendar               | 3D 等尺カレンダー                               |
+| calendar     | calendar                  | 多年カレンダー                                  |
+| habits       | habits                    | 曜日 / 時間帯傾向                               |
+| stars        | stars                     | 最近スターしたリポジトリ                        |
+| people       | people                    | フォロワー / フォロイング                       |
+| notable      | notable                   |                                                 |
+| contributors | contributors              | repository テンプレート向け                     |
+| reactions    | reactions                 | リアクション集計                                |
+| sponsors     | sponsors                  | (`read:user` / `read:org` 必要)                 |
+| sponsorships | sponsorships              | (`read:user` / `read:org` 必要)                 |
+| stargazers   | stargazers                | 累積 star チャート                              |
+| traffic      | traffic                   | 閲覧数 (`repo` 必要)                            |
+| topics       | topics                    | HTML スクレイプ (goquery)                       |
+| starlists    | starlists                 | GraphQL (`user.lists`)                          |
 
 ### 2.2 Template (2)
 
@@ -163,7 +163,7 @@
 下記の workflow は **そのまま** Go 移植版で動作する:
 
 ```yaml
-- uses: mjun0812/github-metrics@latest
+- uses: mjun0812/github-metrics@v5
   with:
     user: octocat
     plugin_languages: yes # 採用 → 出力に反映
@@ -205,13 +205,12 @@ bash scripts/migrate-from-lowlighter.sh --strip-unported
 
 ```diff
 - uses: lowlighter/metrics@v3.34
-+ uses: mjun0812/github-metrics@latest
++ uses: mjun0812/github-metrics@v5
 ```
 
-`@latest` は常に最新のリリースに解決される (新しいリリースが出ても
-workflow の変更不要)。バイト単位でピン留めしたい場合は `@v5.0.0`
-等の exact `vX.Y.Z` 形式、または `@v5` のような major floating tag
-(最新の `v5.x.y` に追従) を使える。
+`@v5` は major floating tag で、最新の `v5.x.y` に追従する (新しい
+minor / patch リリースが出ても workflow の変更不要)。バイト単位で
+ピン留めしたい場合は `@v5.0.0` 等の exact `vX.Y.Z` 形式を使える。
 
 ### Step 2: (任意) 未対応 input を削除
 
@@ -240,7 +239,7 @@ scheduled run を待つ。`output_action: commit` 等の出力ア
 は drop-in 互換のため、設定ファイル側の調整は不要である):
 
 ```diff
-- uses: mjun0812/github-metrics@latest
+- uses: mjun0812/github-metrics@v5
 + uses: lowlighter/metrics@v3.34
 ```
 

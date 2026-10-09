@@ -30,7 +30,7 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error)
 ```
 
 - `Request{Login, Repo, Template, Format, Account, Inputs, Parallel, Die}`
-- `Deps{Settings, Metadata, Logger, HTTPClient, REST, GraphQL, Render}`
+- `Deps{Logger, HTTPClient, REST, GraphQL, Render}`
 - `Result{Data *plugins.Data, Errors []error, Output []byte, MIME string, Provider plugins.Provider}`
 
 `Compute` flow:
@@ -40,7 +40,7 @@ func Compute(ctx context.Context, req Request, deps Deps) (*Result, error)
 3. **Rate gate**: checks remaining GitHub API rate limit at startup (#529).
 4. **dataprovider construction**: `dataprovider.New(...)` returns a Provider that fetches the profile / repositories / calendar **lazily and with memoization** (#603). Shared data is consolidated here, and each plugin reads from it to avoid duplicate fetches.
 5. **core plugin (Stage 1)**: `core.Plugin.Run` interprets `config_*` and populates `data.Config` / `data.Computed`.
-6. **individual plugins (Stage 2)**: `core.RunPlugins(ctx, pc, req.Parallel)` runs the remaining registered plugins in parallel using `golang.org/x/sync/errgroup`. Each result is stored in `data.Plugins[name]`, and errors are stored per-plugin in the same map (when `die=false`, they are aggregated into the footer).
+6. **individual plugins (Stage 2)**: `core.RunPlugins(ctx, pc, req.Parallel)` runs the remaining registered plugins in parallel using `golang.org/x/sync/errgroup`. Each result is stored in `data.Plugins[name]`, and errors are stored per-plugin in the same map (when `die=false`, they are aggregated into the footer). `RunPlugins` runs every plugin; each plugin checks `plugin_<name>` itself and returns a Skipped result without calling the API when it is disabled (#823).
 7. **output dispatch (Stage 3)**: `engine/dispatch.go` branches on `format`.
 
 Output dispatch (`dispatchOutput`):
@@ -105,12 +105,12 @@ internal/
 ├── dataprovider/      … lazy, memoized fetching of shared data (#603)
 ├── config/            … settings / metadata / input normalization
 ├── githubapi/         … REST (httpx) + GraphQL (genqlient) clients + scope detection
-├── plugins/           … individual plugins (core / base / header / 19 data plugins)
+├── plugins/           … individual plugins (core / base / 19 user-visible plugins including header)
 ├── templates/         … classic / repository + shared chrome package
 ├── render/            … SVG decoration pipeline + resvg rasterization + fontmetrics
 ├── format/            … number/date formatters
 └── ...                … logger / errors / httpx, etc.
-assets/                … plugin / template metadata, CSS, fonts bundled via //go:embed
+assets/                … plugin / template metadata, CSS, octicon data bundled via //go:embed
 tests/                 … golden / compliance / integration
 ```
 

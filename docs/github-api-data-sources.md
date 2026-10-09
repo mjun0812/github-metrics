@@ -36,41 +36,45 @@ A list of which GitHub data each adopted plugin fetches, and via which retrieval
 
 REST is used because no equivalent GraphQL endpoint exists.
 
-| Endpoint                                              | Data Retrieved                                                                | Plugins Using It                    |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------- |
-| `GET /users/{login}/events?per_page=100&page={n}`     | List of the user's public events (PushEvent, IssueEvent, etc.)                | activity, habits, languages(recent) |
-| `GET /repos/{owner}/{repo}/commits/{sha}`             | List of changed files for a single commit                                     | habits, languages(recent)           |
-| `GET /repos/{owner}/{repo}/compare/{before}...{head}` | List of changed files for a commit range                                      | habits, languages(recent)           |
-| `GET /repos/{owner}/{repo}/stats/contributors`        | Commit counts and addition/deletion line counts per contributor (202 polling) | contributors                        |
-| `GET /repos/{owner}/{repo}/contributors?per_page={n}` | List of repository contributors (name, commit count)                          | people(repo)                        |
-| `GET /repos/{owner}/{repo}/stargazers?per_page={n}`   | List of repository stargazers                                                 | people(repo)                        |
-| `GET /repos/{owner}/{repo}/subscribers?per_page={n}`  | List of repository watchers                                                   | people(repo)                        |
-| `GET /users/{login}/starred?per_page=100&page={n}`    | List of repositories starred by the user                                      | repositories(starred)               |
-| `GET /repos/{owner}/{repo}/traffic/views`             | Repository page view and unique visitor counts (requires `repo` scope)        | traffic                             |
-| `HEAD /` (`X-OAuth-Scopes` header)                    | Token scope check                                                             | traffic                             |
+| Endpoint                                                              | Data Retrieved                                                                                                        | Plugins Using It                                    |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `GET /users/{login}/events?per_page=100&page={n}`                     | List of the user's public events (PushEvent, IssueEvent, etc.)                                                        | activity, habits, languages(recent)                 |
+| `GET /repos/{owner}/{repo}/commits/{sha}`                             | List of changed files for a single commit                                                                             | habits, languages(recent)                           |
+| `GET /repos/{owner}/{repo}/compare/{before}...{head}`                 | List of changed files for a commit range                                                                              | habits, languages(recent)                           |
+| `GET /repos/{owner}/{repo}/stats/contributors`                        | Commit counts and addition/deletion line counts per contributor (202 polling)                                         | contributors                                        |
+| `GET /repos/{owner}/{repo}/contributors?per_page={n}`                 | List of repository contributors (name, commit count)                                                                  | people(repo), contributors                          |
+| `GET /repos/{owner}/{repo}/stargazers?per_page={n}`                   | List of repository stargazers                                                                                         | people(repo)                                        |
+| `GET /repos/{owner}/{repo}/subscribers?per_page={n}`                  | List of repository watchers                                                                                           | people(repo)                                        |
+| `GET /users/{login}/starred?per_page=100&sort=created&direction=desc` | List of repositories starred by the user                                                                              | repositories(starred)                               |
+| `GET /repos/{owner}/{repo}/traffic/views`                             | Repository page view and unique visitor counts (requires `repo` scope)                                                | traffic                                             |
+| `GET /repos/{owner}/{repo}/contributors?per_page=1&anon=true`         | Contributor count of the repository (read from the `Link` header `rel="last"` page number; the body is not paginated) | repository mode (contributors, people)              |
+| `GET /repos/{owner}/{repo}/commits?per_page=100&since={30 days ago}`  | Commit count of the last 30 days (page length, capped at 100; 409 / 404 treated as 0)                                 | repository mode (contributors, people)              |
+| `HEAD /` (`X-OAuth-Scopes` header)                                    | Token scope check                                                                                                     | token validation (action), traffic                  |
+| `GET /rate_limit`                                                     | Remaining quota and reset time of the REST / GraphQL / Search buckets                                                 | token validation (action), rate-limit gate (engine) |
 
 ### 2.2 GraphQL Only
 
 GraphQL is used because no equivalent REST endpoint exists.
 
-| Field / Query                                              | Data Retrieved                                                             | Plugins Using It                        |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------- |
-| `User(login)`                                              | Basic user information (name, bio, avatar, follower count, etc.)           | base                                    |
-| `Organization(login)`                                      | Basic organization information                                             | base                                    |
-| `Repository(owner, repo)`                                  | Details of a single repository                                             | base                                    |
-| `UserRepositories(login, first, after)`                    | List of the user's repositories (with pagination)                          | base                                    |
-| `user.contributionsCollection.contributionCalendar`        | Contribution calendar (counts by week and day) — not exposed via REST      | base → reused by calendar / isocalendar |
-| `user.contributionsCollection.*`                           | Yearly statistics for commits / issues / PRs / reviews                     | base                                    |
-| `user.repositoriesContributedTo(orderBy: STARGAZERS_DESC)` | List of other people's repositories the user has contributed to            | notable                                 |
-| `user.followers(first: limit)`                             | List of followers                                                          | people                                  |
-| `user.following(first: limit)`                             | List of accounts the user is following                                     | people                                  |
-| `user.issues.reactions.content`                            | Aggregated reactions on issues                                             | reactions                               |
-| `user.issueComments.reactions.content`                     | Aggregated reactions on issue comments                                     | reactions                               |
-| `user.sponsorshipsAsMaintainer(first: limit)`              | List of sponsors (tier, start date)                                        | sponsors                                |
-| `viewer.sponsorshipsAsSponsor(first: limit)`               | List of maintainers the user sponsors (tier, total amount)                 | sponsorships                            |
-| `repository.stargazers(orderBy: STARRED_AT)`               | Time series of a repository's stargazers                                   | stargazers                              |
-| `user.lists` / `list.items.repository`                     | List of Star Lists plus the repositories in each list — no REST equivalent | starlists                               |
-| `user.starredRepositories(orderBy: STARRED_AT_DESC)`       | List of starred repositories (with language, license, stats)               | stars                                   |
+| Field / Query                                              | Data Retrieved                                                             | Plugins Using It                |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------- |
+| `User(login)`                                              | Basic user information (name, bio, avatar, follower count, etc.)           | base                            |
+| `Organization(login)`                                      | Basic organization information                                             | base                            |
+| `Repository(owner, repo)`                                  | Details of a single repository                                             | base                            |
+| `UserRepositories(login, first, after)`                    | List of the user's repositories (with pagination)                          | base                            |
+| `user.contributionsCollection.contributionCalendar`        | Contribution calendar (counts by week and day) — not exposed via REST      | calendar / isocalendar / header |
+| `user.contributionsCollection.*`                           | Yearly statistics for commits / issues / PRs / reviews                     | base                            |
+| `user.repositoriesContributedTo(orderBy: STARGAZERS_DESC)` | List of other people's repositories the user has contributed to            | notable                         |
+| `user.followers(first: limit)`                             | List of followers                                                          | people                          |
+| `user.following(first: limit)`                             | List of accounts the user is following                                     | people                          |
+| `user.issues.reactions.content`                            | Aggregated reactions on issues                                             | reactions                       |
+| `user.issueComments.reactions.content`                     | Aggregated reactions on issue comments                                     | reactions                       |
+| `viewer.sponsorshipsAsMaintainer(first: limit)`            | List of sponsors (tier, start date)                                        | sponsors                        |
+| `viewer.sponsorshipsAsSponsor(first: limit)`               | List of maintainers the user sponsors (tier, total amount)                 | sponsorships                    |
+| `viewer.repositories.stargazers(orderBy: STARRED_AT)`      | Time series of a repository's stargazers                                   | stargazers                      |
+| `user.lists` / `list.items.repository`                     | List of Star Lists plus the repositories in each list — no REST equivalent | starlists                       |
+| `user.starredRepositories(orderBy: STARRED_AT_DESC)`       | List of starred repositories (with language, license, stats)               | stars                           |
+| `viewer.pinnedItems(first: 6, types: [REPOSITORY])`        | List of repositories pinned on the profile                                 | repositories(pinned)            |
 
 ### 2.3 HTML Scraping
 
@@ -86,13 +90,13 @@ Implementation: uses `goquery` to collect anchors matching the `a[href^="/topics
 
 Simply processes data already fetched by the base plugin, with no additional API calls.
 
-| Data Source                         | Generated Information                                     | Plugins Using It          |
-| ----------------------------------- | --------------------------------------------------------- | ------------------------- |
-| base's `ContributionCalendar.Weeks` | Monthly contribution histogram                            | calendar                  |
-| base's `ContributionCalendar.Weeks` | ISO week calendar, streaks, statistics                    | isocalendar               |
-| base's `RepositoryList.Languages`   | Byte distribution by language (standard mode)             | languages                 |
-| base's various statistics values    | Tiered achievement badges                                 | achievements              |
-| PushEvent changed files + go-enry   | Language detection (inferred from file extension/content) | habits, languages(recent) |
+| Data Source                       | Generated Information                                     | Plugins Using It          |
+| --------------------------------- | --------------------------------------------------------- | ------------------------- |
+| base's `RepositoryList.Languages` | Byte distribution by language (standard mode)             | languages                 |
+| base's various statistics values  | Tiered achievement badges                                 | achievements              |
+| PushEvent changed files + go-enry | Language detection (inferred from file extension/content) | habits, languages(recent) |
+
+> Not an API call: `languages(indepth)` shallow-clones each repository (go-git `PlainCloneContext`, `Depth: 1`, single branch, `https://github.com/{owner}/{repo}.git`, no credentials passed) and detects languages with go-enry over every blob of `HEAD`.
 
 ---
 

@@ -79,4 +79,4 @@ Top-level keys are passed through as-is.
 ## 5. metadata.yml and action.yml
 
 - Input definitions for each plugin / template live in `assets/plugins/<slug>/metadata.yml`. There is no loader that reads these at runtime; type conversion and clamping of inputs are handled at each read site (`pluginutil.ReadIntDefault`, etc.). Templates only load `formats` / `supports` from their own `metadata.yml` at load time (`templates.TemplateMetadata`).
-- `action.yml` is auto-generated from these `metadata.yml` files (`internal/tools/gen-action-yml`). The lefthook `action-yml-drift` hook regenerates it on every commit and fails if there is drift. See [`CONTRIBUTING.md`](../CONTRIBUTING.md) for the regeneration procedure.
+- `action.yml` is auto-generated from these `metadata.yml` files (`internal/tools/gen-action-yml`). The lefthook `action-yml-drift` hook regenerates and re-stages it when a `metadata.yml` or the generator changes. See [`CONTRIBUTING.md`](../CONTRIBUTING.md) for the regeneration procedure.

@@ -50,8 +50,8 @@ A valid GitHub username or organization login and a token with the `public_acces
 
 The header card has two equivalent rendering entry points that produce byte-equivalent SVG from the same `Provider` data:
 
-- **`base.header` static partial** — fires when `chrome_header=yes` is set (or the legacy `base=header` CSV is resolved by the deprecation translator). Rendered first in the classic dispatcher's `_.json` order, so the header lands at the TOP of the SVG above any plugin partial output. Lazily fetches via `Provider` even when `plugin_header=no`. This is the path used by the `metrics-classic` composite sample.
-- **`plugin.header` plugin partial** — fires when `plugin_header=yes` is set. Rendered after the static partials, wrapped in `<div class="plugin-header" data-plugin="header">`. Standalone embedding case: produce `plugin-header.svg` and `<img>` it into a profile README.
+- **`base.header` static partial** — fires when `chrome_header=yes` is set (the legacy v2 `base=header` CSV is no longer accepted and is silently ignored, v3.0). Rendered first in the classic dispatcher's `_.json` order, so the header lands at the TOP of the SVG above any plugin partial output. Lazily fetches via `Provider` even when `plugin_header=no`. This is the path used by the `metrics-classic` composite sample.
+- **`plugin.header` plugin partial** — fires when `plugin_header=yes` is set. Rendered after the static partials, wrapped in `<g class="plugin-header" data-plugin="header">`. Standalone embedding case: produce `plugin-header.svg` and `<img>` it into a profile README.
 
 The classic dispatcher de-duplicates `plugin.header` when `chrome_header=yes` is also enabled, so the card never renders twice when both gates are flipped (#635).
 

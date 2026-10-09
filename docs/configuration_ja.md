@@ -79,4 +79,4 @@ committer:
 ## 5. metadata.yml と action.yml
 
 - 各プラグイン / テンプレートの入力定義は `assets/plugins/<slug>/metadata.yml` にある。実行時に読むローダーは存在せず、入力の型変換 / clamp は各読み取り箇所 (`pluginutil.ReadIntDefault` 等) が担う。テンプレートは自身の `metadata.yml` から `formats` / `supports` のみをロード時に読む (`templates.TemplateMetadata`)。
-- `action.yml` はこれらの `metadata.yml` から自動生成される (`internal/tools/gen-action-yml`)。lefthook の `action-yml-drift` フックがコミットごとに再生成し、ずれがあれば失敗する。再生成手順は [`CONTRIBUTING.md`](../CONTRIBUTING.md) を参照。
+- `action.yml` はこれらの `metadata.yml` から自動生成される (`internal/tools/gen-action-yml`)。lefthook の `action-yml-drift` フックが `metadata.yml` またはジェネレータの変更時に再生成して再ステージする。再生成手順は [`CONTRIBUTING.md`](../CONTRIBUTING.md) を参照。

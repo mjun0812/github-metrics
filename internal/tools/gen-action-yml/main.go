@@ -5,8 +5,9 @@
 // stay in sync so callers (action.yml `with:`) and the runtime
 // (INPUT_<UPPER> env) see the same input shape.
 //
-// Run via `make gen-action-yml`. The lefthook pre-commit hook gates
-// drift (`git diff --quiet action.yml` after re-running the command).
+// Run via `make gen-action-yml`. The lefthook pre-commit hook
+// regenerates and re-stages action.yml, and
+// TestGenerate_MatchesCommittedActionYML fails on any drift.
 //
 // The generator walks `assets/plugins/<slug>/metadata.yml` for the
 // adopted plugin set (constitution 原則 III). `core` contributes the

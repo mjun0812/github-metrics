@@ -61,7 +61,7 @@ jobs:
   github-metrics:
     runs-on: ubuntu-latest
     steps:
-      - uses: mjun0812/github-metrics@latest
+      - uses: mjun0812/github-metrics@v5
         with:
           user: octocat
           token: ${{ secrets.METRICS_TOKEN }}
@@ -74,7 +74,7 @@ jobs:
           output_condition: data-changed
 
       # Repository
-      - uses: mjun0812/github-metrics@latest
+      - uses: mjun0812/github-metrics@v5
         with:
           user: ${{ github.repository_owner }}
           repo: ${{ github.event.repository.name }}
