@@ -20,7 +20,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - uses: mjun0812/github-metrics@latest
+      - uses: mjun0812/github-metrics@v5
         with:
           user: ${{ github.actor }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -62,7 +62,7 @@ Each SVG is rendered independently from the same API fetch — disabling a plugi
 If you prefer a single SVG file (legacy behavior):
 
 ```yaml
-- uses: mjun0812/github-metrics@latest
+- uses: mjun0812/github-metrics@v5
   with:
     user: ${{ github.actor }}
     token: ${{ secrets.GITHUB_TOKEN }}

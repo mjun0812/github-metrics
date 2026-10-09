@@ -8,11 +8,8 @@ examples:
 index: 13
 supports:
   - user
-  - organization
-  - repository
 scopes:
-  - read:user
-  - read:org
+  - public_access
 inputs:
 
   plugin_sponsors:

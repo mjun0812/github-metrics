@@ -22,7 +22,7 @@
 - **svg / png / jpeg**:
   1. `template.Run(ctx, pc)` が partial を縦に積んで 1 枚の SVG 文字列を生成する ([§2](#2-partial-と高さの確定))。
   2. `render.Apply` の装飾ステージ (octicon 置換 → 画像インライン → 任意の CSS purge / XML 整形) を順に通す ([§3](#3-装飾パイプライン-renderapply))。
-  3. **svg**: 高さは生成時に確定済みなので、そのまま返す (ラスタライザを呼ばない)。任意で padding を適用する ([§5](#5-padding))。
+  3. **svg**: 高さは生成時に確定済みなので、そのまま返す (ラスタライザを呼ばない)。padding は適用されない ([§5](#5-padding))。
   4. **png / jpeg**: 確定済み SVG を `render.Renderer.Resize` (既定は resvg) でラスタライズする ([§4](#4-resvg-ラスタライズ))。
 
 テンプレートは EJS ではなく Go コードで実装されている。`lowlighter/metrics` の `.ejs` ファイル名がコメントに残る箇所があるが、これは移植元の追跡用であり、実行時に EJS エンジンは存在しない。
@@ -63,7 +63,7 @@ PNG / JPEG は確定済み SVG を `resvg` バイナリでラスタライズす�
 - **PNG**: `resvg` サブプロセスに SVG を stdin で流し込み、PNG を stdout で受け取る (`rasterizePNG`)。生成 SVG は画像を base64 でインライン済みなので resources-dir は不要。
 - **解像度**: PNG/JPEG は `render.RasterScale` (= 2) 倍でラスタライズする (`--zoom 2`)。SVG 座標系 480px 幅 → 出力 960px 幅。高 DPI (Retina) ディスプレイでのぼやけを防ぐためで、カード原寸で埋め込む場合は `<img width="480">` のように表示幅を指定する。
 - **JPEG**: resvg は JPEG を出力しないため、一旦 PNG にして Go 標準の `image/jpeg` で再エンコードする。
-- **SVG**: `Resize` は padding 適用のみ (ラスタライズしない)。
+- **SVG**: `Resize` 自体は padding 適用のみ (ラスタライズしない)だが、engine は SVG 出力で `Resize` を呼ばない。
 
 ### 4.1 バイナリ解決とフォント
 
@@ -75,7 +75,7 @@ resvg のプレビルドバイナリは Docker イメージに同梱される。
 
 ## 5. padding
 
-`config_padding` は `lowlighter/metrics` 互換の `"<絶対> + <相対>%"` 形式をサポートする (`internal/render/padding.go`)。元はブラウザ計測誤差の吸収用だったが、計測が無くなった現在の既定は実質 no-op。非自明な padding が指定された場合のみ、ルート `<svg>` の width / height / viewBox を算術で書き換える。
+`config_padding` は `lowlighter/metrics` 互換の `"<絶対> + <相対>%"` 形式をサポートする (`internal/render/padding.go`)。元はブラウザ計測誤差の吸収用だったが、計測が無くなった現在の既定は実質 no-op。PNG / JPEG 出力で、非自明な padding が指定された場合のみ、ルート `<svg>` の width / height / viewBox を算術で書き換える。
 
 ## 6. JSON 出力
 

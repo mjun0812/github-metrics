@@ -22,7 +22,7 @@ After plugin execution, `engine.Compute` outputs according to `format` via `disp
 - **svg / png / jpeg**:
   1. `template.Run(ctx, pc)` stacks the partials vertically and generates a single SVG string ([SS2](#2-partials-and-height-finalization)).
   2. It passes through the decoration stages of `render.Apply` in order (octicon substitution -> image inlining -> optional CSS purge / XML formatting) ([SS3](#3-decoration-pipeline-renderapply)).
-  3. **svg**: The height is already finalized at generation time, so it is returned as-is (no rasterizer is called). padding is applied optionally ([SS5](#5-padding)).
+  3. **svg**: The height is already finalized at generation time, so it is returned as-is (no rasterizer is called). padding is not applied ([SS5](#5-padding)).
   4. **png / jpeg**: The finalized SVG is rasterized by `render.Renderer.Resize` (resvg by default) ([SS4](#4-resvg-rasterization)).
 
 Templates are implemented in Go code, not EJS. Some places retain the `lowlighter/metrics` `.ejs` filenames in comments, but these are just for tracking the porting source; no EJS engine exists at runtime.
@@ -63,7 +63,7 @@ PNG / JPEG rasterize the finalized SVG with the `resvg` binary (`internal/render
 - **PNG**: Streams the SVG into the `resvg` subprocess via stdin and receives the PNG via stdout (`rasterizePNG`). Since the generated SVG already has images inlined as base64, a resources-dir is not needed.
 - **Resolution**: PNG/JPEG are rasterized at `render.RasterScale` (= 2) scale (`--zoom 2`). The SVG coordinate system's 480px width becomes a 960px output width. This is to prevent blurriness on high-DPI (Retina) displays; when embedding at the card's native size, specify the display width as in `<img width="480">`.
 - **JPEG**: Since resvg does not output JPEG, it is first converted to PNG and then re-encoded with Go's standard `image/jpeg`.
-- **SVG**: `Resize` only applies padding (no rasterization).
+- **SVG**: `Resize` itself only applies padding (no rasterization), but the engine returns SVG output without calling it.
 
 ### 4.1 Binary resolution and fonts
 
@@ -75,7 +75,7 @@ Prebuilt resvg binaries are bundled in the Docker image. Local testing uses `mak
 
 ## 5. padding
 
-`config_padding` supports the `lowlighter/metrics`-compatible `"<absolute> + <relative>%"` format (`internal/render/padding.go`). It was originally meant to absorb browser measurement error, but now that measurement is gone, the default is effectively a no-op. Only when a non-trivial padding is specified does it arithmetically rewrite the root `<svg>`'s width / height / viewBox.
+`config_padding` supports the `lowlighter/metrics`-compatible `"<absolute> + <relative>%"` format (`internal/render/padding.go`). It was originally meant to absorb browser measurement error, but now that measurement is gone, the default is effectively a no-op. Only for PNG / JPEG output, and only when a non-trivial padding is specified, does it arithmetically rewrite the root `<svg>`'s width / height / viewBox.
 
 ## 6. JSON output
 

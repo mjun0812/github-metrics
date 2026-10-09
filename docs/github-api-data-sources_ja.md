@@ -36,41 +36,45 @@
 
 GraphQL に相当するエンドポイントが存在しないため REST を使用。
 
-| エンドポイント                                        | 取得情報                                                       | 使用プラグイン                      |
-| ----------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------- |
-| `GET /users/{login}/events?per_page=100&page={n}`     | ユーザーの公開イベント一覧 (PushEvent / IssueEvent 等)         | activity, habits, languages(recent) |
-| `GET /repos/{owner}/{repo}/commits/{sha}`             | 単一コミットの変更ファイル一覧                                 | habits, languages(recent)           |
-| `GET /repos/{owner}/{repo}/compare/{before}...{head}` | コミット範囲の差分ファイル一覧                                 | habits, languages(recent)           |
-| `GET /repos/{owner}/{repo}/stats/contributors`        | コントリビューター別コミット数、追加/削除行数 (202 ポーリング) | contributors                        |
-| `GET /repos/{owner}/{repo}/contributors?per_page={n}` | リポジトリコントリビューター一覧 (名前 / コミット数)           | people(repo)                        |
-| `GET /repos/{owner}/{repo}/stargazers?per_page={n}`   | リポジトリスターガザー一覧                                     | people(repo)                        |
-| `GET /repos/{owner}/{repo}/subscribers?per_page={n}`  | リポジトリウォッチャー一覧                                     | people(repo)                        |
-| `GET /users/{login}/starred?per_page=100&page={n}`    | ユーザーがスターしたリポジトリ一覧                             | repositories(starred)               |
-| `GET /repos/{owner}/{repo}/traffic/views`             | リポジトリの PV / ユニーク訪問者数 (`repo` スコープ必須)       | traffic                             |
-| `HEAD /` (`X-OAuth-Scopes` ヘッダー)                  | トークンのスコープ確認                                         | traffic                             |
+| エンドポイント                                                        | 取得情報                                                                                                         | 使用プラグイン                                   |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `GET /users/{login}/events?per_page=100&page={n}`                     | ユーザーの公開イベント一覧 (PushEvent / IssueEvent 等)                                                           | activity, habits, languages(recent)              |
+| `GET /repos/{owner}/{repo}/commits/{sha}`                             | 単一コミットの変更ファイル一覧                                                                                   | habits, languages(recent)                        |
+| `GET /repos/{owner}/{repo}/compare/{before}...{head}`                 | コミット範囲の差分ファイル一覧                                                                                   | habits, languages(recent)                        |
+| `GET /repos/{owner}/{repo}/stats/contributors`                        | コントリビューター別コミット数、追加/削除行数 (202 ポーリング)                                                   | contributors                                     |
+| `GET /repos/{owner}/{repo}/contributors?per_page={n}`                 | リポジトリコントリビューター一覧 (名前 / コミット数)                                                             | people(repo), contributors                       |
+| `GET /repos/{owner}/{repo}/stargazers?per_page={n}`                   | リポジトリスターガザー一覧                                                                                       | people(repo)                                     |
+| `GET /repos/{owner}/{repo}/subscribers?per_page={n}`                  | リポジトリウォッチャー一覧                                                                                       | people(repo)                                     |
+| `GET /users/{login}/starred?per_page=100&sort=created&direction=desc` | ユーザーがスターしたリポジトリ一覧                                                                               | repositories(starred)                            |
+| `GET /repos/{owner}/{repo}/traffic/views`                             | リポジトリの PV / ユニーク訪問者数 (`repo` スコープ必須)                                                         | traffic                                          |
+| `GET /repos/{owner}/{repo}/contributors?per_page=1&anon=true`         | リポジトリのコントリビューター数 (`Link` ヘッダーの `rel="last"` のページ番号から取得し、本文はページングしない) | repository モード (contributors, people)         |
+| `GET /repos/{owner}/{repo}/commits?per_page=100&since={30日前}`       | 直近 30 日のコミット数 (ページ長、上限 100。409 / 404 は 0 扱い)                                                 | repository モード (contributors, people)         |
+| `HEAD /` (`X-OAuth-Scopes` ヘッダー)                                  | トークンのスコープ確認                                                                                           | トークン検証 (action), traffic                   |
+| `GET /rate_limit`                                                     | REST / GraphQL / Search 各バケットの残りクォータとリセット時刻                                                   | トークン検証 (action), レート制限ゲート (engine) |
 
 ### 2.2 GraphQL のみ
 
 REST に相当するエンドポイントが存在しないため GraphQL を使用。
 
-| フィールド / クエリ                                        | 取得情報                                                              | 使用プラグイン                         |
-| ---------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------- |
-| `User(login)`                                              | ユーザー基本情報 (名前 / bio / アバター / フォロワー数等)             | base                                   |
-| `Organization(login)`                                      | 組織基本情報                                                          | base                                   |
-| `Repository(owner, repo)`                                  | 単一リポジトリ詳細                                                    | base                                   |
-| `UserRepositories(login, first, after)`                    | ユーザーのリポジトリ一覧 (ページネーション付き)                       | base                                   |
-| `user.contributionsCollection.contributionCalendar`        | コントリビューションカレンダー (週別 / 日別カウント、REST では非公開) | base → calendar / isocalendar で再利用 |
-| `user.contributionsCollection.*`                           | コミット / Issue / PR / Review の年別統計                             | base                                   |
-| `user.repositoriesContributedTo(orderBy: STARGAZERS_DESC)` | コントリビュートした他者リポジトリ一覧                                | notable                                |
-| `user.followers(first: limit)`                             | フォロワー一覧                                                        | people                                 |
-| `user.following(first: limit)`                             | フォロー中一覧                                                        | people                                 |
-| `user.issues.reactions.content`                            | Issue のリアクション集計                                              | reactions                              |
-| `user.issueComments.reactions.content`                     | Issue コメントのリアクション集計                                      | reactions                              |
-| `user.sponsorshipsAsMaintainer(first: limit)`              | スポンサー一覧 (tier / 開始日)                                        | sponsors                               |
-| `viewer.sponsorshipsAsSponsor(first: limit)`               | スポンサーしている維持者一覧 (tier / 総額)                            | sponsorships                           |
-| `repository.stargazers(orderBy: STARRED_AT)`               | リポジトリのスターガザー時系列                                        | stargazers                             |
-| `user.lists` / `list.items.repository`                     | Star Lists 一覧＋各リスト内リポジトリ (REST に対応エンドポイントなし) | starlists                              |
-| `user.starredRepositories(orderBy: STARRED_AT_DESC)`       | スターしたリポジトリ一覧 (言語 / ライセンス / 統計付き)               | stars                                  |
+| フィールド / クエリ                                        | 取得情報                                                              | 使用プラグイン                  |
+| ---------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------- |
+| `User(login)`                                              | ユーザー基本情報 (名前 / bio / アバター / フォロワー数等)             | base                            |
+| `Organization(login)`                                      | 組織基本情報                                                          | base                            |
+| `Repository(owner, repo)`                                  | 単一リポジトリ詳細                                                    | base                            |
+| `UserRepositories(login, first, after)`                    | ユーザーのリポジトリ一覧 (ページネーション付き)                       | base                            |
+| `user.contributionsCollection.contributionCalendar`        | コントリビューションカレンダー (週別 / 日別カウント、REST では非公開) | calendar / isocalendar / header |
+| `user.contributionsCollection.*`                           | コミット / Issue / PR / Review の年別統計                             | base                            |
+| `user.repositoriesContributedTo(orderBy: STARGAZERS_DESC)` | コントリビュートした他者リポジトリ一覧                                | notable                         |
+| `user.followers(first: limit)`                             | フォロワー一覧                                                        | people                          |
+| `user.following(first: limit)`                             | フォロー中一覧                                                        | people                          |
+| `user.issues.reactions.content`                            | Issue のリアクション集計                                              | reactions                       |
+| `user.issueComments.reactions.content`                     | Issue コメントのリアクション集計                                      | reactions                       |
+| `viewer.sponsorshipsAsMaintainer(first: limit)`            | スポンサー一覧 (tier / 開始日)                                        | sponsors                        |
+| `viewer.sponsorshipsAsSponsor(first: limit)`               | スポンサーしている維持者一覧 (tier / 総額)                            | sponsorships                    |
+| `viewer.repositories.stargazers(orderBy: STARRED_AT)`      | リポジトリのスターガザー時系列                                        | stargazers                      |
+| `user.lists` / `list.items.repository`                     | Star Lists 一覧＋各リスト内リポジトリ (REST に対応エンドポイントなし) | starlists                       |
+| `user.starredRepositories(orderBy: STARRED_AT_DESC)`       | スターしたリポジトリ一覧 (言語 / ライセンス / 統計付き)               | stars                           |
+| `viewer.pinnedItems(first: 6, types: [REPOSITORY])`        | プロフィールにピン留めされたリポジトリ一覧                            | repositories(pinned)            |
 
 ### 2.3 HTML スクレイピング
 
@@ -86,13 +90,13 @@ GitHub API が対応していないため HTML を直接パース。
 
 base プラグインが取得済みのデータを加工するだけで追加 API 呼び出しなし。
 
-| データソース                         | 生成情報                                 | 使用プラグイン            |
-| ------------------------------------ | ---------------------------------------- | ------------------------- |
-| base の `ContributionCalendar.Weeks` | 月別コントリビューションヒストグラム     | calendar                  |
-| base の `ContributionCalendar.Weeks` | ISO 週カレンダー / streak / 統計         | isocalendar               |
-| base の `RepositoryList.Languages`   | 言語別バイト分布 (standard mode)         | languages                 |
-| base の各種統計値                    | 段階別アチーブメントバッジ               | achievements              |
-| PushEvent 変更ファイル + go-enry     | 言語判定 (ファイル拡張子 / 内容から推定) | habits, languages(recent) |
+| データソース                       | 生成情報                                 | 使用プラグイン            |
+| ---------------------------------- | ---------------------------------------- | ------------------------- |
+| base の `RepositoryList.Languages` | 言語別バイト分布 (standard mode)         | languages                 |
+| base の各種統計値                  | 段階別アチーブメントバッジ               | achievements              |
+| PushEvent 変更ファイル + go-enry   | 言語判定 (ファイル拡張子 / 内容から推定) | habits, languages(recent) |
+
+> API 呼び出しではない: `languages(indepth)` は各リポジトリを go-git (`PlainCloneContext`、`Depth: 1`、単一ブランチ、`https://github.com/{owner}/{repo}.git`、認証情報なし) でシャロークローンし、`HEAD` の全 blob を go-enry で言語判定する。
 
 ---
 

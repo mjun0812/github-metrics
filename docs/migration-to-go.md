@@ -27,11 +27,12 @@ the commonly used **21 plugins + 2 templates + 4 output formats**.
 
 All plugins work with just a GitHub API token and regular HTTP fetches.
 `topics` / `starlists` scrape pages using Headless Chromium in `lowlighter/metrics`, but
-in this port they have been replaced with HTML parsing via goquery, so no
-browser is required.
+in this port `topics` uses HTML parsing via goquery and `starlists` uses the
+GraphQL API (`user.lists`), so no browser is required.
 
 | Name         | `lowlighter/metrics` slug | Notes                                                |
 | ------------ | ------------------------- | ---------------------------------------------------- |
+| header       | -                         | Profile identity card (avatar / name / stats)        |
 | base         | base                      | Basic profile information (internal use)             |
 | core         | core                      | Config injection + parallel execution (internal use) |
 | languages    | languages                 | Supports `recent` / `indepth` submodes               |
@@ -46,13 +47,12 @@ browser is required.
 | notable      | notable                   |                                                      |
 | contributors | contributors              | For the repository template                          |
 | reactions    | reactions                 | Reaction aggregation                                 |
-| projects     | projects                  | GitHub Projects (requires `read:project`)            |
 | sponsors     | sponsors                  | (requires `read:user` / `read:org`)                  |
 | sponsorships | sponsorships              | (requires `read:user` / `read:org`)                  |
 | stargazers   | stargazers                | Cumulative star chart                                |
 | traffic      | traffic                   | View counts (requires `repo`)                        |
 | topics       | topics                    | HTML scraping (goquery)                              |
-| starlists    | starlists                 | HTML scraping (goquery)                              |
+| starlists    | starlists                 | GraphQL (`user.lists`)                               |
 
 ### 2.2 Templates (2)
 
@@ -166,7 +166,7 @@ in `lowlighter/metrics` falls under this list, migration is not recommended.
 The following workflow works **as-is** with the Go port:
 
 ```yaml
-- uses: mjun0812/github-metrics@latest
+- uses: mjun0812/github-metrics@v5
   with:
     user: octocat
     plugin_languages: yes # Supported -> reflected in output
@@ -207,13 +207,13 @@ for the full option list. The script only rewrites `uses:` lines; the
 
 ```diff
 - uses: lowlighter/metrics@v3.34
-+ uses: mjun0812/github-metrics@latest
++ uses: mjun0812/github-metrics@v5
 ```
 
-`@latest` always resolves to the newest published release (no workflow
-changes are needed when new releases ship). If you want to pin to a
-byte-exact version, use the exact `vX.Y.Z` form (e.g. `@v5.0.0`), or a
-floating major-tag such as `@v5` which tracks the latest `v5.x.y`.
+`@v5` is a floating major tag that tracks the latest `v5.x.y` release (no
+workflow changes are needed when new minor / patch releases ship). If you
+want to pin to a byte-exact version, use the exact `vX.Y.Z` form
+(e.g. `@v5.0.0`).
 
 ### Step 2: (Optional) remove unsupported inputs
 
@@ -243,7 +243,7 @@ You can fully roll back by reverting the `uses:` line to its previous value
 your configuration files):
 
 ```diff
-- uses: mjun0812/github-metrics@latest
+- uses: mjun0812/github-metrics@v5
 + uses: lowlighter/metrics@v3.34
 ```
 

@@ -52,8 +52,8 @@ help:
 	@echo "  hooks-install       Wire the lefthook git hooks (run once per checkout after \`make tools\`)"
 	@echo "  hooks-run           Run every pre-commit hook over the whole tree"
 	@echo "  hooks-uninstall     Remove the lefthook git hooks"
-	@echo "  check-compat        Diff metadata keys against ./org_repo upstream (placeholder; T058 owns the impl)"
-	@echo "  sync-assets         Sync assets/ from ./org_repo (placeholder until T024 lands)"
+	@echo "  check-compat        Diff metadata keys against ./org_repo upstream"
+	@echo "  sync-assets         Sync assets/ from ./org_repo"
 	@echo "  clean               Remove bin/ and other build artifacts"
 
 build: $(addprefix $(BIN_DIR)/, $(BINARIES))
@@ -186,8 +186,8 @@ hooks-uninstall:
 # `docs`           — regenerates docs/plugins/*.md and the README
 #                    plugins-gallery AUTOGEN block from
 #                    assets/plugins/*/metadata.yml. No token needed.
-# `docs-samples`   — renders the 21 plugin sample SVGs
-#                    via scripts/gen-doc-samples.sh. Requires
+# `docs-samples`   — renders the plugin sample SVGs
+#                    listed in scripts/samples.json via scripts/gen-doc-samples.sh. Requires
 #                    GITHUB_TOKEN and the docker image
 #                    github-metrics:local (which bundles resvg).
 # `docs-examples`  — convenience target: run docs-samples then docs in
@@ -214,9 +214,6 @@ check-compat:
 
 sync-assets:
 	./scripts/sync-assets.sh
-
-sync-fixtures:
-	$(GO) run ./internal/tools/sync-fixtures --user octocat
 
 clean:
 	rm -rf $(BIN_DIR)

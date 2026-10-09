@@ -1,7 +1,7 @@
 # golangci-lint configuration for github-metrics (v2 schema).
 #
 # Run locally with `make lint` or via the pre-commit hook
-# (.pre-commit-config.yaml). Keep this file in sync with the
+# (lefthook.yml). Keep this file in sync with the
 # .github/workflows/go-ci.yml pin so local and CI verdicts match.
 
 version: "2"

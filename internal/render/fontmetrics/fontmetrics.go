@@ -32,7 +32,8 @@ var fontFS embed.FS
 // Greek). Measurement is the goal here, not correctness for every
 // script, so an absent glyph falls back to this fixed advance instead
 // of erroring or measuring as zero-width. Roughly half an em matches
-// Liberation Sans' average Latin glyph advance.
+// Liberation Sans' average Latin glyph advance. Wide runes use
+// wideAdvanceRatio instead.
 const fallbackAdvanceRatio = 0.5
 
 // wideAdvanceRatio is the advance, as a fraction of sizePx, used for
