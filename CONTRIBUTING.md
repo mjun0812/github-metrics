@@ -64,7 +64,7 @@ git commit --no-verify
 
 | Tool          | Pinned version | Where it lives                                          |
 | ------------- | -------------- | ------------------------------------------------------- |
-| Go            | 1.26.6         | `.github/workflows/go-ci.yml`, `go.mod` (minimum 1.26)  |
+| Go            | 1.26.9         | `.github/workflows/go-ci.yml`, `go.mod` (minimum 1.26)  |
 | golangci-lint | v2.12.2        | `Makefile`, `.github/workflows/go-ci.yml`, `lefthook.yml` |
 | gofumpt       | latest         | `Makefile`, `lefthook.yml`                              |
 | govulncheck   | latest         | `Makefile`, `.github/workflows/go-ci.yml`               |
