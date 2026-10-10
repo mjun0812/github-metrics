@@ -413,6 +413,49 @@ var nonTemplateInternalDirs = map[string]struct{}{
 // from M7) and nothing else. Adding `markdown`/`terminal`/etc. would
 // silently violate the M5/M8 skipped-scope rule from
 // docs/scope.md.
+// markdownImage matches the target of a Markdown image, `![alt](target)`.
+var markdownImage = regexp.MustCompile(`!\[[^\]]*\]\(([^)\s]+)\)`)
+
+// TestDocsImageLinksResolve fails when README.md, README_ja.md, or a
+// docs/plugins page embeds a local image that does not exist, such as a
+// gallery entry whose sample is missing from scripts/samples.json.
+// Fenced code blocks are skipped because they show user-side paths.
+func TestDocsImageLinksResolve(t *testing.T) {
+	root := mustRepoRoot(t)
+	pages, err := filepath.Glob(filepath.Join(root, "docs", "plugins", "*.md"))
+	if err != nil {
+		t.Fatalf("glob docs/plugins: %v", err)
+	}
+	pages = append(pages, filepath.Join(root, "README.md"), filepath.Join(root, "README_ja.md"))
+
+	for _, page := range pages {
+		body, err := os.ReadFile(page)
+		if err != nil {
+			t.Fatalf("read %s: %v", page, err)
+		}
+		rel, _ := filepath.Rel(root, page)
+		inFence := false
+		for i, line := range strings.Split(string(body), "\n") {
+			if strings.HasPrefix(strings.TrimSpace(line), "```") {
+				inFence = !inFence
+				continue
+			}
+			if inFence {
+				continue
+			}
+			for _, m := range markdownImage.FindAllStringSubmatch(line, -1) {
+				target := m[1]
+				if strings.Contains(target, "://") {
+					continue
+				}
+				if _, err := os.Stat(filepath.Join(filepath.Dir(page), target)); err != nil {
+					t.Errorf("%s:%d: image %q does not exist", rel, i+1, target)
+				}
+			}
+		}
+	}
+}
+
 func TestCompliance_M7_TemplateInvariant(t *testing.T) {
 	root := mustRepoRoot(t)
 	entries, err := os.ReadDir(filepath.Join(root, "internal", "templates"))

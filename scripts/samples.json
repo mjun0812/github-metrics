@@ -3,6 +3,7 @@
   {"name": "plugin-activity",                        "mode": "user", "extra": "--template classic --plugin plugin_activity=yes --skip-private-repo"},
   {"name": "plugin-calendar",                        "mode": "user", "extra": "--template classic --plugin plugin_calendar=yes"},
   {"name": "plugin-habits",                          "mode": "user", "extra": "--template classic --plugin plugin_habits=yes"},
+  {"name": "plugin-header",                          "mode": "user", "extra": "--template classic --plugin plugin_header=yes"},
   {"name": "plugin-isocalendar",                     "mode": "user", "extra": "--template classic --plugin plugin_isocalendar=yes"},
   {"name": "plugin-notable",                         "mode": "user", "extra": "--template classic --plugin plugin_notable=yes --skip-private-repo"},
   {"name": "plugin-people",                          "mode": "user", "extra": "--template classic --plugin plugin_people=yes"},
