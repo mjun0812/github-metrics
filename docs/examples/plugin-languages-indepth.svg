@@ -35,12 +35,12 @@
             <g class="languages-progress">
               <rect class="language-bar" mask="url(#languages-bar-most)" x="0.00" y="0" width="183.71" height="8" fill="#DA5B0B" data-language="Jupyter Notebook"/>
               <rect class="language-bar" mask="url(#languages-bar-most)" x="183.71" y="0" width="99.06" height="8" fill="#dea584" data-language="Rust"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="282.78" y="0" width="71.46" height="8" fill="#3572A5" data-language="Python"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="354.24" y="0" width="33.63" height="8" fill="#f1e05a" data-language="JavaScript"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="387.87" y="0" width="15.86" height="8" fill="#b07219" data-language="Java"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="403.73" y="0" width="15.15" height="8" fill="#3178c6" data-language="TypeScript"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="418.88" y="0" width="7.06" height="8" fill="#a91e50" data-language="EJS"/>
-              <rect class="language-bar" mask="url(#languages-bar-most)" x="425.93" y="0" width="6.45" height="8" fill="#00ADD8" data-language="Go"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="282.78" y="0" width="71.47" height="8" fill="#3572A5" data-language="Python"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="354.25" y="0" width="33.63" height="8" fill="#f1e05a" data-language="JavaScript"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="387.88" y="0" width="15.86" height="8" fill="#b07219" data-language="Java"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="403.74" y="0" width="15.15" height="8" fill="#3178c6" data-language="TypeScript"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="418.89" y="0" width="7.06" height="8" fill="#a91e50" data-language="EJS"/>
+              <rect class="language-bar" mask="url(#languages-bar-most)" x="425.95" y="0" width="6.43" height="8" fill="#00ADD8" data-language="Go"/>
               <rect class="language-bar" mask="url(#languages-bar-most)" x="432.38" y="0" width="27.62" height="8" fill="#cccccc" data-language="Other"/>
             </g>
           </svg>
@@ -167,16 +167,16 @@
             <text class="indepth-language" data-language="Jupyter Notebook" data-bytes="62380614">
               Jupyter Notebook
             </text>
-            <text class="indepth-language" data-language="SVG" data-bytes="45551726">
+            <text class="indepth-language" data-language="SVG" data-bytes="45548162">
               SVG
             </text>
             <text class="indepth-language" data-language="Rust" data-bytes="33638029">
               Rust
             </text>
-            <text class="indepth-language" data-language="Python" data-bytes="24264918">
+            <text class="indepth-language" data-language="Python" data-bytes="24269687">
               Python
             </text>
-            <text class="indepth-language" data-language="JSON" data-bytes="21743929">
+            <text class="indepth-language" data-language="JSON" data-bytes="21743111">
               JSON
             </text>
             <text class="indepth-language" data-language="Jest Snapshot" data-bytes="14374321">
@@ -188,7 +188,7 @@
             <text class="indepth-language" data-language="JavaScript" data-bytes="11419148">
               JavaScript
             </text>
-            <text class="indepth-language" data-language="Markdown" data-bytes="10914123">
+            <text class="indepth-language" data-language="Markdown" data-bytes="10913132">
               Markdown
             </text>
             <text class="indepth-language" data-language="Java" data-bytes="5386420">
@@ -206,22 +206,22 @@
             <text class="indepth-language" data-language="EJS" data-bytes="2396454">
               EJS
             </text>
-            <text class="indepth-language" data-language="Go" data-bytes="2189276">
+            <text class="indepth-language" data-language="Go" data-bytes="2184497">
               Go
             </text>
-            <text class="indepth-language" data-language="TOML" data-bytes="1992805">
+            <text class="indepth-language" data-language="TOML" data-bytes="1993170">
               TOML
             </text>
             <text class="indepth-language" data-language="reStructuredText" data-bytes="1977121">
               reStructuredText
             </text>
-            <text class="indepth-language" data-language="Shell" data-bytes="1941818">
+            <text class="indepth-language" data-language="Shell" data-bytes="1942325">
               Shell
             </text>
             <text class="indepth-language" data-language="TSX" data-bytes="1929191">
               TSX
             </text>
-            <text class="indepth-language" data-language="YAML" data-bytes="1688382">
+            <text class="indepth-language" data-language="YAML" data-bytes="1683260">
               YAML
             </text>
             <text class="indepth-language" data-language="TSV" data-bytes="1567898">
@@ -299,7 +299,7 @@
             <text class="indepth-language" data-language="C++" data-bytes="36731">
               C++
             </text>
-            <text class="indepth-language" data-language="Makefile" data-bytes="33918">
+            <text class="indepth-language" data-language="Makefile" data-bytes="33808">
               Makefile
             </text>
             <text class="indepth-language" data-language="SQL" data-bytes="28767">

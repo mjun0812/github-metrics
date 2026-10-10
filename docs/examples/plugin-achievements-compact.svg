@@ -47,7 +47,7 @@
           </g>
           <rect x="54" y="101" width="35" height="16" rx="8" ry="8" fill="#EB355E" fill-opacity="0.15" stroke="#EB355E"/>
           <text x="72" y="112" font-size="10" fill="#EB355E" text-anchor="middle">
-            1406
+            1423
           </text>
         </g>
         <g class="achievement s" data-rank="S" data-icon="code-square">
@@ -217,7 +217,7 @@
           </g>
           <rect x="54" y="186" width="35" height="16" rx="8" ry="8" fill="#9E91FF" fill-opacity="0.15" stroke="#9D8FFF"/>
           <text x="72" y="197" font-size="10" fill="#9D8FFF" text-anchor="middle">
-            1762
+            1767
           </text>
         </g>
         <g class="achievement b" data-rank="B" data-icon="eye">
@@ -250,7 +250,7 @@
           </g>
           <rect x="134" y="186" width="29" height="16" rx="8" ry="8" fill="#9E91FF" fill-opacity="0.15" stroke="#9D8FFF"/>
           <text x="149" y="197" font-size="10" fill="#9D8FFF" text-anchor="middle">
-            219
+            229
           </text>
         </g>
         <g class="achievement b" data-rank="B" data-icon="star">
@@ -368,7 +368,7 @@
           </g>
           <rect x="454" y="186" width="23" height="16" rx="8" ry="8" fill="#58A6FF" fill-opacity="0.15" stroke="#58A6FF"/>
           <text x="465" y="197" font-size="10" fill="#58A6FF" text-anchor="middle">
-            82
+            81
           </text>
         </g>
         <g class="achievement c" data-rank="C" data-icon="organization">

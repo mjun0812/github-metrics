@@ -17,14 +17,14 @@
         <text x="37" y="22" font-size="16" fill="#0366d6">
           Recently starred repositories
         </text>
-        <g class="repository" data-stars="478" data-forks="17">
+        <g class="repository" data-stars="485" data-forks="17">
           <g transform="translate(13,36)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
               <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/>
             </svg>
           </g>
           <text x="477" y="47" font-size="10" fill="#666666" text-anchor="end">
-            starred 7 days ago
+            starred 10 days ago
           </text>
           <text x="37" y="48" font-size="14" fill="#58a6ff">
             jdx/mr-boxington
@@ -53,7 +53,7 @@
             </svg>
           </g>
           <text x="179" y="67" font-size="13" fill="#666666">
-            478
+            485
           </text>
           <g transform="translate(217,55)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -70,7 +70,7 @@
             </svg>
           </g>
           <text x="287" y="67" font-size="13" fill="#666666">
-            10
+            15
           </text>
           <g transform="translate(318,55)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -78,17 +78,17 @@
             </svg>
           </g>
           <text x="338" y="67" font-size="13" fill="#666666">
-            598
+            611
           </text>
         </g>
-        <g class="repository" data-stars="157667" data-forks="8469">
+        <g class="repository" data-stars="160381" data-forks="8624">
           <g transform="translate(13,86)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
               <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/>
             </svg>
           </g>
           <text x="477" y="97" font-size="10" fill="#666666" text-anchor="end">
-            starred 9 days ago
+            starred 11 days ago
           </text>
           <text x="37" y="98" font-size="14" fill="#58a6ff">
             DietrichGebert/ponytail
@@ -123,7 +123,7 @@
             </svg>
           </g>
           <text x="213" y="152" font-size="13" fill="#666666">
-            157.7k
+            160.4k
           </text>
           <g transform="translate(268,140)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -131,7 +131,7 @@
             </svg>
           </g>
           <text x="288" y="152" font-size="13" fill="#666666">
-            8.5k
+            8.6k
           </text>
           <g transform="translate(329,140)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -140,7 +140,7 @@
             </svg>
           </g>
           <text x="349" y="152" font-size="13" fill="#666666">
-            353
+            366
           </text>
           <g transform="translate(386,140)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -148,10 +148,10 @@
             </svg>
           </g>
           <text x="406" y="152" font-size="13" fill="#666666">
-            698
+            722
           </text>
         </g>
-        <g class="repository" data-stars="7261" data-forks="430">
+        <g class="repository" data-stars="7264" data-forks="429">
           <g transform="translate(13,171)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
               <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/>
@@ -198,7 +198,7 @@
             </svg>
           </g>
           <text x="253" y="220" font-size="13" fill="#666666">
-            430
+            429
           </text>
           <g transform="translate(291,208)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -215,10 +215,10 @@
             </svg>
           </g>
           <text x="369" y="220" font-size="13" fill="#666666">
-            863
+            864
           </text>
         </g>
-        <g class="repository" data-stars="3978" data-forks="384">
+        <g class="repository" data-stars="3994" data-forks="386">
           <g transform="translate(13,239)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
               <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/>
@@ -265,7 +265,7 @@
             </svg>
           </g>
           <text x="243" y="287" font-size="13" fill="#666666">
-            384
+            386
           </text>
           <g transform="translate(280,275)" fill="#959da5">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
