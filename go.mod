@@ -9,7 +9,7 @@ require (
 	github.com/go-enry/go-enry/v2 v2.9.6
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/hashicorp/go-retryablehttp v0.7.8
-	github.com/tdewolff/minify/v2 v2.24.17
+	github.com/tdewolff/minify/v2 v2.24.19
 	github.com/tdewolff/parse/v2 v2.8.16
 	golang.org/x/image v0.46.0
 	golang.org/x/sync v0.23.0
