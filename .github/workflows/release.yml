@@ -53,6 +53,10 @@ permissions:
 
 env:
   REGISTRY_IMAGE: ghcr.io/mjun0812/github-metrics
+  # Keep in lockstep with GO_VERSION in go-ci.yml so the released
+  # binaries carry the same stdlib security fixes CI is pinned for.
+  # go.mod's `go` line is only the minimum language version.
+  GO_VERSION: "1.26.10"
 
 jobs:
   docker-smoke:
@@ -65,7 +69,7 @@ jobs:
 
       - uses: actions/setup-go@v7
         with:
-          go-version-file: go.mod
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Run M10 docker-smoke (build + --help + ≤900MB assertion)
         # Inlined from the Makefile `docker-smoke` target so the step
@@ -284,7 +288,7 @@ jobs:
 
       - uses: actions/setup-go@v7
         with:
-          go-version-file: go.mod
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Install gh CLI
         # Pin a known gh version instead of relying on whatever the
@@ -422,7 +426,7 @@ jobs:
 
       - uses: actions/setup-go@v7
         with:
-          go-version-file: go.mod
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Assert the image is pullable without credentials
         # This job never logs in to GHCR, so the inspect runs
