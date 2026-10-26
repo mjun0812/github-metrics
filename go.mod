@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/tdewolff/minify/v2 v2.24.22
 	github.com/tdewolff/parse/v2 v2.8.19
-	golang.org/x/image v0.46.0
+	golang.org/x/image v0.47.0
 	golang.org/x/sync v0.24.0
 	golang.org/x/text v0.43.0
 	gopkg.in/yaml.v3 v3.0.1
