@@ -12,7 +12,7 @@ require (
 	github.com/tdewolff/minify/v2 v2.24.25
 	github.com/tdewolff/parse/v2 v2.8.20
 	golang.org/x/image v0.47.0
-	golang.org/x/sync v0.24.0
+	golang.org/x/sync v0.25.0
 	golang.org/x/text v0.43.0
 	gopkg.in/yaml.v3 v3.0.1
 )
